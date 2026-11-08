@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "yappologistic",
+  "classifications": [
+    "CuiSharp",
+    "Desktop",
+    "UI"
+  ],
+  "identity": "CuiSharp.App",
+  "name": "CuiSharp desktop app",
+  "shortName": "cui-app",
+  "description": "A native desktop app in plain C# with CUI: no XAML, no WPF, no Avalonia. Immediate-mode components with dependency injection, a live-data page that draws with zero allocation, a service layer testable without a window, and a test project to copy the pattern from.",
+  "tags": {
+    "language": "C#",
+    "type": "solution"
+  },
+  "sourceName": "CuiSharp.App",
+  "preferNameDirectory": true,
+  "symbols": {
+    "CuiSharpVersion": {
+      "type": "parameter",
+      "datatype": "text",
+      "defaultValue": "0.2.0",
+      "replaces": "__CUISHARP_VERSION__",
+      "description": "The CuiSharp package version the generated solution references. Defaults to the version this template shipped with."
+    }
+  }
+}

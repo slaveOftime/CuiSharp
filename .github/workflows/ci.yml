@@ -1,0 +1,230 @@
+name: CI
+
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'samples/**'
+      - 'native/**'
+      - 'skills/**'
+      - 'Directory.Build.props'
+      - '*.slnx'
+      - 'docs/**'
+      - '.github/workflows/ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'samples/**'
+      - 'native/**'
+      - 'skills/**'
+      - 'Directory.Build.props'
+      - '*.slnx'
+      - 'docs/**'
+      - '.github/workflows/ci.yml'
+  workflow_dispatch:
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  # The managed library and its tests do not touch the native library, so they
+  # build and run anywhere.
+  test:
+    name: Build and test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Restore
+        run: dotnet restore CuiSharp.slnx
+
+      - name: Build
+        run: dotnet build CuiSharp.slnx --configuration Release --no-restore -warnaserror
+
+      - name: Test
+        run: dotnet test CuiSharp.slnx --configuration Release --no-build
+
+  # The template content is not in the solution, so nothing else compiles it.
+  # Scaffold it under a name that is not CuiSharp.* — a namespace-only difference
+  # used to hide a missing using directive — and build that.
+  template:
+    name: Template scaffolds and builds
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Pack the library and the template
+        run: |
+          dotnet pack src/CuiSharp/CuiSharp.csproj -c Release -o artifacts/packages
+          dotnet pack src/CuiSharp.Templates/CuiSharp.Templates.csproj -c Release -o artifacts/packages
+
+      - name: Scaffold and build a project from it
+        shell: pwsh
+        run: |
+          $feed = (Resolve-Path artifacts/packages).Path
+          dotnet new uninstall CuiSharp.Templates 2>$null | Out-Null
+          dotnet new install (Get-ChildItem artifacts/packages/CuiSharp.Templates*.nupkg).FullName
+
+          $app = Join-Path $env:RUNNER_TEMP 'scaffold'
+          dotnet new cui-app -n Contoso.App -o $app
+
+          # CuiSharp is not on nuget.org yet, so point the new project at the feed.
+          @"
+          <?xml version="1.0" encoding="utf-8"?>
+          <configuration>
+            <packageSources>
+              <add key="local" value="$feed" />
+              <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+            </packageSources>
+          </configuration>
+          "@ | Set-Content (Join-Path $app 'nuget.config')
+
+          dotnet build $app -c Release -warnaserror
+
+  # Proves the whole chain on Windows: build CUI from source, then publish the
+  # gallery as a single NativeAOT executable and run it headless.
+  native-aot:
+    name: NativeAOT single file (windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout submodules (CUI)
+        run: git submodule update --init --recursive
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build CUI (cui.dll + cui.lib)
+        shell: pwsh
+        run: ./native/build-native.ps1
+
+      - name: Publish
+        run: dotnet publish samples/CuiSharp.Gallery -c Release -r win-x64 -o artifacts/publish
+
+      - name: Assert the exe is self-contained
+        shell: pwsh
+        run: |
+          $exe = 'artifacts/publish/CuiGallery.exe'
+          if (-not (Test-Path $exe)) { throw "missing $exe" }
+          if (Test-Path 'artifacts/publish/cui.dll') { throw 'cui.dll was not linked in' }
+
+          $deps = & dumpbin /dependents $exe 2>$null | Select-String '\.dll'
+          Write-Host ($deps -join "`n")
+          foreach ($forbidden in 'cui.dll', 'VCRUNTIME', 'MSVCP', 'coreclr', 'hostfxr') {
+            if ($deps -match [regex]::Escape($forbidden)) { throw "unexpected dependency: $forbidden" }
+          }
+
+          $mb = [math]::Round((Get-Item $exe).Length / 1MB, 2)
+          Write-Host "CuiGallery.exe = $mb MB"
+
+      - name: Smoke test (headless render)
+        shell: pwsh
+        run: |
+          Push-Location artifacts/publish
+          $env:CUI_SCREENSHOT = 'smoke.png'
+          $env:CUI_SCREENSHOT_FRAMES = '8'
+          ./CuiGallery.exe --page=0
+          if ($LASTEXITCODE -ne 0) { throw "app exited $LASTEXITCODE" }
+          if (-not (Test-Path 'smoke.png')) { throw 'no screenshot produced' }
+          if ((Get-Item 'smoke.png').Length -lt 10KB) { throw 'screenshot looks empty' }
+          Pop-Location
+          Write-Host 'headless render OK'
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cui-gallery-win-x64
+          path: |
+            artifacts/publish/CuiGallery.exe
+            artifacts/publish/smoke.png
+
+  # Benchmarks are a regression signal, not a gate: the JSON report is uploaded
+  # so a reviewer can compare a run against the previous one.
+  benchmarks:
+    name: Benchmarks (windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout submodules (CUI)
+        run: git submodule update --init --recursive
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build native
+        shell: pwsh
+        run: ./native/build-native.ps1
+
+      - name: Run benchmarks
+        shell: pwsh
+        run: >
+          dotnet run --project src/CuiSharp.Benchmarks -c Release --
+          --filter "*" --job short --exporters json github
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: benchmark-results
+          path: BenchmarkDotNet.Artifacts/results/
+
+  # Fails the build if someone edits a native struct without updating the
+  # goldens in AbiLayoutTests.
+  abi:
+    name: ABI unchanged
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout submodules (CUI)
+        run: git submodule update --init --recursive
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build and run the probe against the submodule headers
+        shell: pwsh
+        run: |
+          Push-Location native
+          cl /nologo /MT /I CUI\include abi_probe.c /Fe:abi_probe.exe
+          if ($LASTEXITCODE) { throw 'probe failed to compile' }
+          ./abi_probe.exe | Tee-Object abi_c.txt
+          Pop-Location
+
+      - name: Compare with the managed side
+        shell: pwsh
+        run: |
+          dotnet test src/CuiSharp.Tests -c Release --filter "FullyQualifiedName~AbiLayoutTests"
+          if ($LASTEXITCODE) { throw 'ABI layout drifted from cui.h' }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: abi-report
+          path: native/abi_c.txt

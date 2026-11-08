@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!--
+      Test harness for CuiSharp apps. net10.0 only, like the library: it drives the same
+      software renderer, so a test sees the pixels a window would show.
+    -->
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>CuiSharp.Testing</RootNamespace>
+    <AssemblyName>CuiSharp.Testing</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsAotCompatible>true</IsAotCompatible>
+    <IsTrimmable>true</IsTrimmable>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>CuiSharp.Testing</PackageId>
+    <Title>CuiSharp.Testing - headless UI tests</Title>
+    <Description>Drive a CuiSharp interface without a window: find a control by its label, click it, type into it, and assert on the frame it produced. Reference it from a test project only.</Description>
+    <PackageTags>cui;ui;testing;headless;immediate-mode</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CuiSharp\CuiSharp.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>

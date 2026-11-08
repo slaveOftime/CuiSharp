@@ -1,0 +1,215 @@
+using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
+
+namespace CuiSharp.Hosting;
+
+/// <summary>
+/// One background operation owned by a component: start it, keep drawing, and see
+/// the result on a later frame.
+/// <para>
+/// The frame loop is synchronous, so nothing inside <c>Draw</c> may await. A
+/// mutation is the shape that makes that safe: it runs the work on the pool,
+/// holds the outcome, and never touches a <see cref="Ui"/> from a pool thread.
+/// While the operation runs — and for the one frame its result still needs to be
+/// drawn — the host keeps requesting frames, so the state appears immediately
+/// instead of on the next mouse move.
+/// </para>
+/// <para>
+/// <see cref="Error"/> and <see cref="IsRunning"/> are always current and cost
+/// nothing to read, so a fire-and-forget mutation needs no bookkeeping in
+/// <c>Draw</c>. Pass an <c>apply</c> callback when the result has to change state,
+/// and <c>Draw</c> never polls: the callback runs on the UI thread, before the
+/// next frame draws.
+/// </para>
+/// </summary>
+/// <example><code>
+/// // fire and forget: the button reflects the operation it owns
+/// private readonly Mutation _save = new(todos.SaveAsync);
+/// if (ui.Button("Save", new() { Loading = _save.IsRunning })) _save.Run();
+/// if (_save.Error is { } e) ui.Badge(e.Message, new() { Tone = Tone.Danger });
+///
+/// // with a result: applied before the next frame, so Draw never polls
+/// private readonly Mutation&lt;MarketSnapshot&gt; _load = new(
+///     ct => feed.LoadAsync(ct),
+///     snapshot => history.Load(snapshot.History));
+/// if (ui.Button("Load")) _load.Run();
+/// </code></example>
+public sealed class Mutation<T> : IDisposable
+{
+    private readonly Func<CancellationToken, Task<T>> _work;
+    private readonly Action<T>? _apply;
+    private readonly CancellationTokenSource _lifetime = new();
+    private Task<T>? _pending;
+    private Exception? _error;
+    private int _counted;
+
+    /// <summary>Creates a mutation around the work it runs.</summary>
+    public Mutation(Func<CancellationToken, Task<T>> work) : this(work, apply: null) { }
+
+    /// <summary>
+    /// Creates a mutation that hands its result to <paramref name="apply"/> on the UI
+    /// thread, before the next frame draws.
+    /// </summary>
+    public Mutation(Func<CancellationToken, Task<T>> work, Action<T>? apply)
+    {
+        ArgumentNullException.ThrowIfNull(work);
+        _work = work;
+        _apply = apply;
+    }
+
+    /// <summary>True while the operation is in flight.</summary>
+    public bool IsRunning => _pending is { IsCompleted: false };
+
+    /// <summary>
+    /// The failure that ended the last run, or null. Cached when the operation
+    /// completes, so reading it every frame allocates nothing.
+    /// </summary>
+    public Exception? Error => Volatile.Read(ref _error);
+
+    /// <summary>Starts the operation. Re-entry is ignored, so it is safe to call every frame.</summary>
+    public void Run()
+    {
+        if (IsRunning) return;
+
+        Volatile.Write(ref _error, null);
+        _pending = null;
+
+        Task<T> task;
+        try
+        {
+            task = _work(_lifetime.Token);
+        }
+        catch (Exception error)
+        {
+            // A faulted start must not escape into the frame: report it like any
+            // other failure so the component can show it.
+            Volatile.Write(ref _error, error.GetBaseException());
+            return;
+        }
+
+        _pending = task;
+        PendingWork.Add();
+        Interlocked.Exchange(ref _counted, 1);
+
+        // Settle on completion, not on TryPublish: a component that is no longer
+        // drawn never polls, and a finished operation must not keep the window
+        // awake forever. The one owed frame is what makes the result visible.
+        task.ContinueWith(static (completed, state) => ((Mutation<T>)state!).Complete(completed), this,
+            CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+    }
+
+    /// <summary>
+    /// Takes the result if the operation finished. Needed only when the result has no
+    /// <c>apply</c> callback; an operation that was given one has already applied it.
+    /// </summary>
+    public bool TryPublish([NotNullWhen(true)] out T? result)
+    {
+        result = default;
+        if (_pending is not { IsCompleted: true } completed) return false;
+
+        _pending = null;
+        if (!completed.IsCompletedSuccessfully) return false;
+
+        result = completed.Result!;
+        return true;
+    }
+
+    /// <summary>
+    /// Cancels a running operation. Optional: a mutation that is never disposed is
+    /// cancelled when the process exits, which is what an app usually wants.
+    /// </summary>
+    public void Dispose()
+    {
+        _lifetime.Cancel();
+        _lifetime.Dispose();
+        _pending = null;
+        Settle();
+    }
+
+    private void Complete(Task<T> task)
+    {
+        if (task.IsCompletedSuccessfully)
+        {
+            // A result with somewhere to go is applied on the UI thread, before the
+            // next frame, so Draw reads state instead of polling.
+            if (_apply is not null) Completions.Post(this, task.Result);
+        }
+        else if (!_lifetime.IsCancellationRequested)
+        {
+            Volatile.Write(ref _error, task.Exception?.GetBaseException() ?? new TaskCanceledException(task));
+        }
+
+        Settle();
+    }
+
+    // Called on the UI thread, once per completed frame.
+    internal void Apply(T value)
+    {
+        _pending = null;
+        _apply?.Invoke(value);
+    }
+
+    private void Settle()
+    {
+        if (Interlocked.Exchange(ref _counted, 0) == 0) return;
+        PendingWork.Remove();
+    }
+}
+
+/// <summary>A <see cref="Mutation{T}"/> whose work has no result.</summary>
+public sealed class Mutation : IDisposable
+{
+    private readonly Mutation<bool> _inner;
+
+    /// <summary>Creates a mutation around the work it runs.</summary>
+    public Mutation(Func<CancellationToken, Task> work) : this(work, onSuccess: null) { }
+
+    /// <summary>
+    /// Creates a mutation that calls <paramref name="onSuccess"/> on the UI thread,
+    /// before the next frame draws, once the work completes.
+    /// </summary>
+    public Mutation(Func<CancellationToken, Task> work, Action? onSuccess)
+    {
+        ArgumentNullException.ThrowIfNull(work);
+        _inner = new Mutation<bool>(
+            async token =>
+            {
+                await work(token).ConfigureAwait(false);
+                return true;
+            },
+            onSuccess is null ? null : _ => onSuccess());
+    }
+
+    /// <summary>True while the operation is in flight.</summary>
+    public bool IsRunning => _inner.IsRunning;
+
+    /// <summary>The failure that ended the last run, or null. Read it every frame; it costs nothing.</summary>
+    public Exception? Error => _inner.Error;
+
+    /// <summary>Starts the operation. Re-entry is ignored, so it is safe to call every frame.</summary>
+    public void Run() => _inner.Run();
+
+    /// <summary>Cancels a running operation. Optional.</summary>
+    public void Dispose() => _inner.Dispose();
+}
+
+/// <summary>
+/// Work that finished on a pool thread and still has to reach the UI thread.
+/// <para>
+/// The frame boundary is the only place it may run, so a frame never observes a
+/// half-applied result: everything queued is applied at the start of a frame, and
+/// that frame draws the new state.
+/// </para>
+/// </summary>
+internal static class Completions
+{
+    private static readonly ConcurrentQueue<Action> Queue = new();
+
+    internal static void Post<T>(Mutation<T> owner, T value) => Queue.Enqueue(() => owner.Apply(value));
+
+    /// <summary>Runs everything that finished since the last frame, on the calling thread.</summary>
+    internal static void Drain()
+    {
+        while (Queue.TryDequeue(out Action? apply)) apply();
+    }
+}

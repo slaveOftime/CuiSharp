@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>CuiSharp.Tools</RootNamespace>
+    <!-- Never `cui`: the native library this tool drives is cui.dll. The command name is
+         what makes it `dotnet cui`, and that is set by ToolCommandName below. -->
+    <AssemblyName>CuiSharp.Tools</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <InvariantGlobalization>true</InvariantGlobalization>
+
+    <!-- `dotnet cui …`: one command, distributed as a .NET tool. IsPackable is off by default
+         in Directory.Build.props, so it has to be turned back on here. -->
+    <IsPackable>true</IsPackable>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>cui</ToolCommandName>
+    <PackageId>CuiSharp.Tools</PackageId>
+    <Title>CuiSharp.Tools - drive a CuiSharp app from the command line</Title>
+    <Description>Screenshot a CuiSharp app, print the controls of its last frame, and click or type into it - without a window, an agent or a test project.</Description>
+    <PackageTags>cui;ui;tools;dotnet-tool;agent</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The command line parsing is worth testing without spawning a process. -->
+    <InternalsVisibleTo Include="CuiSharp.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>

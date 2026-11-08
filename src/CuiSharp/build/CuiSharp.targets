@@ -1,0 +1,55 @@
+<Project>
+
+  <!--
+    Shipping targets, imported by consumers of the CuiSharp package.
+
+    The package already puts cui.dll under runtimes/win-x64/native/, which the
+    .NET host resolves for [DllImport("cui")] on its own. This file adds the
+    second half: when the consumer publishes with NativeAOT, point the compiler
+    at the packaged static archive so CUI is linked into the executable instead
+    of being loaded at runtime.
+  -->
+
+  <PropertyGroup>
+    <_CuiSharpNativeDir>$(MSBuildThisFileDirectory)../runtimes/win-x64/native/</_CuiSharpNativeDir>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(PublishAot)' == 'true' And Exists('$(_CuiSharpNativeDir)cui.lib')">
+    <DirectPInvoke Include="cui" />
+    <NativeLibrary Include="$(_CuiSharpNativeDir)cui.lib" />
+
+    <!-- What CUI's Win32 backend links against. -->
+    <LinkerArg Include="user32.lib" />
+    <LinkerArg Include="gdi32.lib" />
+    <LinkerArg Include="opengl32.lib" />
+    <LinkerArg Include="shell32.lib" />
+    <LinkerArg Include="imm32.lib" />
+    <LinkerArg Include="dwmapi.lib" />
+    <LinkerArg Include="comdlg32.lib" />
+    <LinkerArg Include="ole32.lib" />
+    <LinkerArg Include="/OPT:REF" />
+    <LinkerArg Include="/OPT:ICF" />
+  </ItemGroup>
+
+  <!--
+    AOT links CUI into the executable, so the shared library and the archive beside it are noise in
+    a publish folder whose promise is "one file".
+  -->
+  <Target Name="CuiSharpDropNativeFilesFromAotPublish"
+          AfterTargets="Publish"
+          Condition="'$(PublishAot)' == 'true'">
+    <ItemGroup>
+      <_CuiSharpStrayNative Include="$(PublishDir)cui.dll;$(PublishDir)cui.lib" />
+    </ItemGroup>
+    <Message Importance="normal" Text="CuiSharp: AOT publish, removing @(_CuiSharpStrayNative->Count()) native file(s) from $(PublishDir)" />
+    <Delete Files="@(_CuiSharpStrayNative)" ContinueOnError="true" />
+  </Target>
+
+  <Target Name="CuiSharpExplainMissingArchive"
+          BeforeTargets="PrepareForPublish"
+          Condition="'$(PublishAot)' == 'true' And !Exists('$(_CuiSharpNativeDir)cui.lib')">
+    <Message Importance="high"
+             Text="CuiSharp: cui.lib is not in the package, so CUI will be loaded from cui.dll at runtime. Add &lt;DirectPInvoke Include=&quot;cui&quot; /&gt; and a NativeLibrary item yourself to link it statically." />
+  </Target>
+
+</Project>

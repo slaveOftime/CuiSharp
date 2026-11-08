@@ -1,0 +1,1337 @@
+{
+  "enumRenames": {
+    "cui_theme_mode": "Theme",
+    "cui_mod": "Mods",
+    "cui_size_kind": "SizeKind",
+    "cui_renderer_kind": "Renderer",
+    "cui_sw_format": "SwFormat",
+    "cui_token": "Token"
+  },
+  "memberRenames": {
+    "CUI_RENDERER_OPENGL": "OpenGL"
+  },
+  "extraEnumMembers": {
+    "cui_mod": [
+      "Primary = Ctrl"
+    ]
+  },
+  "flagsEnums": [
+    "cui_mod"
+  ],
+  "skipFunctions": [],
+  "skipStructs": [],
+  "suppressGcTransition": [],
+  "anonymousEnumNames": {
+    "CUI_FONT_BODY": "Font"
+  },
+  "typeAliases": {
+    "cui_font": {
+      "name": "Font",
+      "why": "The header defines cui_font as int separately from the CUI_FONT_* roles; use the promoted Font enum for both built-in roles and loaded font IDs."
+    }
+  },
+  "optionNames": {
+    "cui_card_opts": {
+      "name": "Card",
+      "why": "Retain the existing concise layout option type alongside Box."
+    }
+  },
+  "optionFieldNames": {
+    "cui_text_opts.nowrap": {
+      "name": "NoWrap",
+      "why": "Use normal .NET word casing for the combined C identifier."
+    },
+    "cui_input_opts.autofocus": {
+      "name": "AutoFocus",
+      "why": "Use normal .NET word casing for the combined C identifier."
+    }
+  },
+  "injectedFields": {
+    "cui_table_opts.sort": {
+      "type": "nint",
+      "param": "sort",
+      "why": "The table wrapper owns a temporary native sort value and writes back through ref TableSort; options must not expose a dangling pointer."
+    },
+    "cui_tree_table_opts.sort": {
+      "type": "nint",
+      "why": "The sort state the tree table owns and updates; the wrapper keeps it in the frame arena and writes it back.",
+      "record": "TableSort"
+    },
+    "cui_chat_opts.markdown_result": {
+      "type": "nint",
+      "why": "The markdown view's last result, updated by the widget; the wrapper owns it for the call and writes it back.",
+      "record": "MarkdownResult"
+    },
+    "cui_timeline_editor_opts.view": {
+      "type": "nint",
+      "why": "The editor's pan/zoom view, updated by the widget; the wrapper owns it and writes it back.",
+      "record": "TimelineView"
+    },
+    "cui_grid_opts.sort": {
+      "type": "nint",
+      "record": "TableSort",
+      "why": "The grid sorts by a table sort the wrapper owns for the call and writes back through ref TableSort."
+    }
+  },
+  "optionalInjectedParams": {
+    "cui_table_begin_ex.sort": {
+      "why": "Sorting is optional: a table with no sortable columns should not need a throwaway cui_table_sort. Passing a null pointer disables header sorting natively (cui_data.c only reads o->sort when a column is sortable)."
+    }
+  },
+  "parameterDefaults": {
+    "cui_heading.level": {
+      "value": "2",
+      "why": "Keep the established default heading level; the header only specifies the valid range 1..4."
+    },
+    "cui_rating.max": {
+      "value": "5",
+      "why": "Keep the established default five-star rating."
+    },
+    "cui_spinner.size": {
+      "value": "16",
+      "why": "Keep the established default spinner size."
+    },
+    "cui_avatar_group.max_visible": {
+      "value": "4",
+      "why": "Keep the established four visible avatars before the overflow badge."
+    },
+    "cui_avatar_group.size": {
+      "value": "32",
+      "why": "Keep the established default avatar size in logical points."
+    },
+    "cui_meter.unit": {
+      "value": "default",
+      "why": "Keep the established optional unit label; an empty UiText maps to the native null/default value."
+    },
+    "cui_gauge.size": {
+      "value": "130",
+      "why": "Keep the established default gauge diameter; native substitutes its own size only when the value is <= 0."
+    },
+    "cui_progress_ring.size": {
+      "value": "104",
+      "why": "Keep the established default ring diameter; native substitutes its own size only when the value is <= 0."
+    },
+    "cui_file_browser_ex.path_cap": {
+      "value": "1024",
+      "why": "A path buffer that covers more than any Windows or POSIX path in practice, so the common call reads `ui.FileBrowser(id, ref path)`."
+    },
+    "cui_file_picker_ex.out_cap": {
+      "value": "1024",
+      "why": "The picked path fits any real path, so the common call reads `ui.FilePicker(id, ref open, ref path)`."
+    }
+  },
+  "parameterStorage": {
+    "cui_split_begin.ratio": {
+      "storage": "frame",
+      "why": "cui_split_begin writes ratio during the call but retains its address until split_next reads it. Copy into the frame arena and write back immediately; a transient LibraryImport pin would leave a movable managed field's address dangling."
+    },
+    "cui_date_picker_ex.value": {
+      "storage": "value",
+      "why": "cui_date is a native record; convert to the friendly Date and write it back when the call returns."
+    },
+    "cui_calendar.value": {
+      "storage": "value",
+      "why": "cui_date is a native record; convert to the friendly Date and write it back when the call returns."
+    },
+    "cui_color_picker.value": {
+      "storage": "value",
+      "why": "cui_color is a native record; convert to the friendly Color and write it back when the call returns."
+    },
+    "cui_now_playing_ex.np": {
+      "storage": "value",
+      "why": "The player state is an in/out record: the value is converted for the call and written back, so no pointer outlives it."
+    },
+    "cui_range_calendar.range": {
+      "storage": "value",
+      "why": "The selected range is an in/out record: converted for the call and written back."
+    },
+    "cui_date_range_picker_ex.range": {
+      "storage": "value",
+      "why": "The selected range is an in/out record: converted for the call and written back."
+    },
+    "cui_shortcut_recorder_ex.combo": {
+      "storage": "value",
+      "why": "The recorded shortcut is an in/out record: converted for the call and written back."
+    },
+    "cui_node_editor_begin_ex.view": {
+      "storage": "value",
+      "why": "The pan/zoom view is an in/out record: converted for the call and written back."
+    },
+    "cui_prop_color_ex.value": {
+      "storage": "value",
+      "why": "The edited color is an in/out value: converted for the call and written back."
+    },
+    "cui_flame_span_rect.span": {
+      "storage": "value",
+      "why": "The span is read-only input and nothing retains it: converted for the call."
+    },
+    "cui_hex_view_ex.sel": {
+      "storage": "value",
+      "why": "The selection is an in/out record: converted for the call and written back."
+    },
+    "cui_citation.source": {
+      "storage": "value",
+      "why": "The source is read-only input and nothing retains it: converted for the call."
+    },
+    "cui_flame_graph_ex.view": {
+      "storage": "value",
+      "why": "The pan/zoom view is an in/out record: converted for the call and written back."
+    },
+    "cui_month_calendar_ex.month": {
+      "storage": "value",
+      "why": "The shown month, converted for the call and read back when the arrows, Today or the keys move it."
+    },
+    "cui_image_viewer_ex.view": {
+      "storage": "value",
+      "why": "Zoom and centre, converted for the call and read back after panning or zooming."
+    },
+    "cui_cropper_ex.crop": {
+      "storage": "value",
+      "why": "The crop rectangle, converted for the call and read back after dragging."
+    }
+  },
+  "scopes": {
+    "cui_row_begin": {
+      "end": "cui_box_end",
+      "clicked": false,
+      "why": "Rows use the box stack and do not export a separate row_end function."
+    },
+    "cui_column_begin": {
+      "end": "cui_box_end",
+      "clicked": false,
+      "why": "Columns use the box stack and do not export a separate column_end function."
+    },
+    "cui_card_begin": {
+      "end": "cui_card_end",
+      "clicked": true,
+      "why": "The bool return reports clicked, not openness; cui_card_begin always opens its layout container."
+    }
+  },
+  "manualWidgets": {
+    "cui_icon": {
+      "why": "Drawing primitive with a theme-aware default color; retained with the manual drawing partial."
+    },
+    "cui_line_chart_ex": {
+      "why": "Charts take managed series and decimate long feeds into the frame arena; auto-decimation is Phase 2, Step 3."
+    },
+    "cui_bar_chart_ex": {
+      "why": "Charts take managed series and decimate long feeds into the frame arena; auto-decimation is Phase 2, Step 3."
+    },
+    "cui_donut_chart_ex": {
+      "why": "Charts take managed series and decimate long feeds into the frame arena; auto-decimation is Phase 2, Step 3."
+    },
+    "cui_image_create": {
+      "why": "Texture handle ownership and pixel upload belong with the typed image API in Phase 2, Step 3."
+    },
+    "cui_image_load": {
+      "why": "Texture handle ownership and out-parameters belong with the typed image API in Phase 2, Step 3."
+    },
+    "cui_image_destroy": {
+      "why": "Texture handle ownership belongs with the typed image API in Phase 2, Step 3."
+    },
+    "cui_reorder_begin": {
+      "why": "Native code keeps the order array until reorder_end; the manual wrapper owns a stable frame-arena copy and writes the managed array back on ReorderEnd."
+    },
+    "cui_reorder_item_begin": {
+      "why": "Reorder keeps a per-list build state until reorder_end, so the manual wrapper keeps the scope and write-back in one place."
+    },
+    "cui_reorder_end": {
+      "why": "Reorder end returns whether the order changed and writes the managed array back; kept with the manual reorder wrapper."
+    },
+    "cui_date_today": {
+      "why": "Returns a native cui_date without a context; DateToday() lives with the manual date helpers."
+    },
+    "cui_set_theme": {
+      "why": "The `ui.Theme` setter (Ui.Frame.cs) sits next to `ui.Accent` and `ui.ToggleTheme`; the rest of the Theme section stays excluded."
+    },
+    "cui_set_accent": {
+      "why": "The `ui.Accent` setter (Ui.Frame.cs) sits next to `ui.Theme`; the rest of the Theme section stays excluded."
+    },
+    "cui_request_redraw": {
+      "why": "Ui.RequestRedraw is the draw-time hook for animations; frame ownership itself stays with CuiSurface."
+    },
+    "cui_needs_redraw": {
+      "why": "Ui.NeedsRedraw exposes the draw-time redraw query; the rest of the frame lifecycle stays with CuiSurface."
+    },
+    "cui_input_ex": {
+      "why": "The field's storage is an unmanaged buffer per id; ui.Input/TextArea/Search own the TextFieldPool slot and decode only on change."
+    },
+    "cui_textarea_ex": {
+      "why": "The field's storage is an unmanaged buffer per id; ui.Input/TextArea/Search own the TextFieldPool slot and decode only on change."
+    },
+    "cui_search_ex": {
+      "why": "The field's storage is an unmanaged buffer per id; ui.Input/TextArea/Search own the TextFieldPool slot and decode only on change."
+    },
+    "cui_number_ex": {
+      "why": "Numeric editing binds a ref double directly; kept beside the other text fields."
+    },
+    "cui_tag_input_ex": {
+      "why": "Comma-separated tags live in the same per-id buffer pool as Input, so it shares the manual text wrappers."
+    },
+    "cui_otp_input": {
+      "why": "The one-time code lives in the per-id buffer pool with capacity length + 1."
+    },
+    "cui_terminal_ex": {
+      "why": "It draws a terminal whose buffer (text plus a line ring) the app owns: `Terminal` in Ui.Terminal.cs owns that storage and calls the raw function."
+    },
+    "cui_request_wakeup": {
+      "why": "A delayed wakeup timer: wrapped by hand in Ui.Terminal.cs as `ui.RequestWakeup(seconds)` beside the immediate RequestRedraw."
+    },
+    "cui_last_id": {
+      "why": "`ui.LastId` in Ui.Overlays.cs, next to the hand-written Id/Keyed scopes: it is the id of the widget just drawn, which the guided tour and the other point-at-this APIs take."
+    },
+    "cui_draw_rect": {
+      "why": "`ui.DrawRect` (Ui.Draw.cs): a RectF and a radius, no corners struct."
+    },
+    "cui_draw_rect_border": {
+      "why": "`ui.DrawRect(rect, fill, border, width, radius)` (Ui.Draw.cs): the border overload."
+    },
+    "cui_draw_rect_gradient": {
+      "why": "`ui.DrawRectGradient` (Ui.Draw.cs)."
+    },
+    "cui_draw_shadow": {
+      "why": "`ui.DrawShadow` (Ui.Draw.cs): blur, spread and offset as named arguments."
+    },
+    "cui_draw_line": {
+      "why": "`ui.DrawLine` (Ui.Draw.cs)."
+    },
+    "cui_draw_polyline": {
+      "why": "`ui.DrawPolyline` (Ui.Draw.cs): takes (X, Y) tuples instead of a float array."
+    },
+    "cui_draw_polygon": {
+      "why": "`ui.DrawPolygon` (Ui.Draw.cs)."
+    },
+    "cui_draw_circle": {
+      "why": "`ui.DrawCircle` (Ui.Draw.cs)."
+    },
+    "cui_draw_arc": {
+      "why": "`ui.DrawArc` (Ui.Draw.cs)."
+    },
+    "cui_draw_text": {
+      "why": "`ui.DrawText` (Ui.Draw.cs): UiText, position, size and font."
+    },
+    "cui_draw_icon": {
+      "why": "`ui.DrawIcon` (Ui.Draw.cs)."
+    },
+    "cui_draw_image": {
+      "why": "`ui.DrawImage` (Ui.Draw.cs): destination, uv, tint and radius."
+    },
+    "cui_push_clip": {
+      "why": "`ui.PushClip` and the `using (ui.Clip(rect))` scope (Ui.Draw.cs)."
+    },
+    "cui_pop_clip": {
+      "why": "`ui.PopClip`, closed by the ClipScope's Dispose (Ui.Draw.cs)."
+    },
+    "cui_canvas": {
+      "why": "`ui.Canvas` (Ui.Draw.cs): a PaintFn plus a CanvasResult with rect/hover/pressed/clicked."
+    },
+    "cui_state": {
+      "why": "`ui.State<T>(id)` (Ui.Draw.cs): a Span<T> over CUI's per-id storage."
+    },
+    "cui_animate": {
+      "why": "`ui.Animate` (Ui.Draw.cs)."
+    },
+    "cui_animate_spring": {
+      "why": "`ui.AnimateSpring` (Ui.Draw.cs)."
+    },
+    "cui_measure_text": {
+      "why": "`ui.MeasureText` (Ui.Frame.cs) returns a TextMetrics with width, height, ascent, descent and line height."
+    },
+    "cui_is_disabled": {
+      "why": "`ui.IsDisabled` (Ui.Frame.cs)."
+    },
+    "cui_push_disabled": {
+      "why": "`ui.Disabled(bool)` and `ui.Disabled(bool, body)` (Ui.Frame.cs): a DisabledScope the caller closes."
+    },
+    "cui_pop_disabled": {
+      "why": "The DisabledScope's Dispose (Ui.Frame.cs)."
+    },
+    "cui_get_rect": {
+      "why": "`ui.RectOf(id)` (Ui.Frame.cs)."
+    },
+    "cui_time": {
+      "why": "`ui.Time` (Ui.Frame.cs)."
+    },
+    "cui_delta_time": {
+      "why": "`ui.DeltaTime` (Ui.Frame.cs)."
+    },
+    "cui_frame_count": {
+      "why": "`ui.FrameCount` (Ui.Frame.cs)."
+    },
+    "cui_dpi_scale": {
+      "why": "`ui.DpiScale` (Ui.Frame.cs)."
+    },
+    "cui_mouse_pos": {
+      "why": "`ui.MousePosition` (Ui.Frame.cs)."
+    },
+    "cui_mouse_down": {
+      "why": "`ui.MouseDown(button)` (Ui.Frame.cs)."
+    },
+    "cui_mouse_clicked": {
+      "why": "`ui.MouseClicked(button)` (Ui.Frame.cs)."
+    },
+    "cui_key_down": {
+      "why": "`ui.KeyDown(key)` (Ui.Frame.cs)."
+    },
+    "cui_key_pressed": {
+      "why": "`ui.KeyPressed(key)` (Ui.Frame.cs)."
+    },
+    "cui_key_mods": {
+      "why": "`ui.Modifiers` (Ui.Frame.cs)."
+    },
+    "cui_wants_mouse": {
+      "why": "`ui.WantsMouse` (Ui.Frame.cs)."
+    },
+    "cui_get_cursor": {
+      "why": "`ui.Cursor` (Ui.Frame.cs)."
+    },
+    "cui_key_name": {
+      "why": "`Ui.KeyName(Key)` (Ui.Frame.cs): the label the UI shows for a key."
+    },
+    "cui_shortcut": {
+      "why": "`ui.Shortcut(mods, key)` (Ui.Overlays.cs): unmodified while a text field has focus."
+    },
+    "cui_wants_keyboard": {
+      "why": "`ui.WantsKeyboard` (Ui.Overlays.cs)."
+    },
+    "cui_color_of": {
+      "why": "`ui.ColorOf(color)` (Ui.Frame.cs) resolves a token to channels the frame is drawing with."
+    },
+    "cui_token_color": {
+      "why": "`ui.TokenColor(token)` (Ui.Frame.cs)."
+    },
+    "cui_oklch": {
+      "why": "`Color.Oklch(l, c, hue, alpha)` (Interop/Types.cs): the space the themes are built in."
+    },
+    "cui_mix": {
+      "why": "`Color.Mix(a, b, t)` (Interop/Types.cs)."
+    },
+    "cui_alpha": {
+      "why": "`Color.WithAlpha(multiplier)` (Interop/Types.cs)."
+    },
+    "cui_accent_name": {
+      "why": "`Ui.AccentName(accent)` (Ui.Frame.cs)."
+    },
+    "cui_get_theme_mode": {
+      "why": "`ui.Theme` getter (Ui.Frame.cs)."
+    },
+    "cui_get_accent": {
+      "why": "`ui.Accent` getter (Ui.Frame.cs)."
+    },
+    "cui_set_reduced_motion": {
+      "why": "`ui.SetReducedMotion(bool)` (Ui.Frame.cs)."
+    },
+    "cui_theme_get": {
+      "why": "`ui.TokenColor` and `CuiSurface`/`CuiApp` own the theme pointer; the raw struct stays internal."
+    },
+    "cui_make_id": {
+      "why": "`ui.MakeId(id)` (Ui.Draw.cs), also used by `ui.Id`/`ui.Keyed`."
+    },
+    "cui_push_id": {
+      "why": "`ui.Id(UiText)` returning an IdScope (Ui.Overlays.cs)."
+    },
+    "cui_push_id_int": {
+      "why": "`ui.Id(int)` returning an IdScope (Ui.Overlays.cs)."
+    },
+    "cui_pop_id": {
+      "why": "The IdScope's Dispose (Ui.IdScopes.cs)."
+    },
+    "cui_last_rect": {
+      "why": "`ui.LastRect` (Ui.Overlays.cs)."
+    },
+    "cui_last_hovered": {
+      "why": "`ui.Canvas` reports Hovered through CanvasResult; the raw id stays internal."
+    },
+    "cui_font_load_file": {
+      "why": "`ui.LoadFont(path)` (Ui.Fonts.cs)."
+    },
+    "cui_font_load_memory": {
+      "why": "`ui.LoadFont(bytes, copy)` (Ui.Fonts.cs)."
+    },
+    "cui_font_set_role": {
+      "why": "`ui.SetFont(role, font)` (Ui.Fonts.cs)."
+    },
+    "cui_font_add_fallback": {
+      "why": "`ui.AddFontFallback(font, fallback)` (Ui.Fonts.cs)."
+    },
+    "cui_date_to_days": {
+      "why": "`Date.DayNumber` (Interop/Types.cs)."
+    },
+    "cui_date_from_days": {
+      "why": "`Date.FromDayNumber(days)`, plus `Date.AddDays`/`DaysUntil` (Interop/Types.cs)."
+    },
+    "cui_create": {
+      "why": "`CuiSurface.Create` owns context creation (CuiSurface.cs)."
+    },
+    "cui_destroy": {
+      "why": "`CuiSurface.Dispose` (CuiSurface.cs)."
+    },
+    "cui_set_renderer": {
+      "why": "`CuiSurface.Create` installs the software renderer; CuiApp lets CUI pick (CuiSurface.cs)."
+    },
+    "cui_set_viewport": {
+      "why": "`CuiSurface.BeginFrame`/`Resize` (CuiSurface.cs)."
+    },
+    "cui_viewport_size": {
+      "why": "`ui.ViewportSize()` (Ui.Overlays.cs)."
+    },
+    "cui_begin_frame": {
+      "why": "`CuiSurface.BeginFrame` and CUI's own loop for a window (CuiSurface.cs)."
+    },
+    "cui_end_frame": {
+      "why": "`CuiSurface.EndFrame` (CuiSurface.cs)."
+    },
+    "cui_next_wakeup": {
+      "why": "The host loop uses it through `cui_app_frame`; `ui.RequestWakeup` sets it from draw code."
+    },
+    "cui_get_draw_data": {
+      "why": "`CuiSurface.Render` consumes it (CuiSurface.cs)."
+    },
+    "cui_app_create": {
+      "why": "`CuiApp.Create` / `CuiApp.Run` (CuiApp.cs)."
+    },
+    "cui_app_destroy": {
+      "why": "`CuiApp.Dispose` (CuiApp.cs)."
+    },
+    "cui_app_frame": {
+      "why": "`CuiApp.Frame`, the explicit loop for tools and tests (CuiApp.cs)."
+    },
+    "cui_app_ui": {
+      "why": "`CuiApp.Ui` wraps the context (CuiApp.cs)."
+    },
+    "cui_app_run": {
+      "why": "`CuiApp.Run` installs the frame callback so a modal resize keeps drawing (CuiApp.cs)."
+    },
+    "cui_app_quit": {
+      "why": "`CuiApp.Quit` and `CuiApp.RequestClose` (CuiApp.cs)."
+    },
+    "cui_app_set_title": {
+      "why": "`CuiAppOptions.Title`; `CuiApplicationBuilder.Window` updates it (CuiApp.cs)."
+    },
+    "cui_app_set_size": {
+      "why": "`CuiAppOptions.Width`/`Height` (CuiApp.cs)."
+    },
+    "cui_app_size": {
+      "why": "`CuiApp` reports the size through `Ui.ViewportSize()`."
+    },
+    "cui_app_is_software": {
+      "why": "`CuiApp.IsSoftwareRenderer` (CuiApp.cs)."
+    },
+    "cui_app_native_window": {
+      "why": "`CuiApp.NativeWindow` (CuiApp.cs)."
+    },
+    "cui_app_backend": {
+      "why": "`CuiApp.Backend` (CuiApp.cs)."
+    },
+    "cui_app_file_dialog": {
+      "why": "`CuiApp.FileDialog` (CuiApp.cs) returns the chosen path or null."
+    },
+    "cui_app_open_url": {
+      "why": "`CuiApp.OpenUrl` (CuiApp.cs)."
+    },
+    "cui_app_screenshot": {
+      "why": "`CuiApp.Screenshot` (CuiApp.cs)."
+    },
+    "cui_sw_create": {
+      "why": "`CuiSurface.Create` creates the software renderer (CuiSurface.cs)."
+    },
+    "cui_sw_destroy": {
+      "why": "`CuiSurface.Dispose` (CuiSurface.cs)."
+    },
+    "cui_sw_iface": {
+      "why": "`CuiSurface.Create` passes the interface to `cui_create` (CuiSurface.cs)."
+    },
+    "cui_sw_render": {
+      "why": "`CuiSurface.Render` (CuiSurface.cs)."
+    },
+    "cui_sw_set_threads": {
+      "why": "`CuiSurface.Create(width, height, scale, threads)` (CuiSurface.cs)."
+    },
+    "cui_sw_set_incremental": {
+      "why": "`CuiSurface.Incremental` (CuiSurface.cs): the software renderer then redraws only the damaged part of the frame."
+    },
+    "cui_sw_last_damage": {
+      "why": "`CuiSurface.LastDamage` (CuiSurface.cs) reports the rectangle the last render touched."
+    },
+    "cui_write_png": {
+      "why": "`CuiSurface` renders to a pixel buffer; PNG writing is the caller's (or `CUI_SCREENSHOT`)."
+    },
+    "cui_gl_create": {
+      "why": "CuiApp lets CUI create the GL context; CuiSharp never drives GL itself."
+    },
+    "cui_gl_destroy": {
+      "why": "CuiApp lets CUI destroy the GL context."
+    },
+    "cui_gl_iface": {
+      "why": "CuiApp lets CUI manage the GL renderer."
+    },
+    "cui_gl_render": {
+      "why": "CuiApp renders through CUI's own loop."
+    },
+    "cui_gl_read_pixels": {
+      "why": "`CuiApp.Screenshot` reads the frame back (CuiApp.cs)."
+    },
+    "cui_gl_is_software": {
+      "why": "`CuiApp.IsSoftwareRenderer` answers the same question (CuiApp.cs)."
+    },
+    "cui_terminal_init": {
+      "why": "The `Terminal` facade (Ui/Terminal.cs) owns the text block and line ring and calls it once in its constructor."
+    },
+    "cui_terminal_write": {
+      "why": "`Terminal.Write`/`WriteLine` (Ui/Terminal.cs) call it with the pooled UTF-8 bytes."
+    },
+    "cui_terminal_clear": {
+      "why": "`Terminal.Clear` (Ui/Terminal.cs)."
+    },
+    "cui_log_init": {
+      "why": "The `LogBuffer` facade (Ui/LogBuffer.cs) owns the line ring and text block and calls it once in its constructor."
+    },
+    "cui_log_append_text": {
+      "why": "`LogBuffer.Append`/`AppendLine` (Ui/LogBuffer.cs). The variadic `cui_log_append` stays skipped: C# formats first."
+    },
+    "cui_log_clear": {
+      "why": "`LogBuffer.Clear` (Ui/LogBuffer.cs)."
+    },
+    "cui_log_get": {
+      "why": "`LogBuffer.Text()` (Ui/LogBuffer.cs) walks the ring through it."
+    },
+    "cui_log_view_ex": {
+      "why": "`ui.LogView(id, log, opts)` (Ui/Ui.Log.cs)."
+    },
+    "cui_curve_eval": {
+      "why": "`CuiMath.EvaluateCurve(keys, x)` (Ui/CuiMath.cs): the same evaluation the curve editor draws with."
+    },
+    "cui_gradient_eval": {
+      "why": "`CuiMath.EvaluateGradient(stops, t)` (Ui/CuiMath.cs)."
+    },
+    "cui_diff_words": {
+      "why": "`CuiMath.DiffWords(old, new)` (Ui/CuiMath.cs) returns the changed byte ranges, or null when marks would not help."
+    },
+    "cui_input_mouse_move": {
+      "why": "Platform input: the Win32/X11/Cocoa backends feed it for a window, and `CuiSurface.MouseMove` feeds it headless (CuiSurface.Input.cs)."
+    },
+    "cui_input_mouse_button": {
+      "why": "`CuiSurface.MouseDown`/`MouseUp`/`Click` (CuiSurface.Input.cs); the backends call it for a window."
+    },
+    "cui_input_mouse_leave": {
+      "why": "`CuiSurface.MouseLeave` (CuiSurface.Input.cs)."
+    },
+    "cui_input_scroll": {
+      "why": "`CuiSurface.Scroll(dy, dx)` (CuiSurface.Input.cs)."
+    },
+    "cui_input_key": {
+      "why": "`CuiSurface.KeyDown`/`KeyUp(key, mods)` (CuiSurface.Input.cs)."
+    },
+    "cui_input_text": {
+      "why": "`CuiSurface.Type(text)` (CuiSurface.Input.cs) delivers UTF-8 as the keyboard layout would."
+    },
+    "cui_input_focus": {
+      "why": "`CuiSurface.Focus(bool)` (CuiSurface.Input.cs)."
+    },
+    "cui_input_file_hover": {
+      "why": "`CuiSurface.FileHover(x, y)` and `FileHoverEnd()` (CuiSurface.Input.cs)."
+    },
+    "cui_input_file_drop": {
+      "why": "`CuiSurface.FileDrop(paths, x, y)` (CuiSurface.Input.cs)."
+    },
+    "cui_dropped_file_count": {
+      "why": "`CuiSurface.DroppedFileCount` (CuiSurface.Input.cs)."
+    },
+    "cui_dropped_file": {
+      "why": "`CuiSurface.DroppedFile(index)` (CuiSurface.Input.cs)."
+    },
+    "cui_file_drag_active": {
+      "why": "`CuiSurface.FileDragActive` (CuiSurface.Input.cs)."
+    },
+    "cui_diff_compute": {
+      "why": "`CuiMath.DiffLines(old, new)` (Ui/CuiMath.cs) returns the hunks and the stats, including whether the diff had to approximate."
+    },
+    "cui_path_has_extension": {
+      "why": "`CuiMath.PathMatches(path, filter)` (Ui/CuiMath.cs): the same matching rule the file picker applies to `*.png;*.jpg`."
+    },
+    "cui_hex_view_ex": {
+      "why": "`ui.HexView(id, Span<byte>, ref HexSelection, opts)` (Ui/Ui.Hex.cs) pins the caller's own memory, so a typed byte lands in the array the caller holds; the generated read-only overload copies into the frame arena."
+    },
+    "cui_fs_list": {
+      "why": "`CuiFiles.ListDirectory(path)` (Ui/CuiFiles.cs) fills the entries and parses the name blob, sorted directories first; the file browser passes it to native as its own default lister."
+    },
+    "cui_flame_sort": {
+      "why": "`CuiFiles.SortFlameSpans(spans)` (Ui/CuiFiles.cs) sorts a caller's FlameSpan array in place."
+    },
+    "cui_markdown_apply_task": {
+      "why": "`MarkdownText.ToggleTask(ref text, offset, result)` (Ui/CuiMath.cs) flips the checkbox an interactive markdown view reported."
+    },
+    "cui_diff_view_rows": {
+      "why": "`ui.DiffRows(id, Span<DiffRow>)` (Ui/Ui.Diff.cs) copies the live view's rows into the caller's span and returns the total, so a custom renderer or a test can read them without allocating."
+    },
+    "cui_tree_table_begin_ex": {
+      "why": "`ui.TreeTable(id, columns, nodes, row, …)` (Ui/Ui.TreeTable.cs) pins the caller's `TreeNode[]` so the table's open/selected/loading writes land in it, and rents the label delegate through the frame-callback bridge."
+    },
+    "cui_tree_table_end": {
+      "why": "`ui.TreeTable` returns its `TreeTableEvents`, with the lazy-load ids copied out of frame memory (Ui/Ui.TreeTable.cs)."
+    },
+    "cui_tree_sort": {
+      "why": "`CuiTree.Sort(nodes, root, compare)` (Ui/Ui.TreeTable.cs) passes a comparator through the frame-callback bridge and relinks every sibling list in place."
+    },
+    "cui_state_on_free": {
+      "why": "`ui.State<T>(id, onFree)` (Ui.Draw.cs) reserves a state block whose header holds the callback, and the frame-callback bridge supplies the disposer CUI calls when it evicts that id."
+    }
+  },
+  "outParams": {
+    "cui_virtual_list_begin.first": {
+      "why": "The header documents that the visible range is filled in, so an out parameter is the honest shape."
+    },
+    "cui_virtual_list_begin.last": {
+      "why": "The header documents that the visible range is filled in, so an out parameter is the honest shape."
+    },
+    "cui_image_compare_ex.pos": {
+      "why": "Before/after slider position: the widget drags it, so the wrapper takes it as out and returns the new value."
+    },
+    "cui_waveform_ex.progress": {
+      "why": "Playback position: clicking the waveform seeks, so the wrapper takes it as out and returns the new value."
+    }
+  },
+  "excludedModules": {
+    "Context and frame": {
+      "why": "Frame lifecycle belongs to CuiSurface/CuiApp, not to a draw-time Ui value."
+    },
+    "Input (called by the platform layer)": {
+      "why": "Platform input is delivered by the window backend and the test harness, not by draw code."
+    },
+    "cui_app": {
+      "why": "Window/app ownership belongs to CuiApp; CuiSurface exposes the supported subset."
+    },
+    "cui_render": {
+      "why": "Renderer interfaces are consumed by CuiSurface and the software raster path, not by Ui."
+    },
+    "Draw data (consumed by renderers)": {
+      "why": "Draw data is consumed by external renderers; CuiSurface exposes it."
+    },
+    "Identity": {
+      "why": "ui.Id/Keyed id scopes are hand-written in Step 3 with the extension composition API; raw push/pop stay internal."
+    },
+    "Custom drawing": {
+      "why": "Drawing primitives keep ergonomic overloads (radius, RectF, Color) in the manual drawing partial."
+    },
+    "Fonts": {
+      "why": "Font loading and measuring belong to CuiSurface/CuiApp bootstrapping, not to per-frame draw code."
+    },
+    "Theme": {
+      "why": "Theme control belongs to CuiApp (SetTheme/SetAccent); Ui keeps request-redraw only."
+    }
+  },
+  "recordNames": {
+    "cui_choice": {
+      "name": "Choice",
+      "why": "Radio card items are built by callers as a small immutable record, not a native array entry."
+    },
+    "cui_command": {
+      "name": "Command",
+      "why": "Command palette rows are built by callers as a small record with optional icon, group and shortcut."
+    },
+    "cui_table_column": {
+      "name": "TableColumn",
+      "why": "Table columns are built by callers; the friendly record keeps Size/TextAlign/bool instead of the native field types."
+    },
+    "cui_table_sort": {
+      "name": "TableSort",
+      "why": "The sort state is caller-owned and round-trips through the table wrapper, so it needs a writable friendly record."
+    },
+    "cui_viz_item": {
+      "name": "VizItem",
+      "why": "One slice, stage, tile or ring: a label, a value and a color. Copied into the frame arena by the wrapper."
+    },
+    "cui_tab_bar_item": {
+      "name": "TabBarItem",
+      "why": "One tab: icon, label and badge. Copied into the frame arena by the wrapper."
+    },
+    "cui_reaction": {
+      "name": "Reaction",
+      "why": "One emoji reaction with its count and state; read back after the widget runs."
+    },
+    "cui_speed_action": {
+      "name": "SpeedAction",
+      "why": "One fan-out action: icon and label. Copied into the frame arena by the wrapper."
+    },
+    "cui_ticker_item": {
+      "name": "TickerItem",
+      "why": "One scrolling ticker entry. Copied into the frame arena by the wrapper."
+    },
+    "cui_plan_step": {
+      "name": "PlanStep",
+      "why": "One step of an agent plan: title, detail, status. Copied into the frame arena by the wrapper."
+    },
+    "cui_source": {
+      "name": "Source",
+      "why": "One document an answer used: title, url, snippet. Copied into the frame arena by the wrapper."
+    },
+    "cui_prompt_suggestion": {
+      "name": "PromptSuggestion",
+      "why": "One suggested prompt: icon, title, detail. Copied into the frame arena by the wrapper."
+    },
+    "cui_model": {
+      "name": "Model",
+      "why": "One model in the picker: name, detail, badge, icon. Copied into the frame arena by the wrapper."
+    },
+    "cui_toc_item": {
+      "name": "TocItem",
+      "why": "One table-of-contents entry: title, anchor, level. Copied into the frame arena by the wrapper."
+    },
+    "cui_check_step": {
+      "name": "CheckStep",
+      "why": "One checklist step with a done flag; read back after the widget runs."
+    },
+    "cui_cal_event": {
+      "name": "CalendarEvent",
+      "why": "One calendar entry; the widget only reads it, so the wrapper copies it."
+    },
+    "cui_gantt_task": {
+      "name": "GanttTask",
+      "why": "One gantt row; the widget only reads it, so the wrapper copies it."
+    },
+    "cui_diff_row": {
+      "name": "DiffRow",
+      "why": "One diff row: kind, line numbers, change group and fold size."
+    },
+    "cui_grid_column": {
+      "name": "GridColumn",
+      "why": "One data-grid column: title, width, alignment, sorting and priority."
+    },
+    "cui_sankey_link": {
+      "name": "SankeyLink",
+      "why": "One sankey edge: from, to, value."
+    },
+    "cui_path_bar_result": {
+      "name": "PathBarResult",
+      "why": "What a path bar reported this frame: clicked segment, submitted text, editing state."
+    },
+    "cui_markdown_result": {
+      "name": "MarkdownResult",
+      "why": "What a markdown view reported: clicked link, hovered link, toggled task box."
+    },
+    "cui_code_editor_result": {
+      "name": "CodeEditorResult",
+      "why": "Editor state after the frame: changed/refused/focused, caret, selection, bracket match."
+    },
+    "cui_diff_result": {
+      "name": "DiffResult",
+      "why": "Diff summary after the frame: counts, current change, folds."
+    },
+    "cui_flame_result": {
+      "name": "FlameResult",
+      "why": "What a flame graph reported: selection and view changes, hovered and zoomed span."
+    },
+    "cui_curve_result": {
+      "name": "CurveResult",
+      "why": "Curve editor state: changed keys, selection, hover position."
+    },
+    "cui_gradient_result": {
+      "name": "GradientResult",
+      "why": "Gradient editor state: changed stops and the selection."
+    },
+    "cui_doc_tabs_result": {
+      "name": "DocTabsResult",
+      "why": "What document tabs reported: selection change, tab to close, tab moved."
+    },
+    "cui_doc_tab": {
+      "name": "DocTab",
+      "why": "One document tab: title, icon, tooltip, dirty flag. Copied into the frame arena by the wrapper."
+    },
+    "cui_flame_span": {
+      "name": "FlameSpan",
+      "why": "One flame-graph span: name, start, end, depth, color key. Copied into the frame arena by the wrapper."
+    },
+    "cui_hex_selection": {
+      "name": "HexSelection",
+      "why": "A hex-view selection: start, length and cursor. Written back after the widget runs."
+    },
+    "cui_now_playing": {
+      "name": "NowPlayingState",
+      "why": "A player's state: title, artist, art, position, duration, playing. Written back after the widget runs."
+    },
+    "cui_date_range": {
+      "name": "DateRange",
+      "why": "A start and end date. Written back after the widget runs."
+    },
+    "cui_key_combo": {
+      "name": "KeyCombo",
+      "why": "A recorded shortcut: modifiers and key. Written back after the recorder runs."
+    },
+    "cui_node_view": {
+      "name": "NodeView",
+      "why": "Node-editor pan and zoom. Written back after the editor runs."
+    },
+    "cui_filter_field": {
+      "name": "FilterField",
+      "why": "One filter field: name, icon and its options. Copied into the frame arena by the wrapper."
+    },
+    "cui_series": {
+      "name": "Series",
+      "why": "One chart series: name, samples, color. Copied into the frame arena by the wrapper; the sample count is the array length."
+    },
+    "cui_presence_user": {
+      "name": "PresenceUser",
+      "why": "One presence avatar: name, color, texture, idle flag. Copied into the frame arena by the wrapper."
+    },
+    "cui_hex_result": {
+      "name": "HexResult",
+      "why": "What a hex view reported: selection, flags, edit range, hovered byte."
+    },
+    "cui_flame_view": {
+      "name": "FlameView",
+      "why": "Flame-graph pan and zoom. Written back after the graph runs."
+    },
+    "cui_vec2": {
+      "name": "Vec2",
+      "why": "A point: x and y. Used by scatter series and path data."
+    },
+    "cui_curve_key": {
+      "name": "CurveKey",
+      "why": "One curve key: position, handles, mode. The curve editor writes the array back."
+    },
+    "cui_gradient_stop": {
+      "name": "GradientStop",
+      "why": "One gradient stop: position and color. The gradient editor writes the array back."
+    },
+    "cui_log_line": {
+      "name": "LogLine",
+      "why": "One log line read back from a log buffer."
+    },
+    "cui_timeline_editor_result": {
+      "name": "TimelineEditorResult",
+      "why": "What a timeline editor reported: changes, scrub state, playback, selection."
+    },
+    "cui_kanban_move": {
+      "name": "KanbanMove",
+      "why": "A card moved between columns: card, from, to, index."
+    },
+    "cui_timeline_view": {
+      "name": "TimelineView",
+      "why": "Editor pan and zoom: scroll position, zoom and track height."
+    },
+    "cui_swipe_action": {
+      "name": "SwipeAction",
+      "why": "One swipe action: icon, label and tone. Copied into the frame arena by the wrapper."
+    },
+    "cui_scatter_series": {
+      "name": "ScatterSeries",
+      "why": "One scatter series: name, points, sizes, color. Copied into the frame arena by the wrapper."
+    },
+    "cui_hex_range": {
+      "name": "HexRange",
+      "why": "One highlighted byte range: offset, length and color."
+    },
+    "cui_gauge_band": {
+      "name": "GaugeBand",
+      "why": "One radial gauge band: everything up to `to` takes the band's tone."
+    },
+    "cui_candle": {
+      "name": "Candle",
+      "why": "One candlestick: open, high, low, close and volume."
+    },
+    "cui_tour_step": {
+      "name": "TourStep",
+      "why": "One guided-tour step: the target control and where its card sits."
+    },
+    "cui_month_event": {
+      "name": "MonthEvent",
+      "why": "One all-day or timed event on the month calendar."
+    },
+    "cui_month_result": {
+      "name": "MonthResult",
+      "why": "What the month calendar reported this frame."
+    },
+    "cui_file_entry": {
+      "name": "FileEntry",
+      "why": "One directory entry as `cui_fs_list` describes it."
+    },
+    "cui_file_browser_result": {
+      "name": "FileBrowserResult",
+      "why": "What the file browser reported this frame."
+    },
+    "cui_terminal_result": {
+      "name": "TerminalResult",
+      "why": "The line the terminal accepted this frame."
+    },
+    "cui_image_view": {
+      "name": "ImageView",
+      "why": "An image viewer's zoom and centre, in image pixels."
+    }
+  },
+  "extraOptionFields": {
+    "cui_chart_opts": [
+      {
+        "name": "MaxPoints",
+        "type": "int",
+        "why": "Upper bound on drawn points. 0 derives twice the viewport width; longer series are min/max decimated into the frame arena."
+      }
+    ]
+  },
+  "excludedFunctions": {
+    "cui_diff_compute": {
+      "why": "C helper: computes a diff into caller memory. Not a frame call; the widgets that show a diff wrap it."
+    },
+    "cui_diff_words": {
+      "why": "C helper: word-level diff for the inline diff view. Internal to cui_diff_compute."
+    },
+    "cui_tree_sort": {
+      "why": "Sorts a caller-owned `cui_tree_node` model through a `int (*cmp)(void *, int, int)` comparator: a managed-delegate bridge with an owned GCHandle, for a model whose nodes the C# side does not wrap yet (the tree table draws from `Tree`)."
+    },
+    "cui_markdown_apply_task": {
+      "why": "C helper: applies a task-box toggle to markdown text. Model manipulation, not drawing."
+    },
+    "cui_date_to_days": {
+      "why": "C helper: date to day number. Belongs in a static utility class with the rest of the date maths."
+    },
+    "cui_date_from_days": {
+      "why": "C helper: day number to date. Belongs in a static utility class with the rest of the date maths."
+    },
+    "cui_key_name": {
+      "why": "C helper: key code to display name. A static utility, and the widgets that need it already print the name."
+    },
+    "cui_flame_sort": {
+      "why": "C helper: sorts flame spans by weight. Data preparation, not drawing."
+    },
+    "cui_curve_eval": {
+      "why": "C helper: evaluates a curve at x. Data preparation for custom drawing; the editor wraps what it needs."
+    },
+    "cui_gradient_eval": {
+      "why": "C helper: evaluates a gradient at t. Data preparation for custom drawing."
+    },
+    "cui_log_init": {
+      "why": "Log writer with process-wide state: belongs in a separate logging facade, not on a frame-local Ui."
+    },
+    "cui_log_appendv": {
+      "why": "Takes a C `va_list`, which a managed caller cannot supply. `LogBuffer.AppendLine` formats in C# and calls `cui_log_append_text`, the same entry point without the variadic wrapper."
+    },
+    "cui_log_append_text": {
+      "why": "Log writer with process-wide state: belongs in a separate logging facade, not on a frame-local Ui."
+    },
+    "cui_log_clear": {
+      "why": "Log writer with process-wide state: belongs in a separate logging facade, not on a frame-local Ui."
+    },
+    "cui_log_get": {
+      "why": "Log writer with process-wide state: belongs in a separate logging facade, not on a frame-local Ui."
+    },
+    "cui_path_has_extension": {
+      "why": "C helper: string test. Nothing to wrap on a Ui."
+    },
+    "cui_signature_points": {
+      "why": "Takes a caller-built `const cui_vec2 **`, i.e. a jagged C array. Signature capture is not needed by any sample; wrapping it would need an ownership rule nothing uses yet."
+    },
+    "cui_diff_view_rows": {
+      "why": "Fills a caller-owned array of diff rows for a custom renderer. The diff view already wraps the same layout; an array out-parameter needs a copy-back rule nothing uses yet."
+    },
+    "cui_log_view_ex": {
+      "why": "Renders a log buffer whose layout is a `cui_log_buffer` with internal ring pointers: it belongs with the log writer facade, not on a frame-local Ui."
+    },
+    "cui_timeline_editor_ex": {
+      "why": "A timeline track holds three nested arrays (keys, clips, selections), so the record would need array-of-record support one level deeper than the generator has. Available through the raw layer."
+    },
+    "cui_hex_view_ex": {
+      "why": "Its options point at writable bytes the view overwrites in place. That is a caller-owned buffer contract the wrapper cannot police; the hex viewer stays available through the raw layer, and `HexResult`/`HexSelection` are still exposed."
+    },
+    "cui_fs_list": {
+      "why": "The default directory reader. It fills a caller-owned entry array and name blob for `cui_file_browser_ex`; an app that browses the filesystem uses the browser, and one that does not gets it from the facade."
+    },
+    "cui_terminal_init": {
+      "why": "Fills a caller-owned terminal buffer (`char *text` plus a line array). CuiSharp's `Terminal` facade owns that storage; see Ui.Terminal.cs."
+    },
+    "cui_terminal_write": {
+      "why": "Appends to a caller-owned terminal buffer. Exposed through the `Terminal` facade, which owns the buffer and keeps it valid."
+    },
+    "cui_terminal_clear": {
+      "why": "Resets a caller-owned terminal buffer. Exposed through the `Terminal` facade."
+    },
+    "cui_state_on_free": {
+      "why": "Registers a `void (*)(cui_ctx *, void *)` disposer for per-id state: a managed-delegate bridge with an owned GCHandle, which the wrapper does not offer yet."
+    },
+    "cui_tree_table_begin_ex": {
+      "why": "Its `_end` returns a `cui_tree_table_events` struct holding a frame-memory `const int *load` plus its count: a record cannot carry a span, and copying it into an array every frame would allocate on the hot path. Rows, names and depths are wrapped; the lazy-load list stays raw."
+    }
+  },
+  "arrayLengths": {
+    "cui_heatmap_ex.values": {
+      "length": "rows * cols",
+      "cast": "int",
+      "emit": false,
+      "why": "A matrix arrives row-major and native derives the length from rows*cols, so the wrapper only checks it."
+    },
+    "cui_calendar_heatmap_ex.values": {
+      "length": "days",
+      "cast": "int",
+      "why": "One value per day: the length is the days parameter."
+    },
+    "cui_hex_view_ex.data": {
+      "length": "size",
+      "cast": "nuint",
+      "why": "The byte count is `size` (a size_t), not a count parameter."
+    },
+    "cui_level_meter_ex.levels": {
+      "length": "channels",
+      "cast": "int",
+      "emit": false,
+      "why": "One peak per channel, and `channels` is already a parameter: the wrapper checks the array against it."
+    }
+  },
+  "stringResults": {
+    "cui_shortcut_label": {
+      "why": "Returns a formatted shortcut in CUI frame memory: the wrapper copies it into a managed string."
+    },
+    "cui_emoji_picker_ex": {
+      "why": "Returns the picked emoji as a UTF-8 string in frame memory, or NULL while nothing is picked."
+    }
+  },
+  "textFields": {
+    "cui_inline_edit_ex.buf": {
+      "capacity": "cap",
+      "why": "An editable label: the text is a pooled string the caller owns, and CUI edits it in place."
+    },
+    "cui_code_editor_ex.buf": {
+      "capacity": "cap",
+      "why": "An editor over a caller-owned string; the text comes back on the frames the editor changed it."
+    },
+    "cui_chat_composer_ex.buf": {
+      "capacity": "cap",
+      "why": "A composer over a caller-owned string; the flags say whether the text changed."
+    },
+    "cui_filter_bar.search": {
+      "capacity": "search_cap",
+      "why": "The filter bar's search box, as a pooled string."
+    },
+    "cui_data_grid_edit.buf": {
+      "capacity": "cap",
+      "id": "buf",
+      "why": "The grid's inline editor before it starts; its own id because the function has none."
+    },
+    "cui_data_grid_cell_edit.buf": {
+      "capacity": "cap",
+      "id": "buf",
+      "why": "The cell editor's text; its own id because the function has none."
+    },
+    "cui_dock_save.buf": {
+      "capacity": "cap",
+      "id": "id",
+      "why": "The dock layout as a string the caller can persist; written when the layout fits."
+    },
+    "cui_prop_text_ex.buf": {
+      "capacity": "cap",
+      "id": "label",
+      "why": "A property row's editable text, keyed by its label."
+    },
+    "cui_file_browser_ex.path": {
+      "capacity": "path_cap",
+      "why": "The folder being browsed: the widget navigates it, so the wrapper rents it, passes it, and reads it back."
+    },
+    "cui_file_picker_ex.out": {
+      "capacity": "out_cap",
+      "why": "The picked path is written into this buffer when the dialog closes."
+    }
+  },
+  "scopeResults": {
+    "cui_swipe_item_begin": {
+      "type": "int",
+      "why": "The end call reports which swipe action was taken, or -1, so the body overload returns it."
+    },
+    "cui_card_stack_begin": {
+      "type": "int",
+      "why": "The end call reports which card in the stack is active, or -1, so the body overload returns it."
+    },
+    "cui_reorder_item_begin": {
+      "type": "int",
+      "why": "The end call reports the item's new position, or -1 when it did not move."
+    },
+    "cui_kanban_begin": {
+      "type": "bool",
+      "out": "KanbanMove",
+      "why": "The card was dropped into another column, and the move is written into the out parameter."
+    }
+  },
+  "optionPointers": {
+    "cui_grid_opts.selected": {
+      "type": "bool",
+      "why": "The selected row: the grid moves it, so the wrapper takes a ref bool and writes it back."
+    },
+    "cui_diff_opts.current": {
+      "type": "int",
+      "why": "The current change: the view moves it with the keys, so the wrapper writes it back."
+    },
+    "cui_comment_opts.likes": {
+      "type": "int",
+      "why": "The like count: clicking the reaction changes it, so the wrapper writes it back."
+    },
+    "cui_response_actions_opts.vote": {
+      "type": "int",
+      "why": "The vote: -1, 0 or 1, changed by the buttons, so the wrapper writes it back."
+    },
+    "cui_composer_opts.removed": {
+      "type": "int",
+      "why": "The attachment whose x was clicked, or -1: written back after the composer runs."
+    },
+    "cui_tool_opts.toggle": {
+      "type": "bool",
+      "why": "The switch state of a tool row, written back after the widget runs."
+    },
+    "cui_curve_opts.selected": {
+      "type": "int",
+      "why": "The selected curve key, written back after the editor runs."
+    },
+    "cui_gradient_opts.selected": {
+      "type": "int",
+      "why": "The selected gradient stop, written back after the editor runs."
+    },
+    "cui_tree_table_opts.cursor": {
+      "type": "int",
+      "why": "The focused row, moved by the keys: the wrapper writes it back."
+    },
+    "cui_comment_opts.liked": {
+      "type": "bool",
+      "why": "Whether the comment is liked, toggled by the button: the wrapper writes it back."
+    },
+    "cui_timeline_editor_opts.in": {
+      "type": "float",
+      "why": "The in-point of the selection, moved by dragging: the wrapper writes it back."
+    },
+    "cui_grid_opts.cursor": {
+      "type": "int",
+      "why": "The focused cell, moved by the keys: the wrapper writes it back."
+    },
+    "cui_timeline_editor_opts.out": {
+      "type": "float",
+      "why": "The out-point of the selection, moved by dragging: the wrapper writes it back."
+    },
+    "cui_grid_opts.anchor": {
+      "type": "int",
+      "why": "The anchor row of a range selection, moved by shift-click: the wrapper writes it back."
+    },
+    "cui_composer_opts.model": {
+      "type": "int",
+      "why": "The chosen model index, changed by the model picker: the wrapper writes it back."
+    },
+    "cui_timeline_editor_opts.current_track": {
+      "type": "int",
+      "why": "The focused track, moved by the keys: the wrapper writes it back."
+    },
+    "cui_timeline_editor_opts.current_key": {
+      "type": "int",
+      "why": "The focused key, moved by the keys: the wrapper writes it back."
+    },
+    "cui_month_opts.selected": {
+      "type": "Date",
+      "why": "The selected day, which the calendar both reads and sets: `ref Date` beside the options."
+    },
+    "cui_emoji_picker_opts.tone": {
+      "type": "int",
+      "why": "The skin tone the picker changes (0 none .. 5 dark): `ref int` beside the options."
+    }
+  },
+  "arrayParams": {
+    "left@cui_swipe_item_begin": {
+      "why": "A swipe row takes both action arrays by pointer, with left_count and right_count as their lengths; the singular name alone reads as one value."
+    },
+    "right@cui_swipe_item_begin": {
+      "why": "A swipe row takes both action arrays by pointer, with left_count and right_count as their lengths; the singular name alone reads as one value."
+    },
+    "stages@cui_funnel_ex": {
+      "why": "Funnel stages are an array despite the singular name; count follows."
+    },
+    "series@cui_scatter_chart_ex": {
+      "why": "Scatter series are an array of records; count follows."
+    }
+  },
+  "optionArrayChecks": {
+    "cui_heatmap_opts.row_labels": {
+      "atLeast": "rows",
+      "why": "One label per row: native reads `rows` entries, so the wrapper rejects a short array."
+    },
+    "cui_heatmap_opts.col_labels": {
+      "atLeast": "cols",
+      "why": "One label per column: native reads `cols` entries, so the wrapper rejects a short array."
+    },
+    "cui_candlestick_opts.labels": {
+      "atLeast": "candles.Length",
+      "why": "One axis label per candle: native reads `count` labels, so the wrapper rejects a shorter array."
+    },
+    "cui_month_opts.month_names": {
+      "atLeast": "12",
+      "why": "Twelve month names, January first: native reads all twelve, so the wrapper rejects a shorter array."
+    },
+    "cui_emoji_picker_opts.group_names": {
+      "atLeast": "10",
+      "why": "Ten group names, recent first: native reads all ten, so the wrapper rejects a shorter array."
+    },
+    "cui_month_opts.day_names": {
+      "atLeast": "7",
+      "why": "Seven short day names, Monday first: native reads all seven, so the wrapper rejects a shorter array."
+    }
+  },
+  "inOutArrays": {
+    "cui_curve_editor_ex.keys": {
+      "count": "count",
+      "why": "The editor moves, adds and removes keys: the wrapper copies the array and its count back."
+    },
+    "cui_gradient_editor_ex.stops": {
+      "count": "count",
+      "why": "The editor moves, adds and removes stops: the wrapper copies the array and its count back."
+    }
+  },
+  "hiddenOptionFields": {
+    "cui_file_browser_opts.list": {
+      "why": "A `cui_file_list_fn` callback for a custom directory source. Left null, native uses its own `cui_fs_list`, which is what an app wants."
+    },
+    "cui_file_browser_opts.list_user": {
+      "why": "The `void *` handed to the list callback above."
+    },
+    "cui_file_picker_opts.list": {
+      "why": "A `cui_file_list_fn` callback for a custom directory source. Left null, native uses its own `cui_fs_list`."
+    },
+    "cui_file_picker_opts.list_user": {
+      "why": "The `void *` handed to the list callback above."
+    },
+    "cui_hex_view_opts.edit": {
+      "why": "Writable bytes the view overwrites in place. The wrapper copies `Data` into the frame arena (so it stays valid for the call), which means an in-place edit would be written to a copy and lost; the read-only viewer works, editing needs the raw layer until the view owns its buffer."
+    },
+    "cui_tree_table_opts.label": {
+      "why": "A C function pointer: `ui.TreeTable(..., label)` passes it and its user pointer through the frame-callback bridge, so the struct field stays zero here (Ui/Ui.TreeTable.cs)."
+    },
+    "cui_tree_table_opts.user": {
+      "why": "The `void *` for the label callback above; the bridge supplies the GCHandle address for it."
+    }
+  },
+  "optionFieldCounts": {
+    "cui_fader_opts.meter": {
+      "count": "meter_channels",
+      "why": "The fader's meter takes `meter_channels` peaks, not `meter_count`."
+    }
+  },
+  "optionTextFields": {
+    "cui_emoji_picker_opts.recent": {
+      "capacity": 512,
+      "why": "The picker keeps the app's recent list, newest first: the wrapper rents a pooled buffer, passes it, and reads the edited list back."
+    }
+  },
+  "constantArgs": {
+    "cui_emoji_supported.len": {
+      "value": "-1",
+      "why": "The wrapper NUL-terminates the string it passes, and native reads a negative length as `up to the terminator`."
+    },
+    "cui_draw_emoji.len": {
+      "value": "-1",
+      "why": "The wrapper NUL-terminates the string it passes, and native reads a negative length as `up to the terminator`."
+    }
+  },
+  "itemLists": {
+    "cui_segmented_ex": {
+      "kind": "Segment",
+      "items": "items",
+      "index": "index",
+      "why": "Each segment is its own control: a test clicks 'Dark', not the middle of the strip."
+    },
+    "cui_tabs_ex": {
+      "kind": "Tab",
+      "items": "items",
+      "index": "index",
+      "why": "Each tab is its own control: a test clicks 'Markets', not the middle of the strip."
+    }
+  }
+}

@@ -1,0 +1,72 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!--
+      net10.0 only. The library is statically linked into the app by NativeAOT,
+      so a net10 build also serves an app that targets a later TFM.
+    -->
+    <TargetFramework>net10.0</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>CuiSharp</RootNamespace>
+    <AssemblyName>CuiSharp</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsAotCompatible>true</IsAotCompatible>
+    <IsTrimmable>true</IsTrimmable>
+    <!-- Not every public member carries a doc comment yet; uncomment to enforce. -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>CuiSharp</PackageId>
+    <Title>CuiSharp - CUI for .NET</Title>
+    <Description>Idiomatic C# bindings for CUI, the 160-component native UI library written in C99. Immediate-mode UI in C#, no XAML and no managed UI framework, with a 1.5 MB NativeAOT single-file output.</Description>
+    <PackageTags>cui;ui;gui;native;nativeaot;win32;immediate-mode;interop;desktop</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <!-- Native artifacts, built by native/build-native.ps1. Not committed to git. -->
+  <PropertyGroup>
+    <CuiNativeDir>$(MSBuildThisFileDirectory)..\..\native\</CuiNativeDir>
+  </PropertyGroup>
+
+  <ItemGroup Condition="Exists('$(CuiNativeDir)cui.dll')">
+    <None Include="$(CuiNativeDir)cui.dll" Pack="true" PackagePath="runtimes/win-x64/native/" Visible="false" />
+    <!-- The static archive lets a consumer's NativeAOT build link CUI in. -->
+    <None Include="$(CuiNativeDir)cui.lib" Pack="true" PackagePath="runtimes/win-x64/native/" Visible="false" />
+  </ItemGroup>
+
+  <!--
+    Hosting (builder, Component, Mutation) ships inside this package. Trimming and
+    NativeAOT remove it — and its dependency — from apps that never reference it,
+    which is why it does not need a package of its own.
+  -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.11" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="CuiSharp.Tests" />
+    <InternalsVisibleTo Include="CuiSharp.Benchmarks" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="build\CuiSharp.targets" Pack="true" PackagePath="build/" />
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)../CuiSharp.Analyzers/CuiSharp.Analyzers.csproj"
+                      ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
+    <None Include="$(MSBuildThisFileDirectory)../CuiSharp.Analyzers/bin/$(Configuration)/netstandard2.0/CuiSharp.Analyzers.dll"
+          Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"
+          Condition="Exists('$(MSBuildThisFileDirectory)../CuiSharp.Analyzers/bin/$(Configuration)/netstandard2.0/CuiSharp.Analyzers.dll')" />
+  </ItemGroup>
+
+  <Target Name="CuiSharpWarnMissingNative" BeforeTargets="Pack" Condition="!Exists('$(CuiNativeDir)cui.dll')">
+    <Warning Text="native/cui.dll not found - the package will contain managed code only. Run native/build-native.ps1 first." />
+  </Target>
+
+</Project>

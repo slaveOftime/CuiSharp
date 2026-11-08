@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="CuiSharp.App/CuiSharp.App.csproj" />
+  <Project Path="CuiSharp.App.Tests/CuiSharp.App.Tests.csproj" />
+</Solution>

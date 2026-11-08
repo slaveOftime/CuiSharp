@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <AssemblyName>CuiSharp.Tests</AssemblyName>
+    <RootNamespace>CuiSharp.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <!-- Compiler-contract tests only; never a dependency of the core package. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" PrivateAssets="all" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CuiSharp\CuiSharp.csproj" />
+    <ProjectReference Include="..\CuiSharp.Testing\CuiSharp.Testing.csproj" />
+    <ProjectReference Include="..\CuiSharp.Tools\CuiSharp.Tools.csproj" />
+    <!-- The analyzer tests run the rules over source strings; the analyzer is not itself loaded as one. -->
+    <ProjectReference Include="..\CuiSharp.Analyzers\CuiSharp.Analyzers.csproj" ReferenceOutputAssembly="true" OutputItemType="Default" />
+  </ItemGroup>
+
+  <!-- Headless rendering tests need the native library; they skip when it is absent. -->
+  <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)../../native/cui.dll')">
+    <None Include="../../native/cui.dll" Link="cui.dll" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)../../native/libcui.so')">
+    <None Include="../../native/libcui.so" Link="libcui.so" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+
+  <!-- The template's own files, so a test can check that its pinned version tracks the package. -->
+  <ItemGroup>
+    <None Include="..\CuiSharp.Templates\CuiSharp.App\.template.config\template.json" Link="template/template.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\CuiSharp.Templates\CuiSharp.App\CuiSharp.App\CuiSharp.App.csproj" Link="template/app.csproj" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\CuiSharp.Templates\CuiSharp.App\CuiSharp.App.Tests\CuiSharp.App.Tests.csproj" Link="template/tests.csproj" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\docs\API-SURFACE.txt" Link="api-surface.txt" CopyToOutputDirectory="PreserveNewest" Condition="Exists('$(MSBuildThisFileDirectory)..\..\docs\API-SURFACE.txt')" />
+    <None Include="..\..\llms.txt" Link="llms.txt" CopyToOutputDirectory="PreserveNewest" Condition="Exists('$(MSBuildThisFileDirectory)..\..\llms.txt')" />
+    <None Include="..\..\skills\cui-dotnet\SKILL.md" Link="SKILL.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\docs\api\Options.md" Link="docs/api/Options.md" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IncludeContentInPack>true</IncludeContentInPack>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <ContentTargetFolders>content</ContentTargetFolders>
+    <IsPackable>true</IsPackable>
+    <PackageId>CuiSharp.Templates</PackageId>
+    <Title>CuiSharp project templates</Title>
+    <Description>dotnet new templates for CuiSharp: a native desktop app in plain C# with no XAML and no managed UI framework, scaffolded as a solution with a demo app and a test project.</Description>
+    <PackageTags>cui;cui sharp;templates;dotnet-new;desktop;nativeaot</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageType>Template</PackageType>
+    <!-- A template package carries no assemblies, so it declares no target framework and no
+         dependency group; without this the packer warns about a net10.0 group with no lib. -->
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <NoDefaultExcludes>true</NoDefaultExcludes>
+    <EnableDefaultItems>false</EnableDefaultItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="CuiSharp.App\**\*" Exclude="CuiSharp.App\**\bin\**;CuiSharp.App\**\obj\**" />
+    <Compile Remove="**\*.cs" />
+    <None Remove="**\*" />
+    <!-- After the Remove: the readme goes to the package root, not into the template content. -->
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,35 @@
+<Project>
+
+  <!--
+    Settings shared by every project in the repository.
+    Update the repository URL below before publishing the package.
+  -->
+
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+  <!-- Package metadata, inherited by every packable project. -->
+  <PropertyGroup>
+    <Version>0.1.0</Version>
+    <Authors>yappologistic</Authors>
+    <Copyright>Copyright (c) 2026 yappologistic</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/yappologistic/CuiSharp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/yappologistic/CuiSharp</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject Condition="'$(IsTestProject)' == ''">false</IsTestProject>
+  </PropertyGroup>
+
+</Project>

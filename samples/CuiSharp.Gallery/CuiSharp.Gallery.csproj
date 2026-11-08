@@ -1,0 +1,88 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyName>CuiGallery</AssemblyName>
+    <RootNamespace>CuiSharp.Gallery</RootNamespace>
+    <!-- The manifest only means something on Windows. -->
+    <ApplicationManifest Condition="$([MSBuild]::IsOSPlatform('Windows'))">app.manifest</ApplicationManifest>
+
+    <!--
+      Debug is a console app so `dotnet watch` can show its status, the app's
+      log output and any exception. Release is a window-only app.
+    -->
+    <OutputType Condition="'$(Configuration)' == 'Debug'">Exe</OutputType>
+    <OutputType Condition="'$(Configuration)' != 'Debug'">WinExe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\CuiSharp\CuiSharp.csproj" />
+  </ItemGroup>
+
+  <!--
+    Which CUI shared library belongs to the build. Driven by the target RID when
+    one is set (so cross-publishing picks the right one), otherwise by the host.
+  -->
+  <PropertyGroup>
+    <_CuiNativeTarget Condition="'$(RuntimeIdentifier)' != '' And $(RuntimeIdentifier.StartsWith('win'))">win</_CuiNativeTarget>
+    <_CuiNativeTarget Condition="'$(RuntimeIdentifier)' != '' And $(RuntimeIdentifier.StartsWith('linux'))">linux</_CuiNativeTarget>
+    <_CuiNativeTarget Condition="'$(_CuiNativeTarget)' == '' And $([MSBuild]::IsOSPlatform('Windows'))">win</_CuiNativeTarget>
+    <_CuiNativeTarget Condition="'$(_CuiNativeTarget)' == '' And $([MSBuild]::IsOSPlatform('Linux'))">linux</_CuiNativeTarget>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(PublishAot)' != 'true' And '$(_CuiNativeTarget)' == 'win'">
+    <None Include="../../native/cui.dll" Link="cui.dll" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(PublishAot)' != 'true' And '$(_CuiNativeTarget)' == 'linux'">
+    <None Include="../../native/libcui.so" Link="libcui.so" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
+
+  <!--
+    Single-file AOT: `dotnet publish -c Release -r win-x64`.
+    Setting a RuntimeIdentifier is what switches the build into AOT mode, so
+    `dotnet run` and `dotnet watch` stay on the fast JIT path.
+  -->
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' != ''">
+    <SelfContained>true</SelfContained>
+    <PublishAot>true</PublishAot>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <OptimizationPreference>Size</OptimizationPreference>
+    <StripSymbols>true</StripSymbols>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <DebuggerSupport>false</DebuggerSupport>
+    <IlcGenerateStackTraceData>false</IlcGenerateStackTraceData>
+    <IlcDisableReflection>true</IlcDisableReflection>
+    <!-- Keep the publish folder to exactly one file. -->
+    <AllowedReferenceRelatedFileExtensions>.none</AllowedReferenceRelatedFileExtensions>
+  </PropertyGroup>
+
+  <!-- Link the static archive so the published binary needs no CUI shared library. -->
+  <ItemGroup Condition="'$(PublishAot)' == 'true' And $([MSBuild]::IsOSPlatform('Windows'))">
+    <DirectPInvoke Include="cui" />
+    <NativeLibrary Include="../../native/cui.lib" />
+    <LinkerArg Include="user32.lib" />
+    <LinkerArg Include="gdi32.lib" />
+    <LinkerArg Include="opengl32.lib" />
+    <LinkerArg Include="shell32.lib" />
+    <LinkerArg Include="imm32.lib" />
+    <LinkerArg Include="dwmapi.lib" />
+    <LinkerArg Include="comdlg32.lib" />
+    <LinkerArg Include="ole32.lib" />
+    <LinkerArg Include="/OPT:REF" />
+    <LinkerArg Include="/OPT:ICF" />
+  </ItemGroup>
+
+  <!-- The X11 backend on Linux; NativeAOT there links with clang. -->
+  <ItemGroup Condition="'$(PublishAot)' == 'true' And $([MSBuild]::IsOSPlatform('Linux'))">
+    <DirectPInvoke Include="cui" />
+    <NativeLibrary Include="../../native/libcui.a" />
+    <LinkerArg Include="-lX11" />
+    <LinkerArg Include="-ldl" />
+    <LinkerArg Include="-lpthread" />
+    <LinkerArg Include="-lm" />
+  </ItemGroup>
+
+</Project>

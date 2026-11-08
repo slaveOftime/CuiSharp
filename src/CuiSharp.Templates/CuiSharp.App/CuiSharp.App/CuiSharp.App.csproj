@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>CuiSharp.App</RootNamespace>
+    <ApplicationManifest Condition="'$(OS)' == 'Windows_NT'">app.manifest</ApplicationManifest>
+
+    <!-- Publish and run format numbers the same way, so a screenshot of one matches the other. -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Stamped from the CuiSharp version this template shipped with. -->
+    <CuiSharpVersion Condition="'$(CuiSharpVersion)' == ''">__CUISHARP_VERSION__</CuiSharpVersion>
+  </PropertyGroup>
+
+  <!--
+    Inside the CuiSharp repository this project references the source project instead
+    (see the repository's Directory.Build.targets). A generated app takes the package.
+  -->
+  <ItemGroup Condition="'$(UseLocalCuiSharp)' != 'true'">
+    <PackageReference Include="CuiSharp" Version="$(CuiSharpVersion)" />
+  </ItemGroup>
+
+  <!-- Single-file NativeAOT: dotnet publish -c Release -r win-x64 -->
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' != ''">
+    <SelfContained>true</SelfContained>
+    <PublishAot>true</PublishAot>
+    <OptimizationPreference>Size</OptimizationPreference>
+    <StripSymbols>true</StripSymbols>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,329 @@
+# CuiSharp
+
+> CuiSharp binds CUI, a C99 immediate-mode UI library, to C#. It draws native
+> windows with no XAML, no WPF, no Avalonia and no web view. Rebuild the whole UI
+> every frame from your own fields; there is no control tree, no binding and
+> nothing to invalidate.
+
+## Rules
+
+- `Draw(Ui ui)` runs every frame, synchronously. Never `await`, `.Result`, `.Wait()` or `Thread.Sleep` in it.
+- `Ui` and every scope are `ref struct`: no fields, no capture, no `await`. State lives in your own fields.
+- Scopes are `using` blocks; interactive widgets take `ref` and return `bool`.
+- Text fields take `ref string`; CUI edits the value and returns it on the frames it changed.
+- A widget id is a stable string. Inside a loop, wrap each row in `using (ui.Id(item.Id))`, or enumerate `ui.Keyed(items, key)`.
+- Long work goes through `Mutation`: create it once, call `Run()` from a button, read `IsRunning` and `Error`.
+- A page that changes on its own needs `WantsFrames => true`, or the window sleeps.
+- Per-frame code allocates nothing: no LINQ, no `new`, no string concatenation. Interpolate into a widget instead.
+- Find a control in a frame by a query: a label (`Save`), a kind and a label (`Button "Save"`), or a path (`Card "editor" > Save`).
+
+## Entry points
+
+- `CuiApp.Run(options, ui => ...)` — one window, one callback per frame.
+- `CuiApplication.CreateBuilder(args)` + `Run<TRoot>()` — hosted app with DI and `Component` pages.
+- `CuiSurface.Create(w, h)` + `surface.Draw(render, pixels)` — headless frame for tests and benchmarks.
+
+## Testing and tools
+
+- `TestApp.Start(component, w, h)` — drive a real component with no window: `FindButton("Save").Click()`, `FindInput("draft")` + `Type("Milk")`, `Frame(n)`, `Focus()`, `Key(key)`, `Faults`, `PaintedAnything()`, `SavePng(path)`.
+- `app.Tree` / `app.Print()` — the frame as the app drew it, nesting included; `SemanticNode.Find(query)`, `Descendants()`, `Path`.
+- `HeadlessApp` — the same driver in the framework, which `TestApp` names; `dotnet cui` drives it in a real process.
+- A tab strip and a segmented control record one control per item (`Tab "Markets"`, `Segment "Dark"`), so an item is found and clicked like any other control.
+- `surface.LastFrame` -> `FrameSample` — what the last frame that surface drew cost: `DrawMs`, `AllocatedBytes`, `FrameMs`, `Fps`, `IsLive`. `FrameStats` holds the same for the one window in the process, which is what a footer reads.
+- `dotnet cui tree|find|click|type|key|focus|move|frame|faults|png` — one command per line, `--stdin` for a session, `--app` for a published build, `--no-build`, `--frames N`. Any app opts in by running headless (`CUISHARP_HEADLESS=1` or `--headless`).
+
+## Core API (hand-written, in `src/CuiSharp/Ui`)
+
+- `ui.Input(UiText id, ref string value, InputOpts o = default)` -> `InputResult` — single-line text field.
+- `ui.TextArea(...)`, `ui.Search(...)` — the same shape, multi-line and search affordances.
+- `ui.Number(UiText id, ref double value, double min, double max, NumberOpts o = default)` -> `bool`.
+- `ui.LineChart(UiText id, ReadOnlySpan<float> values, ChartOpts o = default, Color color = default)` — one series, draws nothing when empty.
+- `ui.BarChart(...)` — the same for bars; `ui.LineChart(id, Series[] series, ...)` for several series.
+- `ui.DonutChart(UiText id, float[] values, string[]? labels = null, ChartOpts o = default)`.
+- `ui.Canvas(UiText id, Size width, Size height, PaintFn paint)` — custom drawing: `paint(ui, box)` with `ui.DrawLine`, `DrawRect`, `DrawCircle`, `DrawText`, `DrawPath`.
+- `ui.Id(int)`, `ui.Id(UiText)` -> `IDisposable` — a scope that prefixes every id inside it; `ui.Keyed(items, key)` enumerates with ids.
+- `ui.Shortcut(Mods mods, Key key)` -> `bool`, `ui.WantsKeyboard` — keyboard input, unmodified when a text field has focus.
+- `ui.RequestRedraw()`, `ui.NeedsRedraw` — rarely needed directly: the host does this from `WantsFrames` and pending work.
+- `ui.RequestWakeup(float seconds)` — one more frame this many seconds from now: a timer, a toast timeout, a poll interval.
+- `ui.LastId` -> `uint` — the id of the widget just drawn; what `TourStep.Target` and the other point-at-this APIs take.
+- `ui.Terminal(UiText id, Terminal terminal, TerminalOpts o = default)` -> `TerminalResult` — the `Terminal` class owns the scrollback (`Write`, `WriteLine`, `Clear`, `LineCount`).
+- `ui.LogView(UiText id, LogBuffer log, LogViewOpts o = default)` — `LogBuffer` owns the ring (`Append`, `AppendLine`, `Text`, `Clear`), the view adds level filters, search, follow and copy.
+- `ui.MeasureText(text, size, font)` -> `TextMetrics`; `ui.Time`, `ui.DeltaTime`, `ui.FrameCount`, `ui.DpiScale`; `ui.MousePosition`, `ui.MouseDown`, `ui.MouseClicked`, `ui.KeyDown`, `ui.KeyPressed`, `ui.Modifiers`, `ui.WantsMouse`; `ui.RectOf(id)`; `ui.IsDisabled` and `using (ui.Disabled(flag)) { ... }`.
+- `ui.DrawRect`, `DrawRectGradient`, `DrawShadow`, `DrawLine`, `DrawPolyline`, `DrawPolygon`, `DrawCircle`, `DrawArc`, `DrawText`, `DrawIcon`, `DrawImage`, `using (ui.Clip(rect))` — the primitives a custom control paints with.
+- `ui.HexView(id, Span<byte>, ref HexSelection, HexViewOpts)` — the editable hex view; the span is pinned, so a typed byte lands in your array.
+- `ui.TreeTable(id, columns, TreeNode[], row, [ref TableSort, ref int], TreeTableOpts, label)` -> `TreeTableEvents` — a tree over a flat node array the table rewrites; `events.Load` names the nodes whose children it wants, and `CuiTree.Sort(nodes, root, compare)` relinks siblings.
+- `ui.State<T>(id)` and `ui.State(id, onFree)` -> `Span<T>` — per-id scratch that survives frames; the second form adds a callback CUI runs when it evicts that id (release a texture, a lease, a pooled buffer).
+- `ui.DiffRows(id, Span<DiffRow>, first)` — the live diff view's rows, for a custom renderer.
+- `Color.Oklch(l, c, hue, alpha)`, `Color.Mix(a, b, t)`, `color.WithAlpha(f)`, `ui.ColorOf(color)`, `ui.TokenColor(token)`, `Ui.AccentName(accent)`, `Ui.KeyName(key)`.
+- `CuiMath.DiffLines(old, new)` / `DiffWords(old, new)` / `EvaluateCurve(keys, x)` / `EvaluateGradient(stops, t)` / `PathMatches(path, filter)`; `MarkdownText.ToggleTask(ref text, offset, result)`; `CuiFiles.ListDirectory(path)`; `CuiSurface` input: `MouseMove`, `MouseDown`, `MouseUp`, `Click`, `Scroll`, `KeyDown`, `KeyUp`, `Type`, `Focus`, `FileDrop`.
+- `ui.Theme` and `ui.Accent`: assign `Theme.Dark` or `Accent.Blue` from inside any frame and CUI animates the change; `ui.ToggleTheme()` is the dark-mode command.
+
+## API
+
+- `ui.AgentPlan(UiText id, ReadOnlySpan<PlanStep> steps, AgentPlanOpts o = default)` → `int`  ([AI interfaces](docs/api/AiInterfaces.md))
+- `ui.AgentStatus(UiText text, AgentStatusOpts o = default)` → `void`  ([AI interfaces](docs/api/AiInterfaces.md))
+- `ui.ChatComposer(UiText id, ref string buf, int cap, ref int removed, ref int model, ComposerOpts o = default)` → `int`  ([AI interfaces](docs/api/AiInterfaces.md))
+- `ui.Citation(int number, in Source source)` → `bool`  ([AI interfaces](docs/api/AiInterfaces.md))
+- `ui.ContextMeter(UiText id, float used, float limit, ContextOpts o = default)` → `void`  ([AI interfaces](docs/api/AiInterfaces.md))
+- `ui.ModelPicker(UiText id, ReadOnlySpan<Model> models, ref int selected, ModelPickerOpts o = default)` → `bool`  ([AI interfaces](docs/api/AiInterfaces.md))
+- `ui.PromptSuggestions(UiText id, ReadOnlySpan<PromptSuggestion> items, PromptSuggestionsOpts o = default)` → `int`  ([AI interfaces](docs/api/AiInterfaces.md))
+- `ui.Reasoning(UiText id, ReasoningOpts o = default)` → `OpenScope`  ([AI interfaces](docs/api/AiInterfaces.md))
+- `ui.ResponseActions(UiText id, ref int vote, ResponseActionsOpts o = default)` → `int`  ([AI interfaces](docs/api/AiInterfaces.md))
+- `ui.SourceList(UiText id, ReadOnlySpan<Source> sources)` → `int`  ([AI interfaces](docs/api/AiInterfaces.md))
+- `ui.ToolCall(UiText id, UiText name, ToolCallOpts o = default)` → `void`  ([AI interfaces](docs/api/AiInterfaces.md))
+- `ui.VoiceOrb(UiText id, VoiceState state, float level, VoiceOrbOpts o = default)` → `bool`  ([AI interfaces](docs/api/AiInterfaces.md))
+- `ui.CurveEditor(UiText id, Span<CurveKey> keys, int count, int capacity, ref int selected, CurveOpts o = default)` → `CurveResult`  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.DocTabs(UiText id, ReadOnlySpan<DocTab> tabs, ref int selected, DocTabsOpts o = default)` → `DocTabsResult`  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.DockLoad(UiText id, UiText text)` → `bool`  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.DockPanel(UiText title, ref bool open, DockPanelOpts o = default)` → `OpenScope`  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.DockSave(UiText id, ref string buf, int cap)` → `ulong` — Saved layout: one line, e.g. dock1 h0.22([*Scene tree,Assets],v0.7([*Viewport],[*Log,-Console])) h splits side by side and v stacks, the number is the first child's share, [..] is a leaf's tabs in order, * the selected tab, - a closed panel; a backslash escapes , [ ] ( ) and itself in names. cui_dock_save returns the full length (as snprintf does) and writes what fits, or 0 when there is no layout. cui_dock_load replaces the layout (and sets each panel's *open from it on its next frame); names it does not know yet are kept for when they appear. Malformed text returns false and changes nothing.  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.Dockspace(UiText id, DockspaceOpts o = default)` → `LayoutScope`  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.DrawEmoji(UiText utf8, RectF r)` → `void`  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.Emoji(UiText utf8, float size)` → `void`  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.EmojiFontLoadFile(UiText path)` → `bool` — ---- Emoji ---- Color emoji come from an emoji font: the system's (cui_emoji_font_load_system, which the picker calls by itself when nothing is loaded) or one the app ships. Bitmap color fonts (sbix as on macOS, CBDT as on Linux and Android) and layered ones (COLR version 0, as on Windows) are read, as is a plain outline font for one-color emoji. Sequences with skin tones, joined people and flags are looked up through the font's ligatures. Big fonts are read from the file as needed rather than loaded whole. Drawn emoji are kept in one texture and reused.  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.EmojiFontLoadMemory(ReadOnlySpan<byte> data, bool copy)` → `bool`  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.EmojiFontLoadSystem()` → `bool`  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.EmojiPicker(UiText id, ref string recent, ref int tone, EmojiPickerOpts o = default)` → `string?`  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.EmojiSupported(UiText utf8)` → `bool`  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.FlameGraph(UiText id, ReadOnlySpan<FlameSpan> spans, ref FlameView view, ref int selected, FlameOpts o = default)` → `FlameResult` — selected: index into spans, -1 for none (may be NULL).  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.FlameSpanRect(uint flame, in FlameSpan span)` → `RectF` — Where a span was drawn in the latest frame, in points (zero size when out of view). flame is the graph's id: cui_last_id(ui) right after the call.  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.GradientEditor(UiText id, Span<GradientStop> stops, int count, int capacity, ref int selected, GradientOpts o = default)` → `GradientResult`  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.HexViewGoto(UiText id, ulong offset)` → `void` — Go to offset: on the view's next frame its cursor moves to offset, that byte becomes the selection and it scrolls into view (to the middle when it was out of sight). Wire a "Go to" field to it; it is safe to call every frame.  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.Inspector(UiText id, InspectorOpts o = default)` → `OpenScope`  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.InspectorGroup(UiText title, ref bool open)` → `bool` — A folding group header. Build its rows only when this returns true (it stays true while the group animates closed). open may be NULL for a plain section that does not fold.  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.MenuBar(UiText id, MenuBarOpts o = default)` → `LayoutScope`  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.MenuBarMenu(UiText label, MenuBarMenuOpts o = default)` → `OpenScope`  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.PropBool(UiText label, ref bool value, PropOpts o = default)` → `bool`  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.PropColor(UiText label, ref Color value, PropOpts o = default)` → `bool` — A swatch and hex value that opens the color picker.  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.PropEnum(UiText label, ReadOnlySpan<string> items, ref int index, PropOpts o = default)` → `bool`  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.PropFloat(UiText label, ref float value, PropOpts o = default)` → `bool`  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.PropInt(UiText label, ref int value, PropOpts o = default)` → `bool`  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.PropText(UiText label, ref string buf, int cap, PropOpts o = default)` → `bool`  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.PropVec(UiText label, ref float value, int components, PropOpts o = default)` → `bool` — Compact X, Y (Z, W) scrub fields side by side; value holds 2, 3 or 4 floats.  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.StatusBar(UiText id, StatusBarOpts o = default)` → `LayoutScope`  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.StatusBarItem(UiText label, StatusItemOpts o = default)` → `bool` — A small clickable item ("Ln 12, Col 4", "UTF-8"). Returns true when clicked.  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.StatusBarProgress(float value, StatusProgressOpts o = default)` → `void`  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.StatusBarSpacer()` → `void`  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.StatusBarText(UiText text, StatusItemOpts o = default)` → `void` — A message; `tone` colors its icon.  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.Toolbar(UiText id, ToolbarOpts o = default)` → `LayoutScope`  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.ToolbarButton(UiText icon, ref bool toggle, ToolOpts o = default)` → `bool`  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.ToolbarSeparator()` → `void`  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.ToolbarSpacer()` → `void`  ([App chrome: menu bar, toolbar, status bar, document tabs](docs/api/AppChrome.md))
+- `ui.Button(UiText label, ButtonOpts o = default)` → `bool`  ([Buttons](docs/api/Buttons.md))
+- `ui.IconButton(UiText icon, ButtonOpts o = default)` → `bool` — Square/round button with only an icon. Give it a tooltip so it has a name.  ([Buttons](docs/api/Buttons.md))
+- `ui.Segmented(UiText id, ReadOnlySpan<string> items, ref int index, SegmentedOpts o = default)` → `bool`  ([Buttons](docs/api/Buttons.md))
+- `ui.AvatarUpload(UiText id, UiText name, ref ulong image, float size)` → `int` — Avatar upload: a round avatar that takes a dropped image, with a camera badge on hover. Returns 1 when *image changed, -1 when clicked (browse), 0 otherwise. A dropped image is loaded with cui_image_load.  ([Capture](docs/api/Capture.md))
+- `ui.Dropzone(UiText id, DropzoneOpts o = default)` → `int`  ([Capture](docs/api/Capture.md))
+- `ui.SignatureClear(UiText id)` → `void`  ([Capture](docs/api/Capture.md))
+- `ui.SignaturePad(UiText id, SignatureOpts o = default)` → `bool`  ([Capture](docs/api/Capture.md))
+- `ui.CodeBlock(UiText id, UiText code, CodeOpts o = default)` → `void`  ([Code](docs/api/Code.md))
+- `ui.CodeEditor(UiText id, ref string buf, int cap, CodeEditorOpts o = default)` → `CodeEditorResult`  ([Code](docs/api/Code.md))
+- `ui.CodeEditorFind(UiText id, UiText query)` → `void` — Opens the find bar with query and selects the next match (NULL closes).  ([Code](docs/api/Code.md))
+- `ui.CodeEditorGoto(UiText id, int line, int column)` → `void` — On the editor's next frame: put the caret at a line and column (1 based), focus the editor and scroll there. Call from the same id scope.  ([Code](docs/api/Code.md))
+- `ui.CodeEditorSelect(UiText id, int anchor, int cursor)` → `void` — On the next frame: select bytes anchor..cursor, focus and scroll there.  ([Code](docs/api/Code.md))
+- `ui.DiffView(UiText id, UiText oldText, UiText newText, ref int current, DiffOpts o = default)` → `DiffResult`  ([Code](docs/api/Code.md))
+- `ui.JsonView(UiText id, UiText json, JsonOpts o = default)` → `bool`  ([Code](docs/api/Code.md))
+- `ui.Markdown(UiText id, UiText text, MarkdownOpts o = default)` → `MarkdownResult`  ([Code](docs/api/Code.md))
+- `ui.CommandPalette(ref bool open, ReadOnlySpan<Command> commands)` → `int` — Spotlight style command palette. Returns the index of the chosen command, or -1. Open it with a shortcut: if (cui_shortcut(ui, CUI_MOD_PRIMARY, CUI_KEY_K)) open = true;  ([Command palette (block)](docs/api/CommandPaletteBlock.md))
+- `ui.ChatDivider(UiText label)` → `void`  ([Conversation](docs/api/Conversation.md))
+- `ui.ChatMessage(UiText text, ref MarkdownResult markdownresult, ChatOpts o = default)` → `void`  ([Conversation](docs/api/Conversation.md))
+- `ui.Comment(UiText id, UiText author, UiText text, ref int likes, ref bool liked, CommentOpts o = default)` → `int`  ([Conversation](docs/api/Conversation.md))
+- `ui.Presence(UiText id, ReadOnlySpan<PresenceUser> users, int maxVisible, float size)` → `void`  ([Conversation](docs/api/Conversation.md))
+- `ui.TypingIndicator(UiText name)` → `void`  ([Conversation](docs/api/Conversation.md))
+- `ui.Accordion(UiText title, ref bool open)` → `OpenScope` — Accordion / disclosure. Content animates its height.  ([Data display](docs/api/DataDisplay.md))
+- `ui.Cropper(UiText id, ulong tex, int imageW, int imageH, ref RectF crop, CropperOpts o = default)` → `bool` — Returns true when the crop changed.  ([Data display](docs/api/DataDisplay.md))
+- `ui.Gauge(UiText label, float value, float size = 130)` → `void`  ([Data display](docs/api/DataDisplay.md))
+- `ui.Image(ulong tex, ImageOpts o = default)` → `void`  ([Data display](docs/api/DataDisplay.md))
+- `ui.ImageViewer(UiText id, ulong tex, int imageW, int imageH, ref ImageView view, ImageViewerOpts o = default)` → `bool` — Returns true when the view changed.  ([Data display](docs/api/DataDisplay.md))
+- `ui.ListItem(UiText title, ListItemOpts o = default)` → `bool`  ([Data display](docs/api/DataDisplay.md))
+- `ui.Sparkline(ReadOnlySpan<float> values, Size width, float height, Color color)` → `void`  ([Data display](docs/api/DataDisplay.md))
+- `ui.Table(UiText id, ReadOnlySpan<TableColumn> columns, ref TableSort sort, TableOpts o = default)` → `OpenScope`  ([Data display](docs/api/DataDisplay.md))
+- `ui.TableCell()` → `void` — Next cell; put any components inside, or use cui_table_cell_text.  ([Data display](docs/api/DataDisplay.md))
+- `ui.TableCellText(UiText text)` → `void`  ([Data display](docs/api/DataDisplay.md))
+- `ui.TableRow(bool selected)` → `bool` — Begin a row. Returns true when the row is clicked.  ([Data display](docs/api/DataDisplay.md))
+- `ui.Tree(UiText label, ref bool open, TreeOpts o = default)` → `OpenScope`  ([Data display](docs/api/DataDisplay.md))
+- `ui.TreeClicked()` → `bool`  ([Data display](docs/api/DataDisplay.md))
+- `ui.VirtualList(UiText id, int count, float rowHeight, Size height, out int first, out int last)` → `LayoutScope` — Virtual list: only the visible rows are built, so lists with a million rows stay fast. Fills first/last with the visible range.  ([Data display](docs/api/DataDisplay.md))
+- `ui.DataGrid(UiText id, ReadOnlySpan<GridColumn> columns, int rowCount, ref int first, ref int last, ref bool selected, ref TableSort tablesort, ref int cursor, ref int anchor, GridOpts o = default)` → `OpenScope`  ([Data grid](docs/api/DataGrid.md))
+- `ui.DataGridCell()` → `void`  ([Data grid](docs/api/DataGrid.md))
+- `ui.DataGridCellEdit(ref string buf, int cap)` → `bool` — Editable text cell: double click (or Enter on the cursor row) to edit, Enter or clicking away commits, Esc reverts. True when committed.  ([Data grid](docs/api/DataGrid.md))
+- `ui.DataGridCellText(UiText text)` → `void`  ([Data grid](docs/api/DataGrid.md))
+- `ui.DataGridEdit(ref string buf, int cap)` → `bool` — The same editable text, inside the current cell (after an avatar, say).  ([Data grid](docs/api/DataGrid.md))
+- `ui.DataGridRow(int row)` → `bool`  ([Data grid](docs/api/DataGrid.md))
+- `ui.FileBrowser(UiText id, ref string path, int pathCap = 1024, FileBrowserOpts o = default)` → `FileBrowserResult` — path: the folder shown, yours; the browser writes it as you move around.  ([Data grid](docs/api/DataGrid.md))
+- `ui.FilePicker(UiText id, ref bool open, ref string @out, int outCap = 1024, FilePickerOpts o = default)` → `bool` — True once, with the chosen path in out, when the dialog is confirmed; *open turns false then, or on Cancel and Esc.  ([Data grid](docs/api/DataGrid.md))
+- `ui.FilterBar(UiText id, ReadOnlySpan<FilterField> fields, ref uint selected, ref string search, int searchCap)` → `bool`  ([Data grid](docs/api/DataGrid.md))
+- `ui.PathBar(UiText id, ReadOnlySpan<string> segments, PathBarOpts o = default)` → `PathBarResult`  ([Data grid](docs/api/DataGrid.md))
+- `ui.PathBarMenu(UiText id, ref int segment)` → `OpenScope` — True while the menu of separator *segment is showing: build menu items for the children of that segment, then call cui_path_bar_menu_end.  ([Data grid](docs/api/DataGrid.md))
+- `ui.TreeCell(UiText label, int depth, bool hasChildren, ref bool open, UiText icon)` → `bool` — Tree cell: indentation, a disclosure chevron and a label, for tree tables (use it in a table or grid cell). Returns true when *open toggled.  ([Data grid](docs/api/DataGrid.md))
+- `ui.TreeTableDepth()` → `int`  ([Data grid](docs/api/DataGrid.md))
+- `ui.TreeTableName(UiText label, UiText icon)` → `void` — The first cell: indentation, guides, the chevron, an icon and the name (cut short with a tooltip of the whole name when it does not fit).  ([Data grid](docs/api/DataGrid.md))
+- `ui.TreeTableRow()` → `int` — The next row in view: returns its node, or -1 when done. Then build its cells: cui_tree_table_name first, then cui_data_grid_cell(_text).  ([Data grid](docs/api/DataGrid.md))
+- `ui.Alert(UiText title, AlertOpts o = default)` → `bool` — Inline alert. Returns false once dismissed (when dismissible).  ([Dialogs, sheets, toasts, alerts](docs/api/DialogsSheetsToastsAlerts.md))
+- `ui.Dialog(UiText title, ref bool open, DialogOpts o = default)` → `OpenScope` — Modal dialog. Shown while *open is true; closing sets it to false.  ([Dialogs, sheets, toasts, alerts](docs/api/DialogsSheetsToastsAlerts.md))
+- `ui.DialogFooter()` → `LayoutScope` — A right-aligned row for dialog actions.  ([Dialogs, sheets, toasts, alerts](docs/api/DialogsSheetsToastsAlerts.md))
+- `ui.Sheet(UiText title, ref bool open, SheetOpts o = default)` → `OpenScope`  ([Dialogs, sheets, toasts, alerts](docs/api/DialogsSheetsToastsAlerts.md))
+- `ui.Toast(UiText title, ToastOpts o = default)` → `int` — Queue a toast. Returns a handle; cui_toast_action_clicked(handle) tells whether its action button was pressed.  ([Dialogs, sheets, toasts, alerts](docs/api/DialogsSheetsToastsAlerts.md))
+- `ui.ToastActionClicked(int handle)` → `bool`  ([Dialogs, sheets, toasts, alerts](docs/api/DialogsSheetsToastsAlerts.md))
+- `ui.ToastDismiss(int handle)` → `void`  ([Dialogs, sheets, toasts, alerts](docs/api/DialogsSheetsToastsAlerts.md))
+- `ui.ConfirmPopover(UiText id, ConfirmPopoverOpts o = default)` → `bool`  ([Disclosure](docs/api/Disclosure.md))
+- `ui.ExpandableCard(UiText title, ref bool open, ExpandableCardOpts o = default)` → `OpenScope`  ([Disclosure](docs/api/Disclosure.md))
+- `ui.ExpandableText(UiText id, UiText text, ExpandableTextOpts o = default)` → `bool`  ([Disclosure](docs/api/Disclosure.md))
+- `ui.HoverCard(UiText id, HoverCardOpts o = default)` → `OpenScope`  ([Disclosure](docs/api/Disclosure.md))
+- `ui.Toc(UiText scrollId, ReadOnlySpan<TocItem> items)` → `int`  ([Disclosure](docs/api/Disclosure.md))
+- `ui.TocAnchor(UiText anchor)` → `void`  ([Disclosure](docs/api/Disclosure.md))
+- `ui.Avatar(UiText name, AvatarOpts o = default)` → `void`  ([Feedback and display](docs/api/FeedbackAndDisplay.md))
+- `ui.AvatarGroup(ReadOnlySpan<string> names, int maxVisible = 4, float size = 32)` → `void`  ([Feedback and display](docs/api/FeedbackAndDisplay.md))
+- `ui.Badge(UiText text, BadgeOpts o = default)` → `void`  ([Feedback and display](docs/api/FeedbackAndDisplay.md))
+- `ui.EmptyState(UiText title, EmptyOpts o = default)` → `bool` — Empty state. Returns true when its action button is clicked.  ([Feedback and display](docs/api/FeedbackAndDisplay.md))
+- `ui.Meter(UiText label, float used, float total, UiText unit = default)` → `void`  ([Feedback and display](docs/api/FeedbackAndDisplay.md))
+- `ui.Metric(UiText label, UiText value, MetricOpts o = default)` → `void`  ([Feedback and display](docs/api/FeedbackAndDisplay.md))
+- `ui.Progress(float value, ProgressOpts o = default)` → `void`  ([Feedback and display](docs/api/FeedbackAndDisplay.md))
+- `ui.Skeleton(Size width, float height)` → `void`  ([Feedback and display](docs/api/FeedbackAndDisplay.md))
+- `ui.Spinner(float size = 16)` → `void`  ([Feedback and display](docs/api/FeedbackAndDisplay.md))
+- `ui.Box(Box o = default)` → `LayoutScope`  ([Layout](docs/api/Layout.md))
+- `ui.Card(Card o = default)` → `LayoutScope`  ([Layout](docs/api/Layout.md))
+- `ui.Column(Box o = default)` → `LayoutScope`  ([Layout](docs/api/Layout.md))
+- `ui.Gap(float size)` → `void`  ([Layout](docs/api/Layout.md))
+- `ui.Row(Box o = default)` → `LayoutScope`  ([Layout](docs/api/Layout.md))
+- `ui.Scroll(ScrollOpts o = default)` → `LayoutScope`  ([Layout](docs/api/Layout.md))
+- `ui.ScrollTo(UiText scrollId, float y)` → `void`  ([Layout](docs/api/Layout.md))
+- `ui.Separator()` → `void`  ([Layout](docs/api/Layout.md))
+- `ui.Spacer()` → `void`  ([Layout](docs/api/Layout.md))
+- `ui.Split(UiText id, ref float ratio, SplitOpts o = default)` → `LayoutScope`  ([Layout](docs/api/Layout.md))
+- `ui.SplitNext()` → `void`  ([Layout](docs/api/Layout.md))
+- `ui.CardStack(UiText id, int count, CardStackOpts o = default)` → `int`  ([Media](docs/api/Media.md))
+- `ui.CardStackItem(int depth)` → `LayoutScope`  ([Media](docs/api/Media.md))
+- `ui.Carousel(UiText id, int count, ref int index, CarouselOpts o = default)` → `OpenScope`  ([Media](docs/api/Media.md))
+- `ui.CarouselSlide()` → `LayoutScope`  ([Media](docs/api/Media.md))
+- `ui.Counter(UiText id, double value, CounterOpts o = default)` → `void`  ([Media](docs/api/Media.md))
+- `ui.ImageCompare(UiText id, ulong before, ulong after, out float pos, CompareOpts o = default)` → `bool`  ([Media](docs/api/Media.md))
+- `ui.Ticker(UiText id, ReadOnlySpan<TickerItem> items, TickerOpts o = default)` → `void`  ([Media](docs/api/Media.md))
+- `ui.ContextMenu(UiText id)` → `OpenScope` — Context menu: opens on right click over the previous component.  ([Menus and popovers](docs/api/MenusAndPopovers.md))
+- `ui.Menu(UiText label, MenuOpts o = default)` → `OpenScope`  ([Menus and popovers](docs/api/MenusAndPopovers.md))
+- `ui.MenuItem(UiText label, MenuItemOpts o = default)` → `bool`  ([Menus and popovers](docs/api/MenusAndPopovers.md))
+- `ui.MenuLabel(UiText text)` → `void`  ([Menus and popovers](docs/api/MenusAndPopovers.md))
+- `ui.MenuSeparator()` → `void`  ([Menus and popovers](docs/api/MenusAndPopovers.md))
+- `ui.Popover(UiText id, PopoverOpts o = default)` → `OpenScope`  ([Menus and popovers](docs/api/MenusAndPopovers.md))
+- `ui.PopoverClose(UiText id)` → `void`  ([Menus and popovers](docs/api/MenusAndPopovers.md))
+- `ui.PopoverIsOpen(UiText id)` → `bool`  ([Menus and popovers](docs/api/MenusAndPopovers.md))
+- `ui.PopoverOpen(UiText id)` → `void`  ([Menus and popovers](docs/api/MenusAndPopovers.md))
+- `ui.PopoverToggle(UiText id)` → `void`  ([Menus and popovers](docs/api/MenusAndPopovers.md))
+- `ui.Tooltip(UiText text)` → `void` — Tooltip for the previous component, shown after a short hover delay.  ([Menus and popovers](docs/api/MenusAndPopovers.md))
+- `ui.Tour(UiText id, ReadOnlySpan<TourStep> steps, ref int step, TourOpts o = default)` → `int` — What happened this frame: one of CUI_TOUR_*.  ([Menus and popovers](docs/api/MenusAndPopovers.md))
+- `ui.ConfirmButton(UiText label, ConfirmOpts o = default)` → `bool`  ([More actions](docs/api/MoreActions.md))
+- `ui.Reactions(UiText id, ReadOnlySpan<Reaction> items)` → `int`  ([More actions](docs/api/MoreActions.md))
+- `ui.SpeedDial(UiText id, ReadOnlySpan<SpeedAction> actions, SpeedDialOpts o = default)` → `int`  ([More actions](docs/api/MoreActions.md))
+- `ui.SplitButton(UiText label, ReadOnlySpan<string> items, SplitButtonOpts o = default)` → `int`  ([More actions](docs/api/MoreActions.md))
+- `ui.StatusButton(UiText label, Status status, StatusButtonOpts o = default)` → `bool`  ([More actions](docs/api/MoreActions.md))
+- `ui.SwipeItem(UiText id, ReadOnlySpan<SwipeAction> left, ReadOnlySpan<SwipeAction> right)` → `int`  ([More actions](docs/api/MoreActions.md))
+- `ui.ThemeSwitcher(ref int mode, bool withSystem)` → `bool` — Theme switcher: light, dark and (optionally) system, as a compact icon segmented control. mode is 0 light, 1 dark, 2 system. Light and dark are applied for you; for system call cui_set_theme with the OS setting. Returns true when mode changed.  ([More actions](docs/api/MoreActions.md))
+- `ui.ThemeToggle()` → `bool` — Sun and moon icon button that toggles the theme with a morph.  ([More actions](docs/api/MoreActions.md))
+- `ui.ToggleGroup(UiText id, ReadOnlySpan<string> labels, ref bool values, ToggleGroupOpts o = default)` → `bool`  ([More actions](docs/api/MoreActions.md))
+- `ui.UserMenu(UiText name, UserMenuOpts o = default)` → `OpenScope`  ([More actions](docs/api/MoreActions.md))
+- `ui.ActivityRings(UiText id, ReadOnlySpan<VizItem> rings, RingsOpts o = default)` → `int`  ([More charts](docs/api/MoreCharts.md))
+- `ui.BarList(UiText id, ReadOnlySpan<VizItem> items, BarListOpts o = default)` → `int`  ([More charts](docs/api/MoreCharts.md))
+- `ui.CalendarHeatmap(UiText id, Date start, ReadOnlySpan<float> values, CalendarHeatmapOpts o = default)` → `int`  ([More charts](docs/api/MoreCharts.md))
+- `ui.Candlestick(UiText id, ReadOnlySpan<Candle> candles, CandlestickOpts o = default)` → `int` — Returns the candle under the crosshair (pointer or keys), or -1.  ([More charts](docs/api/MoreCharts.md))
+- `ui.Funnel(UiText id, ReadOnlySpan<VizItem> stages, FunnelOpts o = default)` → `int`  ([More charts](docs/api/MoreCharts.md))
+- `ui.Heatmap(UiText id, ReadOnlySpan<float> values, int rows, int cols, HeatmapOpts o = default)` → `int`  ([More charts](docs/api/MoreCharts.md))
+- `ui.RadarChart(UiText id, ReadOnlySpan<Series> series, ReadOnlySpan<string> axes, RadarOpts o = default)` → `int`  ([More charts](docs/api/MoreCharts.md))
+- `ui.RadialGauge(UiText id, float value, float min, float max, RadialGaugeOpts o = default)` → `void`  ([More charts](docs/api/MoreCharts.md))
+- `ui.Sankey(UiText id, ReadOnlySpan<string> nodes, ReadOnlySpan<SankeyLink> links, SankeyOpts o = default)` → `int`  ([More charts](docs/api/MoreCharts.md))
+- `ui.ScatterChart(UiText id, ReadOnlySpan<ScatterSeries> series, ScatterOpts o = default)` → `int`  ([More charts](docs/api/MoreCharts.md))
+- `ui.SplitBar(UiText id, ReadOnlySpan<VizItem> items, SplitBarOpts o = default)` → `int`  ([More charts](docs/api/MoreCharts.md))
+- `ui.Treemap(UiText id, ReadOnlySpan<VizItem> items, TreemapOpts o = default)` → `int`  ([More charts](docs/api/MoreCharts.md))
+- `ui.Waffle(UiText id, ReadOnlySpan<VizItem> items, WaffleOpts o = default)` → `int`  ([More charts](docs/api/MoreCharts.md))
+- `ui.ButtonGroup()` → `LayoutScope` — Connected buttons. Put buttons between begin and end.  ([More components](docs/api/MoreComponents.md))
+- `ui.CopyButton(UiText id, UiText text)` → `bool` — Icon button that copies text to the clipboard and confirms with a check.  ([More components](docs/api/MoreComponents.md))
+- `ui.HoldButton(UiText label, HoldOpts o = default)` → `bool`  ([More components](docs/api/MoreComponents.md))
+- `ui.PasswordStrength(UiText password)` → `int` — Password strength meter (0 weak .. 4 strong). Returns the score.  ([More components](docs/api/MoreComponents.md))
+- `ui.ProgressRing(UiText label, float value, float size = 104)` → `void` — Circular progress with the value in the middle.  ([More components](docs/api/MoreComponents.md))
+- `ui.RadioCards(UiText id, ReadOnlySpan<Choice> choices, ref int index, RadioCardsOpts o = default)` → `bool`  ([More components](docs/api/MoreComponents.md))
+- `ui.TimelineItem(UiText title, TimelineOpts o = default)` → `void`  ([More components](docs/api/MoreComponents.md))
+- `ui.Banner(UiText text, ref bool open, BannerOpts o = default)` → `bool`  ([More feedback](docs/api/MoreFeedback.md))
+- `ui.Checklist(UiText id, ReadOnlySpan<CheckStep> steps, ChecklistOpts o = default)` → `int`  ([More feedback](docs/api/MoreFeedback.md))
+- `ui.Countdown(UiText id, double secondsLeft, CountdownOpts o = default)` → `void`  ([More feedback](docs/api/MoreFeedback.md))
+- `ui.InlineEdit(UiText id, ref string buf, int cap, InlineEditOpts o = default)` → `int`  ([More inputs](docs/api/MoreInputs.md))
+- `ui.MoneyInput(UiText id, ref double value, MoneyOpts o = default)` → `bool`  ([More inputs](docs/api/MoreInputs.md))
+- `ui.Node(int nodeId, ref float x, ref float y, UiText title, NodeOpts o = default)` → `OpenScope`  ([More inputs](docs/api/MoreInputs.md))
+- `ui.NodeContent()` → `LayoutScope` — A row for ordinary components. They are laid out at 100% and scaled with the view, so their text is sharpest at 100% zoom and below.  ([More inputs](docs/api/MoreInputs.md))
+- `ui.NodeDeleted(ref int nodeId)` → `bool`  ([More inputs](docs/api/MoreInputs.md))
+- `ui.NodeEditor(UiText id, ref NodeView view, NodeEditorOpts o = default)` → `OpenScope`  ([More inputs](docs/api/MoreInputs.md))
+- `ui.NodeInput(int pinId, UiText label, PinOpts o = default)` → `bool`  ([More inputs](docs/api/MoreInputs.md))
+- `ui.NodeLink(int linkId, int fromPin, int toPin)` → `bool` — A link from an output pin to an input pin. Returns true while it is selected.  ([More inputs](docs/api/MoreInputs.md))
+- `ui.NodeLinkCreated(ref int fromPin, ref int toPin)` → `bool` — What the user did this frame, one event per call; call them after cui_node_editor_begin (and up to the end of the frame).  ([More inputs](docs/api/MoreInputs.md))
+- `ui.NodeLinkRemoved(ref int linkId)` → `bool`  ([More inputs](docs/api/MoreInputs.md))
+- `ui.NodeOutput(int pinId, UiText label, PinOpts o = default)` → `bool`  ([More inputs](docs/api/MoreInputs.md))
+- `ui.Scrub(UiText label, ref float value, float min, float max, ScrubOpts o = default)` → `bool`  ([More inputs](docs/api/MoreInputs.md))
+- `ui.ShortcutLabel(KeyCombo combo)` → `string?`  ([More inputs](docs/api/MoreInputs.md))
+- `ui.ShortcutRecorder(UiText id, ref KeyCombo combo, ShortcutRecorderOpts o = default)` → `bool`  ([More inputs](docs/api/MoreInputs.md))
+- `ui.ControlTile(UiText label, ref bool on, TileOpts o = default)` → `bool`  ([Motion and text effects](docs/api/MotionAndTextEffects.md))
+- `ui.Dock(UiText id, DockOpts o = default)` → `LayoutScope`  ([Motion and text effects](docs/api/MotionAndTextEffects.md))
+- `ui.DockItem(UiText icon, UiText label, DockItemOpts o = default)` → `bool`  ([Motion and text effects](docs/api/MotionAndTextEffects.md))
+- `ui.DockSeparator()` → `void`  ([Motion and text effects](docs/api/MotionAndTextEffects.md))
+- `ui.GradientText(UiText text, GradientTextOpts o = default)` → `void`  ([Motion and text effects](docs/api/MotionAndTextEffects.md))
+- `ui.Loader(LoaderOpts o = default)` → `void`  ([Motion and text effects](docs/api/MotionAndTextEffects.md))
+- `ui.NowPlaying(UiText id, ref NowPlayingState np, NowPlayingOpts o = default)` → `int`  ([Motion and text effects](docs/api/MotionAndTextEffects.md))
+- `ui.NumberRoll(UiText id, UiText text, TextFxOpts o = default)` → `void` — A figure whose changed digits roll into place: up when the value rises, down when it falls, a beat apart from the left; unchanged characters stay still. Pass the formatted text ("$64,210", "1.2k"); digits are tabular.  ([Motion and text effects](docs/api/MotionAndTextEffects.md))
+- `ui.ShimmerText(UiText text, TextFxOpts o = default)` → `void` — Text with a highlight sweeping across it, for "Thinking..." states.  ([Motion and text effects](docs/api/MotionAndTextEffects.md))
+- `ui.Spotlight(UiText id, SpotlightOpts o = default)` → `LayoutScope`  ([Motion and text effects](docs/api/MotionAndTextEffects.md))
+- `ui.TabBar(UiText id, ReadOnlySpan<TabBarItem> items, ref int selected, TabBarOpts o = default)` → `bool`  ([Motion and text effects](docs/api/MotionAndTextEffects.md))
+- `ui.TextReveal(UiText id, UiText text, TextFxOpts o = default)` → `void` — Words fade and rise into place one after another, when first shown and again whenever the text changes.  ([Motion and text effects](docs/api/MotionAndTextEffects.md))
+- `ui.Typewriter(UiText id, UiText text, TextFxOpts o = default)` → `bool` — Types the text out. When the text grows (streamed tokens) it carries on from where it was; other changes start over. Returns true once complete.  ([Motion and text effects](docs/api/MotionAndTextEffects.md))
+- `ui.Waveform(UiText id, ReadOnlySpan<float> peaks, out float progress, WaveformOpts o = default)` → `bool`  ([Motion and text effects](docs/api/MotionAndTextEffects.md))
+- `ui.WordRotate(UiText id, ReadOnlySpan<string> words, float interval, TextFxOpts o = default)` → `void` — One word at a time; the next one rolls up into place and the width follows.  ([Motion and text effects](docs/api/MotionAndTextEffects.md))
+- `ui.Breadcrumb(ReadOnlySpan<string> items)` → `int`  ([Navigation](docs/api/Navigation.md))
+- `ui.NavItem(UiText label, NavOpts o = default)` → `bool`  ([Navigation](docs/api/Navigation.md))
+- `ui.NavSection(UiText title)` → `void`  ([Navigation](docs/api/Navigation.md))
+- `ui.Pagination(UiText id, ref int page, int pageCount)` → `bool`  ([Navigation](docs/api/Navigation.md))
+- `ui.Stepper(ReadOnlySpan<string> steps, int current)` → `void`  ([Navigation](docs/api/Navigation.md))
+- `ui.Tabs(UiText id, ReadOnlySpan<string> items, ref int index, TabsOpts o = default)` → `bool`  ([Navigation](docs/api/Navigation.md))
+- `ui.DateRangePicker(UiText id, ref DateRange range, DateRangeOpts o = default)` → `bool`  ([Pickers](docs/api/Pickers.md))
+- `ui.Fader(UiText id, ref float value, float min, float max, FaderOpts o = default)` → `bool`  ([Pickers](docs/api/Pickers.md))
+- `ui.HistogramSlider(UiText label, ReadOnlySpan<float> bins, ref float lo, ref float hi, float min, float max, HistogramOpts o = default)` → `bool`  ([Pickers](docs/api/Pickers.md))
+- `ui.Knob(UiText id, ref float value, float min, float max, KnobOpts o = default)` → `bool`  ([Pickers](docs/api/Pickers.md))
+- `ui.LevelMeter(UiText id, ReadOnlySpan<float> levels, LevelMeterOpts o = default)` → `bool` — Returns true when the clip light was clicked to clear it.  ([Pickers](docs/api/Pickers.md))
+- `ui.MultiSelect(UiText id, ReadOnlySpan<string> items, ref bool selected, MultiSelectOpts o = default)` → `bool`  ([Pickers](docs/api/Pickers.md))
+- `ui.RangeCalendar(UiText id, ref DateRange range, int months)` → `bool` — One or two months side by side; click a start and an end.  ([Pickers](docs/api/Pickers.md))
+- `ui.RulerSlider(UiText label, ref float value, float min, float max, RulerOpts o = default)` → `bool`  ([Pickers](docs/api/Pickers.md))
+- `ui.TimeDial(UiText id, ref int hour, ref int minute, float size)` → `bool` — Time dial: a clock face. Drag the hand to set hours, then minutes.  ([Pickers](docs/api/Pickers.md))
+- `ui.TimePicker(UiText id, ref int hour, ref int minute, TimeOpts o = default)` → `bool`  ([Pickers](docs/api/Pickers.md))
+- `ui.WheelPicker(UiText id, ReadOnlySpan<string> items, ref int index, WheelOpts o = default)` → `bool`  ([Pickers](docs/api/Pickers.md))
+- `ui.Gantt(UiText id, ReadOnlySpan<GanttTask> tasks, Date origin, int days, GanttOpts o = default)` → `int`  ([Planning](docs/api/Planning.md))
+- `ui.Kanban(UiText id)` → `bool`  ([Planning](docs/api/Planning.md))
+- `ui.KanbanCard(int cardId)` → `OpenScope`  ([Planning](docs/api/Planning.md))
+- `ui.KanbanColumn(UiText title, int cardCount, KanbanColumnOpts o = default)` → `OpenScope`  ([Planning](docs/api/Planning.md))
+- `ui.MonthCalendar(UiText id, ref Date month, ReadOnlySpan<MonthEvent> events, ref Date selected, MonthOpts o = default)` → `MonthResult`  ([Planning](docs/api/Planning.md))
+- `ui.WeekCalendar(UiText id, Date weekStart, ReadOnlySpan<CalendarEvent> events, WeekOpts o = default)` → `int`  ([Planning](docs/api/Planning.md))
+- `ui.Calendar(UiText id, ref Date value)` → `bool`  ([Select, combobox, date picker](docs/api/SelectComboboxDatePicker.md))
+- `ui.ColorPicker(UiText id, ref Color value)` → `bool`  ([Select, combobox, date picker](docs/api/SelectComboboxDatePicker.md))
+- `ui.DatePicker(UiText id, ref Date value, DateOpts o = default)` → `bool`  ([Select, combobox, date picker](docs/api/SelectComboboxDatePicker.md))
+- `ui.Select(UiText id, ReadOnlySpan<string> items, ref int index, SelectOpts o = default)` → `bool`  ([Select, combobox, date picker](docs/api/SelectComboboxDatePicker.md))
+- `ui.Checkbox(UiText label, ref bool value, CheckOpts o = default)` → `bool`  ([Selection controls](docs/api/SelectionControls.md))
+- `ui.Chip(UiText label, ref bool selected, ChipOpts o = default)` → `bool`  ([Selection controls](docs/api/SelectionControls.md))
+- `ui.Radio(UiText label, ref int value, int option, CheckOpts o = default)` → `bool`  ([Selection controls](docs/api/SelectionControls.md))
+- `ui.RadioGroup(UiText id, ReadOnlySpan<string> items, ref int index)` → `bool`  ([Selection controls](docs/api/SelectionControls.md))
+- `ui.RangeSlider(UiText label, ref float lo, ref float hi, float min, float max)` → `bool`  ([Selection controls](docs/api/SelectionControls.md))
+- `ui.Rating(UiText id, ref int value, int max = 5)` → `bool`  ([Selection controls](docs/api/SelectionControls.md))
+- `ui.Slider(UiText label, ref float value, float min, float max, SliderOpts o = default)` → `bool` — Elastic slider: the track stretches like rubber when dragged past its ends.  ([Selection controls](docs/api/SelectionControls.md))
+- `ui.Switch(UiText label, ref bool value, CheckOpts o = default)` → `bool`  ([Selection controls](docs/api/SelectionControls.md))
+- `ui.Code(UiText text)` → `void`  ([Text](docs/api/Text.md))
+- `ui.Heading(UiText text, int level = 2)` → `void`  ([Text](docs/api/Text.md))
+- `ui.Kbd(UiText keys)` → `void`  ([Text](docs/api/Text.md))
+- `ui.Label(UiText text)` → `void`  ([Text](docs/api/Text.md))
+- `ui.Link(UiText text)` → `bool`  ([Text](docs/api/Text.md))
+- `ui.Muted(UiText text)` → `void`  ([Text](docs/api/Text.md))
+- `ui.Secondary(UiText text)` → `void`  ([Text](docs/api/Text.md))
+- `ui.Text(UiText text, TextOpts o = default)` → `void`  ([Text](docs/api/Text.md))
+
+## Documents
+
+- [Options](docs/api/Options.md): every option struct and its fields.
+- [Records](docs/api/Records.md): item types for the widgets that take arrays.
+- [Hosting](docs/HOSTING.md): components, mutation, dependency injection.
+- [Coverage](bindings/coverage.txt): which C functions are wrapped, manual, excluded or pending.
+- [Guide](skills/cui-dotnet/SKILL.md): the authoring rules, the pitfalls, the component list.
+- [Architecture](docs/ARCHITECTURE.md): decisions, layout, the generator pipeline.
+- [Plan](docs/PLAN.md): what is still missing, and the gates a step must pass.
+- [Performance](docs/PERFORMANCE.md): measured cost per frame and the allocation model.

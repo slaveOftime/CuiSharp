@@ -1,0 +1,37 @@
+# Build output
+bin/
+obj/
+artifacts/
+dist/
+*.user
+*.suo
+.vs/
+.idea/
+
+# Native artifacts, produced by native/build-native.ps1 or .sh.
+# Never committed: they are built from the external/CUI submodule.
+native/cui.dll
+native/cui.lib
+native/libcui.so
+native/libcui.a
+native/*.exp
+native/*.pdb
+
+# BenchmarkDotNet scratch
+BenchmarkDotNet.Artifacts/
+
+# Test output
+TestResults/
+*.trx
+coverage.*
+# ...but the binding coverage manifest is generated evidence and is committed.
+!bindings/coverage.txt
+
+# Screenshots produced by the CUI_SCREENSHOT hook
+*.png
+!docs/**/*.png
+
+# Editor and OS
+.DS_Store
+Thumbs.db
+*.swp

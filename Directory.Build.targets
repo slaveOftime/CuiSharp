@@ -1,0 +1,58 @@
+<Project>
+
+  <!--
+    In-repo plumbing for the template, and nothing else.
+
+    The template ships files that reference the published package, because that is
+    what a generated app needs. Inside this repository those same files build against
+    the source project and the locally built native library instead, so the template
+    cannot drift from the API it demonstrates. Keeping that here means the packaged
+    csproj files stay short and readable — they are also part of the documentation.
+  -->
+
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'CuiSharp.App' or '$(MSBuildProjectName)' == 'CuiSharp.App.Tests'">
+    <UseLocalCuiSharp>true</UseLocalCuiSharp>
+    <!-- Same version as the repository, so a package reference here would still resolve. -->
+    <CuiSharpVersion>$(Version)</CuiSharpVersion>
+    <_CuiSharpNativeRoot>$(MSBuildThisFileDirectory)native\</_CuiSharpNativeRoot>
+  </PropertyGroup>
+
+  <!--
+    A package delivers the analyzers in analyzers/dotnet/cs, which a ProjectReference does
+    not carry. Inside the repository the projects that demonstrate the API (the gallery, the
+    template, the tests) reference the analyzer project directly, so a violation in sample
+    code fails the build here exactly as it would in an app that installed the package.
+  -->
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'CuiSharp.Gallery' or
+                        '$(MSBuildProjectName)' == 'CuiSharp.App' or
+                        '$(MSBuildProjectName)' == 'CuiSharp.App.Tests' or
+                        '$(MSBuildProjectName)' == 'CuiSharp.Tests'">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)src/CuiSharp.Analyzers/CuiSharp.Analyzers.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UseLocalCuiSharp)' == 'true'">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)src\CuiSharp\CuiSharp.csproj" />
+
+    <!-- A package supplies the native library; a project reference does not. -->
+    <None Include="$(_CuiSharpNativeRoot)cui.dll" Link="cui.dll" CopyToOutputDirectory="PreserveNewest" Visible="false" Condition="Exists('$(_CuiSharpNativeRoot)cui.dll') And '$(PublishAot)' != 'true'" />
+    <None Include="$(_CuiSharpNativeRoot)libcui.so" Link="libcui.so" CopyToOutputDirectory="PreserveNewest" Visible="false" Condition="Exists('$(_CuiSharpNativeRoot)libcui.so') And '$(PublishAot)' != 'true'" />
+  </ItemGroup>
+
+  <!-- CuiSharp.targets supplies these for a package; a project reference has to spell them out. -->
+  <ItemGroup Condition="'$(UseLocalCuiSharp)' == 'true' And '$(PublishAot)' == 'true'">
+    <DirectPInvoke Include="cui" />
+    <NativeLibrary Include="$(_CuiSharpNativeRoot)cui.lib" />
+    <LinkerArg Include="user32.lib" />
+    <LinkerArg Include="gdi32.lib" />
+    <LinkerArg Include="opengl32.lib" />
+    <LinkerArg Include="shell32.lib" />
+    <LinkerArg Include="imm32.lib" />
+    <LinkerArg Include="dwmapi.lib" />
+    <LinkerArg Include="comdlg32.lib" />
+    <LinkerArg Include="ole32.lib" />
+    <LinkerArg Include="/OPT:REF" />
+    <LinkerArg Include="/OPT:ICF" />
+  </ItemGroup>
+
+</Project>
