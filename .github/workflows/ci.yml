@@ -44,13 +44,13 @@ jobs:
         os: [ubuntu-latest, windows-latest]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
 
       - name: Checkout submodules (CUI)
         run: git submodule update --init --recursive
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6.1.0
         with:
           dotnet-version: |
             8.0.x
@@ -78,10 +78,10 @@ jobs:
     name: Template scaffolds and builds
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6.1.0
         with:
           dotnet-version: 10.0.x
 
@@ -119,13 +119,13 @@ jobs:
     name: NativeAOT single file (windows)
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
 
       - name: Checkout submodules (CUI)
         run: git submodule update --init --recursive
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6.1.0
         with:
           dotnet-version: 10.0.x
 
@@ -170,7 +170,7 @@ jobs:
           finally { Pop-Location }
           Write-Host 'headless render OK'
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: cui-gallery-win-x64
@@ -204,13 +204,13 @@ jobs:
           - leg: decimate-only
             filter: ['*ScaleBenchmarks.DecimateOnly*']
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
 
       - name: Checkout submodules (CUI)
         run: git submodule update --init --recursive
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6.1.0
         with:
           dotnet-version: 10.0.x
 
@@ -228,7 +228,7 @@ jobs:
           --filter ${{ join(matrix.filter, ' ') }} --warmupCount 2 --iterationCount 5
           --exporters json github
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: benchmark-results-${{ matrix.leg }}
@@ -243,13 +243,13 @@ jobs:
     name: ABI unchanged
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
 
       - name: Checkout submodules (CUI)
         run: git submodule update --init --recursive
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6.1.0
         with:
           dotnet-version: 10.0.x
 
