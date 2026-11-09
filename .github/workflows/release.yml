@@ -14,7 +14,6 @@ permissions:
   id-token: write # NuGet trusted publishing / OIDC
 
 jobs:
-  pack:
   # CUI is built per platform, so the package can carry every RID's native assets:
   # win-x64 from Windows, osx-arm64 from macOS. The pack job then assembles one
   # package with both, and a consumer's single PackageReference works everywhere.
@@ -194,15 +193,32 @@ jobs:
           name: nuget-packages
           path: packages
 
-      # Recommended: NuGet trusted publishing. Add a NUGET_USER secret for the
-      # nuget.org account name; no long-lived API key is stored.
+      # NuGet trusted publishing: "NUGET_USER" is the nuget.org account name, and
+      # nuget.org needs a trusted publishing policy for this repository, this
+      # workflow and the "nuget" environment. Until that secret exists the job
+      # says so and leaves publishing to whoever set it up, rather than failing a
+      # release whose packages are already built and attached to the tag.
+      - name: Check whether NuGet publishing is configured
+        id: creds
+        shell: pwsh
+        run: |
+          if ('${{ secrets.NUGET_USER }}') {
+            Write-Host 'NUGET_USER is set: publishing to nuget.org'
+            'configured=true' >> $env:GITHUB_OUTPUT
+          } else {
+            Write-Warning 'NUGET_USER is not set, so nothing is pushed to nuget.org. Add the secret and a trusted publishing policy on nuget.org to publish.'
+            'configured=false' >> $env:GITHUB_OUTPUT
+          }
+
       - name: NuGet login (OIDC)
+        if: steps.creds.outputs.configured == 'true'
         uses: NuGet/login@v1.2.0
         id: login
         with:
           user: ${{ secrets.NUGET_USER }}
 
       - name: Push
+        if: steps.creds.outputs.configured == 'true'
         shell: pwsh
         run: |
           Get-ChildItem packages/*.nupkg | ForEach-Object {
@@ -210,6 +226,14 @@ jobs:
               --source https://api.nuget.org/v3/index.json --skip-duplicate
             if ($LASTEXITCODE) { throw "push failed for $($_.Name)" }
           }
+
+      # A release whose packages were not published is a half-done release; say so
+      # in the run summary so the gap is visible without reading the log.
+      - name: Record what happened
+        shell: pwsh
+        run: |
+          $state = if ('${{ steps.creds.outputs.configured }}' -eq 'true') { 'pushed to nuget.org' } else { 'built, not published (NUGET_USER unset)' }
+          "NuGet: $state" >> $env:GITHUB_STEP_SUMMARY
 
   release:
     name: GitHub release
@@ -228,7 +252,10 @@ jobs:
 
       - uses: softprops/action-gh-release@v3.0.4
         with:
-          generate_release_notes: true
+          # Curated rather than generated: a first release is read by people deciding
+          # whether to install it, and this file is edited per release.
+          body_path: .github/release-notes.md
+          generate_release_notes: false
           files: |
             packages/*.nupkg
             packages/*.snupkg
