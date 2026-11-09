@@ -31,11 +31,9 @@ env:
 
 jobs:
   # The suite draws real frames through the native library, so it needs CUI built
-  # first (many tests fail with DllNotFoundException without it). Windows and macOS
-  # build CUI and run the whole suite; the Linux leg compiles everything, which is
-  # the platform-specific part in managed code (interop signatures, ref struct
-  # rules, analyzers) — the ubuntu image carries no X11 headers, so CUI's x11
-  # backend cannot build there (PLAN §5).
+  # first (many tests fail with DllNotFoundException without it). Every leg builds CUI
+  # for its own backend and runs the whole suite: nothing needs a display, the frames go
+  # through CUI's software renderer. Linux needs the X11 headers to compile the backend.
   test:
     name: Build and test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -57,8 +55,11 @@ jobs:
             8.0.x
             10.0.x
 
+      - name: Install X11 headers (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libx11-dev
+
       - name: Build CUI (native library)
-        if: runner.os != 'Linux'
         shell: pwsh
         run: |
           if ($IsWindows) { ./native/build-native.ps1 }
@@ -71,7 +72,6 @@ jobs:
         run: dotnet build CuiSharp.slnx --configuration Release --no-restore -warnaserror
 
       - name: Test
-        if: runner.os != 'Linux'
         run: dotnet test CuiSharp.slnx --configuration Release --no-build
 
   # The template content is not in the solution, so nothing else compiles it.
@@ -85,7 +85,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@v7.0.1
 
@@ -96,6 +96,10 @@ jobs:
         uses: actions/setup-dotnet@v6.1.0
         with:
           dotnet-version: 10.0.x
+
+      - name: Install X11 headers (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libx11-dev
 
       - name: Build CUI (native library)
         shell: pwsh

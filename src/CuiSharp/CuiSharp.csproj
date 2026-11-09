@@ -28,23 +28,44 @@
   </PropertyGroup>
 
   <!--
-    Native artifacts, built by native/build-native.ps1 (Windows) or native/build-native.sh
-    (Linux, macOS). Not committed to git. Each Exists() guard means a pack on one machine
-    carries only the RIDs that machine built; release builds all of them first.
+    Native artifacts. A normal build writes them flat into native/: native/build-native.ps1
+    on Windows, native/build-native.sh on Linux and macOS. A pack on one machine therefore
+    carries that machine's RID only.
+
+    The release packs all RIDs at once, so each platform's artifacts are downloaded into
+    their own directory and named here. They cannot share the flat directory: Linux and
+    macOS both build a `libcui.a`, and one would overwrite the other.
   -->
   <PropertyGroup>
     <CuiNativeDir>$(MSBuildThisFileDirectory)..\..\native\</CuiNativeDir>
   </PropertyGroup>
 
-  <ItemGroup Condition="Exists('$(CuiNativeDir)cui.dll')">
-    <None Include="$(CuiNativeDir)cui.dll" Pack="true" PackagePath="runtimes/win-x64/native/" Visible="false" />
+  <PropertyGroup>
+    <!-- Which directory supplies which RID. The shared library names the platform (only
+         win builds cui.dll, only linux libcui.so, only osx libcui.dylib); the static
+         archive cannot, which is why the flat default is resolved per platform. -->
+    <_CuiNativeWin Condition="'$(CuiNativeWinDir)' != ''">$(CuiNativeWinDir)</_CuiNativeWin>
+    <_CuiNativeLinux Condition="'$(CuiNativeLinuxDir)' != ''">$(CuiNativeLinuxDir)</_CuiNativeLinux>
+    <_CuiNativeOsx Condition="'$(CuiNativeOsxDir)' != ''">$(CuiNativeOsxDir)</_CuiNativeOsx>
+    <_CuiNativeWin Condition="'$(_CuiNativeWin)' == '' And Exists('$(CuiNativeDir)cui.dll')">$(CuiNativeDir)</_CuiNativeWin>
+    <_CuiNativeLinux Condition="'$(_CuiNativeLinux)' == '' And Exists('$(CuiNativeDir)libcui.so')">$(CuiNativeDir)</_CuiNativeLinux>
+    <_CuiNativeOsx Condition="'$(_CuiNativeOsx)' == '' And Exists('$(CuiNativeDir)libcui.dylib')">$(CuiNativeDir)</_CuiNativeOsx>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(_CuiNativeWin)' != '' And Exists('$(_CuiNativeWin)cui.lib')">
+    <None Include="$(_CuiNativeWin)cui.dll" Pack="true" PackagePath="runtimes/win-x64/native/" Visible="false" />
     <!-- The static archive lets a consumer's NativeAOT build link CUI in. -->
-    <None Include="$(CuiNativeDir)cui.lib" Pack="true" PackagePath="runtimes/win-x64/native/" Visible="false" />
+    <None Include="$(_CuiNativeWin)cui.lib" Pack="true" PackagePath="runtimes/win-x64/native/" Visible="false" />
   </ItemGroup>
 
-  <ItemGroup Condition="Exists('$(CuiNativeDir)libcui.dylib')">
-    <None Include="$(CuiNativeDir)libcui.dylib" Pack="true" PackagePath="runtimes/osx-arm64/native/" Visible="false" />
-    <None Include="$(CuiNativeDir)libcui.a" Pack="true" PackagePath="runtimes/osx-arm64/native/" Visible="false" />
+  <ItemGroup Condition="'$(_CuiNativeLinux)' != '' And Exists('$(_CuiNativeLinux)libcui.a')">
+    <None Include="$(_CuiNativeLinux)libcui.so" Pack="true" PackagePath="runtimes/linux-x64/native/" Visible="false" />
+    <None Include="$(_CuiNativeLinux)libcui.a" Pack="true" PackagePath="runtimes/linux-x64/native/" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(_CuiNativeOsx)' != '' And Exists('$(_CuiNativeOsx)libcui.a')">
+    <None Include="$(_CuiNativeOsx)libcui.dylib" Pack="true" PackagePath="runtimes/osx-arm64/native/" Visible="false" />
+    <None Include="$(_CuiNativeOsx)libcui.a" Pack="true" PackagePath="runtimes/osx-arm64/native/" Visible="false" />
   </ItemGroup>
 
   <!--
