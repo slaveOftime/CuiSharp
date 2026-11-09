@@ -2,11 +2,15 @@
   <Folder Name="/samples/">
     <Project Path="samples/CuiSharp.Gallery/CuiSharp.Gallery.csproj" />
   </Folder>
+  <Folder Name="/templates/">
+    <Project Path="src/CuiSharp.Templates/CuiSharp.Templates.csproj" />
+  </Folder>
+  <Folder Name="/templates/CuiSharp.App/">
+    <Project Path="src/CuiSharp.Templates/CuiSharp.App/CuiSharp.App.Tests/CuiSharp.App.Tests.csproj" />
+    <Project Path="src/CuiSharp.Templates/CuiSharp.App/CuiSharp.App/CuiSharp.App.csproj" />
+  </Folder>
   <Project Path="src/CuiSharp.Analyzers/CuiSharp.Analyzers.csproj" />
   <Project Path="src/CuiSharp.Benchmarks/CuiSharp.Benchmarks.csproj" />
-  <Project Path="src/CuiSharp.Templates/CuiSharp.App/CuiSharp.App/CuiSharp.App.csproj" />
-  <Project Path="src/CuiSharp.Templates/CuiSharp.App/CuiSharp.App.Tests/CuiSharp.App.Tests.csproj" />
-  <Project Path="src/CuiSharp.Templates/CuiSharp.Templates.csproj" />
   <Project Path="src/CuiSharp.Testing/CuiSharp.Testing.csproj" />
   <Project Path="src/CuiSharp.Tools/CuiSharp.Tools.csproj" />
   <Project Path="src/CuiSharp.Tests/CuiSharp.Tests.csproj" />
