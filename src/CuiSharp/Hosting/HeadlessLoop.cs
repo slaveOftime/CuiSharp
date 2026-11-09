@@ -33,6 +33,19 @@ public static class HeadlessLoop
     /// <summary>The environment variable an app checks to run without a window.</summary>
     public const string EnvironmentVariable = "CUISHARP_HEADLESS";
 
+    /// <summary>
+    /// The longest answer the loop will send. A whole-page tree of a large window is kilobytes; a
+    /// megabyte means the caller asked for something that cannot travel down this pipe, and a
+    /// client that pre-allocates the announced length should not be told to allocate it.
+    /// </summary>
+    internal const int MaxAnswerBytes = 16 * 1024 * 1024;
+
+    /// <summary>
+    /// The longest command line the loop will read. A command is a word and a label; anything past
+    /// this is a stream with no newline in it, and reading it to the end would be the app's memory.
+    /// </summary>
+    internal const int MaxCommandChars = 64 * 1024;
+
     private static readonly string[] Commands =
     [
         "tree", "print", "find", "click", "type", "key", "focus", "move", "frame", "faults", "png", "quit",
@@ -97,9 +110,23 @@ public static class HeadlessLoop
         sink.Write($"CUI-READY {app.Width} {app.Height}\n");
         sink.Flush();
 
-        while (source.ReadLine() is { } line)
+        while (true)
         {
-            line = line.Trim();
+            string? read;
+            try
+            {
+                read = ReadCommand(source);
+            }
+            catch (ArgumentException error)
+            {
+                // The stream is still at an unknown place in an over-long line, so the session
+                // ends with the reason instead of answering commands parsed from its middle.
+                Answer(sink, ok: false, error.Message);
+                return 1;
+            }
+
+            if (read is null) break;
+            string line = read.Trim();
             if (line.Length == 0) continue;
 
             int space = line.IndexOf(' ', StringComparison.Ordinal);
@@ -123,6 +150,28 @@ public static class HeadlessLoop
         }
 
         return 0;
+    }
+
+    /// <summary>
+    /// One command, with a bound: a client that never sends a newline is answered with why its
+    /// command was too long instead of growing the loop's buffer until the process dies.
+    /// </summary>
+    internal static string? ReadCommand(TextReader source)
+    {
+        var line = new StringBuilder(128);
+        while (true)
+        {
+            int next = source.Read();
+            if (next < 0) return line.Length == 0 ? null : line.ToString();
+            if (next == (char)10) return line.ToString().TrimEnd((char)13);
+            if (line.Length >= MaxCommandChars)
+            {
+                throw new ArgumentException(
+                    $"A command line longer than {MaxCommandChars} characters was not read. Commands end with a newline.");
+            }
+
+            line.Append((char)next);
+        }
     }
 
     /// <summary>
@@ -209,9 +258,20 @@ public static class HeadlessLoop
         return path;
     }
 
-    private static void Answer(TextWriter sink, bool ok, string payload)
+    internal static void Answer(TextWriter sink, bool ok, string payload, int limit = MaxAnswerBytes)
     {
         int bytes = Encoding.UTF8.GetByteCount(payload);
+        if (bytes > limit)
+        {
+            // Bounded, and honest about it: a client that asked for too much learns the size and
+            // the limit rather than reading a tree that quietly stops halfway.
+            payload =
+                $"The answer is {bytes} bytes, past this protocol's {limit}-byte limit. " +
+                "Ask for less: one control, one page of the tree, or a smaller window.";
+            ok = false;
+            bytes = Encoding.UTF8.GetByteCount(payload);
+        }
+
         sink.Write($"{(ok ? "CUI-OK" : "CUI-ERR")} {bytes}\n");
         if (bytes > 0) sink.Write(payload);
         sink.Write('\n');

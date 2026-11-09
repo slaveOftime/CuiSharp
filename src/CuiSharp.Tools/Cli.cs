@@ -42,6 +42,7 @@ internal static class Cli
         Options:
           -p, --project <path>  the app to run (a project file or its directory). Default: here
               --app <exe>       run a published build instead of building
+              --framework <tfm> the target framework, when the project has more than one
               --frames <count>  draw this many frames before the command
           -s, --stdin           read commands from stdin and print each answer, one process
           -q, --quiet           only print the payload
@@ -61,9 +62,10 @@ internal static class Cli
                 return args.Length == 0 ? 2 : 0;
             }
 
+
             (string host, string[] hostArgs) = options.Host is { } exe
                 ? (exe, options.AppArgs)
-                : AppLocator.Resolve(options.Project, options.NoBuild, error) is { } assembly
+                : AppLocator.Resolve(options.Project, options.NoBuild, error, new(Framework: options.Framework)) is { } assembly
                     ? ("dotnet", [assembly, .. options.AppArgs])
                     : throw new ToolException($"No .NET app found at \"{options.Project ?? Directory.GetCurrentDirectory()}\".");
 
@@ -143,6 +145,9 @@ internal static class Cli
         /// <summary>The executable to run, instead of building.</summary>
         internal string? Host { get; init; }
 
+        /// <summary>The target framework, when the project targets more than one.</summary>
+        internal string? Framework { get; init; }
+
         /// <summary>Arguments for the app itself, from after <c>--</c>.</summary>
         internal string[] AppArgs { get; init; } = [];
 
@@ -153,7 +158,7 @@ internal static class Cli
         {
             if (args.Length == 0) return new Options { Help = true };
 
-            string? project = null, host = null;
+            string? project = null, host = null, framework = null;
             var appArgs = new List<string>();
             var words = new List<string>();
             int frames = 0;
@@ -172,6 +177,9 @@ internal static class Cli
                         break;
                     case "--app":
                         host = Value(args, ref i);
+                        break;
+                    case "--framework":
+                        framework = Value(args, ref i);
                         break;
                     case "--frames":
                         frames = int.Parse(Value(args, ref i), CultureInfo.InvariantCulture);
@@ -210,6 +218,7 @@ internal static class Cli
                 Help = help || (words.Count == 0 && !streaming),
                 Project = project,
                 Host = host,
+                Framework = framework,
                 AppArgs = [.. appArgs],
             };
         }
