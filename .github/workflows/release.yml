@@ -20,11 +20,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Checkout CUI
-        uses: actions/checkout@v4
-        with:
-          repository: yappologistic/CUI
-          path: CUI
+      - name: Checkout submodules (CUI)
+        run: git submodule update --init --recursive
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
