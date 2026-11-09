@@ -26,6 +26,11 @@ if [[ "$(uname)" != "Darwin" ]]; then
     exit 1
   fi
   platform_args=(-DCUI_PLATFORM=x11)
+else
+  # .NET's macOS baseline is 12.0. Compiling the archive for whatever the build
+  # machine runs (26.0 on a runner) makes every object newer than the executable
+  # that links it, and ld says so once per object file.
+  platform_args+=(-DCMAKE_OSX_DEPLOYMENT_TARGET="${MACOSX_DEPLOYMENT_TARGET:-12.0}")
 fi
 
 # The pinned submodule stays untouched, so the build runs against a patched copy.
