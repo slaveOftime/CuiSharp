@@ -14,11 +14,32 @@ permissions:
   id-token: write # NuGet trusted publishing / OIDC
 
 jobs:
+  # Everything below exists to publish these packages, so ask nuget.org whether it will
+  # accept us before spending three native builds on it. The OIDC exchange needs the
+  # same claims the real push will present, so this job uses the same environment and
+  # the same account name.
+  preflight:
+    name: Can we log in to nuget.org
+    runs-on: ubuntu-latest
+    environment: nuget
+    steps:
+      - name: NuGet login (OIDC)
+        uses: NuGet/login@v1.2.0
+        id: login
+        with:
+          user: slaveoftime
+
+      - name: Report
+        run: |
+          # The key itself is deliberately not printed; a working exchange is the signal.
+          echo "nuget.org issued a publishing key for slaveoftime" >> $GITHUB_STEP_SUMMARY
+
   # CUI is built per platform, so the package can carry every RID's native assets:
   # win-x64 from Windows, linux-x64 from Linux, osx-arm64 from macOS. The pack job then
   # assembles one package with all three, and a single PackageReference works everywhere.
   native:
     name: Build CUI (${{ matrix.os }})
+    needs: preflight
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
