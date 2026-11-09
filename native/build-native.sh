@@ -58,6 +58,7 @@ if [[ "$(uname)" == "Darwin" ]]; then
   cmake -B build-static -G "Unix Makefiles" "${common[@]}"
   cmake --build build-static -j"$jobs"
   cp build-shared/libcui.dylib build-static/libcui.a "$here/"
+  produced=(libcui.dylib libcui.a)
 else
   echo "==> libcui.so (shared)"
   cmake -B build-shared -G "Unix Makefiles" "${common[@]}" -DCUI_BUILD_SHARED=ON
@@ -66,8 +67,13 @@ else
   cmake -B build-static -G "Unix Makefiles" "${common[@]}"
   cmake --build build-static -j"$jobs"
   cp build-shared/libcui.so build-static/libcui.a "$here/"
+  produced=(libcui.so libcui.a)
 fi
 popd >/dev/null
 
-ls -l "$here"/libcui.{so,dylib,a} 2>/dev/null | awk '{printf "    %-12s %8.0f KB\n", $9, $5/1024}'
+# Name the files this platform produced; `ls` on the ones it does not build would
+# fail the pipeline and, under set -e, the script with it.
+for f in "${produced[@]}"; do
+  ls -l "$here/$f" | awk '{printf "    %-12s %8.0f KB\n", $9, $5/1024}'
+done
 echo "Native artifacts ready."

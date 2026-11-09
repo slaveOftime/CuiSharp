@@ -24,4 +24,12 @@
     <None Include="..\..\native\cui.dll" Link="cui.dll" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)..\..\native\libcui.so')">
+    <None Include="..\..\native\libcui.so" Link="libcui.so" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)..\..\native\libcui.dylib')">
+    <None Include="..\..\native\libcui.dylib" Link="libcui.dylib" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

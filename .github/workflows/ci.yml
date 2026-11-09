@@ -89,6 +89,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
 
+      - name: Checkout submodules (CUI)
+        run: git submodule update --init --recursive
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v6.1.0
         with:
@@ -233,18 +236,40 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
+      # A leg per benchmark family, on each OS. Spelled out because `include`
+      # entries that lack a matrix key are merged into the first combination, not
+      # crossed with it — five legs silently became one.
       matrix:
-        os: [windows-latest, macos-latest]
         include:
-          - leg: frame
+          - os: windows-latest
+            leg: frame
             filter: ['*FrameBuildBenchmarks*', '*MarshallingBenchmarks*']
-          - leg: virtual-list
+          - os: windows-latest
+            leg: virtual-list
             filter: ['*ScaleBenchmarks.VirtualList*']
-          - leg: chart-raw
+          - os: windows-latest
+            leg: chart-raw
             filter: ['*ScaleBenchmarks.ChartRaw*']
-          - leg: chart-decimated
+          - os: windows-latest
+            leg: chart-decimated
             filter: ['*ScaleBenchmarks.ChartDecimated*']
-          - leg: decimate-only
+          - os: windows-latest
+            leg: decimate-only
+            filter: ['*ScaleBenchmarks.DecimateOnly*']
+          - os: macos-latest
+            leg: frame
+            filter: ['*FrameBuildBenchmarks*', '*MarshallingBenchmarks*']
+          - os: macos-latest
+            leg: virtual-list
+            filter: ['*ScaleBenchmarks.VirtualList*']
+          - os: macos-latest
+            leg: chart-raw
+            filter: ['*ScaleBenchmarks.ChartRaw*']
+          - os: macos-latest
+            leg: chart-decimated
+            filter: ['*ScaleBenchmarks.ChartDecimated*']
+          - os: macos-latest
+            leg: decimate-only
             filter: ['*ScaleBenchmarks.DecimateOnly*']
     steps:
       - uses: actions/checkout@v7.0.1
