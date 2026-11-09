@@ -27,8 +27,10 @@
   <PropertyGroup>
     <_CuiNativeTarget Condition="'$(RuntimeIdentifier)' != '' And $(RuntimeIdentifier.StartsWith('win'))">win</_CuiNativeTarget>
     <_CuiNativeTarget Condition="'$(RuntimeIdentifier)' != '' And $(RuntimeIdentifier.StartsWith('linux'))">linux</_CuiNativeTarget>
+    <_CuiNativeTarget Condition="'$(RuntimeIdentifier)' != '' And $(RuntimeIdentifier.StartsWith('osx'))">osx</_CuiNativeTarget>
     <_CuiNativeTarget Condition="'$(_CuiNativeTarget)' == '' And $([MSBuild]::IsOSPlatform('Windows'))">win</_CuiNativeTarget>
     <_CuiNativeTarget Condition="'$(_CuiNativeTarget)' == '' And $([MSBuild]::IsOSPlatform('Linux'))">linux</_CuiNativeTarget>
+    <_CuiNativeTarget Condition="'$(_CuiNativeTarget)' == '' And $([MSBuild]::IsOSPlatform('OSX'))">osx</_CuiNativeTarget>
   </PropertyGroup>
 
   <!--
@@ -41,6 +43,10 @@
 
   <ItemGroup Condition="'$(PublishAot)' != 'true' And '$(_CuiNativeTarget)' == 'linux'">
     <None Include="../../native/libcui.so" Link="libcui.so" CopyToOutputDirectory="PreserveNewest" Visible="false" Condition="Exists('../../native/libcui.so')" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(PublishAot)' != 'true' And '$(_CuiNativeTarget)' == 'osx'">
+    <None Include="../../native/libcui.dylib" Link="libcui.dylib" CopyToOutputDirectory="PreserveNewest" Visible="false" Condition="Exists('../../native/libcui.dylib')" />
   </ItemGroup>
 
   <!--
@@ -87,6 +93,15 @@
     <LinkerArg Include="-ldl" />
     <LinkerArg Include="-lpthread" />
     <LinkerArg Include="-lm" />
+  </ItemGroup>
+
+  <!-- The Cocoa backend on macOS; NativeAOT there links with clang. -->
+  <ItemGroup Condition="'$(PublishAot)' == 'true' And $([MSBuild]::IsOSPlatform('OSX'))">
+    <DirectPInvoke Include="cui" />
+    <NativeLibrary Include="../../native/libcui.a" />
+    <LinkerArg Include="-framework Cocoa" />
+    <LinkerArg Include="-framework QuartzCore" />
+    <LinkerArg Include="-framework OpenGL" />
   </ItemGroup>
 
 </Project>

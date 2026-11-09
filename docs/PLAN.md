@@ -77,13 +77,12 @@ Only `win-x64` is built and packed today; the package is therefore Windows-only 
 | RID | Native build | Notes |
 |---|---|---|
 | `win-x64` | done | `native/build-native.ps1` |
+| `osx-arm64` | done | `native/build-native.sh` on a macos runner (Cocoa backend); CI builds it and packs it into the package |
 | `linux-x64` | script exists, unverified in the package | needs `libx11-dev`, GL headers |
 | `win-arm64` | not started | cross-compile check |
 | `linux-arm64` | not started | |
-| `osx-arm64` | not started | needs a Mac or a cross toolchain |
 
-- `CuiSharp.targets` must pick the right `cui.lib` per RID instead of hard-coding win-x64.
-- `dotnet pack` per RID, and a package that declares no RID at all must fail loudly rather than
+- `CuiSharp.targets` picks the static archive per RID (win-x64 `cui.lib`, osx-arm64 `libcui.a`); `dotnet pack` per RID is still open, and a package that declares no RID at all must fail loudly rather than
   copy the wrong native library.
 
 Checkpoint: `dotnet publish -r <rid>` for each supported RID produces a single executable that opens
@@ -91,16 +90,19 @@ the gallery, on that platform, from a clean machine.
 
 ## 5. CI
 
-`.github/workflows/ci.yml` runs on every pull request and on `main`: build `-warnaserror` on Windows
-and Linux plus the full test suite on Windows (where CUI is built; the suite draws real frames and
-fails with `DllNotFoundException` without `cui.dll`), the template round trip (pack, scaffold,
-build), a Windows NativeAOT publish that asserts the executable is self-contained and then renders a
-frame headlessly, the benchmark suites, and regen-no-diff against the submodule headers.
+`.github/workflows/ci.yml` runs on every pull request and on `main`: build `-warnaserror` on Windows,
+Linux and macOS, with the full test suite on Windows and macOS (where CUI is built; the suite draws
+real frames and fails with `DllNotFoundException` without the native library — the ubuntu image
+carries no X11 headers, so CUI's x11 backend cannot build there yet), the template round trip (pack,
+scaffold, build) on Windows and macOS, a NativeAOT publish per platform (win-x64, osx-arm64) that
+asserts the executable is self-contained and then renders a frame headlessly, the benchmark suites
+on Windows and macOS, and regen-no-diff against the submodule headers.
 
 What it does not do yet, and should:
 
 - **`dotnet format --verify-no-changes`**, the other gate that catches a formatting drift.
-- **The suite on Linux**, which needs CUI's X11 build on the runner first (§4).
+- **The suite on Linux**, which needs X11 headers on the runner first (install `libx11-dev` in the
+  workflow, or wait for an image that has it).
 - **Frame time against a stored baseline** (`--fps 900` mean, tolerance 10 %) and the AOT size
   budget, so a perf or size regression fails a pull request instead of a release.
 - **`docs/API-SURFACE.txt` as a required review artifact**: the diff should be posted on the pull

@@ -37,10 +37,11 @@
     <!-- A package supplies the native library; a project reference does not. -->
     <None Include="$(_CuiSharpNativeRoot)cui.dll" Link="cui.dll" CopyToOutputDirectory="PreserveNewest" Visible="false" Condition="Exists('$(_CuiSharpNativeRoot)cui.dll') And '$(PublishAot)' != 'true'" />
     <None Include="$(_CuiSharpNativeRoot)libcui.so" Link="libcui.so" CopyToOutputDirectory="PreserveNewest" Visible="false" Condition="Exists('$(_CuiSharpNativeRoot)libcui.so') And '$(PublishAot)' != 'true'" />
+    <None Include="$(_CuiSharpNativeRoot)libcui.dylib" Link="libcui.dylib" CopyToOutputDirectory="PreserveNewest" Visible="false" Condition="Exists('$(_CuiSharpNativeRoot)libcui.dylib') And '$(PublishAot)' != 'true'" />
   </ItemGroup>
 
   <!-- CuiSharp.targets supplies these for a package; a project reference has to spell them out. -->
-  <ItemGroup Condition="'$(UseLocalCuiSharp)' == 'true' And '$(PublishAot)' == 'true'">
+  <ItemGroup Condition="'$(UseLocalCuiSharp)' == 'true' And '$(PublishAot)' == 'true' And $([MSBuild]::IsOSPlatform('Windows'))">
     <DirectPInvoke Include="cui" />
     <NativeLibrary Include="$(_CuiSharpNativeRoot)cui.lib" />
     <LinkerArg Include="user32.lib" />
@@ -53,6 +54,15 @@
     <LinkerArg Include="ole32.lib" />
     <LinkerArg Include="/OPT:REF" />
     <LinkerArg Include="/OPT:ICF" />
+  </ItemGroup>
+
+  <!-- The Cocoa backend on macOS. -->
+  <ItemGroup Condition="'$(UseLocalCuiSharp)' == 'true' And '$(PublishAot)' == 'true' And $([MSBuild]::IsOSPlatform('OSX'))">
+    <DirectPInvoke Include="cui" />
+    <NativeLibrary Include="$(_CuiSharpNativeRoot)libcui.a" />
+    <LinkerArg Include="-framework Cocoa" />
+    <LinkerArg Include="-framework QuartzCore" />
+    <LinkerArg Include="-framework OpenGL" />
   </ItemGroup>
 
 </Project>

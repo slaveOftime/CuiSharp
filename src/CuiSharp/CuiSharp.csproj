@@ -27,7 +27,11 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
-  <!-- Native artifacts, built by native/build-native.ps1. Not committed to git. -->
+  <!--
+    Native artifacts, built by native/build-native.ps1 (Windows) or native/build-native.sh
+    (Linux, macOS). Not committed to git. Each Exists() guard means a pack on one machine
+    carries only the RIDs that machine built; release builds all of them first.
+  -->
   <PropertyGroup>
     <CuiNativeDir>$(MSBuildThisFileDirectory)..\..\native\</CuiNativeDir>
   </PropertyGroup>
@@ -36,6 +40,11 @@
     <None Include="$(CuiNativeDir)cui.dll" Pack="true" PackagePath="runtimes/win-x64/native/" Visible="false" />
     <!-- The static archive lets a consumer's NativeAOT build link CUI in. -->
     <None Include="$(CuiNativeDir)cui.lib" Pack="true" PackagePath="runtimes/win-x64/native/" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup Condition="Exists('$(CuiNativeDir)libcui.dylib')">
+    <None Include="$(CuiNativeDir)libcui.dylib" Pack="true" PackagePath="runtimes/osx-arm64/native/" Visible="false" />
+    <None Include="$(CuiNativeDir)libcui.a" Pack="true" PackagePath="runtimes/osx-arm64/native/" Visible="false" />
   </ItemGroup>
 
   <!--

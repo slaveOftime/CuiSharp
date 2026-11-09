@@ -34,6 +34,10 @@
     <None Include="../../native/libcui.so" Link="libcui.so" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)../../native/libcui.dylib')">
+    <None Include="../../native/libcui.dylib" Link="libcui.dylib" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>

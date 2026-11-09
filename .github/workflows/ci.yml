@@ -30,18 +30,19 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: true
 
 jobs:
-  # The suite draws real frames through cui.dll, so it needs the native library
-  # (many tests fail with DllNotFoundException without it). Windows builds CUI and
-  # runs the whole suite; the Linux leg compiles everything, which is the part that
-  # is platform-specific in managed code (interop signatures, ref struct rules,
-  # analyzers) — CUI itself is only built and packed for win-x64 today (PLAN §4).
+  # The suite draws real frames through the native library, so it needs CUI built
+  # first (many tests fail with DllNotFoundException without it). Windows and macOS
+  # build CUI and run the whole suite; the Linux leg compiles everything, which is
+  # the platform-specific part in managed code (interop signatures, ref struct
+  # rules, analyzers) — the ubuntu image carries no X11 headers, so CUI's x11
+  # backend cannot build there (PLAN §5).
   test:
     name: Build and test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
       - uses: actions/checkout@v7.0.1
@@ -56,10 +57,12 @@ jobs:
             8.0.x
             10.0.x
 
-      - name: Build CUI (cui.dll, only on Windows)
-        if: runner.os == 'Windows'
+      - name: Build CUI (native library)
+        if: runner.os != 'Linux'
         shell: pwsh
-        run: ./native/build-native.ps1
+        run: |
+          if ($IsWindows) { ./native/build-native.ps1 }
+          else { bash native/build-native.sh }
 
       - name: Restore
         run: dotnet restore CuiSharp.slnx
@@ -68,15 +71,21 @@ jobs:
         run: dotnet build CuiSharp.slnx --configuration Release --no-restore -warnaserror
 
       - name: Test
-        if: runner.os == 'Windows'
+        if: runner.os != 'Linux'
         run: dotnet test CuiSharp.slnx --configuration Release --no-build
 
   # The template content is not in the solution, so nothing else compiles it.
   # Scaffold it under a name that is not CuiSharp.* — a namespace-only difference
-  # used to hide a missing using directive — and build that.
+  # used to hide a missing using directive — and build that. Each OS packs the
+  # library with its own native build, so the scaffolded app runs the backend it
+  # will actually ship with.
   template:
-    name: Template scaffolds and builds
-    runs-on: windows-latest
+    name: Template scaffolds and builds (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@v7.0.1
 
@@ -84,6 +93,12 @@ jobs:
         uses: actions/setup-dotnet@v6.1.0
         with:
           dotnet-version: 10.0.x
+
+      - name: Build CUI (native library)
+        shell: pwsh
+        run: |
+          if ($IsWindows) { ./native/build-native.ps1 }
+          else { bash native/build-native.sh }
 
       - name: Pack the library and the template
         run: |
@@ -113,11 +128,21 @@ jobs:
 
           dotnet build $app -c Release -warnaserror
 
-  # Proves the whole chain on Windows: build CUI from source, then publish the
-  # gallery as a single NativeAOT executable and run it headless.
+  # Proves the whole chain per platform: build CUI from source, then publish the
+  # gallery as a single NativeAOT executable with CUI linked in, and run it headless.
   native-aot:
-    name: NativeAOT single file (windows)
-    runs-on: windows-latest
+    name: NativeAOT single file (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+            exe: CuiGallery.exe
+          - os: macos-latest
+            rid: osx-arm64
+            exe: CuiGallery
     steps:
       - uses: actions/checkout@v7.0.1
 
@@ -129,41 +154,58 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      - name: Build CUI (cui.dll + cui.lib)
+      - name: Build CUI (native library)
         shell: pwsh
-        run: ./native/build-native.ps1
+        run: |
+          if ($IsWindows) { ./native/build-native.ps1 }
+          else { bash native/build-native.sh }
 
       - name: Publish
-        run: dotnet publish samples/CuiSharp.Gallery -c Release -r win-x64 -o artifacts/publish
+        run: dotnet publish samples/CuiSharp.Gallery -c Release -r ${{ matrix.rid }} -o artifacts/publish
 
       - name: Assert the exe is self-contained
         shell: pwsh
         run: |
-          . ./native/msvc-env.ps1  # dumpbin
-          $exe = 'artifacts/publish/CuiGallery.exe'
+          $exe = 'artifacts/publish/${{ matrix.exe }}'
           if (-not (Test-Path $exe)) { throw "missing $exe" }
+
+          if ($IsWindows) {
+            . ./native/msvc-env.ps1  # dumpbin
+            $deps = & dumpbin /dependents $exe 2>$null | Select-String '\.dll'
+            foreach ($forbidden in 'cui.dll', 'VCRUNTIME', 'MSVCP', 'coreclr', 'hostfxr') {
+              if ($deps -match [regex]::Escape($forbidden)) { throw "unexpected dependency: $forbidden" }
+            }
+          } else {
+            # A static CUI leaves only the system libraries; a dynamic libcui here means
+            # the archive was not linked in.
+            $deps = otool -L $exe
+            Write-Host ($deps -join "`n")
+            if ($deps -match 'libcui') { throw 'libcui was not linked in' }
+          }
+          if (Test-Path 'artifacts/publish/libcui.dylib') { throw 'libcui.dylib was not linked in' }
           if (Test-Path 'artifacts/publish/cui.dll') { throw 'cui.dll was not linked in' }
 
-          $deps = & dumpbin /dependents $exe 2>$null | Select-String '\.dll'
-          Write-Host ($deps -join "`n")
-          foreach ($forbidden in 'cui.dll', 'VCRUNTIME', 'MSVCP', 'coreclr', 'hostfxr') {
-            if ($deps -match [regex]::Escape($forbidden)) { throw "unexpected dependency: $forbidden" }
-          }
-
           $mb = [math]::Round((Get-Item $exe).Length / 1MB, 2)
-          Write-Host "CuiGallery.exe = $mb MB"
+          Write-Host "${{ matrix.exe }} = $mb MB"
 
       - name: Smoke test (headless render)
         shell: pwsh
         run: |
-          # CuiGallery.exe is a WinExe: calling it directly does not wait for it, so the
-          # screenshot and the exit code are both read before the app has run.
+          # A WinExe does not make PowerShell wait on Windows, so the screenshot and
+          # the exit code would both be read before the app has run. On macOS the
+          # published binary is an ordinary executable and waits like any command.
           Push-Location artifacts/publish
           try {
             $env:CUI_SCREENSHOT = 'smoke.png'
             $env:CUI_SCREENSHOT_FRAMES = '8'
-            $app = Start-Process -FilePath ./CuiGallery.exe -ArgumentList '--page=0' -Wait -PassThru
-            if ($app.ExitCode -ne 0) { throw "app exited $($app.ExitCode)" }
+            if ($IsWindows) {
+              $app = Start-Process -FilePath ./CuiGallery.exe -ArgumentList '--page=0' -Wait -PassThru
+              $exit = $app.ExitCode
+            } else {
+              ./CuiGallery --page=0
+              $exit = $LASTEXITCODE
+            }
+            if ($exit -ne 0) { throw "app exited $exit" }
             if (-not (Test-Path 'smoke.png')) { throw 'no screenshot produced' }
             if ((Get-Item 'smoke.png').Length -lt 10KB) { throw 'screenshot looks empty' }
           }
@@ -173,9 +215,9 @@ jobs:
       - uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
-          name: cui-gallery-win-x64
+          name: cui-gallery-${{ matrix.rid }}
           path: |
-            artifacts/publish/CuiGallery.exe
+            artifacts/publish/${{ matrix.exe }}
             artifacts/publish/smoke.png
 
   # Benchmarks are a regression signal, not a gate: the JSON reports are uploaded
@@ -187,11 +229,12 @@ jobs:
   # couple of minutes (ScaleBenchmarks' nine param combinations are the long pole,
   # so each of its benchmarks gets its own leg).
   benchmarks:
-    name: Benchmarks (${{ matrix.leg }})
-    runs-on: windows-latest
+    name: Benchmarks (${{ matrix.os }} · ${{ matrix.leg }})
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os: [windows-latest, macos-latest]
         include:
           - leg: frame
             filter: ['*FrameBuildBenchmarks*', '*MarshallingBenchmarks*']
@@ -216,7 +259,9 @@ jobs:
 
       - name: Build native
         shell: pwsh
-        run: ./native/build-native.ps1
+        run: |
+          if ($IsWindows) { ./native/build-native.ps1 }
+          else { bash native/build-native.sh }
 
       # No --job: the suites carry [SimpleJob], and a CLI --job is *added* to those,
       # so every case ran twice. The iteration counts trim that one job instead:
@@ -231,7 +276,7 @@ jobs:
       - uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
-          name: benchmark-results-${{ matrix.leg }}
+          name: benchmark-results-${{ matrix.os }}-${{ matrix.leg }}
           path: BenchmarkDotNet.Artifacts/results/
 
   # Fails the build if the checked-in bindings drift from the pinned CUI headers:

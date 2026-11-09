@@ -12,9 +12,20 @@
 
   <PropertyGroup>
     <_CuiSharpNativeDir>$(MSBuildThisFileDirectory)../runtimes/win-x64/native/</_CuiSharpNativeDir>
+    <_CuiSharpNativeDirOsx>$(MSBuildThisFileDirectory)../runtimes/osx-arm64/native/</_CuiSharpNativeDirOsx>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(PublishAot)' == 'true' And Exists('$(_CuiSharpNativeDir)cui.lib')">
+  <ItemGroup Condition="'$(PublishAot)' == 'true' And '$(RuntimeIdentifier)' != '' And $(RuntimeIdentifier.StartsWith('osx')) And Exists('$(_CuiSharpNativeDirOsx)libcui.a')">
+    <DirectPInvoke Include="cui" />
+    <NativeLibrary Include="$(_CuiSharpNativeDirOsx)libcui.a" />
+
+    <!-- What CUI's Cocoa backend links against. -->
+    <LinkerArg Include="-framework Cocoa" />
+    <LinkerArg Include="-framework QuartzCore" />
+    <LinkerArg Include="-framework OpenGL" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(PublishAot)' == 'true' And ($([MSBuild]::IsOSPlatform('Windows')) Or ('$(RuntimeIdentifier)' != '' And $(RuntimeIdentifier.StartsWith('win')))) And Exists('$(_CuiSharpNativeDir)cui.lib')">
     <DirectPInvoke Include="cui" />
     <NativeLibrary Include="$(_CuiSharpNativeDir)cui.lib" />
 
@@ -47,9 +58,9 @@
 
   <Target Name="CuiSharpExplainMissingArchive"
           BeforeTargets="PrepareForPublish"
-          Condition="'$(PublishAot)' == 'true' And !Exists('$(_CuiSharpNativeDir)cui.lib')">
+          Condition="'$(PublishAot)' == 'true' And !Exists('$(_CuiSharpNativeDir)cui.lib') And !Exists('$(_CuiSharpNativeDirOsx)libcui.a')">
     <Message Importance="high"
-             Text="CuiSharp: cui.lib is not in the package, so CUI will be loaded from cui.dll at runtime. Add &lt;DirectPInvoke Include=&quot;cui&quot; /&gt; and a NativeLibrary item yourself to link it statically." />
+             Text="CuiSharp: the static archive for this platform is not in the package, so CUI will be loaded from its shared library at runtime. Add &lt;DirectPInvoke Include=&quot;cui&quot; /&gt; and a NativeLibrary item yourself to link it statically." />
   </Target>
 
 </Project>
