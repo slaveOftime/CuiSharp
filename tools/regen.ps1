@@ -10,7 +10,8 @@
       3. build and test, which pins the struct layout against libclang
 
     Pass -NoNative to skip step 1 when the native artifacts are already current,
-    and -NoDiff to fail if regeneration changed anything (what CI runs).
+    -NoDiff to fail if regeneration changed anything (what CI runs), and -NoTest to
+    stop after the build when the suite is run elsewhere (it needs the native library).
 
 .EXAMPLE
     pwsh tools/regen.ps1
@@ -19,7 +20,8 @@
 [CmdletBinding()]
 param(
     [switch] $NoNative,
-    [switch] $NoDiff
+    [switch] $NoDiff,
+    [switch] $NoTest
 )
 
 $ErrorActionPreference = 'Stop'
@@ -87,6 +89,11 @@ try {
     Write-Host 'build + test'
     & dotnet build (Join-Path $root 'CuiSharp.slnx') -c Release -warnaserror
     if ($LASTEXITCODE -ne 0) { throw 'build failed' }
+
+    if ($NoTest) {
+        Write-Host 'tests: skipped (-NoTest)'
+        return
+    }
 
     & dotnet test (Join-Path $root 'CuiSharp.slnx') -c Release --no-build
     if ($LASTEXITCODE -ne 0) { throw 'tests failed' }

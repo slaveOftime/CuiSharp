@@ -6,15 +6,22 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>CuiSharp.App</RootNamespace>
-    <ApplicationManifest Condition="'$(OS)' == 'Windows_NT'">app.manifest</ApplicationManifest>
+    <!-- The manifest only means something on Windows. IsOSPlatform rather than
+         '$(OS)' == 'Windows_NT': dotnet new evaluates a Condition it can resolve, and
+         an evaluated condition is rewritten or dropped in the generated project. -->
+    <ApplicationManifest Condition="$([MSBuild]::IsOSPlatform('Windows'))">app.manifest</ApplicationManifest>
 
     <!-- Publish and run format numbers the same way, so a screenshot of one matches the other. -->
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- Stamped from the CuiSharp version this template shipped with. -->
-    <CuiSharpVersion Condition="'$(CuiSharpVersion)' == ''">__CUISHARP_VERSION__</CuiSharpVersion>
+    <!-- Stamped from the CuiSharp version this template shipped with. No guard on
+         '$(CuiSharpVersion) == empty' here: that name is a template symbol, and dotnet
+         new evaluates a condition it can resolve — false deletes the whole line, which
+         leaves the package reference below without a version (NU1015). A global
+         -p:CuiSharpVersion=... still overrides this line at build time. -->
+    <CuiSharpVersion>__CUISHARP_VERSION__</CuiSharpVersion>
   </PropertyGroup>
 
   <!--

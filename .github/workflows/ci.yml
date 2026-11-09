@@ -30,8 +30,11 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: true
 
 jobs:
-  # The managed library and its tests do not touch the native library, so they
-  # build and run anywhere.
+  # The suite draws real frames through cui.dll, so it needs the native library
+  # (many tests fail with DllNotFoundException without it). Windows builds CUI and
+  # runs the whole suite; the Linux leg compiles everything, which is the part that
+  # is platform-specific in managed code (interop signatures, ref struct rules,
+  # analyzers) — CUI itself is only built and packed for win-x64 today (PLAN §4).
   test:
     name: Build and test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -43,12 +46,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Checkout submodules (CUI)
+        run: git submodule update --init --recursive
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: |
             8.0.x
             10.0.x
+
+      - name: Build CUI (cui.dll, only on Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./native/build-native.ps1
 
       - name: Restore
         run: dotnet restore CuiSharp.slnx
@@ -57,6 +68,7 @@ jobs:
         run: dotnet build CuiSharp.slnx --configuration Release --no-restore -warnaserror
 
       - name: Test
+        if: runner.os == 'Windows'
         run: dotnet test CuiSharp.slnx --configuration Release --no-build
 
   # The template content is not in the solution, so nothing else compiles it.
@@ -127,6 +139,7 @@ jobs:
       - name: Assert the exe is self-contained
         shell: pwsh
         run: |
+          . ./native/msvc-env.ps1  # dumpbin
           $exe = 'artifacts/publish/CuiGallery.exe'
           if (-not (Test-Path $exe)) { throw "missing $exe" }
           if (Test-Path 'artifacts/publish/cui.dll') { throw 'cui.dll was not linked in' }
@@ -193,8 +206,11 @@ jobs:
           name: benchmark-results
           path: BenchmarkDotNet.Artifacts/results/
 
-  # Fails the build if someone edits a native struct without updating the
-  # goldens in AbiLayoutTests.
+  # Fails the build if the checked-in bindings drift from the pinned CUI headers:
+  # regenerating from the submodule must reproduce every generated file byte for
+  # byte, and the generated layout tests pin each struct's size and field offsets.
+  # (The old C probe this job ran is gone; bindgen takes the same numbers from
+  # libclang, and the native jobs prove them against a real cui.dll.)
   abi:
     name: ABI unchanged
     runs-on: windows-latest
@@ -209,22 +225,6 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      - name: Build and run the probe against the submodule headers
-        shell: pwsh
-        run: |
-          Push-Location native
-          cl /nologo /MT /I CUI\include abi_probe.c /Fe:abi_probe.exe
-          if ($LASTEXITCODE) { throw 'probe failed to compile' }
-          ./abi_probe.exe | Tee-Object abi_c.txt
-          Pop-Location
+      - name: Regenerate from the pinned headers and verify
+        run: pwsh tools/regen.ps1 -NoNative -NoDiff -NoTest
 
-      - name: Compare with the managed side
-        shell: pwsh
-        run: |
-          dotnet test src/CuiSharp.Tests -c Release --filter "FullyQualifiedName~AbiLayoutTests"
-          if ($LASTEXITCODE) { throw 'ABI layout drifted from cui.h' }
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: abi-report
-          path: native/abi_c.txt

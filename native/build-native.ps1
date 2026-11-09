@@ -46,21 +46,8 @@ function Find-CMake {
     throw 'cmake not found. Install CMake or put it on PATH.'
 }
 
-function Enter-MsvcEnvironment {
-    if ($env:VSCMD_ARG_TGT_ARCH) { return }
-    $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-    if (-not (Test-Path $vswhere)) { throw 'Visual Studio with the C++ toolset was not found.' }
-    $install = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-    if (-not $install) { throw 'Visual Studio with the C++ toolset was not found.' }
-    $vcvars = Join-Path $install 'VC\Auxiliary\Build\vcvars64.bat'
-    # Re-run in a shell that has the MSVC environment, then exit.
-    cmd /c "`"$vcvars`" >nul 2>&1 && set" | ForEach-Object {
-        if ($_ -match '^([^=]+)=(.*)$') { Set-Item -Path "env:$($matches[1])" -Value $matches[2] }
-    }
-}
-
 $cmake = Find-CMake
-Enter-MsvcEnvironment
+. (Join-Path $here 'msvc-env.ps1')
 
 function Invoke-NativePatches {
     # The pinned submodule stays untouched, so the build runs against a patched

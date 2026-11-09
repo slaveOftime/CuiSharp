@@ -91,15 +91,16 @@ the gallery, on that platform, from a clean machine.
 
 ## 5. CI
 
-`.github/workflows/ci.yml` runs on every pull request and on `main`: build `-warnaserror` and tests
-on Windows and Linux, the template round trip (pack, scaffold, build, test), a Windows NativeAOT
-publish that asserts the executable is self-contained and then renders a frame headlessly, the
-benchmark suites, and an ABI probe against the submodule headers.
+`.github/workflows/ci.yml` runs on every pull request and on `main`: build `-warnaserror` on Windows
+and Linux plus the full test suite on Windows (where CUI is built; the suite draws real frames and
+fails with `DllNotFoundException` without `cui.dll`), the template round trip (pack, scaffold,
+build), a Windows NativeAOT publish that asserts the executable is self-contained and then renders a
+frame headlessly, the benchmark suites, and regen-no-diff against the submodule headers.
 
 What it does not do yet, and should:
 
-- **regen-no-diff** and `dotnet format --verify-no-changes`: the two gates that catch a hand-edited
-  generated file and a formatting drift, both cheap and both currently manual.
+- **`dotnet format --verify-no-changes`**, the other gate that catches a formatting drift.
+- **The suite on Linux**, which needs CUI's X11 build on the runner first (§4).
 - **Frame time against a stored baseline** (`--fps 900` mean, tolerance 10 %) and the AOT size
   budget, so a perf or size regression fails a pull request instead of a release.
 - **`docs/API-SURFACE.txt` as a required review artifact**: the diff should be posted on the pull

@@ -31,12 +31,16 @@
     <_CuiNativeTarget Condition="'$(_CuiNativeTarget)' == '' And $([MSBuild]::IsOSPlatform('Linux'))">linux</_CuiNativeTarget>
   </PropertyGroup>
 
+  <!--
+    Exists() because the CI jobs that only compile managed code do not build the
+    native artifacts; the native build and run happen in the jobs that do build CUI.
+  -->
   <ItemGroup Condition="'$(PublishAot)' != 'true' And '$(_CuiNativeTarget)' == 'win'">
-    <None Include="../../native/cui.dll" Link="cui.dll" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+    <None Include="../../native/cui.dll" Link="cui.dll" CopyToOutputDirectory="PreserveNewest" Visible="false" Condition="Exists('../../native/cui.dll')" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(PublishAot)' != 'true' And '$(_CuiNativeTarget)' == 'linux'">
-    <None Include="../../native/libcui.so" Link="libcui.so" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+    <None Include="../../native/libcui.so" Link="libcui.so" CopyToOutputDirectory="PreserveNewest" Visible="false" Condition="Exists('../../native/libcui.so')" />
   </ItemGroup>
 
   <!--
