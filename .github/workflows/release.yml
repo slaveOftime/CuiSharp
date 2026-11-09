@@ -49,6 +49,34 @@ jobs:
           if ($version) { $args += "-p:Version=$version" }
           dotnet @args
 
+      - name: Pack CuiSharp and CuiSharp.Testing
+        shell: pwsh
+        run: |
+          $version = '${{ github.event.inputs.version }}'
+          if (-not $version -and '${{ github.ref_type }}' -eq 'tag') {
+            $version = '${{ github.ref_name }}'.TrimStart('v')
+          }
+          foreach ($project in 'src/CuiSharp/CuiSharp.csproj', 'src/CuiSharp.Testing/CuiSharp.Testing.csproj') {
+            $args = @('pack', $project, '-c', 'Release', '-o', 'artifacts/packages')
+            if ($version) { $args += "-p:Version=$version" }
+            dotnet @args
+            if ($LASTEXITCODE) { throw "pack failed for $project" }
+          }
+
+      # The tool is packed from its own output: `PackAsTool` needs the build, and
+      # `dotnet cui` is what the README tells a user to install.
+      - name: Pack the dotnet tool
+        shell: pwsh
+        run: |
+          $version = '${{ github.event.inputs.version }}'
+          if (-not $version -and '${{ github.ref_type }}' -eq 'tag') {
+            $version = '${{ github.ref_name }}'.TrimStart('v')
+          }
+          $args = @('pack', 'src/CuiSharp.Tools/CuiSharp.Tools.csproj', '-c', 'Release', '-o', 'artifacts/packages')
+          if ($version) { $args += "-p:Version=$version" }
+          dotnet @args
+          if ($LASTEXITCODE) { throw 'pack failed for CuiSharp.Tools' }
+
       - name: Pack
         shell: pwsh
         run: |
@@ -60,19 +88,57 @@ jobs:
           if ($version) { $args += "-p:Version=$version" }
           dotnet @args
 
-      - name: Inspect the package
+      - name: Inspect every package
         shell: pwsh
         run: |
-          $nupkg = Get-ChildItem artifacts/packages/*.nupkg | Select-Object -First 1
-          $zip = [System.IO.Compression.ZipFile]::OpenRead($nupkg.FullName)
+          # What each package must contain, keyed by id. A release that ships a
+          # package without its native assets or its build targets is worse than
+          # no release, so this fails instead of publishing.
+          $required = @{
+            'CuiSharp'          = @('lib/net10.0/CuiSharp.dll', 'runtimes/win-x64/native/cui.dll',
+                                    'runtimes/win-x64/native/cui.lib', 'build/CuiSharp.targets',
+                                    'analyzers/dotnet/cs/CuiSharp.Analyzers.dll')
+            'CuiSharp.Testing'  = @('lib/net10.0/CuiSharp.Testing.dll')
+            'CuiSharp.Tools'    = @('tools/net10.0/any/DotnetToolSettings.xml')
+            'CuiSharp.Templates' = @('content/CuiSharp.App/.template.config/template.json')
+          }
+
+          $packages = Get-ChildItem artifacts/packages/*.nupkg
+          if ($packages.Count -ne $required.Count) {
+            throw "expected $($required.Count) packages, packed $($packages.Count): $($packages.Name -join ', ')"
+          }
+
+          foreach ($nupkg in $packages) {
+            $id = $nupkg.Name -replace '\.\d+\..*\.nupkg$', ''
+            if (-not $required.ContainsKey($id)) { throw "unexpected package: $($nupkg.Name)" }
+
+            $zip = [System.IO.Compression.ZipFile]::OpenRead($nupkg.FullName)
+            try {
+              $names = $zip.Entries.FullName
+              $names | Sort-Object | ForEach-Object { Write-Host "    $_" }
+              if ($names -notcontains 'README.md') { throw "$id is missing README.md" }
+              foreach ($entry in $required[$id]) {
+                if ($names -notcontains $entry) { throw "$id is missing $entry" }
+              }
+            } finally { $zip.Dispose() }
+            Write-Host "package OK: $($nupkg.Name)"
+          }
+
+          # The template pins the library version it shipped with; a release whose
+          # template points at a version that is not this one scaffolds a solution
+          # that cannot restore.
+          $templates = Get-ChildItem artifacts/packages/CuiSharp.Templates.*.nupkg | Select-Object -First 1
+          $version = $templates.Name -replace '^CuiSharp\.Templates\.(.*)\.nupkg$', '$1'
+          $zip = [System.IO.Compression.ZipFile]::OpenRead($templates.FullName)
           try {
-            $names = $zip.Entries.FullName
-            $names | Sort-Object | Write-Host
-            foreach ($required in 'runtimes/win-x64/native/cui.dll', 'runtimes/win-x64/native/cui.lib', 'build/CuiSharp.targets', 'README.md') {
-              if ($names -notcontains $required) { throw "package is missing $required" }
+            $entry = $zip.GetEntry('content/CuiSharp.App/.template.config/template.json')
+            $json = (New-Object System.IO.StreamReader($entry.Open())).ReadToEnd() | ConvertFrom-Json
+            $pinned = $json.symbols.CuiSharpVersion.defaultValue
+            if ($pinned -ne $version) {
+              throw "the template pins CuiSharp $pinned but this release is $version; update template.json"
             }
           } finally { $zip.Dispose() }
-          Write-Host "package OK: $($nupkg.Name)"
+          Write-Host "template pins CuiSharp $version"
 
       - uses: actions/upload-artifact@v4
         with:
