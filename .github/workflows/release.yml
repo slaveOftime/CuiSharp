@@ -108,6 +108,14 @@ jobs:
           name: native-macos
           path: artifacts/native/osx-arm64
 
+      # The suite and the in-repo projects look for the host's library in native/,
+      # which is where a local build leaves it. Only the Windows files go there: the
+      # other RIDs stay in their own directories, because Linux and macOS both build
+      # a libcui.a and one would overwrite the other.
+      - name: Stage the host's native library for the test run
+        shell: pwsh
+        run: Copy-Item artifacts/native/win-x64/* native/
+
       - name: Test
         run: dotnet test CuiSharp.slnx -c Release
 
