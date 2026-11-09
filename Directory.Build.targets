@@ -56,6 +56,16 @@
     <LinkerArg Include="/OPT:ICF" />
   </ItemGroup>
 
+  <!-- The X11 backend on Linux: CUI dlopens GL, so only Xlib and the C runtime are linked. -->
+  <ItemGroup Condition="'$(UseLocalCuiSharp)' == 'true' And '$(PublishAot)' == 'true' And $([MSBuild]::IsOSPlatform('Linux'))">
+    <DirectPInvoke Include="cui" />
+    <NativeLibrary Include="$(_CuiSharpNativeRoot)libcui.a" />
+    <LinkerArg Include="-lX11" />
+    <LinkerArg Include="-ldl" />
+    <LinkerArg Include="-lpthread" />
+    <LinkerArg Include="-lm" />
+  </ItemGroup>
+
   <!-- The Cocoa backend on macOS. -->
   <ItemGroup Condition="'$(UseLocalCuiSharp)' == 'true' And '$(PublishAot)' == 'true' And $([MSBuild]::IsOSPlatform('OSX'))">
     <DirectPInvoke Include="cui" />

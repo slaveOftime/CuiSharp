@@ -48,7 +48,10 @@ jobs:
           - os: windows-latest
             artifact: native-windows
             path: native/cui.*
-          - os: ubuntu-latest
+          # The oldest image the package promises to load on (glibc 2.35). Building on
+          # a newer one narrows the promise without anyone choosing it; build-native.sh
+          # fails the build if the produced libcui.so needs more than the baseline.
+          - os: ubuntu-22.04
             artifact: native-linux
             path: native/libcui.*
           - os: macos-latest
@@ -67,14 +70,20 @@ jobs:
 
       - name: Build CUI (native artifacts)
         shell: pwsh
+        env:
+          CUI_GLIBC_BASELINE: '2.35'
         run: |
           if ($IsWindows) { ./native/build-native.ps1 }
           else { bash native/build-native.sh }
 
+      # The archive is only as trustworthy as what produced it, so the revision, the
+      # compiler and the measured ABI travel with it.
       - uses: actions/upload-artifact@v7.0.2
         with:
           name: ${{ matrix.artifact }}
-          path: ${{ matrix.path }}
+          path: |
+            ${{ matrix.path }}
+            native/native-provenance.txt
 
   pack:
     name: Pack and verify
@@ -153,6 +162,7 @@ jobs:
           # no release, so this fails instead of publishing.
           $required = @{
             'CuiSharp'          = @('lib/net10.0/CuiSharp.dll', 'build/CuiSharp.targets',
+                                    'runtimes/native-provenance.txt',
                                     'analyzers/dotnet/cs/CuiSharp.Analyzers.dll',
                                     'runtimes/win-x64/native/cui.dll', 'runtimes/win-x64/native/cui.lib',
                                     'runtimes/linux-x64/native/libcui.so', 'runtimes/linux-x64/native/libcui.a',

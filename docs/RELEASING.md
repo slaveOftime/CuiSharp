@@ -29,6 +29,9 @@ dotnet run -c Release --project src/CuiSharp.Benchmarks -- --fps 900
 
 What each one protects:
 
+The Linux native build must run on the declared ABI baseline (`ubuntu-22.04`, glibc 2.35), which is
+what `release.yml` and `ci.yml` pin; `build-native.sh` fails if the produced `libcui.so` needs more.
+
 | Gate | Fails when |
 |---|---|
 | `-warnaserror` | a warning appeared, including a nullable or doc-comment regression |
@@ -76,7 +79,7 @@ unzip -l artifacts/packages/CuiSharp.Templates.*.nupkg | head -20
 
 | Package | Must contain |
 |---|---|
-| `CuiSharp` | `lib/net10.0/CuiSharp.dll`, `runtimes/win-x64/native/cui.{dll,lib}`, `analyzers/dotnet/cs/CuiSharp.Analyzers.dll`, `build/CuiSharp.targets`, `README.md` |
+| `CuiSharp` | `lib/net10.0/CuiSharp.dll`, each RID's `runtimes/<rid>/native/` files, `runtimes/native-provenance.txt` (revision, compiler, ABI, hashes — see [NATIVE-ABI.md](NATIVE-ABI.md)), `analyzers/dotnet/cs/CuiSharp.Analyzers.dll`, `build/CuiSharp.targets`, `README.md` |
 | `CuiSharp.Testing` | `lib/net10.0/CuiSharp.Testing.dll` and a dependency on `CuiSharp` |
 | `CuiSharp.Tools` | a `DotnetToolSettings.xml` with `CommandName=cui` |
 | `CuiSharp.Templates` | `content/CuiSharp.App/…` including the app, its tests and `AGENTS.md` |
@@ -92,9 +95,12 @@ dotnet new console -n Smoke && cd Smoke
 dotnet add package CuiSharp -s <repo>/artifacts/packages
 # paste the README's five-line example, then:
 dotnet run                       # a window opens
-dotnet publish -c Release -r win-x64
-ls bin/Release/net10.0/win-x64/publish/   # one executable, no cui.dll beside it
+dotnet publish -c Release -r <rid> -p:PublishAot=true
+ls bin/Release/net10.0/<rid>/publish/     # one executable, no native library beside it
 ```
+
+A publish for a RID the package does not carry, or without its archive, is an error naming the RID
+and the path — that is the package refusing to ship a binary that would fail at start.
 
 Then the template, from the same local feed:
 

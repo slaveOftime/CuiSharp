@@ -16,6 +16,7 @@ native/libcui.so
 native/libcui.a
 native/*.exp
 native/*.pdb
+native/native-provenance.txt
 
 # BenchmarkDotNet scratch
 BenchmarkDotNet.Artifacts/

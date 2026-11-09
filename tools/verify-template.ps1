@@ -91,14 +91,30 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'the generated app has failing tests' }
 
     if (-not $NoPublish) {
-        Step 'publishing a NativeAOT single file'
-        & dotnet publish (Join-Path $app 'TodoApp/TodoApp.csproj') -c $Configuration -r win-x64 $versionArg
+        # The host's own RID, so this gate says something on Linux and macOS too: the
+        # package's archive for that RID is what links, and a Windows-only run cannot
+        # see an x11 or a Cocoa linker argument going wrong.
+        $rid = if ($IsWindows) { 'win-x64' } elseif ($IsMacOS) { 'osx-arm64' } else { 'linux-x64' }
+        $exeName = if ($IsWindows) { 'TodoApp.exe' } else { 'TodoApp' }
+
+        Step "publishing a NativeAOT single file ($rid)"
+        & dotnet publish (Join-Path $app 'TodoApp/TodoApp.csproj') -c $Configuration -r $rid $versionArg
         if ($LASTEXITCODE -ne 0) { throw 'the generated app does not publish' }
 
-        $exe = Join-Path $app 'TodoApp/bin/Release/net10.0/win-x64/publish/TodoApp.exe'
+        $published = Join-Path $app "TodoApp/bin/Release/net10.0/$rid/publish"
+        $exe = Join-Path $published $exeName
         if (-not (Test-Path $exe)) { throw "expected $exe" }
         $size = (Get-Item $exe).Length
         Write-Host ("    publish size: {0:N0} B" -f $size)
+
+        # "One file" is the promise, so the shared library that shipped in the package
+        # must not be sitting next to the executable that linked it in.
+        foreach ($stray in 'cui.dll', 'cui.lib', 'libcui.so', 'libcui.dylib', 'libcui.a') {
+            if (Test-Path (Join-Path $published $stray)) {
+                throw "the AOT publish left $stray beside the executable"
+            }
+        }
+        Write-Host '    no native library left beside the executable' -ForegroundColor Green
     }
 
     # The analyzers ship inside the package, and a package's analyzers are what an app

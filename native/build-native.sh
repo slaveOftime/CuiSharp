@@ -36,6 +36,7 @@ fi
 # The pinned submodule stays untouched, so the build runs against a patched copy.
 # tools/bindgen.cs reads the same staged headers. See docs/PLAN.md section 4.3.
 repo="$(cd "$here/.." && pwd)"
+cui_rev="$(git -C "$src" rev-parse --short HEAD 2>/dev/null || echo unknown)"
 stage="$repo/artifacts/native-src"
 rm -rf "$stage"
 mkdir -p "$stage"
@@ -81,4 +82,40 @@ popd >/dev/null
 for f in "${produced[@]}"; do
   ls -l "$here/$f" | awk '{printf "    %-12s %8.0f KB\n", $9, $5/1024}'
 done
+
+# The ABI a Linux package promises, checked rather than inherited from whichever image
+# happened to build it: a .so linked against a newer glibc loads on nothing older, and
+# that failure surfaces in a consumer's environment, not here.
+baseline="${CUI_GLIBC_BASELINE:-2.35}"
+provenance="$here/native-provenance.txt"
+{
+  echo "cui-rev=$cui_rev"
+  echo "os=$(uname -s)-$(uname -m)"
+  echo "built-on=$( . /etc/os-release 2>/dev/null && echo "${PRETTY_NAME:-unknown}" || echo unknown)"
+  echo "cc=$("${CC:-cc}" --version 2>/dev/null | head -1)"
+} > "$provenance"
+
+if [[ "$(uname)" != "Darwin" ]] && command -v objdump >/dev/null; then
+  required="$(objdump -T "$here/libcui.so" | grep -o 'GLIBC_[0-9.]*' | sed 's/GLIBC_//' | sort -Vu | tail -1)"
+  echo "requires-glibc=$required" >> "$provenance"
+  echo "baseline-glibc=$baseline" >> "$provenance"
+  if [[ -n "$required" && "$(printf '%s\n%s\n' "$baseline" "$required" | sort -V | tail -1)" != "$baseline" ]]; then
+    echo "ERROR: libcui.so needs glibc $required but the package promises $baseline." >&2
+    echo "       Build on an image at or below the baseline (CUI_GLIBC_BASELINE=$baseline)," >&2
+    echo "       or raise the promise deliberately and record it in docs/NATIVE-ABI.md." >&2
+    exit 1
+  fi
+fi
+
+# Recorded with the artifact, not reconstructed later: a package that cannot say which
+# CUI revision and compiler produced its library is a package nobody can audit.
+for f in "${produced[@]}"; do
+  if command -v sha256sum >/dev/null; then
+    echo "file=$f sha256=$(sha256sum "$here/$f" | cut -d' ' -f1)" >> "$provenance"
+  else
+    echo "file=$f sha256=$(shasum -a 256 "$here/$f" | cut -d' ' -f1)" >> "$provenance"
+  fi
+done
+
+echo "Provenance written to $provenance."
 echo "Native artifacts ready."

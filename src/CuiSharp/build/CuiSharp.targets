@@ -8,22 +8,41 @@
     second half: when the consumer publishes with NativeAOT, point the compiler
     at the packaged static archive so CUI is linked into the executable instead
     of being loaded at runtime.
+
+    Two rules this file exists to keep:
+
+    * The RID is matched exactly. A publish for linux-arm64 used to match
+      linux-x64's archive by prefix and link a library built for another
+      architecture, which fails deep inside the linker instead of here.
+    * A NativeAOT publish that cannot find its archive is an error, not a
+      warning. The publish would otherwise succeed, delete the shared library on
+      the way out, and ship a binary that cannot start.
   -->
 
   <PropertyGroup>
     <_CuiSharpNativeWin>$(MSBuildThisFileDirectory)../runtimes/win-x64/native/</_CuiSharpNativeWin>
     <_CuiSharpNativeLinux>$(MSBuildThisFileDirectory)../runtimes/linux-x64/native/</_CuiSharpNativeLinux>
     <_CuiSharpNativeOsx>$(MSBuildThisFileDirectory)../runtimes/osx-arm64/native/</_CuiSharpNativeOsx>
-    <!-- RID wins; a publish without one falls back to the host's own archive. -->
+
+    <!-- The RIDs this package carries a static archive for, and nothing else. -->
+    <_CuiSharpSupportedRids>win-x64;linux-x64;osx-arm64</_CuiSharpSupportedRids>
+
+    <!-- RID wins; a publish without one asks the host, which is what "no -r" means. -->
     <_CuiSharpRid Condition="'$(RuntimeIdentifier)' != ''">$(RuntimeIdentifier)</_CuiSharpRid>
-    <_CuiSharpRid Condition="'$(_CuiSharpRid)' == '' And $([MSBuild]::IsOSPlatform('Windows'))">win</_CuiSharpRid>
-    <_CuiSharpRid Condition="'$(_CuiSharpRid)' == '' And $([MSBuild]::IsOSPlatform('Linux'))">linux</_CuiSharpRid>
-    <_CuiSharpRid Condition="'$(_CuiSharpRid)' == '' And $([MSBuild]::IsOSPlatform('OSX'))">osx</_CuiSharpRid>
+    <_CuiSharpRid Condition="'$(_CuiSharpRid)' == '' And $([MSBuild]::IsOSPlatform('Windows'))">win-x64</_CuiSharpRid>
+    <_CuiSharpRid Condition="'$(_CuiSharpRid)' == '' And $([MSBuild]::IsOSPlatform('Linux'))">linux-x64</_CuiSharpRid>
+    <_CuiSharpRid Condition="'$(_CuiSharpRid)' == '' And $([MSBuild]::IsOSPlatform('OSX'))">osx-arm64</_CuiSharpRid>
+
+    <_CuiSharpArchive Condition="'$(_CuiSharpRid)' == 'win-x64'">$(_CuiSharpNativeWin)cui.lib</_CuiSharpArchive>
+    <_CuiSharpArchive Condition="'$(_CuiSharpRid)' == 'linux-x64'">$(_CuiSharpNativeLinux)libcui.a</_CuiSharpArchive>
+    <_CuiSharpArchive Condition="'$(_CuiSharpRid)' == 'osx-arm64'">$(_CuiSharpNativeOsx)libcui.a</_CuiSharpArchive>
+
+    <_CuiSharpLinksStatically Condition="'$(PublishAot)' == 'true' And '$(_CuiSharpArchive)' != '' And Exists('$(_CuiSharpArchive)')">true</_CuiSharpLinksStatically>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(PublishAot)' == 'true' And $(_CuiSharpRid.StartsWith('win')) And Exists('$(_CuiSharpNativeWin)cui.lib')">
+  <ItemGroup Condition="'$(_CuiSharpLinksStatically)' == 'true' And $(_CuiSharpRid.StartsWith('win'))">
     <DirectPInvoke Include="cui" />
-    <NativeLibrary Include="$(_CuiSharpNativeWin)cui.lib" />
+    <NativeLibrary Include="$(_CuiSharpArchive)" />
 
     <!-- What CUI's Win32 backend links against. -->
     <LinkerArg Include="user32.lib" />
@@ -38,9 +57,9 @@
     <LinkerArg Include="/OPT:ICF" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(PublishAot)' == 'true' And $(_CuiSharpRid.StartsWith('linux')) And Exists('$(_CuiSharpNativeLinux)libcui.a')">
+  <ItemGroup Condition="'$(_CuiSharpLinksStatically)' == 'true' And $(_CuiSharpRid.StartsWith('linux'))">
     <DirectPInvoke Include="cui" />
-    <NativeLibrary Include="$(_CuiSharpNativeLinux)libcui.a" />
+    <NativeLibrary Include="$(_CuiSharpArchive)" />
 
     <!-- CUI dlopens GL, so the X11 backend needs only Xlib and the C runtime. -->
     <LinkerArg Include="-lX11" />
@@ -49,9 +68,9 @@
     <LinkerArg Include="-lm" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(PublishAot)' == 'true' And $(_CuiSharpRid.StartsWith('osx')) And Exists('$(_CuiSharpNativeOsx)libcui.a')">
+  <ItemGroup Condition="'$(_CuiSharpLinksStatically)' == 'true' And $(_CuiSharpRid.StartsWith('osx'))">
     <DirectPInvoke Include="cui" />
-    <NativeLibrary Include="$(_CuiSharpNativeOsx)libcui.a" />
+    <NativeLibrary Include="$(_CuiSharpArchive)" />
 
     <!-- What CUI's Cocoa backend links against. -->
     <LinkerArg Include="-framework Cocoa" />
@@ -60,24 +79,37 @@
   </ItemGroup>
 
   <!--
+    A NativeAOT publish promises one executable. Say so before the publish starts when it
+    cannot be one: an unsupported RID, or an archive the package does not carry.
+  -->
+  <Target Name="CuiSharpRequireStaticArchive"
+          BeforeTargets="PrepareForPublish"
+          Condition="'$(PublishAot)' == 'true'">
+    <Error Condition="'$(_CuiSharpRid)' != '' And !$(_CuiSharpSupportedRids.Contains($(_CuiSharpRid)))"
+           Text="CuiSharp carries no native library for RID &quot;$(_CuiSharpRid)&quot;; it has $(_CuiSharpSupportedRids). Publish for one of those, or add the RID to the package's native artifacts." />
+    <Error Condition="'$(_CuiSharpRid)' == ''"
+           Text="CuiSharp could not tell which RID this NativeAOT publish is for. Pass -r, e.g. -r win-x64. Supported: $(_CuiSharpSupportedRids)." />
+    <Error Condition="'$(_CuiSharpArchive)' != '' And !Exists('$(_CuiSharpArchive)')"
+           Text="CuiSharp has no static archive at &quot;$(_CuiSharpArchive)&quot;, so a NativeAOT publish cannot link CUI into the executable. Install the package for RID $(_CuiSharpRid), or publish without PublishAot to load the shared library." />
+  </Target>
+
+  <!--
     AOT links CUI into the executable, so the shared library and the archive beside it are noise in
-    a publish folder whose promise is "one file".
+    a publish folder whose promise is "one file". Every platform, not only Windows: a Linux or macOS
+    publish used to leave libcui.so / libcui.dylib next to a binary that does not need it.
   -->
   <Target Name="CuiSharpDropNativeFilesFromAotPublish"
           AfterTargets="Publish"
-          Condition="'$(PublishAot)' == 'true'">
+          Condition="'$(PublishAot)' == 'true' And '$(_CuiSharpLinksStatically)' == 'true'">
     <ItemGroup>
-      <_CuiSharpStrayNative Include="$(PublishDir)cui.dll;$(PublishDir)cui.lib" />
+      <_CuiSharpStrayNative Include="$(PublishDir)cui.dll" />
+      <_CuiSharpStrayNative Include="$(PublishDir)cui.lib" />
+      <_CuiSharpStrayNative Include="$(PublishDir)libcui.so" />
+      <_CuiSharpStrayNative Include="$(PublishDir)libcui.dylib" />
+      <_CuiSharpStrayNative Include="$(PublishDir)libcui.a" />
     </ItemGroup>
     <Message Importance="normal" Text="CuiSharp: AOT publish, removing @(_CuiSharpStrayNative->Count()) native file(s) from $(PublishDir)" />
     <Delete Files="@(_CuiSharpStrayNative)" ContinueOnError="true" />
-  </Target>
-
-  <Target Name="CuiSharpExplainMissingArchive"
-          BeforeTargets="PrepareForPublish"
-          Condition="'$(PublishAot)' == 'true' And !Exists('$(_CuiSharpNativeWin)cui.lib') And !Exists('$(_CuiSharpNativeLinux)libcui.a') And !Exists('$(_CuiSharpNativeOsx)libcui.a')">
-    <Message Importance="high"
-             Text="CuiSharp: the static archive for this platform is not in the package, so CUI will be loaded from its shared library at runtime. Add &lt;DirectPInvoke Include=&quot;cui&quot; /&gt; and a NativeLibrary item yourself to link it statically." />
   </Target>
 
 </Project>

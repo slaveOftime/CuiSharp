@@ -95,6 +95,49 @@
           Condition="Exists('$(MSBuildThisFileDirectory)../CuiSharp.Analyzers/bin/$(Configuration)/netstandard2.0/CuiSharp.Analyzers.dll')" />
   </ItemGroup>
 
+  <!--
+    What went into the package, recorded rather than assumed: each native file with its RID and
+    SHA-256, plus whatever the native build wrote about the revision and compiler that produced
+    it. A consumer that hits an ABI mismatch can read this instead of bisecting releases.
+  -->
+  <PropertyGroup>
+    <!-- Pack calls this per framework, which is how a file that only exists after a build gets in. -->
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);CuiSharpPackNativeProvenance</TargetsForTfmSpecificContentInPackage>
+  </PropertyGroup>
+
+  <Target Name="CuiSharpPackNativeProvenance">
+    <ItemGroup>
+      <_CuiPackagedNative Include="$(_CuiNativeWin)cui.dll" Condition="'$(_CuiNativeWin)' != '' And Exists('$(_CuiNativeWin)cui.dll')" Rid="win-x64" />
+      <_CuiPackagedNative Include="$(_CuiNativeWin)cui.lib" Condition="'$(_CuiNativeWin)' != '' And Exists('$(_CuiNativeWin)cui.lib')" Rid="win-x64" />
+      <_CuiPackagedNative Include="$(_CuiNativeLinux)libcui.so" Condition="'$(_CuiNativeLinux)' != '' And Exists('$(_CuiNativeLinux)libcui.so')" Rid="linux-x64" />
+      <_CuiPackagedNative Include="$(_CuiNativeLinux)libcui.a" Condition="'$(_CuiNativeLinux)' != '' And Exists('$(_CuiNativeLinux)libcui.a')" Rid="linux-x64" />
+      <_CuiPackagedNative Include="$(_CuiNativeOsx)libcui.dylib" Condition="'$(_CuiNativeOsx)' != '' And Exists('$(_CuiNativeOsx)libcui.dylib')" Rid="osx-arm64" />
+      <_CuiPackagedNative Include="$(_CuiNativeOsx)libcui.a" Condition="'$(_CuiNativeOsx)' != '' And Exists('$(_CuiNativeOsx)libcui.a')" Rid="osx-arm64" />
+    </ItemGroup>
+
+    <GetFileHash Files="@(_CuiPackagedNative)" Algorithm="SHA256" HashEncoding="hex">
+      <Output TaskParameter="Items" ItemName="_CuiHashedNative" />
+    </GetFileHash>
+
+    <ItemGroup>
+      <_CuiProvenanceLine Include="CuiSharp $(Version) native artifacts" />
+      <_CuiProvenanceLine Include="@(_CuiHashedNative->'%(Rid) %(Filename)%(Extension) %(FileHash)')" />
+      <_CuiProvenanceLine Include="repository $(RepositoryUrl) @ $(SourceRevisionId)" Condition="'$(SourceRevisionId)' != ''" />
+      <_CuiProvenanceLine Include="$([System.IO.File]::ReadAllLines('$(CuiNativeDir)native-provenance.txt'))" Condition="Exists('$(CuiNativeDir)native-provenance.txt')" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="$(IntermediateOutputPath)native-provenance.txt"
+                      Lines="@(_CuiProvenanceLine)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="$(IntermediateOutputPath)native-provenance.txt">
+        <PackagePath>runtimes/</PackagePath>
+      </TfmSpecificPackageFile>
+    </ItemGroup>
+  </Target>
+
   <Target Name="CuiSharpWarnMissingNative" BeforeTargets="Pack" Condition="!Exists('$(CuiNativeDir)cui.dll')">
     <Warning Text="native/cui.dll not found - the package will contain managed code only. Run native/build-native.ps1 first." />
   </Target>

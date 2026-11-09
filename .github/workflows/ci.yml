@@ -7,7 +7,10 @@ on:
       - 'samples/**'
       - 'native/**'
       - 'skills/**'
+      - 'tools/**'
+      - 'bindings/**'
       - 'Directory.Build.props'
+      - 'Directory.Build.targets'
       - '*.slnx'
       - 'docs/**'
       - '.github/workflows/ci.yml'
@@ -18,7 +21,10 @@ on:
       - 'samples/**'
       - 'native/**'
       - 'skills/**'
+      - 'tools/**'
+      - 'bindings/**'
       - 'Directory.Build.props'
+      - 'Directory.Build.targets'
       - '*.slnx'
       - 'docs/**'
       - '.github/workflows/ci.yml'
@@ -61,6 +67,8 @@ jobs:
 
       - name: Build CUI (native library)
         shell: pwsh
+        env:
+          CUI_GLIBC_BASELINE: '2.35'
         run: |
           if ($IsWindows) { ./native/build-native.ps1 }
           else { bash native/build-native.sh }
@@ -73,6 +81,12 @@ jobs:
 
       - name: Test
         run: dotnet test CuiSharp.slnx --configuration Release --no-build
+
+      # The other formatting gate: a build succeeds on formatted-looking code that
+      # `dotnet format` would rewrite.
+      - name: Format
+        if: runner.os == 'Windows'
+        run: dotnet format CuiSharp.slnx --verify-no-changes
 
   # The template content is not in the solution, so nothing else compiles it.
   # Scaffold it under a name that is not CuiSharp.* — a namespace-only difference
@@ -147,6 +161,9 @@ jobs:
           - os: windows-latest
             rid: win-x64
             exe: CuiGallery.exe
+          - os: ubuntu-22.04
+            rid: linux-x64
+            exe: CuiGallery
           - os: macos-latest
             rid: osx-arm64
             exe: CuiGallery
@@ -163,6 +180,8 @@ jobs:
 
       - name: Build CUI (native library)
         shell: pwsh
+        env:
+          CUI_GLIBC_BASELINE: '2.35'
         run: |
           if ($IsWindows) { ./native/build-native.ps1 }
           else { bash native/build-native.sh }
@@ -182,12 +201,18 @@ jobs:
             foreach ($forbidden in 'cui.dll', 'VCRUNTIME', 'MSVCP', 'coreclr', 'hostfxr') {
               if ($deps -match [regex]::Escape($forbidden)) { throw "unexpected dependency: $forbidden" }
             }
-          } else {
+          } elseif ($IsMacOS) {
             # A static CUI leaves only the system libraries; a dynamic libcui here means
             # the archive was not linked in.
             $deps = otool -L $exe
             Write-Host ($deps -join "`n")
             if ($deps -match 'libcui') { throw 'libcui was not linked in' }
+          } else {
+            # The x11 leg: the archive must be inside the executable, and GL is dlopened.
+            $deps = ldd $exe
+            Write-Host ($deps -join "`n")
+            if ($deps -match 'libcui') { throw 'libcui was not linked in' }
+            if (-not ($deps -match 'libX11')) { throw 'the x11 backend was not linked in' }
           }
           if (Test-Path 'artifacts/publish/libcui.dylib') { throw 'libcui.dylib was not linked in' }
           if (Test-Path 'artifacts/publish/cui.dll') { throw 'cui.dll was not linked in' }
@@ -226,6 +251,47 @@ jobs:
           path: |
             artifacts/publish/${{ matrix.exe }}
             artifacts/publish/smoke.png
+
+  # The package is what users get, so one job meets it the way they do: pack, scaffold from
+  # the package, build, test, publish a NativeAOT single file and drive it. run on the oldest
+  # image the package promises (glibc 2.35) as well as Windows, so an ABI that a newer runner
+  # would hide fails here.
+  packaged-consumer:
+    name: Packaged consumer (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-22.04]
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Checkout submodules (CUI)
+        run: git submodule update --init --recursive
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6.1.0
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install X11 headers (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libx11-dev
+
+      - name: Build CUI (native library)
+        shell: pwsh
+        env:
+          CUI_GLIBC_BASELINE: '2.35'
+        run: |
+          if ($IsWindows) { ./native/build-native.ps1 }
+          else { bash native/build-native.sh }
+
+      # Packs into a private cache, scaffolds from the package, tests (JIT frames through
+      # the software renderer), publishes AOT, checks the executable is alone in its
+      # folder, and drives the result with `dotnet cui`.
+      - name: Verify the template from the package
+        shell: pwsh
+        run: ./tools/verify-template.ps1
 
   # Benchmarks are a regression signal, not a gate: the JSON reports are uploaded
   # so a reviewer can compare a run against the previous one.
