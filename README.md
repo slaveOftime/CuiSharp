@@ -91,7 +91,7 @@ using var dialog = ui.Dialog("confirm", ref open);        // opens only when ope
 
 - **Text is one type.** `ui.Text("Saved")`, `ui.Text("Saved"u8)` and `ui.Text($"Clicked {n,6:D3}")`
   are one method; interpolation formats straight into the frame arena.
-- **Options are structs with `init` properties**, one per component, defaulted to CUI's defaults.
+- **Options are structs of public fields**, one per component, defaulted to CUI's defaults.
 - **Ids are stable strings**; `ui.Keyed(items, key)` gives a list rows ids that survive reordering.
 - **Theme colours** come from `Color.Accent`, `ui.ColorOf(color)`, `ui.TokenColor(token)`, so light
   and dark work without a second palette.

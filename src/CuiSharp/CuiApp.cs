@@ -50,10 +50,11 @@ public sealed record CuiAppOptions
 /// <summary>
 /// A native window, its message loop and a renderer, owned by CUI.
 /// <para>
-/// <see cref="Run(CuiAppOptions, DrawFn)"/> drives CUI from a plain managed loop rather than from a
-/// native callback. That costs one extra P/Invoke per frame and buys two
-/// things: <c>dotnet watch</c> hot reload can patch the UI code between frames,
-/// and there is no function pointer for the AOT compiler to pin.
+/// <see cref="Run(CuiAppOptions, DrawFn)"/> does not run a loop of its own: it registers the draw
+/// callback with CUI and lets the native loop call it. That is what keeps the frame alive while the
+/// user drags a window edge — the OS runs a modal loop of its own there, so a managed
+/// <c>while</c> loop would stop painting mid-drag and the layout would go stale. See
+/// <c>docs/ARCHITECTURE.md</c>, "Frame model".
 /// </para>
 /// </summary>
 public sealed unsafe class CuiApp : IDisposable

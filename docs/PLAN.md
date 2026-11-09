@@ -4,6 +4,12 @@ What is left before 1.0, in the order it should be done. Rules and decisions liv
 [ARCHITECTURE.md](ARCHITECTURE.md); how the current numbers were measured is in
 [PERFORMANCE.md](PERFORMANCE.md).
 
+AI/DX review: [AI-ITERATION-PLAN.md](AI-ITERATION-PLAN.md) proposed runtime/package reliability,
+session tooling, hot reload, token-efficient observations and MCP help. The reliability half is
+implemented; the rest was cut by decision — see [AI-ITERATION-STATUS.md](AI-ITERATION-STATUS.md) for
+what changed, the evidence, and why a test-first loop beats a stateful tool for an agent. Nothing in
+it changes the architecture decisions.
+
 Status: **everything below is unstarted unless the step says otherwise.** Phases 0–4 are complete:
 the binding is generated and syncs from upstream, the runtime is allocation-free, hosting and
 analyzers ship, a template generates a working app, and `dotnet cui` drives any app headless.

@@ -51,6 +51,44 @@ public class DocumentationDriftTests
         Assert.True(missing.Length == 0, "option types with no fields documented: " + string.Join(", ", missing));
     }
 
+    /// <summary>
+    /// The guide described options as <c>init</c> properties and showed an input result as raw C
+    /// flags, while the generator emits public fields and a typed <c>InputResult</c>. Both compile
+    /// in a reader's head and neither compiles in a project.
+    /// </summary>
+    [Fact]
+    public void TheGuideDescribesOptionsAndInputResultsAsTheyAre()
+    {
+        string guide = Read("SKILL.md");
+
+        Assert.DoesNotContain("init` properties", guide, StringComparison.Ordinal);
+        Assert.DoesNotContain("CuiFlags.CUI_CHANGED", guide, StringComparison.Ordinal);
+        Assert.Contains(".Changed", guide, StringComparison.Ordinal);
+        Assert.Contains("## Options are structs of fields", guide, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The guide is what tells an assistant which loop to work in, so the fast repeatable one has to
+    /// come before the one-shot tool. A guide that opens with `dotnet cui` teaches a process per
+    /// command and a check nobody can rerun.
+    /// </summary>
+    [Fact]
+    public void TheGuidePutsTheTestDriverBeforeTheOneShotTool()
+    {
+        string guide = Read("SKILL.md");
+
+        int workflow = guide.IndexOf("## How to work on a UI", StringComparison.Ordinal);
+        Assert.True(workflow >= 0, "the guide needs a workflow section: how to work on a UI");
+
+        string steps = guide[workflow..];
+        int driver = steps.IndexOf("TestApp.Start", StringComparison.Ordinal);
+        int tool = steps.IndexOf("dotnet cui tree", StringComparison.Ordinal);
+
+        Assert.True(driver >= 0 && tool > driver,
+            "the workflow must rank the test driver above `dotnet cui`");
+        Assert.Contains("dotnet watch", steps, StringComparison.Ordinal);
+    }
+
     private static string Read(string relative)
     {
         string path = Path.Combine(AppContext.BaseDirectory, relative);
