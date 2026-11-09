@@ -156,14 +156,18 @@ jobs:
       - name: Smoke test (headless render)
         shell: pwsh
         run: |
+          # CuiGallery.exe is a WinExe: calling it directly does not wait for it, so the
+          # screenshot and the exit code are both read before the app has run.
           Push-Location artifacts/publish
-          $env:CUI_SCREENSHOT = 'smoke.png'
-          $env:CUI_SCREENSHOT_FRAMES = '8'
-          ./CuiGallery.exe --page=0
-          if ($LASTEXITCODE -ne 0) { throw "app exited $LASTEXITCODE" }
-          if (-not (Test-Path 'smoke.png')) { throw 'no screenshot produced' }
-          if ((Get-Item 'smoke.png').Length -lt 10KB) { throw 'screenshot looks empty' }
-          Pop-Location
+          try {
+            $env:CUI_SCREENSHOT = 'smoke.png'
+            $env:CUI_SCREENSHOT_FRAMES = '8'
+            $app = Start-Process -FilePath ./CuiGallery.exe -ArgumentList '--page=0' -Wait -PassThru
+            if ($app.ExitCode -ne 0) { throw "app exited $($app.ExitCode)" }
+            if (-not (Test-Path 'smoke.png')) { throw 'no screenshot produced' }
+            if ((Get-Item 'smoke.png').Length -lt 10KB) { throw 'screenshot looks empty' }
+          }
+          finally { Pop-Location }
           Write-Host 'headless render OK'
 
       - uses: actions/upload-artifact@v4
@@ -174,11 +178,31 @@ jobs:
             artifacts/publish/CuiGallery.exe
             artifacts/publish/smoke.png
 
-  # Benchmarks are a regression signal, not a gate: the JSON report is uploaded
+  # Benchmarks are a regression signal, not a gate: the JSON reports are uploaded
   # so a reviewer can compare a run against the previous one.
+  #
+  # One leg per benchmark family, in parallel: BenchmarkDotNet starts a fresh
+  # process per case, so a serial run of all 51 cases took 18 minutes and almost
+  # none of it was the code under test. The legs are shaped so the slowest is a
+  # couple of minutes (ScaleBenchmarks' nine param combinations are the long pole,
+  # so each of its benchmarks gets its own leg).
   benchmarks:
-    name: Benchmarks (windows)
+    name: Benchmarks (${{ matrix.leg }})
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - leg: frame
+            filter: ['*FrameBuildBenchmarks*', '*MarshallingBenchmarks*']
+          - leg: virtual-list
+            filter: ['*ScaleBenchmarks.VirtualList*']
+          - leg: chart-raw
+            filter: ['*ScaleBenchmarks.ChartRaw*']
+          - leg: chart-decimated
+            filter: ['*ScaleBenchmarks.ChartDecimated*']
+          - leg: decimate-only
+            filter: ['*ScaleBenchmarks.DecimateOnly*']
     steps:
       - uses: actions/checkout@v4
 
@@ -194,16 +218,20 @@ jobs:
         shell: pwsh
         run: ./native/build-native.ps1
 
+      # No --job: the suites carry [SimpleJob], and a CLI --job is *added* to those,
+      # so every case ran twice. The iteration counts trim that one job instead:
+      # BenchmarkDotNet's per-case process start costs far more than the runs.
       - name: Run benchmarks
         shell: pwsh
         run: >
           dotnet run --project src/CuiSharp.Benchmarks -c Release --
-          --filter "*" --job short --exporters json github
+          --filter ${{ join(matrix.filter, ' ') }} --warmupCount 2 --iterationCount 5
+          --exporters json github
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: benchmark-results
+          name: benchmark-results-${{ matrix.leg }}
           path: BenchmarkDotNet.Artifacts/results/
 
   # Fails the build if the checked-in bindings drift from the pinned CUI headers:
