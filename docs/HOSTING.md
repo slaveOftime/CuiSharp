@@ -72,9 +72,16 @@ public sealed class Editor(Notes notes) : Component
 }
 ```
 
-The task runs on the pool, never touches `Ui`, and hands its result over at a frame boundary. There
-is no synchronization context: a continuation does not run on the UI thread, it publishes a value the
-UI thread reads next frame. That is the whole async story, and it is why nothing deadlocks.
+The work runs on the pool — `Run` hands it to `Task.Run`, so even the synchronous prefix of an
+`async` method (a parse, a file read before the first `await`) is off the frame. It never touches
+`Ui`, and it hands its result over at a frame boundary. There is no synchronization context: a
+continuation does not run on the UI thread, it publishes a value the UI thread reads next frame. That
+is the whole async story, and it is why nothing deadlocks.
+
+A mutation owns one run at a time and remembers which one. If a result arrives after the component
+was disposed — the user navigated away while the request was in flight — it is dropped rather than
+applied into a page that no longer exists, and a run that has been superseded cannot clear the state
+of the newer one. `IsRunning` and `Error` are always current, so `Draw` never has to poll.
 
 ## Testing a hosted app
 
