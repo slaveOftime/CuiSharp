@@ -83,7 +83,6 @@ Write(Path.Combine(root, "src", "CuiSharp", "Ui", "Records.g.cs"), idiomatic.Rec
 Write(Path.Combine(root, "src", "CuiSharp.Tests", "OptionMappings.g.cs"), idiomatic.OptionTests());
 foreach (var (module, code) in idiomatic.Widgets())
     Write(Path.Combine(root, "src", "CuiSharp", "Ui", module + ".g.cs"), code);
-Write(Path.Combine(root, "src", "CuiSharp", "Ui", "ScopeEnds.g.cs"), idiomatic.ScopeEnds());
 Write(Path.Combine(bindingsDir, "coverage.txt"), idiomatic.Coverage());
 // One home for everything a consumer reads: the skill folder is what the package ships, so the
 // reference and the per-section pages are written there and link to each other relatively.
@@ -2520,7 +2519,7 @@ sealed class Idiomatic
         string id = widget.Params.FirstOrDefault(p => p.Type == "UiText" && p.Mode != "out ") is { } namer
             ? namer.Name
             : ContainerIdArg(widget);
-        return $"new {scopeReturn}(ui.Handle, ScopeKind.{widget.End!.CsName[..^3]}, \"{widget.Name}\", {id}{extra})";
+        return $"new {scopeReturn}(ui.Handle, &Native.{widget.End!.CsName}, \"{widget.Name}\", {id}{extra})";
     }
 
     /// <summary>
@@ -2623,20 +2622,6 @@ sealed class Idiomatic
             outputs.Add(name, sb.ToString());
         }
         return outputs;
-    }
-
-    public string ScopeEnds()
-    {
-        var ends = _api.Functions.Where(f => f.CName.EndsWith("_end", StringComparison.Ordinal)
-            && f.CsReturn == "void" && f.Params.Length == 1 && f.Params[0].Type.Element?.Spelling == "cui_ctx").ToArray();
-        var sb = new StringBuilder(Emit.Header);
-        sb.AppendLine("using CuiSharp.Interop;\n\nnamespace CuiSharp;\n");
-        sb.AppendLine("internal enum ScopeKind : byte\n{\n    None,");
-        foreach (var end in ends) sb.AppendLine($"    {end.CsName[..^3]},");
-        sb.AppendLine("}\n\ninternal static class ScopeEnds\n{\n    internal static void Close(nint ui, ScopeKind kind)\n    {\n        switch (kind)\n        {");
-        foreach (var end in ends) sb.AppendLine($"            case ScopeKind.{end.CsName[..^3]}: Native.{end.CsName}(ui); break;");
-        sb.AppendLine("        }\n    }\n}");
-        return sb.ToString();
     }
 
     /// <summary>
@@ -2968,7 +2953,7 @@ static class BindgenChecks
         var first = new Idiomatic(api, overrides);
         var second = new Idiomatic(api, overrides);
         Check("deterministic emission", first.Options() == second.Options() && first.OptionTests() == second.OptionTests()
-            && first.Coverage() == second.Coverage() && first.ScopeEnds() == second.ScopeEnds()
+            && first.Coverage() == second.Coverage()
             && first.Widgets().All(pair => second.Widgets()[pair.Key] == pair.Value));
 
         // Every C function is accounted for, and every wrapper it produced is
@@ -3014,7 +2999,7 @@ static class BindgenChecks
             && !unresolved.Options().Contains("public nint", StringComparison.Ordinal));
 
         var modules = first.Widgets();
-        Check("scope pairing and retained pointer semantics", modules["Layout"].Contains("ScopeKind.Box", StringComparison.Ordinal)
+        Check("scope pairing and retained pointer semantics", modules["Layout"].Contains("&Native.BoxEnd", StringComparison.Ordinal)
             && !modules["Layout"].Contains("public OpenScope Card", StringComparison.Ordinal)
             && modules["Layout"].Contains("Utf8.AllocFrame<float>(1)", StringComparison.Ordinal)
             && modules["Layout"].Contains("ref *__ratio", StringComparison.Ordinal)

@@ -61,8 +61,8 @@ native/CUI/include/cui/*.h
      Interop/Enums.g.cs             enums, shared C prefixes removed
      Interop/Constants.g.cs         anonymous-enum values
      Ui/Options.g.cs                friendly option structs + allocation-free ToNative()
-     Ui/<Section>.g.cs              one `extension(Ui ui)` block per header section
-     Ui/ScopeEnds.g.cs              which native end-call closes which begin-call
+     Ui/<Section>.g.cs              one `extension(Ui ui)` block per header section; a
+                                    container's wrapper carries its own end function
      Ui/Records.g.cs                array item types (Choice, TableColumn, ...)
      Icons.g.cs                     embedded glyphs
      Tests/Abi.g.cs                 sizeof and every field offset, asserted
@@ -105,6 +105,14 @@ Forwarding managed fields or stack locals at begin would leave native with dangl
   `using` balances them even when the body throws. `GridScope` is the conditional scope with
   end-of-body write-back; the scope analyzers treat it like `OpenScope`. Every `OpenScope` also has a callback overload
   that runs the body only when it is open.
+- **A scope carries the function that closes it, not its kind.** The wrapper that opened the
+  container takes the address of its own end function (`new LayoutScope(ui.Handle, &Native.BoxEnd,
+  …)`), and `Dispose` calls through it. A `ScopeKind` enum and one `Close` switch naming all 39
+  end functions is the obvious design and was the first one: it made every app root every
+  container's end function and the translation unit behind it, so an app with one box linked
+  `cui_pickers` and `cui_dock` unasked. Reachability is the rule everywhere else in the binding
+  (D5, D7), and this is what it costs at the one place the framework chooses a call target at
+  runtime. Measured in [SIZE.md](SIZE.md).
 - `UiText` accepts `string`, `ReadOnlySpan<byte>` and interpolated strings; the handler formats
   with `IUtf8SpanFormattable` straight into the frame arena, grows on demand, never truncates, and
   allocates nothing per frame.

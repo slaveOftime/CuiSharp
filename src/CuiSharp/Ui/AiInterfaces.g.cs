@@ -18,7 +18,7 @@ public static unsafe class AiInterfacesUiExtensions
         {
             var __opts = o.ToNative();
             var __result = Native.ReasoningBegin(ui.Handle, Utf8.Get(id), in __opts);
-            return new OpenScope(ui.Handle, ScopeKind.Reasoning, "Reasoning", id, __result != 0);
+            return new OpenScope(ui.Handle, &Native.ReasoningEnd, "Reasoning", id, __result != 0);
         }
 
         /// <summary>Draws the body only when the container opens, and closes it on exceptions.</summary>

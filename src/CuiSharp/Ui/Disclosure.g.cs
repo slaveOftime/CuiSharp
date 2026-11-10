@@ -18,7 +18,7 @@ public static unsafe class DisclosureUiExtensions
         {
             var __opts = o.ToNative();
             var __result = Native.HoverCardBegin(ui.Handle, Utf8.Get(id), in __opts);
-            return new OpenScope(ui.Handle, ScopeKind.HoverCard, "HoverCard", id, __result != 0);
+            return new OpenScope(ui.Handle, &Native.HoverCardEnd, "HoverCard", id, __result != 0);
         }
 
         /// <summary>Draws the body only when the container opens, and closes it on exceptions.</summary>
@@ -54,7 +54,7 @@ public static unsafe class DisclosureUiExtensions
             var __opts = o.ToNative();
             var __result = Native.ExpandableCardBegin(ui.Handle, Utf8.Get(title), (nint)(&__open), in __opts);
             open = __open != 0;
-            return new OpenScope(ui.Handle, ScopeKind.ExpandableCard, "ExpandableCard", title, __result != 0);
+            return new OpenScope(ui.Handle, &Native.ExpandableCardEnd, "ExpandableCard", title, __result != 0);
         }
 
         /// <summary>Draws the body only when the container opens, and closes it on exceptions.</summary>

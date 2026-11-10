@@ -6,16 +6,12 @@ in [ARCHITECTURE.md](ARCHITECTURE.md). Every item here passes the same gates as 
 
 ## 1. Open work
 
-- **Two size items left, both measured in [SIZE.md](SIZE.md)**. The profile itself shipped: a
-  self-contained AOT publish compiles out the headless channel and the framework diagnostics a
-  shipped app never reads (−308 736 B, −20.6%, on the smallest app; −286 720 B on the gallery), and
-  `dotnet cui` passes `-p:CuiSharpHeadless=true` for the builds it runs.
-  - **`ScopeEnds.Close` must not name every container.** It roots all 39 `*_end` functions from
-    every app that opens one container, which drags `cui_pickers`, `cui_dock` and their
-    dependencies in unasked and stops a reduced archive from linking at all. −24 064 B, and the
-    generator change that would let a widget set and a binary be coupled.
-  - **A size row per shape** in `tools/budget-check.ps1`, fed by `tools/size-report.ps1`, so an
-    upstream bump that reaches a used widget fails as a number instead of arriving in a release.
+- **A size budget per shape**, measured in [SIZE.md](SIZE.md). The profile and the `ScopeEnds`
+  fix both shipped — a self-contained AOT publish is 1 165 312 B for the smallest app and
+  2 292 736 B for the gallery, and `dotnet cui` passes `-p:CuiSharpHeadless=true` for the builds it
+  runs. What is left is the gate: `tools/budget-check.ps1` checks the gallery executable only, so
+  `tools/size-report.ps1`'s shapes are printed rather than enforced. A ceiling per row is what turns
+  "upstream was busy" into a failing check instead of a release note.
 - **The gallery pages for the extended components** (`examples/gallery_more.c`'s other fifteen):
   *Developer tools* and *More developer tools* cover CUI 1.3's twenty, but actions, smart inputs,
   pickers, capture, disclosure, reader, data grid, code, social and media, planning, more charts,

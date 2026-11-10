@@ -12,14 +12,20 @@ A published binary carries only what it uses, and the package decides that for y
 
 - **A size profile in the package.** `build/CuiSharp.Size.targets` compiles the headless channel and
   the framework diagnostics a shipped app never reads out of a **self-contained AOT publish**: the
-  smallest app goes from 1 498 112 B to 1 189 376 B (−20.6%) and the gallery from 2 581 504 B to
-  2 294 784 B (−11.1%). Migration: nothing to do, unless a published exe is driven by a tool —
+  smallest app goes from 1 498 112 B to 1 165 312 B (−22.2%) and the gallery from 2 581 504 B to
+  2 292 736 B (−11.2%), counting the fix in the third bullet. Migration: nothing to do, unless a published exe is driven by a tool —
   publish it with `-p:CuiSharpHeadless=true`, which is what `dotnet cui` now passes to the builds it
   runs itself. `dotnet run` is untouched: a build that is not a self-contained publish keeps the
   channel and the framework's exception messages.
 - **`CuiSharpSizeProfile=false`** turns the whole set off; **`CuiSharpVerboseErrors=true`** keeps
   exception messages and stack traces while leaving the rest on. Both are properties, not API, and
   the measured values are in [docs/SIZE.md](docs/SIZE.md).
+- **A container no longer links every other container.** `LayoutScope.Dispose` used to call one
+  `switch` naming all 39 `*_end` functions, so an app that opened a box also linked the end
+  functions (and translation units) of pickers, docking and the rest: −24 064 B for a small app,
+  −2 048 B for the gallery. The end function is now taken in the wrapper that opened the container,
+  so a widget is reachable exactly when it is used. No API change; `LayoutScope` and `OpenScope`
+  are still what a `using` closes.
 - **`dotnet new cui-mini`** sets `OptimizationPreference=Size` and `InvariantGlobalization=true` in
   the generated file with `#:property`, the two switches a file-based app cannot inherit from a
   project file. Its published single file is 1 159 680 B.

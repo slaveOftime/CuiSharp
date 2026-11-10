@@ -83,7 +83,7 @@ public unsafe ref partial struct Ui
     public LayoutScope ReorderItem(int position)
     {
         Native.ReorderItemBegin(Handle, position);
-        return new LayoutScope(Handle, ScopeKind.ReorderItem, "ReorderItem");
+        return new LayoutScope(Handle, &Native.ReorderItemEnd, "ReorderItem");
     }
 
     public bool ReorderEnd()

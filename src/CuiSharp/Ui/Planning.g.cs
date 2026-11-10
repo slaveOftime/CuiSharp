@@ -38,7 +38,7 @@ public static unsafe class PlanningUiExtensions
         {
             var __opts = o.ToNative();
             var __result = Native.KanbanColumnBegin(ui.Handle, Utf8.Get(title), cardCount, in __opts);
-            return new OpenScope(ui.Handle, ScopeKind.KanbanColumn, "KanbanColumn", title, __result != 0);
+            return new OpenScope(ui.Handle, &Native.KanbanColumnEnd, "KanbanColumn", title, __result != 0);
         }
 
         /// <summary>Draws the body only when the container opens, and closes it on exceptions.</summary>
@@ -53,7 +53,7 @@ public static unsafe class PlanningUiExtensions
         public OpenScope KanbanCard(int cardId)
         {
             var __result = Native.KanbanCardBegin(ui.Handle, cardId);
-            return new OpenScope(ui.Handle, ScopeKind.KanbanCard, "KanbanCard", null, __result != 0);
+            return new OpenScope(ui.Handle, &Native.KanbanCardEnd, "KanbanCard", null, __result != 0);
         }
 
         /// <summary>Draws the body only when the container opens, and closes it on exceptions.</summary>

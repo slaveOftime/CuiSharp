@@ -18,7 +18,7 @@ public static unsafe class DockingUiExtensions
         {
             var __opts = o.ToNative();
             Native.DockspaceBegin(ui.Handle, Utf8.Get(id), in __opts);
-            return new LayoutScope(ui.Handle, ScopeKind.Dockspace, "Dockspace", id);
+            return new LayoutScope(ui.Handle, &Native.DockspaceEnd, "Dockspace", id);
         }
 
         /// <summary>cui_dock_panel_begin_ex</summary>
@@ -28,7 +28,7 @@ public static unsafe class DockingUiExtensions
             var __opts = o.ToNative();
             var __result = Native.DockPanelBegin(ui.Handle, Utf8.Get(title), (nint)(&__open), in __opts);
             open = __open != 0;
-            return new OpenScope(ui.Handle, ScopeKind.DockPanel, "DockPanel", title, __result != 0);
+            return new OpenScope(ui.Handle, &Native.DockPanelEnd, "DockPanel", title, __result != 0);
         }
 
         /// <summary>Draws the body only when the container opens, and closes it on exceptions.</summary>
@@ -62,7 +62,7 @@ public static unsafe class DockingUiExtensions
         {
             var __opts = o.ToNative();
             var __result = Native.InspectorBegin(ui.Handle, Utf8.Get(id), in __opts);
-            return new OpenScope(ui.Handle, ScopeKind.Inspector, "Inspector", id, __result != 0);
+            return new OpenScope(ui.Handle, &Native.InspectorEnd, "Inspector", id, __result != 0);
         }
 
         /// <summary>Draws the body only when the container opens, and closes it on exceptions.</summary>

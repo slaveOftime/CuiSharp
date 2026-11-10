@@ -67,7 +67,7 @@ public static unsafe class MotionAndTextEffectsUiExtensions
         {
             var __opts = o.ToNative();
             Native.SpotlightBegin(ui.Handle, Utf8.Get(id), in __opts);
-            return new LayoutScope(ui.Handle, ScopeKind.Spotlight, "Spotlight", id);
+            return new LayoutScope(ui.Handle, &Native.SpotlightEnd, "Spotlight", id);
         }
 
         /// <summary>cui_loader_ex</summary>
@@ -82,7 +82,7 @@ public static unsafe class MotionAndTextEffectsUiExtensions
         {
             var __opts = o.ToNative();
             Native.DockBegin(ui.Handle, Utf8.Get(id), in __opts);
-            return new LayoutScope(ui.Handle, ScopeKind.Dock, "Dock", id);
+            return new LayoutScope(ui.Handle, &Native.DockEnd, "Dock", id);
         }
 
         /// <summary>cui_dock_item_ex</summary>

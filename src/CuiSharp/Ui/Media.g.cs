@@ -18,7 +18,7 @@ public static unsafe class MediaUiExtensions
         {
             var __opts = o.ToNative();
             var __result = Native.CarouselBegin(ui.Handle, Utf8.Get(id), count, ref index, in __opts);
-            return new OpenScope(ui.Handle, ScopeKind.Carousel, "Carousel", id, __result != 0);
+            return new OpenScope(ui.Handle, &Native.CarouselEnd, "Carousel", id, __result != 0);
         }
 
         /// <summary>Draws the body only when the container opens, and closes it on exceptions.</summary>
@@ -33,7 +33,7 @@ public static unsafe class MediaUiExtensions
         public LayoutScope CarouselSlide()
         {
             Native.CarouselSlideBegin(ui.Handle);
-            return new LayoutScope(ui.Handle, ScopeKind.CarouselSlide, "CarouselSlide", null);
+            return new LayoutScope(ui.Handle, &Native.CarouselSlideEnd, "CarouselSlide", null);
         }
 
         /// <summary>cui_image_compare_ex</summary>
@@ -70,7 +70,7 @@ public static unsafe class MediaUiExtensions
         public LayoutScope CardStackItem(int depth)
         {
             Native.CardStackItemBegin(ui.Handle, depth);
-            return new LayoutScope(ui.Handle, ScopeKind.CardStackItem, "CardStackItem", null);
+            return new LayoutScope(ui.Handle, &Native.CardStackItemEnd, "CardStackItem", null);
         }
 
         /// <summary>* left to right in any interface: see cui__keep_ltr</summary>

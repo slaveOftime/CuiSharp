@@ -32,7 +32,6 @@ retained-pointer storage.
 | `src/CuiSharp/Icons.g.cs` | Embedded icon glyphs under PascalCase names (`Icons.Check`). |
 | `src/CuiSharp/Ui/Options.g.cs` | Friendly options and allocation-free `ToNative()`, with header comments. Array counts derive from managed arrays; bool/Size/Color/string conversion is mechanical. |
 | `src/CuiSharp/Ui/<Section>.g.cs` | One C# 14 `extension(Ui ui)` block per header section. Text uses UiText, item arrays use spans, values use ref, begin/end pairs use scopes, and each wrapper records itself for the semantic tree. |
-| `src/CuiSharp/Ui/ScopeEnds.g.cs` | Native scope-end dispatch, derived from the exported functions. |
 | `src/CuiSharp.Tests/Abi.g.cs` | Managed sizes/offsets against libclang. |
 | `src/CuiSharp/Ui/Records.g.cs` | Data records used as array items (`Choice`, `Command`, `TableColumn`, `TableSort`): friendly constructor, `ToNative()`, and `FromNative()` where write-back is meaningful. |
 | `src/CuiSharp.Tests/OptionMappings.g.cs` | One consolidated test covering every generated option's populated fields, sentinel and null/false defaults. A swapped field is a single generator bug, so it is one test, not one per option. |
