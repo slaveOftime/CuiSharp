@@ -51,7 +51,11 @@ try {
         foreach ($doc in $staged) {
             $source = Join-Path $root $doc.From
             if (-not (Test-Path $source)) { throw "bundle: missing $($doc.From)" }
-            $header = "<!-- Copied from $($doc.From) by tools/regen.ps1. Do not edit: change the source and rerun.$([Environment]::NewLine)$([Environment]::NewLine)Screenshots are dropped: their 215 files and 28 MB stay in the CUI submodule, and a page that linked to them would not resolve inside this folder. -->" + "`n`n"
+            # LF, not [Environment]::NewLine: the repo declares eol=lf, so the
+            # committed bytes and a fresh checkout are LF, and a CRLF here would
+            # make the -NoDiff gate see churn on every CI run while the Windows
+            # working tree (autocrlf) hides it.
+            $header = "<!-- Copied from $($doc.From) by tools/regen.ps1. Do not edit: change the source and rerun.`n`nScreenshots are dropped: their 215 files and 28 MB stay in the CUI submodule, and a page that linked to them would not resolve inside this folder. -->" + "`n`n"
             $text = (Get-Content -Raw -Path $source).Replace("`r`n", "`n").TrimEnd() + "`n"
 
             # The pictures are the only thing in these pages that lives outside the folder: drop both
@@ -111,8 +115,17 @@ try {
     & dotnet run (Join-Path $root 'tools/bindgen.cs')
     if ($LASTEXITCODE -ne 0) { throw 'bindgen failed' }
 
-    if ($NoDiff -and (Get-GeneratedHash) -ne $before) {
-        throw 'bindgen output changed: the generated files were stale or the generator is not deterministic'
+    if ($NoDiff) {
+        $after = Get-GeneratedHash
+        if ($after -ne $before) {
+            $beforeLines = $before -split "`n" | Where-Object { $_ }
+            $afterLines  = $after  -split "`n" | Where-Object { $_ }
+            $changed = Compare-Object $beforeLines $afterLines |
+                ForEach-Object { $_.InputObject } | Sort-Object -Unique
+            throw (@('bindgen output changed: the generated files were stale or the generator is not deterministic',
+                     'files whose hash moved:') + $changed) -join "`n  "
+        }
+        Write-Host 'bindgen: no diff'
     }
     if ($NoDiff) { Write-Host 'bindgen: no diff' }
 
