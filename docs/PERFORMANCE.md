@@ -9,15 +9,23 @@ dotnet run -c Release --project src/CuiSharp.Benchmarks -- --scale    # 1k..1M p
 dotnet run -c Release --project src/CuiSharp.Benchmarks -- --fps 900  # live-chart frame times
 ```
 
-BenchmarkDotNet output lands in `BenchmarkDotNet.Artifacts/results/`; CI runs the suites and uploads
-the report. The `--fps` figures below were taken with .NET SDK 11.0.100-rc.3 on Windows 11, x64;
+BenchmarkDotNet output lands in `BenchmarkDotNet.Artifacts/results/`. All benchmark runs are
+manual: Actions → CI → Run workflow → select **benchmarks** for every BenchmarkDotNet suite, or
+**budget** for the frame-time measurement. Pushes and pull requests run neither. From the CLI:
+
+```sh
+gh workflow run ci.yml -f benchmarks=true        # all suites, reports uploaded as artifacts
+gh workflow run ci.yml -f budget=true            # frame-time budget only
+```
+
+The `--fps` figures below were taken with .NET SDK 11.0.100-rc.3 on Windows 11, x64;
 re-measure before quoting them.
 
 ## Today, in one table
 
 The two rows that decide a regression are read by `tools/budget-check.ps1`, which fails a run over
 either ceiling: the size check runs on every pull request, and the frame check on demand (Actions →
-CI → Run workflow) because a shared runner is too noisy to fail one.
+CI → Run workflow → **budget**) because a shared runner is too noisy to fail one.
 
 | | Value | Where it is enforced |
 |---|---|---|

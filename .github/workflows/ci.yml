@@ -29,6 +29,20 @@ on:
       - 'docs/**'
       - '.github/workflows/ci.yml'
   workflow_dispatch:
+    inputs:
+      benchmarks:
+        description: 'Run all BenchmarkDotNet suites (manual only)'
+        type: boolean
+        default: false
+      budget:
+        description: 'Measure the frame-time budget (manual only)'
+        type: boolean
+        default: false
+
+# A newer push makes an older check redundant; do not spend minutes on superseded commits.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   DOTNET_NOLOGO: true
@@ -49,7 +63,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, windows-11-arm, macos-latest]
 
     steps:
       - uses: actions/checkout@v7.0.1
@@ -64,9 +78,14 @@ jobs:
             8.0.x
             10.0.x
 
-      - name: Install X11 headers (Linux)
+      - name: Check Linux dependency provisioning
+        if: matrix.os == 'ubuntu-latest'
+        run: bash tools/test-ci-linux-deps.sh
+
+      - name: Ensure Linux dependencies
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libx11-dev
+        timeout-minutes: 6
+        run: bash tools/ci-linux-deps.sh libx11-dev
 
       - name: Submodule revision
         id: cui
@@ -84,7 +103,8 @@ jobs:
             native/libcui.so
             native/libcui.a
             native/libcui.dylib
-          key: cui-native-${{ runner.os }}-glibc${{ env.CUI_GLIBC_BASELINE }}-${{ steps.cui.outputs.sha }}
+            native/native-provenance.txt
+          key: cui-native-v4-${{ runner.os }}-${{ runner.arch }}-glibc${{ env.CUI_GLIBC_BASELINE }}-${{ steps.cui.outputs.sha }}-${{ hashFiles('native/build-native*', 'native/msvc-env.ps1') }}
 
       - name: Build CUI (native library)
         if: steps.native-cache.outputs.cache-hit != 'true'
@@ -138,7 +158,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, windows-11-arm, macos-latest]
     steps:
       - uses: actions/checkout@v7.0.1
 
@@ -150,9 +170,10 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      - name: Install X11 headers (Linux)
+      - name: Ensure Linux dependencies
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libx11-dev
+        timeout-minutes: 6
+        run: bash tools/ci-linux-deps.sh libx11-dev
 
       - name: Build CUI (native library)
         shell: pwsh
@@ -204,15 +225,22 @@ jobs:
           - os: ubuntu-22.04
             rid: linux-x64
             exe: CuiGallery
+          - os: windows-11-arm
+            rid: win-arm64
+            exe: CuiGallery.exe
+          - os: ubuntu-24.04-arm
+            rid: linux-arm64
+            exe: CuiGallery
           - os: macos-latest
             rid: osx-arm64
             exe: CuiGallery
     steps:
       - uses: actions/checkout@v7.0.1
 
-      - name: Install Xvfb (Linux)
+      - name: Ensure Linux AOT and display dependencies
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y xvfb
+        timeout-minutes: 6
+        run: bash tools/ci-linux-deps.sh clang zlib1g-dev libx11-dev xvfb
 
       - name: Checkout submodules (CUI)
         run: git submodule update --init --recursive
@@ -238,7 +266,8 @@ jobs:
             native/libcui.so
             native/libcui.a
             native/libcui.dylib
-          key: cui-native-${{ runner.os }}-glibc${{ env.CUI_GLIBC_BASELINE }}-${{ steps.cui.outputs.sha }}
+            native/native-provenance.txt
+          key: cui-native-v4-${{ runner.os }}-${{ runner.arch }}-glibc${{ env.CUI_GLIBC_BASELINE }}-${{ steps.cui.outputs.sha }}-${{ hashFiles('native/build-native*', 'native/msvc-env.ps1') }}
 
       - name: Build CUI (native library)
         if: steps.native-cache.outputs.cache-hit != 'true'
@@ -331,7 +360,7 @@ jobs:
   # Actions -> CI -> Run workflow. Both ceilings come from docs/PERFORMANCE.md.
   budget:
     name: Frame budget (on demand)
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && inputs.budget
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7.0.1
@@ -356,7 +385,8 @@ jobs:
           path: |
             native/cui.dll
             native/cui.lib
-          key: cui-native-${{ runner.os }}-glibc${{ env.CUI_GLIBC_BASELINE }}-${{ steps.cui.outputs.sha }}
+            native/native-provenance.txt
+          key: cui-native-v4-${{ runner.os }}-${{ runner.arch }}-glibc${{ env.CUI_GLIBC_BASELINE }}-${{ steps.cui.outputs.sha }}-${{ hashFiles('native/build-native*', 'native/msvc-env.ps1') }}
 
       - name: Build CUI (native library)
         if: steps.native-cache.outputs.cache-hit != 'true'
@@ -382,10 +412,11 @@ jobs:
   packaged-consumer:
     name: Packaged consumer (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-22.04]
+        os: [windows-latest, windows-11-arm, ubuntu-22.04, ubuntu-24.04-arm]
     steps:
       - uses: actions/checkout@v7.0.1
 
@@ -397,9 +428,10 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      - name: Install X11 headers (Linux)
+      - name: Ensure Linux AOT dependencies
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libx11-dev
+        timeout-minutes: 6
+        run: bash tools/ci-linux-deps.sh clang zlib1g-dev libx11-dev
 
       - name: Submodule revision
         id: cui
@@ -417,7 +449,8 @@ jobs:
             native/libcui.so
             native/libcui.a
             native/libcui.dylib
-          key: cui-native-${{ runner.os }}-glibc${{ env.CUI_GLIBC_BASELINE }}-${{ steps.cui.outputs.sha }}
+            native/native-provenance.txt
+          key: cui-native-v4-${{ runner.os }}-${{ runner.arch }}-glibc${{ env.CUI_GLIBC_BASELINE }}-${{ steps.cui.outputs.sha }}-${{ hashFiles('native/build-native*', 'native/msvc-env.ps1') }}
 
       - name: Build CUI (native library)
         if: steps.native-cache.outputs.cache-hit != 'true'
@@ -432,6 +465,7 @@ jobs:
       # folder, and drives the result with `dotnet cui`.
       - name: Verify the template from the package
         shell: pwsh
+        timeout-minutes: 6
         run: ./tools/verify-template.ps1
 
   # Benchmarks are a regression signal, not a gate: the JSON reports are uploaded
@@ -443,6 +477,7 @@ jobs:
   # couple of minutes (ScaleBenchmarks' nine param combinations are the long pole,
   # so each of its benchmarks gets its own leg).
   benchmarks:
+    if: github.event_name == 'workflow_dispatch' && inputs.benchmarks
     name: Benchmarks (${{ matrix.os }} · ${{ matrix.leg }})
     runs-on: ${{ matrix.os }}
     strategy:
