@@ -192,6 +192,14 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_color_of")]
     public static partial NativeColor ColorOf(nint ui, NativeColor c);
 
+    /// <summary>cui_set_strings</summary>
+    [LibraryImport("cui", EntryPoint = "cui_set_strings")]
+    public static partial void SetStrings(nint ui, nint strings);
+
+    /// <summary>cui_get_strings</summary>
+    [LibraryImport("cui", EntryPoint = "cui_get_strings")]
+    public static partial nint GetStrings(nint ui);
+
     /// <summary>cui_token_color</summary>
     [LibraryImport("cui", EntryPoint = "cui_token_color")]
     public static partial NativeColor TokenColor(nint ui, Token token);
@@ -1647,6 +1655,134 @@ public static unsafe partial class Native
     /// <summary>cui_timeline_editor_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_timeline_editor_ex")]
     public static partial NativeTimelineEditorResult TimelineEditor(nint ui, nint id, nint tracks, int count, ref float time, in NativeTimelineEditorOpts opts);
+
+    /// <summary>cui_kv_editor_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_kv_editor_ex")]
+    public static partial byte KvEditor(nint ui, nint id, nint pairs, ref int count, int capacity, in NativeKvEditorOpts opts);
+
+    /// <summary>cui_problems_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_problems_ex")]
+    public static partial NativeProblemsResult Problems(nint ui, nint id, nint diags, int count, in NativeProblemsOpts opts);
+
+    /// <summary>cui_pipeline_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_pipeline_ex")]
+    public static partial NativePipelineResult Pipeline(nint ui, nint id, nint stages, int stageCount, nint jobs, int jobCount, in NativePipelineOpts opts);
+
+    /// <summary>cui_query_builder_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_query_builder_ex")]
+    public static partial byte QueryBuilder(nint ui, nint id, nint fields, int fieldCount, nint nodes, ref int count, int capacity, in NativeQueryOpts opts);
+
+    /// <summary>cui_query_op_name</summary>
+    [LibraryImport("cui", EntryPoint = "cui_query_op_name")]
+    public static partial nint QueryOpName(QueryType type, int op);
+
+    /// <summary>cui_query_text</summary>
+    [LibraryImport("cui", EntryPoint = "cui_query_text")]
+    public static partial ulong QueryText(nint fields, int fieldCount, nint nodes, int count, nint @out, ulong cap);
+
+    /// <summary>cui_query_match</summary>
+    [LibraryImport("cui", EntryPoint = "cui_query_match")]
+    public static partial byte QueryMatch(nint fields, int fieldCount, nint nodes, int count, nint values);
+
+    /// <summary>cui_schedule_picker_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_schedule_picker_ex")]
+    public static partial NativeScheduleResult SchedulePicker(nint ui, nint id, nint cron, ulong cap, in NativeScheduleOpts opts);
+
+    /// <summary>cui_cron_next</summary>
+    [LibraryImport("cui", EntryPoint = "cui_cron_next")]
+    public static partial byte CronNext(nint cron, long after, int utcOffset, ref long next);
+
+    /// <summary>cui_cron_describe</summary>
+    [LibraryImport("cui", EntryPoint = "cui_cron_describe")]
+    public static partial nint CronDescribe(nint ui, nint cron);
+
+    /// <summary>cui_keymap_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_keymap_ex")]
+    public static partial NativeKeymapResult Keymap(nint ui, nint id, nint bindings, int count, in NativeKeymapOpts opts);
+
+    /// <summary>cui_commit_graph_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_commit_graph_ex")]
+    public static partial NativeCommitGraphResult CommitGraph(nint ui, nint id, nint commits, int count, in NativeCommitGraphOpts opts);
+
+    /// <summary>cui_graph_view_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_graph_view_ex")]
+    public static partial NativeGraphResult GraphView(nint ui, nint id, nint nodes, int nodeCount, nint edges, int edgeCount, in NativeGraphOpts opts);
+
+    /// <summary>cui_waterfall_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_waterfall_ex")]
+    public static partial NativeWaterfallResult Waterfall(nint ui, nint id, nint requests, int count, in NativeWaterfallOpts opts);
+
+    /// <summary>cui_trace_view_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_trace_view_ex")]
+    public static partial NativeTraceResult TraceView(nint ui, nint id, nint tracks, int trackCount, nint spans, int spanCount, ref NativeTraceView view, ref int selected, in NativeTraceOpts opts);
+
+    /// <summary>cui_trace_sort</summary>
+    [LibraryImport("cui", EntryPoint = "cui_trace_sort")]
+    public static partial void TraceSort(nint spans, int count);
+
+    /// <summary>cui_regex_search</summary>
+    [LibraryImport("cui", EntryPoint = "cui_regex_search")]
+    public static partial int RegexSearch(nint pattern, int flags, nint text, int len, int from, ref NativeRegexMatch m, nint error);
+
+    /// <summary>cui_regex_tester_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_regex_tester_ex")]
+    public static partial NativeRegexTesterResult RegexTester(nint ui, nint id, nint pattern, ulong patternCap, nint text, ulong textCap, in NativeRegexTesterOpts opts);
+
+    /// <summary>cui_test_explorer_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_test_explorer_ex")]
+    public static partial NativeTestExplorerResult TestExplorer(nint ui, nint id, nint items, int count, in NativeTestExplorerOpts opts);
+
+    /// <summary>cui_stack_trace_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_stack_trace_ex")]
+    public static partial NativeStackTraceResult StackTrace(nint ui, nint id, nint frames, int count, in NativeStackTraceOpts opts);
+
+    /// <summary>cui_request_bar_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_request_bar_ex")]
+    public static partial NativeRequestBarResult RequestBar(nint ui, nint id, ref int method, nint url, ulong cap, in NativeRequestBarOpts opts);
+
+    /// <summary>cui_response_status</summary>
+    [LibraryImport("cui", EntryPoint = "cui_response_status")]
+    public static partial void ResponseStatus(nint ui, int status, double seconds, double bytes);
+
+    /// <summary>cui_http_reason</summary>
+    [LibraryImport("cui", EntryPoint = "cui_http_reason")]
+    public static partial nint HttpReason(int status);
+
+    /// <summary>cui_http_method_name</summary>
+    [LibraryImport("cui", EntryPoint = "cui_http_method_name")]
+    public static partial nint HttpMethodName(int method);
+
+    /// <summary>cui_url_params</summary>
+    [LibraryImport("cui", EntryPoint = "cui_url_params")]
+    public static partial int UrlParams(nint url, nint pairs, int cap);
+
+    /// <summary>cui_url_set_params</summary>
+    [LibraryImport("cui", EntryPoint = "cui_url_set_params")]
+    public static partial byte UrlSetParams(nint url, ulong cap, nint pairs, int count);
+
+    /// <summary>cui_uptime_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_uptime_ex")]
+    public static partial NativeUptimeResult Uptime(nint ui, nint id, nint services, int count, in NativeUptimeOpts opts);
+
+    /// <summary>cui_time_histogram_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_time_histogram_ex")]
+    public static partial NativeTimeHistogramResult TimeHistogram(nint ui, nint id, double start, double bucketSeconds, int buckets, nint series, int seriesCount, ref double selStart, ref double selEnd, in NativeTimeHistogramOpts opts);
+
+    /// <summary>cui_coverage_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_coverage_ex")]
+    public static partial NativeCoverageResult Coverage(nint ui, nint id, nint files, int count, in NativeCoverageOpts opts);
+
+    /// <summary>cui_blame_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_blame_ex")]
+    public static partial NativeBlameResult Blame(nint ui, nint id, nint lines, nint lineCommit, int lineCount, nint commits, int commitCount, in NativeBlameOpts opts);
+
+    /// <summary>cui_feature_flags_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_feature_flags_ex")]
+    public static partial NativeFeatureFlagsResult FeatureFlags(nint ui, nint id, nint flags, int count, nint envs, int envCount, in NativeFeatureFlagsOpts opts);
+
+    /// <summary>cui_api_explorer_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_api_explorer_ex")]
+    public static partial NativeApiExplorerResult ApiExplorer(nint ui, nint id, nint endpoints, int count, in NativeApiExplorerOpts opts);
 
     /// <summary>cui_draw_rect</summary>
     [LibraryImport("cui", EntryPoint = "cui_draw_rect")]

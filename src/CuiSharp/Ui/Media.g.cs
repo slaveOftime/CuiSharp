@@ -73,7 +73,7 @@ public static unsafe class MediaUiExtensions
             return new LayoutScope(ui.Handle, ScopeKind.CardStackItem, "CardStackItem", null);
         }
 
-        /// <summary>cui_counter_ex</summary>
+        /// <summary>* left to right in any interface: see cui__keep_ltr</summary>
         public void Counter(UiText id, double value, CounterOpts o = default)
         {
             var __opts = o.ToNative();

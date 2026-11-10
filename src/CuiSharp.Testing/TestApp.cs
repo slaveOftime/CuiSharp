@@ -15,8 +15,8 @@ namespace CuiSharp.Testing;
 /// </code></example>
 /// <remarks>
 /// The driving is done by the framework, not here, because an agent needs the same app:
-/// <c>dotnet cui tree</c> and <c>dotnet cui mcp</c> drive a real process through
-/// <see cref="HeadlessLoop"/>, and a test drives the same class in memory.
+/// <c>dotnet cui tree</c> drives a real process through <see cref="HeadlessLoop"/>, and a test
+/// drives the same class in memory.
 /// </remarks>
 public sealed class TestApp : HeadlessApp
 {

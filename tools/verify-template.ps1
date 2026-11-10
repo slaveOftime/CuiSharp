@@ -62,7 +62,10 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'installing the template failed' }
     $templateInstalled = $true
 
-    & dotnet new cui-app -n TodoApp -o $app | Out-Null
+    # Scaffolded at this build's version rather than the released default the template pins: every
+    # later command, including `dotnet cui`, then restores the package this run just packed. That the
+    # default tracks the release is TemplateVersionTests' job, not this gate's.
+    & dotnet new cui-app -n TodoApp -o $app --CuiSharpVersion $version | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'generating the app failed' }
 
     # A generated app has no NuGet.config; give it one that can see the local packages.
@@ -77,8 +80,6 @@ try {
 </configuration>
 "@ | Set-Content (Join-Path $app 'NuGet.config')
 
-    # Passed explicitly, because the default is the released version, not this build's.
-    # (That the default tracks the package is checked by TemplateVersionTests.)
     $solution = Join-Path $app 'TodoApp.slnx'
     $versionArg = "-p:CuiSharpVersion=$version"
 
@@ -91,14 +92,30 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'the generated app has failing tests' }
 
     if (-not $NoPublish) {
-        Step 'publishing a NativeAOT single file'
-        & dotnet publish (Join-Path $app 'TodoApp/TodoApp.csproj') -c $Configuration -r win-x64 $versionArg
+        # The host's own RID, so this gate says something on Linux and macOS too: the
+        # package's archive for that RID is what links, and a Windows-only run cannot
+        # see an x11 or a Cocoa linker argument going wrong.
+        $rid = if ($IsWindows) { 'win-x64' } elseif ($IsMacOS) { 'osx-arm64' } else { 'linux-x64' }
+        $exeName = if ($IsWindows) { 'TodoApp.exe' } else { 'TodoApp' }
+
+        Step "publishing a NativeAOT single file ($rid)"
+        & dotnet publish (Join-Path $app 'TodoApp/TodoApp.csproj') -c $Configuration -r $rid $versionArg
         if ($LASTEXITCODE -ne 0) { throw 'the generated app does not publish' }
 
-        $exe = Join-Path $app 'TodoApp/bin/Release/net10.0/win-x64/publish/TodoApp.exe'
+        $published = Join-Path $app "TodoApp/bin/Release/net10.0/$rid/publish"
+        $exe = Join-Path $published $exeName
         if (-not (Test-Path $exe)) { throw "expected $exe" }
         $size = (Get-Item $exe).Length
         Write-Host ("    publish size: {0:N0} B" -f $size)
+
+        # "One file" is the promise, so the shared library that shipped in the package
+        # must not be sitting next to the executable that linked it in.
+        foreach ($stray in 'cui.dll', 'cui.lib', 'libcui.so', 'libcui.dylib', 'libcui.a') {
+            if (Test-Path (Join-Path $published $stray)) {
+                throw "the AOT publish left $stray beside the executable"
+            }
+        }
+        Write-Host '    no native library left beside the executable' -ForegroundColor Green
     }
 
     # The analyzers ship inside the package, and a package's analyzers are what an app
@@ -122,7 +139,11 @@ internal static class AnalyzerProbe
     # `dotnet cui` has to work on the app a person just generated, with no code added: the
     # framework serves the headless protocol, so the tool drives the app itself.
     Step 'driving the generated app with dotnet cui'
-    $cui = Join-Path $PSScriptRoot '../src/CuiSharp.Tools/bin/Release/net10.0/CuiSharp.Tools.exe'
+    # .exe only on Windows: the apphost on Linux and macOS carries no extension,
+    # and a path that does not exist would send the launch after a rebuild that
+    # cannot produce it.
+    $toolName = if ($IsWindows) { 'CuiSharp.Tools.exe' } else { 'CuiSharp.Tools' }
+    $cui = Join-Path $PSScriptRoot ("../src/CuiSharp.Tools/bin/Release/net10.0/$toolName")
     if (-not (Test-Path $cui)) { & dotnet build (Join-Path $PSScriptRoot '../src/CuiSharp.Tools/CuiSharp.Tools.csproj') -c Release | Out-Null }
     # Read the tool's stdout as UTF-8, explicitly: a native command's output is otherwise decoded
     # with this console's code page, and the check below is about the tool's bytes, not about pwsh.

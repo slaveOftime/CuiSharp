@@ -15,16 +15,27 @@ re-measure before quoting them.
 
 ## Today, in one table
 
+The two rows that decide a regression are read by `tools/budget-check.ps1`, which fails a run over
+either ceiling: the size check runs on every pull request, and the frame check on demand (Actions →
+CI → Run workflow) because a shared runner is too noisy to fail one.
+
 | | Value | Where it is enforced |
 |---|---|---|
-| Gallery frame, 1240×820, software raster | **0.85 ms** mean (p50 0.71, p95 1.20, p99 1.52) | `--fps 900` budget: baseline + 10 % |
+| Gallery frame, 1240x820, software raster | **0.82 ms** mean (p50 0.69, p95 1.13, p99 1.33) | budget 0.90 ms, `--fps 900` |
 | Build only (a GPU would rasterize) | 0.02 ms | same run |
 | Managed allocation per frame | **0 B** | `FrameLifecycleTests`, `NewComponentTests` |
-| Gallery AOT executable, win-x64 | 2 073 088 B | [PLAN](PLAN.md) budget: ≤ 2.1 MB |
+| Gallery AOT executable, win-x64 | 2 579 456 B | budget 2.7 MB |
 | A million virtual list rows | ~12 µs | `--scale` |
 | A million chart points, undecimated | 45.9 ms | why decimation exists |
 | A million chart points, decimated to 800 | 0.018 ms | same |
 | Idle window CPU | 0 % | by construction: CUI sleeps between frames |
+
+The executable grew from 2 141 184 B to 2 579 456 B with CUI 1.3, and the growth is upstream's: the
+twenty components it added are about 5 000 lines of new C (`cui_devtools.c`, `cui_devpanels.c`,
+`cui_devviews.c`, `cui_graph.c`, `cui_regex.c`) compiled into the same library. The frame time did not
+move, because a page still draws only the widgets on it. The ceiling moved with the binary rather
+than the other way round, and it is a round number above the measurement, so the next regression still
+fails the gate.
 
 ## Scale: a million of something
 
@@ -88,7 +99,7 @@ over 900 frames at 1280×720:
 
 | | mean | p50 | p95 | p99 |
 |---|---|---|---|---|
-| Build + software raster | 0.85 ms | 0.71 | 1.20 | 1.52 |
+| Build + software raster | 0.82 ms | 0.69 | 1.11 | 1.17 |
 | Build only (a GPU would rasterize) | 0.02 ms | 0.02 | 0.02 | 0.02 |
 
 (An earlier revision of this table read 1.38 ms; the difference is the 1240×820 window the harness
@@ -147,7 +158,7 @@ Before that change — the numbers that motivated it, 2 000 rows over 60 frames:
 
 Both overload sets are now one `UiText` method on the allocation-free path. Steady-state headless
 tests cover interpolation in text, metrics, drawing and canvas callbacks together at
-**0 B/frame**, and the live-chart harness reports **0 B/frame** at a 0.85 ms mean.
+**0 B/frame**, and the live-chart harness reports **0 B/frame** at a 0.82 ms mean.
 
 Standard format specifiers (`F2`, `N0`, `X`) are formatted natively, alignment
 (`$"{v,8}"`) works, and a custom pattern such as `0.00`, which `Utf8Formatter`

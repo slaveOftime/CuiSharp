@@ -93,6 +93,24 @@ internal static unsafe class Utf8
         FrameCallbacks.BeginFrame();
     }
 
+    /// <summary>
+    /// A block that gives its bytes back on the way out, for a helper that can be called
+    /// without a frame: <c>using var scope = Utf8.Scope();</c>. Outside a frame nothing else
+    /// resets the arena, so a helper that allocates must not leak into the next call.
+    /// </summary>
+    internal static FrameScope Scope() => new(_chunk, _used);
+
+    internal readonly ref struct FrameScope(int chunk, int used)
+    {
+        public void Dispose()
+        {
+            _chunk = chunk;
+            _used = used;
+            _lastAllocation = null;
+            _lastAllocationSize = 0;
+        }
+    }
+
     public static nint Get(UiText text) => text.GetPointer(out _);
 
     /// <summary>Copies <paramref name="s"/> into the frame arena. Null or empty gives a null pointer.</summary>
@@ -154,6 +172,37 @@ internal static unsafe class Utf8
         byte* p = Reserve(bytes);
         new Span<byte>(p, bytes).Clear();
         return p;
+    }
+
+    /// <summary>
+    /// Writes text into a fixed C buffer owned by the caller's record, NUL-terminated and
+    /// cut on a character boundary. Unlike <see cref="Get(string?)"/> it targets the
+    /// struct's own storage, so nothing points into the frame arena.
+    /// </summary>
+    public static void WriteFixed(string? text, byte* destination, int capacity)
+    {
+        if (capacity <= 0) return;
+        int limit = capacity - 1;
+        if (string.IsNullOrEmpty(text)) { destination[0] = 0; return; }
+
+        // Shrink until the exact byte count fits: a conservative upper bound would
+        // throw away most of the buffer for text that is not all three-byte characters.
+        ReadOnlySpan<char> chars = text.AsSpan();
+        int keep = Math.Min(chars.Length, limit);
+        while (keep > 0 && Encoding.UTF8.GetByteCount(chars[..keep]) > limit) keep--;
+        // Never cut a surrogate pair in half: the encoder rejects a lone half.
+        if (keep < chars.Length && keep > 0 && char.IsHighSurrogate(chars[keep - 1])) keep--;
+
+        int written = keep == 0 ? 0 : Encoding.UTF8.GetBytes(chars[..keep], new Span<byte>(destination, limit));
+        destination[written] = 0;
+    }
+
+    /// <summary>Reads a NUL-terminated fixed C buffer; null when it is empty.</summary>
+    public static string? ReadFixed(byte* source, int capacity)
+    {
+        int length = 0;
+        while (length < capacity && source[length] != 0) length++;
+        return length == 0 ? null : Encoding.UTF8.GetString(source, length);
     }
 
     /// <summary>

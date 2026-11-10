@@ -85,6 +85,13 @@
   <ItemGroup>
     <None Include="build\CuiSharp.targets" Pack="true" PackagePath="build/" />
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <!--
+      The skill folder is the whole of what an app needs, and it ships at the path it has in the
+      repository so a relative link works in both. Nothing else has to be packed with it: the pages it
+      links to are in it (skills/cui-dotnet/SKILL.md is the entry point; there is no other README).
+    -->
+    <None Include="..\..\skills\cui-dotnet\**\*.md" Pack="true" PackagePath="skills/cui-dotnet/%(RecursiveDir)%(Filename)%(Extension)" Visible="false" />
+    <None Include="..\..\skills\cui-dotnet\llms.txt" Pack="true" PackagePath="skills/cui-dotnet/" Visible="false" />
   </ItemGroup>
 
   <ItemGroup>
@@ -94,6 +101,54 @@
           Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"
           Condition="Exists('$(MSBuildThisFileDirectory)../CuiSharp.Analyzers/bin/$(Configuration)/netstandard2.0/CuiSharp.Analyzers.dll')" />
   </ItemGroup>
+
+  <!--
+    What went into the package, recorded rather than assumed: each native file with its RID and
+    SHA-256, plus whatever the native build wrote about the revision and compiler that produced
+    it. A consumer that hits an ABI mismatch can read this instead of bisecting releases.
+  -->
+  <PropertyGroup>
+    <!-- Pack calls this per framework, which is how a file that only exists after a build gets in. -->
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);CuiSharpPackNativeProvenance</TargetsForTfmSpecificContentInPackage>
+  </PropertyGroup>
+
+  <Target Name="CuiSharpPackNativeProvenance">
+    <ItemGroup>
+      <_CuiPackagedNative Include="$(_CuiNativeWin)cui.dll" Condition="'$(_CuiNativeWin)' != '' And Exists('$(_CuiNativeWin)cui.dll')" Rid="win-x64" />
+      <_CuiPackagedNative Include="$(_CuiNativeWin)cui.lib" Condition="'$(_CuiNativeWin)' != '' And Exists('$(_CuiNativeWin)cui.lib')" Rid="win-x64" />
+      <_CuiPackagedNative Include="$(_CuiNativeLinux)libcui.so" Condition="'$(_CuiNativeLinux)' != '' And Exists('$(_CuiNativeLinux)libcui.so')" Rid="linux-x64" />
+      <_CuiPackagedNative Include="$(_CuiNativeLinux)libcui.a" Condition="'$(_CuiNativeLinux)' != '' And Exists('$(_CuiNativeLinux)libcui.a')" Rid="linux-x64" />
+      <_CuiPackagedNative Include="$(_CuiNativeOsx)libcui.dylib" Condition="'$(_CuiNativeOsx)' != '' And Exists('$(_CuiNativeOsx)libcui.dylib')" Rid="osx-arm64" />
+      <_CuiPackagedNative Include="$(_CuiNativeOsx)libcui.a" Condition="'$(_CuiNativeOsx)' != '' And Exists('$(_CuiNativeOsx)libcui.a')" Rid="osx-arm64" />
+    </ItemGroup>
+
+    <GetFileHash Files="@(_CuiPackagedNative)" Algorithm="SHA256" HashEncoding="hex">
+      <Output TaskParameter="Items" ItemName="_CuiHashedNative" />
+    </GetFileHash>
+
+    <ItemGroup>
+      <_CuiProvenanceLine Include="CuiSharp $(Version) native artifacts" />
+      <_CuiProvenanceLine Include="@(_CuiHashedNative->'%(Rid) %(Filename)%(Extension) %(FileHash)')" />
+      <_CuiProvenanceLine Include="repository $(RepositoryUrl) @ $(SourceRevisionId)" Condition="'$(SourceRevisionId)' != ''" />
+    </ItemGroup>
+
+    <!-- ReadAllLines is not a property function MSBuild will run, so the native build's own
+         revision and compiler lines arrive through a task, appended after the header above. -->
+    <ReadLinesFromFile File="$(CuiNativeDir)native-provenance.txt" Condition="Exists('$(CuiNativeDir)native-provenance.txt')">
+      <Output TaskParameter="Lines" ItemName="_CuiProvenanceLine" />
+    </ReadLinesFromFile>
+
+    <WriteLinesToFile File="$(IntermediateOutputPath)native-provenance.txt"
+                      Lines="@(_CuiProvenanceLine)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="$(IntermediateOutputPath)native-provenance.txt">
+        <PackagePath>runtimes/</PackagePath>
+      </TfmSpecificPackageFile>
+    </ItemGroup>
+  </Target>
 
   <Target Name="CuiSharpWarnMissingNative" BeforeTargets="Pack" Condition="!Exists('$(CuiNativeDir)cui.dll')">
     <Warning Text="native/cui.dll not found - the package will contain managed code only. Run native/build-native.ps1 first." />

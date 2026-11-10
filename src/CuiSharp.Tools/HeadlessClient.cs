@@ -20,29 +20,43 @@ namespace CuiSharp.Tools;
 /// line from a library — and holding that against it would mean a tool that works only for apps
 /// polite enough not to log. Such lines are passed to <see cref="Noise"/> and skipped.
 /// </para>
+/// <para>
+/// Every read is bounded. A child that never writes a newline, announces a gigabyte payload or
+/// logs without end cannot make the tool allocate without limit: the line cap truncates what it
+/// relays, the payload cap refuses an answer it cannot carry, and retained stderr keeps only its
+/// tail.
+/// </para>
 /// </remarks>
 internal sealed class HeadlessClient : IDisposable
 {
-    private readonly Process _process;
+    /// <summary>The most one answer may claim. Past this the app is not speaking this protocol.</summary>
+    internal const int MaxPayloadBytes = 16 * 1024 * 1024;
+
+    /// <summary>How much of one line the tool keeps. A header is 32 bytes; app output may be a log.</summary>
+    internal const int MaxLineBytes = 4096;
+
+    private readonly Process? _process;
     private readonly Stream _out;
     private readonly Stream _in;
-    private readonly StringBuilder _errors = new();
+    private readonly TailBuffer _errors = new();
 
-    private HeadlessClient(Process process, Action<string>? echo)
+    private HeadlessClient(Process? process, Stream output, Stream input, Action<string>? echo)
     {
         Noise = echo;
         _process = process;
-        _out = process.StandardOutput.BaseStream;
-        _in = process.StandardInput.BaseStream;
-        _process.ErrorDataReceived += (_, e) =>
+        _out = output;
+        _in = input;
+        if (process is null) return;
+
+        process.ErrorDataReceived += (_, e) =>
         {
             if (e.Data is null) return;
-            _errors.AppendLine(e.Data);
+            _errors.Append(e.Data);
             // The app's stderr is the app's diagnostics: a person running the tool sees them the
             // way they would see them from a shell, and the protocol on stdout stays clean.
             Noise?.Invoke(e.Data);
         };
-        _process.BeginErrorReadLine();
+        process.BeginErrorReadLine();
     }
 
     /// <summary>Anything the app wrote to stderr: its exception, or its own logging.</summary>
@@ -68,7 +82,12 @@ internal sealed class HeadlessClient : IDisposable
     /// <param name="host">The executable or <c>dotnet</c>.</param>
     /// <param name="arguments">Its arguments.</param>
     /// <param name="echo">Where the app's own output goes, or null to discard it.</param>
-    internal static HeadlessClient Start(string host, IReadOnlyList<string> arguments, Action<string>? echo = null)
+    /// <param name="cancellation">Cancels the wait for the app's banner.</param>
+    internal static HeadlessClient Start(
+        string host,
+        IReadOnlyList<string> arguments,
+        Action<string>? echo = null,
+        CancellationToken cancellation = default)
     {
         var info = new ProcessStartInfo(host)
         {
@@ -82,10 +101,14 @@ internal sealed class HeadlessClient : IDisposable
         info.Environment[CuiSharpEnvironmentVariable] = "1";
 
         Process process = Process.Start(info) ?? throw new ToolException($"Could not start {host}.");
-        var client = new HeadlessClient(process, echo);
+        var client = new HeadlessClient(
+            process,
+            process.StandardOutput.BaseStream,
+            process.StandardInput.BaseStream,
+            echo);
         try
         {
-            client.WaitReady();
+            client.WaitReady(cancellation);
             return client;
         }
         catch
@@ -95,14 +118,37 @@ internal sealed class HeadlessClient : IDisposable
         }
     }
 
+    /// <summary>
+    /// A client over streams instead of a child process: what the protocol's own tests speak, and
+    /// what an embedder driving a channel of its own can use.
+    /// </summary>
+    internal static HeadlessClient Attach(
+        Stream output,
+        Stream input,
+        Action<string>? echo = null,
+        TimeSpan? readyTimeout = null,
+        TimeSpan? answerTimeout = null,
+        CancellationToken cancellation = default)
+    {
+        var client = new HeadlessClient(null, output, input, echo)
+        {
+            ReadyTimeout = readyTimeout ?? TimeSpan.FromSeconds(60),
+            AnswerTimeout = answerTimeout ?? TimeSpan.FromMinutes(1),
+        };
+        client.WaitReady(cancellation);
+        return client;
+    }
+
     private const string CuiSharpEnvironmentVariable = "CUISHARP_HEADLESS";
 
-    private void WaitReady()
+    private void WaitReady(CancellationToken cancellation)
     {
-        using var cancel = new CancellationTokenSource(ReadyTimeout);
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
+        timeout.CancelAfter(ReadyTimeout);
         var skipped = new StringBuilder();
-        for (string line = ReadLine(cancel.Token); ; line = ReadLine(cancel.Token))
+        while (true)
         {
+            string line = ReadLine(timeout.Token, Waiting.Ready);
             if (line.StartsWith("CUI-READY ", StringComparison.Ordinal))
             {
                 string[] parts = line.Split(' ');
@@ -113,7 +159,7 @@ internal sealed class HeadlessClient : IDisposable
             // The app had not reached the loop yet, so this is its own output.
             skipped.AppendLine(line);
             Relay(line);
-            if (skipped.Length > 4096)
+            if (skipped.Length > MaxLineBytes)
             {
                 throw new ToolException(
                     $"The app never started in headless mode, and this is what it said:{Environment.NewLine}{skipped}");
@@ -127,22 +173,21 @@ internal sealed class HeadlessClient : IDisposable
     internal string Size { get; private set; } = "?";
 
     /// <summary>Sends one command and reads its answer.</summary>
-    internal Answer Send(string command)
+    internal Answer Send(string command, CancellationToken cancellation = default)
     {
         byte[] bytes = Encoding.UTF8.GetBytes(command + "\n");
         _in.Write(bytes);
         _in.Flush();
 
-        using var cancel = new CancellationTokenSource(AnswerTimeout);
-        string header = ReadHeader(cancel.Token);
-        int space = header.IndexOf(' ', StringComparison.Ordinal);
-        string status = header[..space];
-        int length = int.Parse(header[(space + 1)..], CultureInfo.InvariantCulture);
-        string payload = ReadExactly(length, cancel.Token);
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
+        timeout.CancelAfter(AnswerTimeout);
+        string header = ReadHeader(timeout.Token);
+        bool ok = TryParseHeader(header, out int length);
+        string payload = ReadExactly(length, timeout.Token);
         // The answer ends with a newline so a person reading the raw stream sees one answer per
         // block; consume it or the next header would look empty.
-        ReadLine(cancel.Token);
-        return new Answer(status == "CUI-OK", payload);
+        ReadLine(timeout.Token, Waiting.Answer);
+        return new Answer(ok, payload);
     }
 
     /// <summary>
@@ -150,30 +195,59 @@ internal sealed class HeadlessClient : IDisposable
     /// </summary>
     private string ReadHeader(CancellationToken token)
     {
-        for (string line = ReadLine(token); ; line = ReadLine(token))
+        for (string line = ReadLine(token, Waiting.Answer); ; line = ReadLine(token, Waiting.Answer))
         {
             if (IsHeader(line)) return line;
             Relay(line);
         }
     }
 
-    internal static bool IsHeader(string line)
+    internal static bool IsHeader(string line) => TryParseHeader(line, out _);
+
+    /// <summary>
+    /// Whether <paramref name="line"/> is a header, and what it promises. A header that names more
+    /// bytes than the protocol can carry is an error rather than a header: the alternative is
+    /// allocating whatever a broken child asked for.
+    /// </summary>
+    internal static bool TryParseHeader(string line, out int length) => TryParseHeader(line, out _, out length);
+
+    internal static bool TryParseHeader(string line, out bool ok, out int length)
     {
+        ok = false;
+        length = 0;
         int space = line.IndexOf(' ', StringComparison.Ordinal);
         if (space < 0) return false;
-        if (!line[..space].Equals("CUI-OK", StringComparison.Ordinal) &&
-            !line[..space].Equals("CUI-ERR", StringComparison.Ordinal))
-        {
+
+        ReadOnlySpan<char> status = line.AsSpan(0, space);
+        bool success = status.SequenceEqual("CUI-OK");
+        if (!success && !status.SequenceEqual("CUI-ERR")) return false;
+
+        // Not a number at all: not protocol. A number too large to carry: a broken app.
+        if (!long.TryParse(line.AsSpan(space + 1), NumberStyles.None, CultureInfo.InvariantCulture, out long claimed))
             return false;
+        if (claimed > MaxPayloadBytes)
+        {
+            throw new ToolException(
+                $"The app announced a {claimed}-byte answer; this tool carries at most {MaxPayloadBytes} bytes.");
         }
 
-        return int.TryParse(line.AsSpan(space + 1), NumberStyles.None, CultureInfo.InvariantCulture, out _);
+        ok = success;
+        length = (int)claimed;
+        return true;
     }
 
-    private string ReadLine(CancellationToken token)
+    /// <summary>Why the tool is reading, so a timeout says what actually did not happen.</summary>
+    private enum Waiting
+    {
+        Ready,
+        Answer,
+    }
+
+    private string ReadLine(CancellationToken token, Waiting waiting)
     {
         var line = new List<byte>(128);
         var one = new byte[1];
+        bool overflowed = false;
         while (true)
         {
             // ReadAsync, not Read: the timeout has to interrupt a child that never writes, and a
@@ -185,15 +259,39 @@ internal sealed class HeadlessClient : IDisposable
             }
             catch (OperationCanceledException)
             {
-                throw new ToolException(
-                    $"The app was not ready after {ReadyTimeout.TotalSeconds:0}s.{Tail()}");
+                throw Timeout(waiting);
             }
 
-            if (read == 0) throw new ToolException($"The app closed its output.{$"{Tail()}"}");
-            if (one[0] == (byte)'\n') return Encoding.UTF8.GetString(line.ToArray()).TrimEnd('\r');
-            line.Add(one[0]);
+            if (read == 0) throw new ToolException($"The app closed its output.{Tail()}");
+            if (one[0] == (byte)'\n')
+            {
+                string text = Encoding.UTF8.GetString(line.ToArray()).TrimEnd('\r');
+
+                // A header cut short would be relayed as noise and the payload behind it read as
+                // headers: say so instead of desynchronizing.
+                if (overflowed && (text.StartsWith("CUI-OK", StringComparison.Ordinal) ||
+                                   text.StartsWith("CUI-ERR", StringComparison.Ordinal)))
+                {
+                    throw new ToolException($"The app sent a header longer than {MaxLineBytes} bytes.{Tail()}");
+                }
+
+                return text;
+            }
+
+            // A line the tool will only relay is cut, not accumulated: an app that logs without a
+            // newline must not be able to grow the tool's memory.
+            if (line.Count < MaxLineBytes) line.Add(one[0]);
+            else overflowed = true;
         }
     }
+
+    private ToolException Timeout(Waiting waiting) => waiting switch
+    {
+        Waiting.Ready => new ToolException(
+            $"The app was not ready after {ReadyTimeout.TotalSeconds:0}s: it never printed CUI-READY.{Tail()}"),
+        _ => new ToolException(
+            $"The app did not answer within {AnswerTimeout.TotalSeconds:0}s.{Tail()}"),
+    };
 
     private string ReadExactly(int length, CancellationToken token)
     {
@@ -209,8 +307,7 @@ internal sealed class HeadlessClient : IDisposable
             }
             catch (OperationCanceledException)
             {
-                throw new ToolException(
-                    $"The app stopped answering after {AnswerTimeout.TotalSeconds:0}s.{Tail()}");
+                throw Timeout(Waiting.Answer);
             }
 
             if (read == 0) throw new ToolException($"The app closed its output mid-answer.{Tail()}");
@@ -230,9 +327,15 @@ internal sealed class HeadlessClient : IDisposable
     /// <inheritdoc />
     public void Dispose()
     {
+        if (_process is not { } process)
+        {
+            _out.Dispose();
+            return;
+        }
+
         try
         {
-            if (!_process.HasExited)
+            if (!process.HasExited)
             {
                 try
                 {
@@ -245,12 +348,63 @@ internal sealed class HeadlessClient : IDisposable
                     // It is already gone; nothing to ask it nicely.
                 }
 
-                if (!_process.WaitForExit(TimeSpan.FromSeconds(5))) _process.Kill(entireProcessTree: true);
+                if (!process.WaitForExit(TimeSpan.FromSeconds(5))) process.Kill(entireProcessTree: true);
             }
         }
         finally
         {
-            _process.Dispose();
+            process.Dispose();
+        }
+    }
+}
+
+/// <summary>
+/// The last few kilobytes of what an app printed. A tool that keeps every line a chatty app ever
+/// wrote holds a session's memory hostage to its logging.
+/// </summary>
+internal sealed class TailBuffer
+{
+    private readonly int _capacity;
+    private readonly Queue<string> _lines = new();
+    private readonly Lock _gate = new();
+    private int _bytes;
+    private bool _dropped;
+
+    internal TailBuffer(int capacity = 64 * 1024) => _capacity = capacity;
+
+    internal void Append(string line)
+    {
+        lock (_gate)
+        {
+            if (line.Length > _capacity)
+            {
+                line = line[.._capacity];
+                _dropped = true;
+            }
+
+            while (_bytes + line.Length > _capacity && _lines.Count > 0)
+            {
+                _bytes -= _lines.Dequeue().Length;
+                _dropped = true;
+            }
+
+            _lines.Enqueue(line);
+            _bytes += line.Length;
+        }
+    }
+
+    internal int Length
+    {
+        get { lock (_gate) return _bytes; }
+    }
+
+    public override string ToString()
+    {
+        lock (_gate)
+        {
+            return _dropped
+                ? "[earlier output dropped]\n" + string.Join('\n', _lines)
+                : string.Join('\n', _lines);
         }
     }
 }

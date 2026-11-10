@@ -207,6 +207,59 @@ public unsafe struct NativeTheme
     public float FontScale;
 }
 
+/// <summary>[12] array of nint, for cui_strings.</summary>
+[InlineArray(12)]
+public struct NativeStringsMonthArray
+{
+    private nint _element0;
+}
+
+/// <summary>[12] array of nint, for cui_strings.</summary>
+[InlineArray(12)]
+public struct NativeStringsMonthShortArray
+{
+    private nint _element0;
+}
+
+/// <summary>[7] array of nint, for cui_strings.</summary>
+[InlineArray(7)]
+public struct NativeStringsWeekdayArray
+{
+    private nint _element0;
+}
+
+/// <summary>[7] array of nint, for cui_strings.</summary>
+[InlineArray(7)]
+public struct NativeStringsWeekdayShortArray
+{
+    private nint _element0;
+}
+
+/// <summary>[7] array of nint, for cui_strings.</summary>
+[InlineArray(7)]
+public struct NativeStringsWeekdayMinArray
+{
+    private nint _element0;
+}
+
+/// <summary>cui_strings, 368 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeStrings
+{
+    /// <summary>const char *[12] (offset 0)</summary>
+    public NativeStringsMonthArray Month;
+    /// <summary>const char *[12] (offset 96)</summary>
+    public NativeStringsMonthShortArray MonthShort;
+    /// <summary>const char *[7] (offset 192)</summary>
+    public NativeStringsWeekdayArray Weekday;
+    /// <summary>const char *[7] (offset 248)</summary>
+    public NativeStringsWeekdayShortArray WeekdayShort;
+    /// <summary>const char *[7] (offset 304)</summary>
+    public NativeStringsWeekdayMinArray WeekdayMin;
+    /// <summary>const char * (offset 360)</summary>
+    public nint Today;
+}
+
 /// <summary>cui_text_metrics, 20 bytes.</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTextMetrics
@@ -1607,7 +1660,19 @@ public unsafe struct NativeMarkdownResult
     public float Height;
 }
 
-/// <summary>cui_code_editor_opts, 48 bytes.</summary>
+/// <summary>cui_text_mark, 12 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeTextMark
+{
+    /// <summary>int (offset 0)</summary>
+    public int Start;
+    /// <summary>int (offset 4)</summary>
+    public int End;
+    /// <summary>int (offset 8)</summary>
+    public int Color;
+}
+
+/// <summary>cui_code_editor_opts, 64 bytes.</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeCodeEditorOpts
 {
@@ -1633,6 +1698,10 @@ public unsafe struct NativeCodeEditorOpts
     public byte Autofocus;
     /// <summary>const char * (offset 40)</summary>
     public nint Placeholder;
+    /// <summary>const cui_text_mark * (offset 48)</summary>
+    public nint Marks;
+    /// <summary>int (offset 56)</summary>
+    public int MarkCount;
 }
 
 /// <summary>cui_code_editor_result, 44 bytes.</summary>
@@ -4061,6 +4130,902 @@ public unsafe struct NativeTimelineEditorResult
     public int HoveredTrack;
     /// <summary>int (offset 48)</summary>
     public int HoveredKey;
+}
+
+/// <summary>cui_kv_pair, 322 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeKvPair
+{
+    /// <summary>char[64] (offset 0)</summary>
+    public fixed sbyte Key[64];
+    /// <summary>char[256] (offset 64)</summary>
+    public fixed sbyte Value[256];
+    /// <summary>_Bool (offset 320)</summary>
+    public byte Enabled;
+    /// <summary>_Bool (offset 321)</summary>
+    public byte Secret;
+}
+
+/// <summary>cui_kv_editor_opts, 40 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeKvEditorOpts
+{
+    /// <summary>int (offset 0)</summary>
+    public int Sentinel;
+    /// <summary>const char * (offset 8)</summary>
+    public nint KeyPlaceholder;
+    /// <summary>const char * (offset 16)</summary>
+    public nint ValuePlaceholder;
+    /// <summary>_Bool (offset 24)</summary>
+    public byte NoToggles;
+    /// <summary>_Bool (offset 25)</summary>
+    public byte NoSecrets;
+    /// <summary>_Bool (offset 26)</summary>
+    public byte ReadOnly;
+    /// <summary>cui_size (offset 28)</summary>
+    public NativeSize Width;
+}
+
+/// <summary>cui_diagnostic, 48 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeDiagnostic
+{
+    /// <summary>cui_severity (offset 0)</summary>
+    public Severity Severity;
+    /// <summary>const char * (offset 8)</summary>
+    public nint Message;
+    /// <summary>const char * (offset 16)</summary>
+    public nint File;
+    /// <summary>int (offset 24)</summary>
+    public int Line;
+    /// <summary>int (offset 28)</summary>
+    public int Column;
+    /// <summary>const char * (offset 32)</summary>
+    public nint Source;
+    /// <summary>const char * (offset 40)</summary>
+    public nint Code;
+}
+
+/// <summary>cui_problems_opts, 20 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeProblemsOpts
+{
+    /// <summary>int (offset 0)</summary>
+    public int Sentinel;
+    /// <summary>cui_size (offset 4)</summary>
+    public NativeSize Width;
+    /// <summary>float (offset 12)</summary>
+    public float Height;
+    /// <summary>_Bool (offset 16)</summary>
+    public byte NoToolbar;
+}
+
+/// <summary>cui_problems_result, 12 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeProblemsResult
+{
+    /// <summary>int (offset 0)</summary>
+    public int Selected;
+    /// <summary>int (offset 4)</summary>
+    public int Activated;
+    /// <summary>int (offset 8)</summary>
+    public int Shown;
+}
+
+/// <summary>cui_pipeline_job, 24 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativePipelineJob
+{
+    /// <summary>const char * (offset 0)</summary>
+    public nint Name;
+    /// <summary>int (offset 8)</summary>
+    public int Stage;
+    /// <summary>cui_job_status (offset 12)</summary>
+    public JobStatus Status;
+    /// <summary>float (offset 16)</summary>
+    public float Duration;
+    /// <summary>_Bool (offset 20)</summary>
+    public byte AllowFailure;
+}
+
+/// <summary>cui_pipeline_opts, 24 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativePipelineOpts
+{
+    /// <summary>int (offset 0)</summary>
+    public int Sentinel;
+    /// <summary>cui_size (offset 4)</summary>
+    public NativeSize Width;
+    /// <summary>int * (offset 16)</summary>
+    public nint Selected;
+}
+
+/// <summary>cui_pipeline_result, 8 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativePipelineResult
+{
+    /// <summary>int (offset 0)</summary>
+    public int Clicked;
+    /// <summary>int (offset 4)</summary>
+    public int Hovered;
+}
+
+/// <summary>cui_query_field, 32 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeQueryField
+{
+    /// <summary>const char * (offset 0)</summary>
+    public nint Name;
+    /// <summary>cui_query_type (offset 8)</summary>
+    public QueryType Type;
+    /// <summary>const char *const * (offset 16)</summary>
+    public nint Choices;
+    /// <summary>int (offset 24)</summary>
+    public int ChoiceCount;
+}
+
+/// <summary>cui_query_node, 80 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeQueryNode
+{
+    /// <summary>int (offset 0)</summary>
+    public int Depth;
+    /// <summary>_Bool (offset 4)</summary>
+    public byte Group;
+    /// <summary>_Bool (offset 5)</summary>
+    public byte Any;
+    /// <summary>int (offset 8)</summary>
+    public int Field;
+    /// <summary>int (offset 12)</summary>
+    public int Op;
+    /// <summary>char[64] (offset 16)</summary>
+    public fixed sbyte Value[64];
+}
+
+/// <summary>cui_query_opts, 20 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeQueryOpts
+{
+    /// <summary>int (offset 0)</summary>
+    public int Sentinel;
+    /// <summary>cui_size (offset 4)</summary>
+    public NativeSize Width;
+    /// <summary>int (offset 12)</summary>
+    public int MaxDepth;
+    /// <summary>_Bool (offset 16)</summary>
+    public byte ReadOnly;
+}
+
+/// <summary>cui_schedule_opts, 32 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeScheduleOpts
+{
+    /// <summary>int (offset 0)</summary>
+    public int Sentinel;
+    /// <summary>cui_size (offset 4)</summary>
+    public NativeSize Width;
+    /// <summary>int64_t (offset 16)</summary>
+    public long Now;
+    /// <summary>_Bool (offset 24)</summary>
+    public byte Utc;
+    /// <summary>int (offset 28)</summary>
+    public int NextCount;
+}
+
+/// <summary>cui_schedule_result, 16 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeScheduleResult
+{
+    /// <summary>_Bool (offset 0)</summary>
+    public byte Changed;
+    /// <summary>_Bool (offset 1)</summary>
+    public byte Valid;
+    /// <summary>int64_t (offset 8)</summary>
+    public long Next;
+}
+
+/// <summary>cui_keymap_binding, 24 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeKeymapBinding
+{
+    /// <summary>cui_key_combo (offset 0)</summary>
+    public NativeKeyCombo Combo;
+    /// <summary>const char * (offset 8)</summary>
+    public nint Action;
+    /// <summary>int (offset 16)</summary>
+    public int Category;
+}
+
+/// <summary>cui_keymap_opts, 48 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeKeymapOpts
+{
+    /// <summary>int (offset 0)</summary>
+    public int Sentinel;
+    /// <summary>cui_size (offset 4)</summary>
+    public NativeSize Width;
+    /// <summary>const char *const * (offset 16)</summary>
+    public nint Categories;
+    /// <summary>int (offset 24)</summary>
+    public int CategoryCount;
+    /// <summary>int * (offset 32)</summary>
+    public nint Mods;
+    /// <summary>_Bool (offset 40)</summary>
+    public byte NoFunctionRow;
+}
+
+/// <summary>cui_keymap_result, 8 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeKeymapResult
+{
+    /// <summary>cui_key (offset 0)</summary>
+    public Key Clicked;
+    /// <summary>int (offset 4)</summary>
+    public int Conflicts;
+}
+
+/// <summary>cui_commit, 48 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeCommit
+{
+    /// <summary>const char * (offset 0)</summary>
+    public nint Hash;
+    /// <summary>const char * (offset 8)</summary>
+    public nint Message;
+    /// <summary>const char * (offset 16)</summary>
+    public nint Author;
+    /// <summary>const char * (offset 24)</summary>
+    public nint Date;
+    /// <summary>const char * (offset 32)</summary>
+    public nint Refs;
+    /// <summary>int[2] (offset 40)</summary>
+    public fixed int Parent[2];
+}
+
+/// <summary>cui_commit_graph_opts, 24 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeCommitGraphOpts
+{
+    /// <summary>int (offset 0)</summary>
+    public int Sentinel;
+    /// <summary>cui_size (offset 4)</summary>
+    public NativeSize Width;
+    /// <summary>float (offset 12)</summary>
+    public float Height;
+    /// <summary>int * (offset 16)</summary>
+    public nint Selected;
+}
+
+/// <summary>cui_commit_graph_result, 12 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeCommitGraphResult
+{
+    /// <summary>int (offset 0)</summary>
+    public int Clicked;
+    /// <summary>int (offset 4)</summary>
+    public int Activated;
+    /// <summary>int (offset 8)</summary>
+    public int Hovered;
+}
+
+/// <summary>cui_graph_node, 24 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeGraphNode
+{
+    /// <summary>const char * (offset 0)</summary>
+    public nint Label;
+    /// <summary>const char * (offset 8)</summary>
+    public nint Detail;
+    /// <summary>cui_tone (offset 16)</summary>
+    public Tone Tone;
+}
+
+/// <summary>cui_graph_edge, 8 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeGraphEdge
+{
+    /// <summary>int (offset 0)</summary>
+    public int From;
+    /// <summary>int (offset 4)</summary>
+    public int To;
+}
+
+/// <summary>cui_graph_opts, 32 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeGraphOpts
+{
+    /// <summary>int (offset 0)</summary>
+    public int Sentinel;
+    /// <summary>cui_size (offset 4)</summary>
+    public NativeSize Width;
+    /// <summary>float (offset 12)</summary>
+    public float Height;
+    /// <summary>_Bool (offset 16)</summary>
+    public byte TopDown;
+    /// <summary>int * (offset 24)</summary>
+    public nint Selected;
+}
+
+/// <summary>cui_graph_result, 12 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeGraphResult
+{
+    /// <summary>int (offset 0)</summary>
+    public int Clicked;
+    /// <summary>int (offset 4)</summary>
+    public int Activated;
+    /// <summary>int (offset 8)</summary>
+    public int Hovered;
+}
+
+/// <summary>cui_net_request, 72 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeNetRequest
+{
+    /// <summary>const char * (offset 0)</summary>
+    public nint Name;
+    /// <summary>const char * (offset 8)</summary>
+    public nint Method;
+    /// <summary>int (offset 16)</summary>
+    public int Status;
+    /// <summary>const char * (offset 24)</summary>
+    public nint Type;
+    /// <summary>double (offset 32)</summary>
+    public double Size;
+    /// <summary>double (offset 40)</summary>
+    public double Start;
+    /// <summary>float[6] (offset 48)</summary>
+    public fixed float Timing[6];
+}
+
+/// <summary>cui_waterfall_opts, 40 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeWaterfallOpts
+{
+    /// <summary>int (offset 0)</summary>
+    public int Sentinel;
+    /// <summary>cui_size (offset 4)</summary>
+    public NativeSize Width;
+    /// <summary>float (offset 12)</summary>
+    public float Height;
+    /// <summary>int * (offset 16)</summary>
+    public nint Selected;
+    /// <summary>double (offset 24)</summary>
+    public double DomLoaded;
+    /// <summary>double (offset 32)</summary>
+    public double Loaded;
+}
+
+/// <summary>cui_waterfall_result, 12 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeWaterfallResult
+{
+    /// <summary>int (offset 0)</summary>
+    public int Clicked;
+    /// <summary>int (offset 4)</summary>
+    public int Activated;
+    /// <summary>int (offset 8)</summary>
+    public int Hovered;
+}
+
+/// <summary>cui_trace_track, 16 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeTraceTrack
+{
+    /// <summary>const char * (offset 0)</summary>
+    public nint Name;
+    /// <summary>_Bool (offset 8)</summary>
+    public byte Collapsed;
+}
+
+/// <summary>cui_trace_span, 40 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeTraceSpan
+{
+    /// <summary>const char * (offset 0)</summary>
+    public nint Name;
+    /// <summary>double (offset 8)</summary>
+    public double Start;
+    /// <summary>double (offset 16)</summary>
+    public double End;
+    /// <summary>int (offset 24)</summary>
+    public int Track;
+    /// <summary>int (offset 28)</summary>
+    public int Depth;
+    /// <summary>uint32_t (offset 32)</summary>
+    public uint ColorKey;
+}
+
+/// <summary>cui_trace_marker, 24 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeTraceMarker
+{
+    /// <summary>const char * (offset 0)</summary>
+    public nint Name;
+    /// <summary>double (offset 8)</summary>
+    public double Time;
+    /// <summary>cui_tone (offset 16)</summary>
+    public Tone Tone;
+}
+
+/// <summary>cui_trace_view, 40 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeTraceView
+{
+    /// <summary>double (offset 0)</summary>
+    public double Start;
+    /// <summary>double (offset 8)</summary>
+    public double End;
+    /// <summary>float (offset 16)</summary>
+    public float Scroll;
+    /// <summary>double (offset 24)</summary>
+    public double MarkStart;
+    /// <summary>double (offset 32)</summary>
+    public double MarkEnd;
+}
+
+/// <summary>cui_trace_opts, 40 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeTraceOpts
+{
+    /// <summary>int (offset 0)</summary>
+    public int Sentinel;
+    /// <summary>cui_size (offset 4)</summary>
+    public NativeSize Width;
+    /// <summary>float (offset 12)</summary>
+    public float Height;
+    /// <summary>float (offset 16)</summary>
+    public float RowHeight;
+    /// <summary>const cui_trace_marker * (offset 24)</summary>
+    public nint Markers;
+    /// <summary>int (offset 32)</summary>
+    public int MarkerCount;
+}
+
+/// <summary>cui_trace_result, 8 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeTraceResult
+{
+    /// <summary>_Bool (offset 0)</summary>
+    public byte SelectionChanged;
+    /// <summary>_Bool (offset 1)</summary>
+    public byte ViewChanged;
+    /// <summary>int (offset 4)</summary>
+    public int Hovered;
+}
+
+/// <summary>[24] array of sbyte, for cui_regex_match.</summary>
+[InlineArray(24)]
+public struct NativeRegexMatchGroupNameArray2
+{
+    private sbyte _element0;
+}
+
+/// <summary>[10] array of NativeRegexMatchGroupNameArray2, for cui_regex_match.</summary>
+[InlineArray(10)]
+public struct NativeRegexMatchGroupNameArray1
+{
+    private NativeRegexMatchGroupNameArray2 _element0;
+}
+
+/// <summary>cui_regex_match, 332 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeRegexMatch
+{
+    /// <summary>int (offset 0)</summary>
+    public int Start;
+    /// <summary>int (offset 4)</summary>
+    public int End;
+    /// <summary>int (offset 8)</summary>
+    public int Groups;
+    /// <summary>int[10] (offset 12)</summary>
+    public fixed int GroupStart[10];
+    /// <summary>int[10] (offset 52)</summary>
+    public fixed int GroupEnd[10];
+    /// <summary>char[10][24] (offset 92)</summary>
+    public NativeRegexMatchGroupNameArray1 GroupName;
+}
+
+/// <summary>cui_regex_tester_opts, 24 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeRegexTesterOpts
+{
+    /// <summary>int (offset 0)</summary>
+    public int Sentinel;
+    /// <summary>cui_size (offset 4)</summary>
+    public NativeSize Width;
+    /// <summary>float (offset 12)</summary>
+    public float Height;
+    /// <summary>int * (offset 16)</summary>
+    public nint Flags;
+}
+
+/// <summary>cui_regex_tester_result, 16 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeRegexTesterResult
+{
+    /// <summary>_Bool (offset 0)</summary>
+    public byte Valid;
+    /// <summary>int (offset 4)</summary>
+    public int Matches;
+    /// <summary>const char * (offset 8)</summary>
+    public nint Error;
+}
+
+/// <summary>cui_test_item, 32 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeTestItem
+{
+    /// <summary>const char * (offset 0)</summary>
+    public nint Name;
+    /// <summary>int (offset 8)</summary>
+    public int Depth;
+    /// <summary>cui_job_status (offset 12)</summary>
+    public JobStatus Status;
+    /// <summary>float (offset 16)</summary>
+    public float Duration;
+    /// <summary>const char * (offset 24)</summary>
+    public nint Message;
+}
+
+/// <summary>cui_test_explorer_opts, 16 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeTestExplorerOpts
+{
+    /// <summary>int (offset 0)</summary>
+    public int Sentinel;
+    /// <summary>cui_size (offset 4)</summary>
+    public NativeSize Width;
+    /// <summary>float (offset 12)</summary>
+    public float Height;
+}
+
+/// <summary>cui_test_explorer_result, 32 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeTestExplorerResult
+{
+    /// <summary>int (offset 0)</summary>
+    public int Selected;
+    /// <summary>int (offset 4)</summary>
+    public int Activated;
+    /// <summary>int (offset 8)</summary>
+    public int Run;
+    /// <summary>_Bool (offset 12)</summary>
+    public byte RunAll;
+    /// <summary>int (offset 16)</summary>
+    public int Passed;
+    /// <summary>int (offset 20)</summary>
+    public int Failed;
+    /// <summary>int (offset 24)</summary>
+    public int Skipped;
+    /// <summary>int (offset 28)</summary>
+    public int Total;
+}
+
+/// <summary>cui_stack_frame, 48 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeStackFrame
+{
+    /// <summary>const char * (offset 0)</summary>
+    public nint Function;
+    /// <summary>const char * (offset 8)</summary>
+    public nint File;
+    /// <summary>int (offset 16)</summary>
+    public int Line;
+    /// <summary>int (offset 20)</summary>
+    public int Column;
+    /// <summary>_Bool (offset 24)</summary>
+    public byte External;
+    /// <summary>const char *const * (offset 32)</summary>
+    public nint Source;
+    /// <summary>int (offset 40)</summary>
+    public int SourceCount;
+    /// <summary>int (offset 44)</summary>
+    public int SourceFirst;
+}
+
+/// <summary>cui_stack_trace_opts, 40 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeStackTraceOpts
+{
+    /// <summary>int (offset 0)</summary>
+    public int Sentinel;
+    /// <summary>cui_size (offset 4)</summary>
+    public NativeSize Width;
+    /// <summary>const char * (offset 16)</summary>
+    public nint Title;
+    /// <summary>const char * (offset 24)</summary>
+    public nint Message;
+    /// <summary>const char * (offset 32)</summary>
+    public nint Lang;
+}
+
+/// <summary>cui_stack_trace_result, 4 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeStackTraceResult
+{
+    /// <summary>int (offset 0)</summary>
+    public int Clicked;
+}
+
+/// <summary>cui_request_bar_opts, 24 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeRequestBarOpts
+{
+    /// <summary>int (offset 0)</summary>
+    public int Sentinel;
+    /// <summary>cui_size (offset 4)</summary>
+    public NativeSize Width;
+    /// <summary>_Bool (offset 12)</summary>
+    public byte Loading;
+    /// <summary>const char * (offset 16)</summary>
+    public nint Placeholder;
+}
+
+/// <summary>cui_request_bar_result, 3 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeRequestBarResult
+{
+    /// <summary>_Bool (offset 0)</summary>
+    public byte Send;
+    /// <summary>_Bool (offset 1)</summary>
+    public byte Cancel;
+    /// <summary>_Bool (offset 2)</summary>
+    public byte Changed;
+}
+
+/// <summary>cui_uptime_service, 24 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeUptimeService
+{
+    /// <summary>const char * (offset 0)</summary>
+    public nint Name;
+    /// <summary>const float * (offset 8)</summary>
+    public nint Days;
+    /// <summary>int (offset 16)</summary>
+    public int DayCount;
+}
+
+/// <summary>cui_uptime_opts, 24 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeUptimeOpts
+{
+    /// <summary>int (offset 0)</summary>
+    public int Sentinel;
+    /// <summary>cui_size (offset 4)</summary>
+    public NativeSize Width;
+    /// <summary>cui_date (offset 12)</summary>
+    public NativeDate LastDay;
+}
+
+/// <summary>cui_uptime_result, 8 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeUptimeResult
+{
+    /// <summary>int (offset 0)</summary>
+    public int Service;
+    /// <summary>int (offset 4)</summary>
+    public int Day;
+}
+
+/// <summary>cui_histogram_series, 24 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeHistogramSeries
+{
+    /// <summary>const char * (offset 0)</summary>
+    public nint Name;
+    /// <summary>const float * (offset 8)</summary>
+    public nint Counts;
+    /// <summary>cui_tone (offset 16)</summary>
+    public Tone Tone;
+}
+
+/// <summary>cui_time_histogram_opts, 20 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeTimeHistogramOpts
+{
+    /// <summary>int (offset 0)</summary>
+    public int Sentinel;
+    /// <summary>cui_size (offset 4)</summary>
+    public NativeSize Width;
+    /// <summary>float (offset 12)</summary>
+    public float Height;
+    /// <summary>_Bool (offset 16)</summary>
+    public byte Utc;
+}
+
+/// <summary>cui_time_histogram_result, 8 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeTimeHistogramResult
+{
+    /// <summary>_Bool (offset 0)</summary>
+    public byte SelectionChanged;
+    /// <summary>int (offset 4)</summary>
+    public int Hovered;
+}
+
+/// <summary>cui_coverage_file, 32 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeCoverageFile
+{
+    /// <summary>const char * (offset 0)</summary>
+    public nint Path;
+    /// <summary>int (offset 8)</summary>
+    public int Lines;
+    /// <summary>int (offset 12)</summary>
+    public int LinesHit;
+    /// <summary>int (offset 16)</summary>
+    public int Branches;
+    /// <summary>int (offset 20)</summary>
+    public int BranchesHit;
+    /// <summary>int (offset 24)</summary>
+    public int Functions;
+    /// <summary>int (offset 28)</summary>
+    public int FunctionsHit;
+}
+
+/// <summary>cui_coverage_opts, 24 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeCoverageOpts
+{
+    /// <summary>int (offset 0)</summary>
+    public int Sentinel;
+    /// <summary>cui_size (offset 4)</summary>
+    public NativeSize Width;
+    /// <summary>float (offset 12)</summary>
+    public float Height;
+    /// <summary>float (offset 16)</summary>
+    public float Low;
+    /// <summary>float (offset 20)</summary>
+    public float High;
+}
+
+/// <summary>cui_coverage_result, 8 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeCoverageResult
+{
+    /// <summary>int (offset 0)</summary>
+    public int Activated;
+    /// <summary>float (offset 4)</summary>
+    public float Lines;
+}
+
+/// <summary>cui_blame_commit, 32 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeBlameCommit
+{
+    /// <summary>const char * (offset 0)</summary>
+    public nint Hash;
+    /// <summary>const char * (offset 8)</summary>
+    public nint Author;
+    /// <summary>const char * (offset 16)</summary>
+    public nint Summary;
+    /// <summary>int64_t (offset 24)</summary>
+    public long Time;
+}
+
+/// <summary>cui_blame_opts, 40 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeBlameOpts
+{
+    /// <summary>int (offset 0)</summary>
+    public int Sentinel;
+    /// <summary>cui_size (offset 4)</summary>
+    public NativeSize Width;
+    /// <summary>float (offset 12)</summary>
+    public float Height;
+    /// <summary>const char * (offset 16)</summary>
+    public nint Lang;
+    /// <summary>int64_t (offset 24)</summary>
+    public long Now;
+    /// <summary>int (offset 32)</summary>
+    public int FirstLine;
+}
+
+/// <summary>cui_blame_result, 8 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeBlameResult
+{
+    /// <summary>int (offset 0)</summary>
+    public int Clicked;
+    /// <summary>int (offset 4)</summary>
+    public int Hovered;
+}
+
+/// <summary>cui_feature_flag, 56 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeFeatureFlag
+{
+    /// <summary>const char * (offset 0)</summary>
+    public nint Key;
+    /// <summary>const char * (offset 8)</summary>
+    public nint Description;
+    /// <summary>_Bool[8] (offset 16)</summary>
+    public fixed byte On[8];
+    /// <summary>int[8] (offset 24)</summary>
+    public fixed int Rollout[8];
+}
+
+/// <summary>cui_feature_flags_opts, 16 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeFeatureFlagsOpts
+{
+    /// <summary>int (offset 0)</summary>
+    public int Sentinel;
+    /// <summary>cui_size (offset 4)</summary>
+    public NativeSize Width;
+    /// <summary>float (offset 12)</summary>
+    public float Height;
+}
+
+/// <summary>cui_feature_flags_result, 8 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeFeatureFlagsResult
+{
+    /// <summary>int (offset 0)</summary>
+    public int Flag;
+    /// <summary>int (offset 4)</summary>
+    public int Env;
+}
+
+/// <summary>cui_api_param, 40 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeApiParam
+{
+    /// <summary>const char * (offset 0)</summary>
+    public nint Name;
+    /// <summary>const char * (offset 8)</summary>
+    public nint In;
+    /// <summary>const char * (offset 16)</summary>
+    public nint Type;
+    /// <summary>_Bool (offset 24)</summary>
+    public byte Required;
+    /// <summary>const char * (offset 32)</summary>
+    public nint Description;
+}
+
+/// <summary>cui_api_endpoint, 56 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeApiEndpoint
+{
+    /// <summary>const char * (offset 0)</summary>
+    public nint Method;
+    /// <summary>const char * (offset 8)</summary>
+    public nint Path;
+    /// <summary>const char * (offset 16)</summary>
+    public nint Summary;
+    /// <summary>const char * (offset 24)</summary>
+    public nint Tag;
+    /// <summary>_Bool (offset 32)</summary>
+    public byte Deprecated;
+    /// <summary>const cui_api_param * (offset 40)</summary>
+    public nint Params;
+    /// <summary>int (offset 48)</summary>
+    public int ParamCount;
+}
+
+/// <summary>cui_api_explorer_opts, 24 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeApiExplorerOpts
+{
+    /// <summary>int (offset 0)</summary>
+    public int Sentinel;
+    /// <summary>cui_size (offset 4)</summary>
+    public NativeSize Width;
+    /// <summary>float (offset 12)</summary>
+    public float Height;
+    /// <summary>int * (offset 16)</summary>
+    public nint Selected;
+}
+
+/// <summary>cui_api_explorer_result, 8 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeApiExplorerResult
+{
+    /// <summary>int (offset 0)</summary>
+    public int Selected;
+    /// <summary>int (offset 4)</summary>
+    public int TryIt;
 }
 
 /// <summary>cui_corners, 16 bytes.</summary>

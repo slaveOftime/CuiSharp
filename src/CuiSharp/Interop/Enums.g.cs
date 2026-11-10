@@ -395,6 +395,47 @@ public enum TimelineRuler
     Timecode = 2,
 }
 
+/// <summary>cui_severity</summary>
+public enum Severity
+{
+    Error = 0,
+    Warning = 1,
+    Info = 2,
+    Hint = 3,
+}
+
+/// <summary>cui_job_status</summary>
+public enum JobStatus
+{
+    Pending = 0,
+    Running = 1,
+    Passed = 2,
+    Failed = 3,
+    Skipped = 4,
+    Canceled = 5,
+}
+
+/// <summary>cui_query_type</summary>
+public enum QueryType
+{
+    Text = 0,
+    Number = 1,
+    Choice = 2,
+    Bool = 3,
+}
+
+/// <summary>cui_http_method</summary>
+public enum HttpMethod
+{
+    Get = 0,
+    Post = 1,
+    Put = 2,
+    Patch = 3,
+    Delete = 4,
+    Head = 5,
+    Options = 6,
+}
+
 /// <summary>cui_renderer_kind</summary>
 public enum Renderer
 {

@@ -49,8 +49,8 @@
     <None Include="..\CuiSharp.Templates\CuiSharp.App\CuiSharp.App\CuiSharp.App.csproj" Link="template/app.csproj" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\CuiSharp.Templates\CuiSharp.App\CuiSharp.App.Tests\CuiSharp.App.Tests.csproj" Link="template/tests.csproj" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\docs\API-SURFACE.txt" Link="api-surface.txt" CopyToOutputDirectory="PreserveNewest" Condition="Exists('$(MSBuildThisFileDirectory)..\..\docs\API-SURFACE.txt')" />
-    <None Include="..\..\llms.txt" Link="llms.txt" CopyToOutputDirectory="PreserveNewest" Condition="Exists('$(MSBuildThisFileDirectory)..\..\llms.txt')" />
+    <None Include="..\..\skills\cui-dotnet\llms.txt" Link="llms.txt" CopyToOutputDirectory="PreserveNewest" Condition="Exists('$(MSBuildThisFileDirectory)..\..\skills\cui-dotnet\llms.txt')" />
     <None Include="..\..\skills\cui-dotnet\SKILL.md" Link="SKILL.md" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="..\..\docs\api\Options.md" Link="docs/api/Options.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\skills\cui-dotnet\api\Options.md" Link="api/Options.md" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

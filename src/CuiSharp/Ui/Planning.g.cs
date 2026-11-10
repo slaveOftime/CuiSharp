@@ -64,7 +64,7 @@ public static unsafe class PlanningUiExtensions
             if (scope) body(ui);
         }
 
-        /// <summary>cui_week_calendar_ex</summary>
+        /// <summary>* left to right in any interface: see cui__keep_ltr</summary>
         public int WeekCalendar(UiText id, Date weekStart, ReadOnlySpan<CalendarEvent> events, WeekOpts o = default)
         {
             var __events = Utf8.AllocFrame<NativeCalEvent>(events.Length);
@@ -94,7 +94,7 @@ public static unsafe class PlanningUiExtensions
             return MonthResult.FromNative(__result);
         }
 
-        /// <summary>cui_gantt_ex</summary>
+        /// <summary>* left to right in any interface: see cui__keep_ltr</summary>
         public int Gantt(UiText id, ReadOnlySpan<GanttTask> tasks, Date origin, int days, GanttOpts o = default)
         {
             var __tasks = Utf8.AllocFrame<NativeGanttTask>(tasks.Length);

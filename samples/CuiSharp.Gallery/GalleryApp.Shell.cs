@@ -71,7 +71,9 @@ internal sealed partial class GalleryApp
                     case 7: PageData(ui); break;
                     case 8: PageCharts(ui); break;
                     case 9: PageStudio(ui); break;
-                    default: PageTools(ui); break;
+                    case 10: PageTools(ui); break;
+                    case 11: PageDeveloperTools(ui); break;
+                    default: PageMoreDeveloperTools(ui); break;
                 }
             }
         }

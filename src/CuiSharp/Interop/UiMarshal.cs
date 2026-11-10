@@ -29,4 +29,32 @@ internal static unsafe class UiMarshal
     internal static Color FromNative(Interop.NativeColor value) => new(value.R, value.G, value.B, value.A);
     internal static Size FromNative(Interop.NativeSize value) => Size.FromParts(value.Kind, value.Value);
     internal static RectF FromNative(Interop.NativeRect value) => new(value.X, value.Y, value.W, value.H);
+
+    /// <summary>
+    /// Writes up to <paramref name="capacity"/> values into a fixed C array, zeroing
+    /// the rest: the record owns that storage, so nothing points into the frame arena.
+    /// </summary>
+    internal static void WriteValues<T>(ReadOnlySpan<T> values, T* destination, int capacity) where T : unmanaged
+    {
+        new Span<T>(destination, capacity).Clear();
+        int written = Math.Min(values.Length, capacity);
+        values[..written].CopyTo(new Span<T>(destination, written));
+    }
+
+    internal static T[] ReadValues<T>(T* source, int capacity) where T : unmanaged =>
+        new Span<T>(source, capacity).ToArray();
+
+    /// <summary>A C <c>bool[N]</c> is a byte per element, so booleans convert one at a time.</summary>
+    internal static void WriteBooleans(ReadOnlySpan<bool> values, byte* destination, int capacity)
+    {
+        new Span<byte>(destination, capacity).Clear();
+        for (int i = 0; i < Math.Min(values.Length, capacity); i++) destination[i] = values[i] ? (byte)1 : (byte)0;
+    }
+
+    internal static bool[] ReadBooleans(byte* source, int capacity)
+    {
+        var result = new bool[capacity];
+        for (int i = 0; i < capacity; i++) result[i] = source[i] != 0;
+        return result;
+    }
 }

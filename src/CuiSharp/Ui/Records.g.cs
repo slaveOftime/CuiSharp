@@ -9,6 +9,1642 @@ using CuiSharp.Interop;
 
 namespace CuiSharp;
 
+/// <summary>cui_trace_view. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct TraceViewState
+{
+    /// <summary>visible time range; end &lt;= start fits everything</summary>
+    public double Start;
+    /// <summary>visible time range; end &lt;= start fits everything</summary>
+    public double End;
+    /// <summary>points scrolled down</summary>
+    public float Scroll;
+    /// <summary>measured range; mark_end &lt;= mark_start: none</summary>
+    public double MarkStart;
+    /// <summary>measured range; mark_end &lt;= mark_start: none</summary>
+    public double MarkEnd;
+
+    public TraceViewState(double Start, double End = default, float Scroll = default, double MarkStart = default, double MarkEnd = default) { this.Start = Start; this.End = End; this.Scroll = Scroll; this.MarkStart = MarkStart; this.MarkEnd = MarkEnd; }
+
+    internal readonly NativeTraceView ToNative() => new()
+    {
+        Start = Start,
+        End = End,
+        Scroll = Scroll,
+        MarkStart = MarkStart,
+        MarkEnd = MarkEnd,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(TraceViewState[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeTraceView>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static TraceViewState FromNative(NativeTraceView n) => new()
+    {
+        Start = n.Start,
+        End = n.End,
+        Scroll = n.Scroll,
+        MarkStart = n.MarkStart,
+        MarkEnd = n.MarkEnd,
+    };
+}
+
+/// <summary>cui_api_explorer_result. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct ApiExplorerResult
+{
+    /// <summary>endpoint, or -1</summary>
+    public int Selected;
+    /// <summary>endpoint, or -1</summary>
+    public int TryIt;
+
+    public ApiExplorerResult(int Selected, int TryIt = default) { this.Selected = Selected; this.TryIt = TryIt; }
+
+    internal readonly NativeApiExplorerResult ToNative() => new()
+    {
+        Selected = Selected,
+        TryIt = TryIt,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(ApiExplorerResult[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeApiExplorerResult>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static ApiExplorerResult FromNative(NativeApiExplorerResult n) => new()
+    {
+        Selected = n.Selected,
+        TryIt = n.TryIt,
+    };
+}
+
+/// <summary>cui_feature_flags_result. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct FeatureFlagsResult
+{
+    /// <summary>changed this frame, or -1</summary>
+    public int Flag;
+    /// <summary>changed this frame, or -1</summary>
+    public int Env;
+
+    public FeatureFlagsResult(int Flag, int Env = default) { this.Flag = Flag; this.Env = Env; }
+
+    internal readonly NativeFeatureFlagsResult ToNative() => new()
+    {
+        Flag = Flag,
+        Env = Env,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(FeatureFlagsResult[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeFeatureFlagsResult>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static FeatureFlagsResult FromNative(NativeFeatureFlagsResult n) => new()
+    {
+        Flag = n.Flag,
+        Env = n.Env,
+    };
+}
+
+/// <summary>cui_blame_result. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct BlameResult
+{
+    /// <summary>commits, or -1</summary>
+    public int Clicked;
+    /// <summary>commits, or -1</summary>
+    public int Hovered;
+
+    public BlameResult(int Clicked, int Hovered = default) { this.Clicked = Clicked; this.Hovered = Hovered; }
+
+    internal readonly NativeBlameResult ToNative() => new()
+    {
+        Clicked = Clicked,
+        Hovered = Hovered,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(BlameResult[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeBlameResult>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static BlameResult FromNative(NativeBlameResult n) => new()
+    {
+        Clicked = n.Clicked,
+        Hovered = n.Hovered,
+    };
+}
+
+/// <summary>cui_coverage_result. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct CoverageResult
+{
+    /// <summary>file, or -1</summary>
+    public int Activated;
+    /// <summary>percent of all lines covered</summary>
+    public float Lines;
+
+    public CoverageResult(int Activated, float Lines = default) { this.Activated = Activated; this.Lines = Lines; }
+
+    internal readonly NativeCoverageResult ToNative() => new()
+    {
+        Activated = Activated,
+        Lines = Lines,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(CoverageResult[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeCoverageResult>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static CoverageResult FromNative(NativeCoverageResult n) => new()
+    {
+        Activated = n.Activated,
+        Lines = n.Lines,
+    };
+}
+
+/// <summary>cui_time_histogram_result. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct TimeHistogramResult
+{
+    /// <summary>bucket, or -1</summary>
+    public bool SelectionChanged;
+    /// <summary>bucket, or -1</summary>
+    public int Hovered;
+
+    public TimeHistogramResult(bool SelectionChanged, int Hovered = default) { this.SelectionChanged = SelectionChanged; this.Hovered = Hovered; }
+
+    internal readonly NativeTimeHistogramResult ToNative() => new()
+    {
+        SelectionChanged = (byte)(SelectionChanged ? 1 : 0),
+        Hovered = Hovered,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(TimeHistogramResult[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeTimeHistogramResult>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static TimeHistogramResult FromNative(NativeTimeHistogramResult n) => new()
+    {
+        SelectionChanged = n.SelectionChanged != 0,
+        Hovered = n.Hovered,
+    };
+}
+
+/// <summary>cui_uptime_result. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct UptimeResult
+{
+    /// <summary>under the pointer, or -1</summary>
+    public int Service;
+    /// <summary>under the pointer, or -1</summary>
+    public int Day;
+
+    public UptimeResult(int Service, int Day = default) { this.Service = Service; this.Day = Day; }
+
+    internal readonly NativeUptimeResult ToNative() => new()
+    {
+        Service = Service,
+        Day = Day,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(UptimeResult[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeUptimeResult>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static UptimeResult FromNative(NativeUptimeResult n) => new()
+    {
+        Service = n.Service,
+        Day = n.Day,
+    };
+}
+
+/// <summary>cui_request_bar_result. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct RequestBarResult
+{
+    /// <summary>_Bool send</summary>
+    public bool Send;
+    /// <summary>_Bool cancel</summary>
+    public bool Cancel;
+    /// <summary>_Bool changed</summary>
+    public bool Changed;
+
+    public RequestBarResult(bool Send, bool Cancel = default, bool Changed = default) { this.Send = Send; this.Cancel = Cancel; this.Changed = Changed; }
+
+    internal readonly NativeRequestBarResult ToNative() => new()
+    {
+        Send = (byte)(Send ? 1 : 0),
+        Cancel = (byte)(Cancel ? 1 : 0),
+        Changed = (byte)(Changed ? 1 : 0),
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(RequestBarResult[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeRequestBarResult>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static RequestBarResult FromNative(NativeRequestBarResult n) => new()
+    {
+        Send = n.Send != 0,
+        Cancel = n.Cancel != 0,
+        Changed = n.Changed != 0,
+    };
+}
+
+/// <summary>cui_stack_trace_result. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct StackTraceResult
+{
+    /// <summary>frame, or -1</summary>
+    public int Clicked;
+
+    public StackTraceResult(int Clicked) { this.Clicked = Clicked; }
+
+    internal readonly NativeStackTraceResult ToNative() => new()
+    {
+        Clicked = Clicked,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(StackTraceResult[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeStackTraceResult>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static StackTraceResult FromNative(NativeStackTraceResult n) => new()
+    {
+        Clicked = n.Clicked,
+    };
+}
+
+/// <summary>cui_test_explorer_result. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct TestExplorerResult
+{
+    /// <summary>items, or -1</summary>
+    public int Selected;
+    /// <summary>items, or -1</summary>
+    public int Activated;
+    /// <summary>item whose run button was pressed this frame, or -1</summary>
+    public int Run;
+    /// <summary>_Bool run_all</summary>
+    public bool RunAll;
+    /// <summary>tests, not suites</summary>
+    public int Passed;
+    /// <summary>tests, not suites</summary>
+    public int Failed;
+    /// <summary>tests, not suites</summary>
+    public int Skipped;
+    /// <summary>tests, not suites</summary>
+    public int Total;
+
+    public TestExplorerResult(int Selected, int Activated = default, int Run = default, bool RunAll = default, int Passed = default, int Failed = default, int Skipped = default, int Total = default) { this.Selected = Selected; this.Activated = Activated; this.Run = Run; this.RunAll = RunAll; this.Passed = Passed; this.Failed = Failed; this.Skipped = Skipped; this.Total = Total; }
+
+    internal readonly NativeTestExplorerResult ToNative() => new()
+    {
+        Selected = Selected,
+        Activated = Activated,
+        Run = Run,
+        RunAll = (byte)(RunAll ? 1 : 0),
+        Passed = Passed,
+        Failed = Failed,
+        Skipped = Skipped,
+        Total = Total,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(TestExplorerResult[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeTestExplorerResult>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static TestExplorerResult FromNative(NativeTestExplorerResult n) => new()
+    {
+        Selected = n.Selected,
+        Activated = n.Activated,
+        Run = n.Run,
+        RunAll = n.RunAll != 0,
+        Passed = n.Passed,
+        Failed = n.Failed,
+        Skipped = n.Skipped,
+        Total = n.Total,
+    };
+}
+
+/// <summary>cui_regex_tester_result. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct RegexTesterResult
+{
+    /// <summary>_Bool valid</summary>
+    public bool Valid;
+    /// <summary>int matches</summary>
+    public int Matches;
+    /// <summary>const char * error</summary>
+    public string? Error;
+
+    public RegexTesterResult(bool Valid, int Matches = default, string? Error = null) { this.Valid = Valid; this.Matches = Matches; this.Error = Error; }
+
+    internal readonly NativeRegexTesterResult ToNative() => new()
+    {
+        Valid = (byte)(Valid ? 1 : 0),
+        Matches = Matches,
+        Error = Utf8.Get(Error),
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(RegexTesterResult[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeRegexTesterResult>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static RegexTesterResult FromNative(NativeRegexTesterResult n) => new()
+    {
+        Valid = n.Valid != 0,
+        Matches = n.Matches,
+        Error = Marshal.PtrToStringUTF8(n.Error),
+    };
+}
+
+/// <summary>cui_trace_result. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct TraceResult
+{
+    /// <summary>_Bool selection_changed</summary>
+    public bool SelectionChanged;
+    /// <summary>_Bool view_changed</summary>
+    public bool ViewChanged;
+    /// <summary>int hovered</summary>
+    public int Hovered;
+
+    public TraceResult(bool SelectionChanged, bool ViewChanged = default, int Hovered = default) { this.SelectionChanged = SelectionChanged; this.ViewChanged = ViewChanged; this.Hovered = Hovered; }
+
+    internal readonly NativeTraceResult ToNative() => new()
+    {
+        SelectionChanged = (byte)(SelectionChanged ? 1 : 0),
+        ViewChanged = (byte)(ViewChanged ? 1 : 0),
+        Hovered = Hovered,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(TraceResult[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeTraceResult>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static TraceResult FromNative(NativeTraceResult n) => new()
+    {
+        SelectionChanged = n.SelectionChanged != 0,
+        ViewChanged = n.ViewChanged != 0,
+        Hovered = n.Hovered,
+    };
+}
+
+/// <summary>cui_waterfall_result. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct WaterfallResult
+{
+    /// <summary>int clicked</summary>
+    public int Clicked;
+    /// <summary>int activated</summary>
+    public int Activated;
+    /// <summary>int hovered</summary>
+    public int Hovered;
+
+    public WaterfallResult(int Clicked, int Activated = default, int Hovered = default) { this.Clicked = Clicked; this.Activated = Activated; this.Hovered = Hovered; }
+
+    internal readonly NativeWaterfallResult ToNative() => new()
+    {
+        Clicked = Clicked,
+        Activated = Activated,
+        Hovered = Hovered,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(WaterfallResult[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeWaterfallResult>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static WaterfallResult FromNative(NativeWaterfallResult n) => new()
+    {
+        Clicked = n.Clicked,
+        Activated = n.Activated,
+        Hovered = n.Hovered,
+    };
+}
+
+/// <summary>cui_graph_result. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct GraphResult
+{
+    /// <summary>int clicked</summary>
+    public int Clicked;
+    /// <summary>int activated</summary>
+    public int Activated;
+    /// <summary>int hovered</summary>
+    public int Hovered;
+
+    public GraphResult(int Clicked, int Activated = default, int Hovered = default) { this.Clicked = Clicked; this.Activated = Activated; this.Hovered = Hovered; }
+
+    internal readonly NativeGraphResult ToNative() => new()
+    {
+        Clicked = Clicked,
+        Activated = Activated,
+        Hovered = Hovered,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(GraphResult[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeGraphResult>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static GraphResult FromNative(NativeGraphResult n) => new()
+    {
+        Clicked = n.Clicked,
+        Activated = n.Activated,
+        Hovered = n.Hovered,
+    };
+}
+
+/// <summary>cui_commit_graph_result. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct CommitGraphResult
+{
+    /// <summary>int clicked</summary>
+    public int Clicked;
+    /// <summary>int activated</summary>
+    public int Activated;
+    /// <summary>int hovered</summary>
+    public int Hovered;
+
+    public CommitGraphResult(int Clicked, int Activated = default, int Hovered = default) { this.Clicked = Clicked; this.Activated = Activated; this.Hovered = Hovered; }
+
+    internal readonly NativeCommitGraphResult ToNative() => new()
+    {
+        Clicked = Clicked,
+        Activated = Activated,
+        Hovered = Hovered,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(CommitGraphResult[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeCommitGraphResult>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static CommitGraphResult FromNative(NativeCommitGraphResult n) => new()
+    {
+        Clicked = n.Clicked,
+        Activated = n.Activated,
+        Hovered = n.Hovered,
+    };
+}
+
+/// <summary>cui_keymap_result. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct KeymapResult
+{
+    /// <summary>cui_key clicked</summary>
+    public Key Clicked;
+    /// <summary>int conflicts</summary>
+    public int Conflicts;
+
+    public KeymapResult(Key Clicked, int Conflicts = default) { this.Clicked = Clicked; this.Conflicts = Conflicts; }
+
+    internal readonly NativeKeymapResult ToNative() => new()
+    {
+        Clicked = Clicked,
+        Conflicts = Conflicts,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(KeymapResult[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeKeymapResult>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static KeymapResult FromNative(NativeKeymapResult n) => new()
+    {
+        Clicked = n.Clicked,
+        Conflicts = n.Conflicts,
+    };
+}
+
+/// <summary>cui_schedule_result. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct ScheduleResult
+{
+    /// <summary>the next run, Unix seconds, 0 none</summary>
+    public bool Changed;
+    /// <summary>the next run, Unix seconds, 0 none</summary>
+    public bool Valid;
+    /// <summary>the next run, Unix seconds, 0 none</summary>
+    public long Next;
+
+    public ScheduleResult(bool Changed, bool Valid = default, long Next = default) { this.Changed = Changed; this.Valid = Valid; this.Next = Next; }
+
+    internal readonly NativeScheduleResult ToNative() => new()
+    {
+        Changed = (byte)(Changed ? 1 : 0),
+        Valid = (byte)(Valid ? 1 : 0),
+        Next = Next,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(ScheduleResult[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeScheduleResult>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static ScheduleResult FromNative(NativeScheduleResult n) => new()
+    {
+        Changed = n.Changed != 0,
+        Valid = n.Valid != 0,
+        Next = n.Next,
+    };
+}
+
+/// <summary>cui_pipeline_result. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct PipelineResult
+{
+    /// <summary>job indices, or -1</summary>
+    public int Clicked;
+    /// <summary>job indices, or -1</summary>
+    public int Hovered;
+
+    public PipelineResult(int Clicked, int Hovered = default) { this.Clicked = Clicked; this.Hovered = Hovered; }
+
+    internal readonly NativePipelineResult ToNative() => new()
+    {
+        Clicked = Clicked,
+        Hovered = Hovered,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(PipelineResult[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativePipelineResult>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static PipelineResult FromNative(NativePipelineResult n) => new()
+    {
+        Clicked = n.Clicked,
+        Hovered = n.Hovered,
+    };
+}
+
+/// <summary>cui_problems_result. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct ProblemsResult
+{
+    /// <summary>diagnostic selected, or -1</summary>
+    public int Selected;
+    /// <summary>diagnostic opened this frame (Enter, double-click), or -1</summary>
+    public int Activated;
+    /// <summary>diagnostics that pass the filters</summary>
+    public int Shown;
+
+    public ProblemsResult(int Selected, int Activated = default, int Shown = default) { this.Selected = Selected; this.Activated = Activated; this.Shown = Shown; }
+
+    internal readonly NativeProblemsResult ToNative() => new()
+    {
+        Selected = Selected,
+        Activated = Activated,
+        Shown = Shown,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(ProblemsResult[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeProblemsResult>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static ProblemsResult FromNative(NativeProblemsResult n) => new()
+    {
+        Selected = n.Selected,
+        Activated = n.Activated,
+        Shown = n.Shown,
+    };
+}
+
+/// <summary>cui_text_mark. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct TextMark
+{
+    /// <summary>int start</summary>
+    public int Start;
+    /// <summary>int end</summary>
+    public int End;
+    /// <summary>int color</summary>
+    public int Color;
+
+    public TextMark(int Start, int End = default, int Color = default) { this.Start = Start; this.End = End; this.Color = Color; }
+
+    internal readonly NativeTextMark ToNative() => new()
+    {
+        Start = Start,
+        End = End,
+        Color = Color,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(TextMark[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeTextMark>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static TextMark FromNative(NativeTextMark n) => new()
+    {
+        Start = n.Start,
+        End = n.End,
+        Color = n.Color,
+    };
+}
+
+/// <summary>cui_kv_pair. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct KeyValue
+{
+    /// <summary>char[64] key</summary>
+    public string? Key;
+    /// <summary>char[256] value</summary>
+    public string? Value;
+    /// <summary>_Bool enabled</summary>
+    public bool Enabled;
+    /// <summary>_Bool secret</summary>
+    public bool Secret;
+
+    public KeyValue(string? Key, string? Value = null, bool Enabled = default, bool Secret = default) { this.Key = Key; this.Value = Value; this.Enabled = Enabled; this.Secret = Secret; }
+
+    internal readonly NativeKvPair ToNative()
+    {
+        var n = new NativeKvPair
+        {
+            Enabled = (byte)(Enabled ? 1 : 0),
+            Secret = (byte)(Secret ? 1 : 0),
+        };
+        Utf8.WriteFixed(Key, (byte*)n.Key, 64);
+        Utf8.WriteFixed(Value, (byte*)n.Value, 256);
+        return n;
+    }
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(KeyValue[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeKvPair>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static KeyValue FromNative(NativeKvPair n) => new()
+    {
+        Key = Utf8.ReadFixed((byte*)n.Key, 64),
+        Value = Utf8.ReadFixed((byte*)n.Value, 256),
+        Enabled = n.Enabled != 0,
+        Secret = n.Secret != 0,
+    };
+}
+
+/// <summary>cui_api_param. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct ApiParam
+{
+    /// <summary>&quot;path&quot;, &quot;query&quot;, &quot;header&quot;, &quot;body&quot;</summary>
+    public string? Name;
+    /// <summary>&quot;path&quot;, &quot;query&quot;, &quot;header&quot;, &quot;body&quot;</summary>
+    public string? In;
+    /// <summary>const char * type</summary>
+    public string? Type;
+    /// <summary>_Bool required</summary>
+    public bool Required;
+    /// <summary>const char * description</summary>
+    public string? Description;
+
+    public ApiParam(string? Name, string? In = null, string? Type = null, bool Required = default, string? Description = null) { this.Name = Name; this.In = In; this.Type = Type; this.Required = Required; this.Description = Description; }
+
+    internal readonly NativeApiParam ToNative() => new()
+    {
+        Name = Utf8.Get(Name),
+        In = Utf8.Get(In),
+        Type = Utf8.Get(Type),
+        Required = (byte)(Required ? 1 : 0),
+        Description = Utf8.Get(Description),
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(ApiParam[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeApiParam>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static ApiParam FromNative(NativeApiParam n) => new()
+    {
+        Name = Marshal.PtrToStringUTF8(n.Name),
+        In = Marshal.PtrToStringUTF8(n.In),
+        Type = Marshal.PtrToStringUTF8(n.Type),
+        Required = n.Required != 0,
+        Description = Marshal.PtrToStringUTF8(n.Description),
+    };
+}
+
+/// <summary>cui_api_endpoint. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct ApiEndpoint
+{
+    /// <summary>&quot;GET&quot;</summary>
+    public string? Method;
+    /// <summary>&quot;/users/{id}&quot;</summary>
+    public string? Path;
+    /// <summary>const char * summary</summary>
+    public string? Summary;
+    /// <summary>groups the list; NULL groups as &quot;Other&quot;</summary>
+    public string? Tag;
+    /// <summary>_Bool deprecated</summary>
+    public bool Deprecated;
+    /// <summary>const cui_api_param * params</summary>
+    public ApiParam[]? Params;
+    /// <summary>int param_count</summary>
+    public int ParamCount;
+
+    public ApiEndpoint(string? Method, string? Path = null, string? Summary = null, string? Tag = null, bool Deprecated = default, ApiParam[]? Params = default, int ParamCount = default) { this.Method = Method; this.Path = Path; this.Summary = Summary; this.Tag = Tag; this.Deprecated = Deprecated; this.Params = Params; this.ParamCount = ParamCount; }
+
+    internal readonly NativeApiEndpoint ToNative() => new()
+    {
+        Method = Utf8.Get(Method),
+        Path = Utf8.Get(Path),
+        Summary = Utf8.Get(Summary),
+        Tag = Utf8.Get(Tag),
+        Deprecated = (byte)(Deprecated ? 1 : 0),
+        Params = ApiParam.ToFrameArray(Params),
+        ParamCount = ParamCount,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(ApiEndpoint[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeApiEndpoint>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static ApiEndpoint FromNative(NativeApiEndpoint n) => new()
+    {
+        Method = Marshal.PtrToStringUTF8(n.Method),
+        Path = Marshal.PtrToStringUTF8(n.Path),
+        Summary = Marshal.PtrToStringUTF8(n.Summary),
+        Tag = Marshal.PtrToStringUTF8(n.Tag),
+        Deprecated = n.Deprecated != 0,
+        Params = null,
+        ParamCount = n.ParamCount,
+    };
+}
+
+/// <summary>cui_feature_flag. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct FeatureFlag
+{
+    /// <summary>const char * key</summary>
+    public string? Key;
+    /// <summary>const char * description</summary>
+    public string? Description;
+    /// <summary>_Bool[8] on</summary>
+    public bool[]? On;
+    /// <summary>percent of users while on; 0 and 100 mean everyone</summary>
+    public int[]? Rollout;
+
+    public FeatureFlag(string? Key, string? Description = null, bool[]? On = default, int[]? Rollout = default) { this.Key = Key; this.Description = Description; this.On = On; this.Rollout = Rollout; }
+
+    internal readonly NativeFeatureFlag ToNative()
+    {
+        var n = new NativeFeatureFlag
+        {
+            Key = Utf8.Get(Key),
+            Description = Utf8.Get(Description),
+        };
+        UiMarshal.WriteBooleans(On, n.On, 8);
+        UiMarshal.WriteValues(Rollout, n.Rollout, 8);
+        return n;
+    }
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(FeatureFlag[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeFeatureFlag>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static FeatureFlag FromNative(NativeFeatureFlag n) => new()
+    {
+        Key = Marshal.PtrToStringUTF8(n.Key),
+        Description = Marshal.PtrToStringUTF8(n.Description),
+        On = UiMarshal.ReadBooleans(n.On, 8),
+        Rollout = UiMarshal.ReadValues(n.Rollout, 8),
+    };
+}
+
+/// <summary>cui_blame_commit. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct BlameCommit
+{
+    /// <summary>Unix seconds</summary>
+    public string? Hash;
+    /// <summary>Unix seconds</summary>
+    public string? Author;
+    /// <summary>Unix seconds</summary>
+    public string? Summary;
+    /// <summary>Unix seconds</summary>
+    public long Time;
+
+    public BlameCommit(string? Hash, string? Author = null, string? Summary = null, long Time = default) { this.Hash = Hash; this.Author = Author; this.Summary = Summary; this.Time = Time; }
+
+    internal readonly NativeBlameCommit ToNative() => new()
+    {
+        Hash = Utf8.Get(Hash),
+        Author = Utf8.Get(Author),
+        Summary = Utf8.Get(Summary),
+        Time = Time,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(BlameCommit[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeBlameCommit>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static BlameCommit FromNative(NativeBlameCommit n) => new()
+    {
+        Hash = Marshal.PtrToStringUTF8(n.Hash),
+        Author = Marshal.PtrToStringUTF8(n.Author),
+        Summary = Marshal.PtrToStringUTF8(n.Summary),
+        Time = n.Time,
+    };
+}
+
+/// <summary>cui_coverage_file. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct CoverageFile
+{
+    /// <summary>&quot;src/core/layout.c&quot;</summary>
+    public string? Path;
+    /// <summary>int lines</summary>
+    public int Lines;
+    /// <summary>int lines_hit</summary>
+    public int LinesHit;
+    /// <summary>0 branches: not measured</summary>
+    public int Branches;
+    /// <summary>0 branches: not measured</summary>
+    public int BranchesHit;
+    /// <summary>int functions</summary>
+    public int Functions;
+    /// <summary>int functions_hit</summary>
+    public int FunctionsHit;
+
+    public CoverageFile(string? Path, int Lines = default, int LinesHit = default, int Branches = default, int BranchesHit = default, int Functions = default, int FunctionsHit = default) { this.Path = Path; this.Lines = Lines; this.LinesHit = LinesHit; this.Branches = Branches; this.BranchesHit = BranchesHit; this.Functions = Functions; this.FunctionsHit = FunctionsHit; }
+
+    internal readonly NativeCoverageFile ToNative() => new()
+    {
+        Path = Utf8.Get(Path),
+        Lines = Lines,
+        LinesHit = LinesHit,
+        Branches = Branches,
+        BranchesHit = BranchesHit,
+        Functions = Functions,
+        FunctionsHit = FunctionsHit,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(CoverageFile[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeCoverageFile>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static CoverageFile FromNative(NativeCoverageFile n) => new()
+    {
+        Path = Marshal.PtrToStringUTF8(n.Path),
+        Lines = n.Lines,
+        LinesHit = n.LinesHit,
+        Branches = n.Branches,
+        BranchesHit = n.BranchesHit,
+        Functions = n.Functions,
+        FunctionsHit = n.FunctionsHit,
+    };
+}
+
+/// <summary>cui_histogram_series. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct HistogramSeries
+{
+    /// <summary>const char * name</summary>
+    public string? Name;
+    /// <summary>const float * counts</summary>
+    public float[]? Counts;
+    /// <summary>cui_tone tone</summary>
+    public Tone Tone;
+
+    public HistogramSeries(string? Name, float[]? Counts = default, Tone Tone = default) { this.Name = Name; this.Counts = Counts; this.Tone = Tone; }
+
+    internal readonly NativeHistogramSeries ToNative() => new()
+    {
+        Name = Utf8.Get(Name),
+        Counts = UiMarshal.Values<float>(Counts),
+        Tone = Tone,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(HistogramSeries[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeHistogramSeries>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static HistogramSeries FromNative(NativeHistogramSeries n) => new()
+    {
+        Name = Marshal.PtrToStringUTF8(n.Name),
+        Counts = null,
+        Tone = n.Tone,
+    };
+}
+
+/// <summary>cui_uptime_service. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct UptimeService
+{
+    /// <summary>const char * name</summary>
+    public string? Name;
+    /// <summary>oldest first: the fraction of the day it was up, 0..1; negative: no data</summary>
+    public float[]? Days;
+    /// <summary>int day_count</summary>
+    public int DayCount;
+
+    public UptimeService(string? Name, float[]? Days = default, int DayCount = default) { this.Name = Name; this.Days = Days; this.DayCount = DayCount; }
+
+    internal readonly NativeUptimeService ToNative() => new()
+    {
+        Name = Utf8.Get(Name),
+        Days = UiMarshal.Values<float>(Days),
+        DayCount = DayCount,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(UptimeService[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeUptimeService>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static UptimeService FromNative(NativeUptimeService n) => new()
+    {
+        Name = Marshal.PtrToStringUTF8(n.Name),
+        Days = null,
+        DayCount = n.DayCount,
+    };
+}
+
+/// <summary>cui_stack_frame. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct StackFrame
+{
+    /// <summary>const char * function</summary>
+    public string? Function;
+    /// <summary>const char * file</summary>
+    public string? File;
+    /// <summary>1 based; 0 leaves it out</summary>
+    public int Line;
+    /// <summary>1 based; 0 leaves it out</summary>
+    public int Column;
+    /// <summary>library or runtime code</summary>
+    public bool External;
+    /// <summary>lines around the frame, may be NULL</summary>
+    public string[]? Source;
+    /// <summary>int source_count</summary>
+    public int SourceCount;
+    /// <summary>line number of source[0]</summary>
+    public int SourceFirst;
+
+    public StackFrame(string? Function, string? File = null, int Line = default, int Column = default, bool External = default, string[]? Source = default, int SourceCount = default, int SourceFirst = default) { this.Function = Function; this.File = File; this.Line = Line; this.Column = Column; this.External = External; this.Source = Source; this.SourceCount = SourceCount; this.SourceFirst = SourceFirst; }
+
+    internal readonly NativeStackFrame ToNative() => new()
+    {
+        Function = Utf8.Get(Function),
+        File = Utf8.Get(File),
+        Line = Line,
+        Column = Column,
+        External = (byte)(External ? 1 : 0),
+        Source = UiMarshal.Strings(Source),
+        SourceCount = SourceCount,
+        SourceFirst = SourceFirst,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(StackFrame[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeStackFrame>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static StackFrame FromNative(NativeStackFrame n) => new()
+    {
+        Function = Marshal.PtrToStringUTF8(n.Function),
+        File = Marshal.PtrToStringUTF8(n.File),
+        Line = n.Line,
+        Column = n.Column,
+        External = n.External != 0,
+        Source = null,
+        SourceCount = n.SourceCount,
+        SourceFirst = n.SourceFirst,
+    };
+}
+
+/// <summary>cui_test_item. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct TestItem
+{
+    /// <summary>const char * name</summary>
+    public string? Name;
+    /// <summary>0 for the top suites</summary>
+    public int Depth;
+    /// <summary>a suite&apos;s own status is ignored when it has tests</summary>
+    public JobStatus Status;
+    /// <summary>seconds, negative when it has not run</summary>
+    public float Duration;
+    /// <summary>why it failed, may be NULL</summary>
+    public string? Message;
+
+    public TestItem(string? Name, int Depth = default, JobStatus Status = default, float Duration = default, string? Message = null) { this.Name = Name; this.Depth = Depth; this.Status = Status; this.Duration = Duration; this.Message = Message; }
+
+    internal readonly NativeTestItem ToNative() => new()
+    {
+        Name = Utf8.Get(Name),
+        Depth = Depth,
+        Status = Status,
+        Duration = Duration,
+        Message = Utf8.Get(Message),
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(TestItem[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeTestItem>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static TestItem FromNative(NativeTestItem n) => new()
+    {
+        Name = Marshal.PtrToStringUTF8(n.Name),
+        Depth = n.Depth,
+        Status = n.Status,
+        Duration = n.Duration,
+        Message = Marshal.PtrToStringUTF8(n.Message),
+    };
+}
+
+/// <summary>cui_trace_marker. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct TraceMarker
+{
+    /// <summary>const char * name</summary>
+    public string? Name;
+    /// <summary>double time</summary>
+    public double Time;
+    /// <summary>cui_tone tone</summary>
+    public Tone Tone;
+
+    public TraceMarker(string? Name, double Time = default, Tone Tone = default) { this.Name = Name; this.Time = Time; this.Tone = Tone; }
+
+    internal readonly NativeTraceMarker ToNative() => new()
+    {
+        Name = Utf8.Get(Name),
+        Time = Time,
+        Tone = Tone,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(TraceMarker[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeTraceMarker>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static TraceMarker FromNative(NativeTraceMarker n) => new()
+    {
+        Name = Marshal.PtrToStringUTF8(n.Name),
+        Time = n.Time,
+        Tone = n.Tone,
+    };
+}
+
+/// <summary>cui_trace_span. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct TraceSpan
+{
+    /// <summary>const char * name</summary>
+    public string? Name;
+    /// <summary>double start</summary>
+    public double Start;
+    /// <summary>double end</summary>
+    public double End;
+    /// <summary>int track</summary>
+    public int Track;
+    /// <summary>int depth</summary>
+    public int Depth;
+    /// <summary>uint32_t color_key</summary>
+    public uint ColorKey;
+
+    public TraceSpan(string? Name, double Start = default, double End = default, int Track = default, int Depth = default, uint ColorKey = default) { this.Name = Name; this.Start = Start; this.End = End; this.Track = Track; this.Depth = Depth; this.ColorKey = ColorKey; }
+
+    internal readonly NativeTraceSpan ToNative() => new()
+    {
+        Name = Utf8.Get(Name),
+        Start = Start,
+        End = End,
+        Track = Track,
+        Depth = Depth,
+        ColorKey = ColorKey,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(TraceSpan[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeTraceSpan>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static TraceSpan FromNative(NativeTraceSpan n) => new()
+    {
+        Name = Marshal.PtrToStringUTF8(n.Name),
+        Start = n.Start,
+        End = n.End,
+        Track = n.Track,
+        Depth = n.Depth,
+        ColorKey = n.ColorKey,
+    };
+}
+
+/// <summary>cui_trace_track. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct TraceTrack
+{
+    /// <summary>const char * name</summary>
+    public string? Name;
+    /// <summary>_Bool collapsed</summary>
+    public bool Collapsed;
+
+    public TraceTrack(string? Name, bool Collapsed = default) { this.Name = Name; this.Collapsed = Collapsed; }
+
+    internal readonly NativeTraceTrack ToNative() => new()
+    {
+        Name = Utf8.Get(Name),
+        Collapsed = (byte)(Collapsed ? 1 : 0),
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(TraceTrack[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeTraceTrack>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static TraceTrack FromNative(NativeTraceTrack n) => new()
+    {
+        Name = Marshal.PtrToStringUTF8(n.Name),
+        Collapsed = n.Collapsed != 0,
+    };
+}
+
+/// <summary>cui_net_request. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct NetRequest
+{
+    /// <summary>path or URL; the last part is shown</summary>
+    public string? Name;
+    /// <summary>&quot;GET&quot;</summary>
+    public string? Method;
+    /// <summary>0 while pending or when it failed</summary>
+    public int Status;
+    /// <summary>&quot;fetch&quot;, &quot;script&quot;, &quot;image&quot;...</summary>
+    public string? Type;
+    /// <summary>bytes transferred</summary>
+    public double Size;
+    /// <summary>seconds from the start of the page</summary>
+    public double Start;
+    /// <summary>seconds: queued, dns, connect, tls, waiting, download</summary>
+    public float[]? Timing;
+
+    public NetRequest(string? Name, string? Method = null, int Status = default, string? Type = null, double Size = default, double Start = default, float[]? Timing = default) { this.Name = Name; this.Method = Method; this.Status = Status; this.Type = Type; this.Size = Size; this.Start = Start; this.Timing = Timing; }
+
+    internal readonly NativeNetRequest ToNative()
+    {
+        var n = new NativeNetRequest
+        {
+            Name = Utf8.Get(Name),
+            Method = Utf8.Get(Method),
+            Status = Status,
+            Type = Utf8.Get(Type),
+            Size = Size,
+            Start = Start,
+        };
+        UiMarshal.WriteValues(Timing, n.Timing, 6);
+        return n;
+    }
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(NetRequest[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeNetRequest>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static NetRequest FromNative(NativeNetRequest n) => new()
+    {
+        Name = Marshal.PtrToStringUTF8(n.Name),
+        Method = Marshal.PtrToStringUTF8(n.Method),
+        Status = n.Status,
+        Type = Marshal.PtrToStringUTF8(n.Type),
+        Size = n.Size,
+        Start = n.Start,
+        Timing = UiMarshal.ReadValues(n.Timing, 6),
+    };
+}
+
+/// <summary>cui_graph_edge. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct GraphEdge
+{
+    /// <summary>int from</summary>
+    public int From;
+    /// <summary>int to</summary>
+    public int To;
+
+    public GraphEdge(int From, int To = default) { this.From = From; this.To = To; }
+
+    internal readonly NativeGraphEdge ToNative() => new()
+    {
+        From = From,
+        To = To,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(GraphEdge[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeGraphEdge>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static GraphEdge FromNative(NativeGraphEdge n) => new()
+    {
+        From = n.From,
+        To = n.To,
+    };
+}
+
+/// <summary>cui_graph_node. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct GraphNode
+{
+    /// <summary>const char * label</summary>
+    public string? Label;
+    /// <summary>const char * detail</summary>
+    public string? Detail;
+    /// <summary>cui_tone tone</summary>
+    public Tone Tone;
+
+    public GraphNode(string? Label, string? Detail = null, Tone Tone = default) { this.Label = Label; this.Detail = Detail; this.Tone = Tone; }
+
+    internal readonly NativeGraphNode ToNative() => new()
+    {
+        Label = Utf8.Get(Label),
+        Detail = Utf8.Get(Detail),
+        Tone = Tone,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(GraphNode[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeGraphNode>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static GraphNode FromNative(NativeGraphNode n) => new()
+    {
+        Label = Marshal.PtrToStringUTF8(n.Label),
+        Detail = Marshal.PtrToStringUTF8(n.Detail),
+        Tone = n.Tone,
+    };
+}
+
+/// <summary>cui_commit. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct Commit
+{
+    /// <summary>const char * hash</summary>
+    public string? Hash;
+    /// <summary>the first line is shown</summary>
+    public string? Message;
+    /// <summary>const char * author</summary>
+    public string? Author;
+    /// <summary>already formatted: &quot;2 hours ago&quot;, &quot;Mar 3&quot;</summary>
+    public string? Date;
+    /// <summary>&quot;main, origin/main, tag: v1.2&quot;, may be NULL</summary>
+    public string? Refs;
+    /// <summary>row of each parent, -1 for none</summary>
+    public int[]? Parent;
+
+    public Commit(string? Hash, string? Message = null, string? Author = null, string? Date = null, string? Refs = null, int[]? Parent = default) { this.Hash = Hash; this.Message = Message; this.Author = Author; this.Date = Date; this.Refs = Refs; this.Parent = Parent; }
+
+    internal readonly NativeCommit ToNative()
+    {
+        var n = new NativeCommit
+        {
+            Hash = Utf8.Get(Hash),
+            Message = Utf8.Get(Message),
+            Author = Utf8.Get(Author),
+            Date = Utf8.Get(Date),
+            Refs = Utf8.Get(Refs),
+        };
+        UiMarshal.WriteValues(Parent, n.Parent, 2);
+        return n;
+    }
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(Commit[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeCommit>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static Commit FromNative(NativeCommit n) => new()
+    {
+        Hash = Marshal.PtrToStringUTF8(n.Hash),
+        Message = Marshal.PtrToStringUTF8(n.Message),
+        Author = Marshal.PtrToStringUTF8(n.Author),
+        Date = Marshal.PtrToStringUTF8(n.Date),
+        Refs = Marshal.PtrToStringUTF8(n.Refs),
+        Parent = UiMarshal.ReadValues(n.Parent, 2),
+    };
+}
+
+/// <summary>cui_query_node. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct QueryNode
+{
+    /// <summary>0 for the outer group</summary>
+    public int Depth;
+    /// <summary>_Bool group</summary>
+    public bool Group;
+    /// <summary>group: any rule (or) instead of all (and)</summary>
+    public bool Any;
+    /// <summary>rule: index into the fields</summary>
+    public int Field;
+    /// <summary>rule: see cui_query_op_name</summary>
+    public int Op;
+    /// <summary>rule: the text, number or choice compared with</summary>
+    public string? Value;
+
+    public QueryNode(int Depth, bool Group = default, bool Any = default, int Field = default, int Op = default, string? Value = null) { this.Depth = Depth; this.Group = Group; this.Any = Any; this.Field = Field; this.Op = Op; this.Value = Value; }
+
+    internal readonly NativeQueryNode ToNative()
+    {
+        var n = new NativeQueryNode
+        {
+            Depth = Depth,
+            Group = (byte)(Group ? 1 : 0),
+            Any = (byte)(Any ? 1 : 0),
+            Field = Field,
+            Op = Op,
+        };
+        Utf8.WriteFixed(Value, (byte*)n.Value, 64);
+        return n;
+    }
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(QueryNode[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeQueryNode>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static QueryNode FromNative(NativeQueryNode n) => new()
+    {
+        Depth = n.Depth,
+        Group = n.Group != 0,
+        Any = n.Any != 0,
+        Field = n.Field,
+        Op = n.Op,
+        Value = Utf8.ReadFixed((byte*)n.Value, 64),
+    };
+}
+
+/// <summary>cui_query_field. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct QueryField
+{
+    /// <summary>const char * name</summary>
+    public string? Name;
+    /// <summary>cui_query_type type</summary>
+    public QueryType Type;
+    /// <summary>CUI_QUERY_CHOICE: the values to pick from</summary>
+    public string[]? Choices;
+    /// <summary>int choice_count</summary>
+    public int ChoiceCount;
+
+    public QueryField(string? Name, QueryType Type = default, string[]? Choices = default, int ChoiceCount = default) { this.Name = Name; this.Type = Type; this.Choices = Choices; this.ChoiceCount = ChoiceCount; }
+
+    internal readonly NativeQueryField ToNative() => new()
+    {
+        Name = Utf8.Get(Name),
+        Type = Type,
+        Choices = UiMarshal.Strings(Choices),
+        ChoiceCount = ChoiceCount,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(QueryField[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeQueryField>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static QueryField FromNative(NativeQueryField n) => new()
+    {
+        Name = Marshal.PtrToStringUTF8(n.Name),
+        Type = n.Type,
+        Choices = null,
+        ChoiceCount = n.ChoiceCount,
+    };
+}
+
+/// <summary>cui_pipeline_job. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct PipelineJob
+{
+    /// <summary>const char * name</summary>
+    public string? Name;
+    /// <summary>index into the stage names</summary>
+    public int Stage;
+    /// <summary>cui_job_status status</summary>
+    public JobStatus Status;
+    /// <summary>seconds; negative when it has not run</summary>
+    public float Duration;
+    /// <summary>a failure does not fail the stage</summary>
+    public bool AllowFailure;
+
+    public PipelineJob(string? Name, int Stage = default, JobStatus Status = default, float Duration = default, bool AllowFailure = default) { this.Name = Name; this.Stage = Stage; this.Status = Status; this.Duration = Duration; this.AllowFailure = AllowFailure; }
+
+    internal readonly NativePipelineJob ToNative() => new()
+    {
+        Name = Utf8.Get(Name),
+        Stage = Stage,
+        Status = Status,
+        Duration = Duration,
+        AllowFailure = (byte)(AllowFailure ? 1 : 0),
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(PipelineJob[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativePipelineJob>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static PipelineJob FromNative(NativePipelineJob n) => new()
+    {
+        Name = Marshal.PtrToStringUTF8(n.Name),
+        Stage = n.Stage,
+        Status = n.Status,
+        Duration = n.Duration,
+        AllowFailure = n.AllowFailure != 0,
+    };
+}
+
+/// <summary>cui_diagnostic. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct ProblemItem
+{
+    /// <summary>cui_severity severity</summary>
+    public Severity Severity;
+    /// <summary>const char * message</summary>
+    public string? Message;
+    /// <summary>groups the rows; NULL or &quot;&quot; groups as &quot;No file&quot;</summary>
+    public string? File;
+    /// <summary>1 based; 0 leaves it out</summary>
+    public int Line;
+    /// <summary>1 based; 0 leaves it out</summary>
+    public int Column;
+    /// <summary>&quot;gcc&quot;, &quot;clang-tidy&quot;... (may be NULL)</summary>
+    public string? Source;
+    /// <summary>&quot;-Wunused-variable&quot;... (may be NULL)</summary>
+    public string? Code;
+
+    public ProblemItem(Severity Severity, string? Message = null, string? File = null, int Line = default, int Column = default, string? Source = null, string? Code = null) { this.Severity = Severity; this.Message = Message; this.File = File; this.Line = Line; this.Column = Column; this.Source = Source; this.Code = Code; }
+
+    internal readonly NativeDiagnostic ToNative() => new()
+    {
+        Severity = Severity,
+        Message = Utf8.Get(Message),
+        File = Utf8.Get(File),
+        Line = Line,
+        Column = Column,
+        Source = Utf8.Get(Source),
+        Code = Utf8.Get(Code),
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(ProblemItem[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeDiagnostic>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static ProblemItem FromNative(NativeDiagnostic n) => new()
+    {
+        Severity = n.Severity,
+        Message = Marshal.PtrToStringUTF8(n.Message),
+        File = Marshal.PtrToStringUTF8(n.File),
+        Line = n.Line,
+        Column = n.Column,
+        Source = Marshal.PtrToStringUTF8(n.Source),
+        Code = Marshal.PtrToStringUTF8(n.Code),
+    };
+}
+
 /// <summary>cui_image_view. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct ImageView
 {
@@ -2374,6 +4010,42 @@ public unsafe partial struct Choice
         Description = Marshal.PtrToStringUTF8(n.Description),
         Icon = Marshal.PtrToStringUTF8(n.Icon),
         Badge = Marshal.PtrToStringUTF8(n.Badge),
+    };
+}
+
+/// <summary>cui_keymap_binding. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct KeymapBinding
+{
+    /// <summary>cui_key_combo combo</summary>
+    public KeyCombo Combo;
+    /// <summary>const char * action</summary>
+    public string? Action;
+    /// <summary>index into the categories, colors the key</summary>
+    public int Category;
+
+    public KeymapBinding(KeyCombo Combo, string? Action = null, int Category = default) { this.Combo = Combo; this.Action = Action; this.Category = Category; }
+
+    internal readonly NativeKeymapBinding ToNative() => new()
+    {
+        Combo = Combo.ToNative(),
+        Action = Utf8.Get(Action),
+        Category = Category,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(KeymapBinding[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeKeymapBinding>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static KeymapBinding FromNative(NativeKeymapBinding n) => new()
+    {
+        Combo = KeyCombo.FromNative(n.Combo),
+        Action = Marshal.PtrToStringUTF8(n.Action),
+        Category = n.Category,
     };
 }
 

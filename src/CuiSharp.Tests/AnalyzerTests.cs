@@ -91,6 +91,29 @@ public class AnalyzerTests
     }
 
     [Fact]
+    public async Task DiskAndPoolWorkStartedInAFrameIsReported()
+    {
+        string[] found = await AnalyzeAsync(Prologue + """
+            public sealed class Page : Component
+            {
+                public override void Draw(Ui ui)
+                {
+                    File.WriteAllText("out.txt", "x");
+                    _ = Directory.Exists(".");
+                    _ = Task.Run(() => 1);
+                }
+            }
+            """);
+
+        string[] reported = [.. found.Where(f => f.StartsWith("CUI001", StringComparison.Ordinal))];
+
+        // The disk and a frame-started task are the two ways work lands back on the frame thread.
+        Assert.Equal(3, reported.Length);
+        Assert.Contains(reported, f => f.Contains("File.WriteAllText", StringComparison.Ordinal));
+        Assert.Contains(reported, f => f.Contains("Task.Run", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task AwaitingTheSameWorkIsNotReported()
     {
         string[] found = await AnalyzeAsync(Prologue + """
@@ -107,6 +130,46 @@ public class AnalyzerTests
             """);
 
         Assert.DoesNotContain(found, f => f.StartsWith("CUI001", StringComparison.Ordinal));
+    }
+
+    // ---- CUI008 -------------------------------------------------------------
+
+    [Fact]
+    public async Task ReflectionSerializationIsReported()
+    {
+        string[] found = await AnalyzeAsync(Prologue + """
+            public sealed class Page : Component
+            {
+                public override void Draw(Ui ui)
+                {
+                    _ = System.Text.Json.JsonSerializer.Serialize(42);
+                    ui.Label("done");
+                }
+            }
+            """);
+
+        string[] reported = [.. found.Where(f => f.StartsWith("CUI008", StringComparison.Ordinal))];
+        Assert.Single(reported);
+        Assert.Contains("JsonSerializerContext", reported[0], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SerializingThroughAGeneratedContextIsFine()
+    {
+        // The overload that takes a JsonTypeInfo carries the metadata the trimmer needs.
+        string[] found = await AnalyzeAsync(Prologue + """
+            public sealed class Page : Component
+            {
+                public override void Draw(Ui ui)
+                {
+                    var info = new System.Text.Json.Serialization.Metadata.JsonTypeInfo<int>(null!, null);
+                    _ = System.Text.Json.JsonSerializer.Serialize(42, info);
+                    ui.Label("done");
+                }
+            }
+            """);
+
+        Assert.DoesNotContain(found, f => f.StartsWith("CUI008", StringComparison.Ordinal));
     }
 
     // ---- CUI002 -------------------------------------------------------------

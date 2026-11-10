@@ -3,8 +3,9 @@ using CuiSharp.Interop;
 namespace CuiSharp;
 
 /// <summary>
-/// The filesystem helpers CUI keeps behind the file browser: a directory listing with the
-/// same rule the browser uses, and the in-place sorts the flame graph and the tree need.
+/// The filesystem helpers CUI keeps behind the file browser, and the in-place sorts the
+/// flame graph and the trace viewer need: a directory listing with the same rule the browser
+/// uses.
 /// </summary>
 public static unsafe class CuiFiles
 {
@@ -25,11 +26,15 @@ public static unsafe class CuiFiles
 
         var native = new NativeFileEntry[maxEntries];
         var names = new byte[MaxNameBytes];
-        nint pathUtf8 = Utf8.Get(path);
         int count;
-        fixed (byte* nameBuffer = names)
+        // No frame is implied: give the arena's bytes back before returning.
+        using (Utf8.Scope())
         {
-            count = Native.FsList(0, pathUtf8, ref native[0], maxEntries, (nint)nameBuffer, (nuint)names.Length, (byte)(includeHidden ? 1 : 0));
+            nint pathUtf8 = Utf8.Get(path);
+            fixed (byte* nameBuffer = names)
+            {
+                count = Native.FsList(0, pathUtf8, ref native[0], maxEntries, (nint)nameBuffer, (nuint)names.Length, (byte)(includeHidden ? 1 : 0));
+            }
         }
 
         if (count <= 0) return [];
@@ -50,9 +55,28 @@ public static unsafe class CuiFiles
     public static void SortFlameSpans(Span<FlameSpan> spans)
     {
         if (spans.IsEmpty) return;
+
+        // No frame is implied: give the arena's bytes back before returning.
+        using var scope = Utf8.Scope();
         var native = Utf8.AllocFrame<NativeFlameSpan>(spans.Length);
         for (int i = 0; i < spans.Length; i++) native[i] = spans[i].ToNative();
         Native.FlameSort((nint)native, spans.Length);
         for (int i = 0; i < spans.Length; i++) spans[i] = FlameSpan.FromNative(native[i]);
+    }
+
+    /// <summary>
+    /// Sorts trace spans by lane, depth and start, the only order the trace viewer can draw
+    /// (it needs no overlap inside a depth of a lane).
+    /// </summary>
+    public static void SortTraceSpans(Span<TraceSpan> spans)
+    {
+        if (spans.IsEmpty) return;
+
+        // No frame is implied: give the arena's bytes back before returning.
+        using var scope = Utf8.Scope();
+        var native = Utf8.AllocFrame<NativeTraceSpan>(spans.Length);
+        for (int i = 0; i < spans.Length; i++) native[i] = spans[i].ToNative();
+        Native.TraceSort((nint)native, spans.Length);
+        for (int i = 0; i < spans.Length; i++) spans[i] = TraceSpan.FromNative(native[i]);
     }
 }

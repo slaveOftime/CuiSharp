@@ -38,7 +38,10 @@ public sealed partial class CuiSurface
         MouseUp(button);
     }
 
-    /// <summary>The pointer left the window: hover state clears.</summary>
+    /// <summary>
+    /// The pointer left the window: hover state clears and no tooltip stays behind. This is what a
+    /// screenshot wants, so the picture is the UI and not the mouse.
+    /// </summary>
     public void MouseLeave() => Native.InputMouseLeave(Handle);
 
     /// <summary>Scrolls; positive <paramref name="dy"/> scrolls down.</summary>

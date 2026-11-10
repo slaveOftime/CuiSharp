@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using CuiSharp.Hosting;
 using CuiSharp.Interop;
 
 namespace CuiSharp;
@@ -45,20 +46,36 @@ public sealed record CuiAppOptions
 
     /// <summary>Use the OS light/dark setting where available.</summary>
     public bool FollowSystemTheme { get; set; }
+
+    /// <summary>
+    /// What <see cref="CuiWindow.PickFile"/> uses. Null asks the OS through CUI; a test supplies one
+    /// so a picker flow runs with no display.
+    /// </summary>
+    public IFileDialogProvider? FileDialog { get; set; }
+
+    /// <summary>
+    /// Called once the window exists and before the first frame is drawn — the first moment there
+    /// is a handle to brand, log or query. <see cref="Hosting.Component.OnInitialized"/> is earlier
+    /// than this on purpose: it runs before there is a window, so anything that needs one belongs
+    /// here.
+    /// </summary>
+    public Action<CuiWindow>? WindowCreated { get; set; }
 }
 
 /// <summary>
 /// A native window, its message loop and a renderer, owned by CUI.
 /// <para>
-/// <see cref="Run(CuiAppOptions, DrawFn)"/> drives CUI from a plain managed loop rather than from a
-/// native callback. That costs one extra P/Invoke per frame and buys two
-/// things: <c>dotnet watch</c> hot reload can patch the UI code between frames,
-/// and there is no function pointer for the AOT compiler to pin.
+/// <see cref="Run(CuiAppOptions, DrawFn)"/> does not run a loop of its own: it registers the draw
+/// callback with CUI and lets the native loop call it. That is what keeps the frame alive while the
+/// user drags a window edge — the OS runs a modal loop of its own there, so a managed
+/// <c>while</c> loop would stop painting mid-drag and the layout would go stale. See
+/// <c>docs/ARCHITECTURE.md</c>, "Frame model".
 /// </para>
 /// </summary>
 public sealed unsafe class CuiApp : IDisposable
 {
     private nint _handle;
+    private readonly CuiWindow _window;
     private Theme _theme;
     private Accent _accent;
     private bool _themeDirty;
@@ -68,6 +85,7 @@ public sealed unsafe class CuiApp : IDisposable
     private CuiApp(nint handle, CuiAppOptions options)
     {
         _handle = handle;
+        _window = new CuiWindow(handle);
         _ctx = Native.AppUi(handle);
         _theme = options.Theme;
         _accent = options.Accent;
@@ -85,20 +103,16 @@ public sealed unsafe class CuiApp : IDisposable
     }
 
     /// <summary>The OS window: HWND on Windows, NSWindow* on macOS, X11 Window on Linux.</summary>
-    public nint NativeWindow => Native.AppNativeWindow(_handle);
+    public nint NativeWindow => _window.NativeWindow;
 
     /// <summary>True when the OpenGL context could not be created and CUI fell back to its software rasterizer.</summary>
-    public bool IsSoftwareRenderer => Native.AppIsSoftware(_handle) != 0;
+    public bool IsSoftwareRenderer => _window.IsSoftwareRenderer;
 
     /// <summary>The active backend: "win32", "cocoa", "x11", "sdl2" or "glfw".</summary>
-    public string Backend
-    {
-        get
-        {
-            var p = Native.AppBackend(_handle);
-            return System.Runtime.InteropServices.Marshal.PtrToStringUTF8(p) ?? "unknown";
-        }
-    }
+    public string Backend => _window.Backend;
+
+    /// <summary>The same window, for code that takes one: branding, logging, OS queries.</summary>
+    public CuiWindow Window => _window;
 
     /// <summary>Applies a theme now, or on the next frame if the window is not up yet.</summary>
     public void SetTheme(Theme theme) { _theme = theme; _themeDirty = true; }
@@ -112,8 +126,23 @@ public sealed unsafe class CuiApp : IDisposable
         ArgumentNullException.ThrowIfNull(options);
 
         var desc = Describe(options);
-        var handle = Native.AppCreate(in desc);
-        return handle == 0 ? null : new CuiApp(handle, options);
+        nint handle;
+        try
+        {
+            handle = Native.AppCreate(in desc);
+        }
+        catch (Exception error) when (error is DllNotFoundException or BadImageFormatException or EntryPointNotFoundException)
+        {
+            throw CuiSharpNativeException.From(error);
+        }
+
+        if (handle == 0) return null;
+
+        var app = new CuiApp(handle, options);
+        app.Window.FileDialog = options.FileDialog;
+        LiveResize.Install(handle == 0 ? 0 : app.NativeWindow, options.NoVsync);
+        options.WindowCreated?.Invoke(app.Window);
+        return app;
     }
 
     /// <summary>
@@ -218,7 +247,7 @@ public sealed unsafe class CuiApp : IDisposable
         // drag ends. The loop-style `Create`/`Frame` pair cannot do this: it is
         // the caller's loop that is blocked, so the plan's rule is that a real
         // window runs through Run.
-        var state = new RunState(draw);
+        var state = new RunState(options, draw);
         GCHandle handle = GCHandle.Alloc(state);
         try
         {
@@ -229,23 +258,57 @@ public sealed unsafe class CuiApp : IDisposable
             // has to cover the whole loop.
             using (state.Frame.EnterPaint())
             {
-                int code = Native.AppRun(in desc, (nint)(delegate* unmanaged[Cdecl]<nint, void*, void>)&RunThunk, (nint)handle);
-                if (code != 0) throw new InvalidOperationException(
-                    "cui_app_create returned null. On Windows this means cui.dll is missing next to the executable.");
-                return code;
+                try
+                {
+                    int code = Native.AppRun(in desc, (nint)(delegate* unmanaged[Cdecl]<nint, void*, void>)&RunThunk, (nint)handle);
+                    if (code != 0)
+                    {
+                        throw new InvalidOperationException(
+                            "cui_app_create returned null: the platform window could not be created. " +
+                            "On Windows this means cui.dll is missing next to the executable; on a " +
+                            "Linux host it usually means there is no display (DISPLAY is unset).");
+                    }
+
+                    return code;
+                }
+                catch (Exception error) when (error is DllNotFoundException or BadImageFormatException or EntryPointNotFoundException)
+                {
+                    throw CuiSharpNativeException.From(error);
+                }
             }
         }
         finally
         {
+            LiveResize.Uninstall(state.WindowHandle);
+            state.Window?.Release();
             handle.Free();
         }
     }
 
     /// <summary>Managed state behind one <see cref="Run(CuiAppOptions, DrawFn)"/> call.</summary>
-    private sealed class RunState(DrawFn draw)
+    private sealed class RunState(CuiAppOptions options, DrawFn draw)
     {
+        internal readonly CuiAppOptions Options = options;
         internal readonly DrawFn Draw = draw;
         internal readonly UiFrameState Frame = new();
+        internal nint WindowHandle;
+        internal CuiWindow? Window;
+
+        /// <summary>
+        /// Publishes the window on the first frame. The app loop keeps its <c>cui_app*</c> private,
+        /// so this is where it comes back: the window it made carries that pointer as its user data.
+        /// </summary>
+        internal void Hooking()
+        {
+            if (Window is not null || !OperatingSystem.IsWindows()) return;
+            nint app = Win32.AppOf(Win32.FindCuiWindow());
+            if (app == 0) return;
+
+            WindowHandle = Native.AppNativeWindow(app);
+            Window = new CuiWindow(app) { FileDialog = Options.FileDialog };
+            LiveResize.Install(WindowHandle, Options.NoVsync);
+            Options.WindowCreated?.Invoke(Window);
+        }
     }
 
     // The frame callback CUI calls for a normal frame and, during a window drag,
@@ -255,6 +318,9 @@ public sealed unsafe class CuiApp : IDisposable
     private static void RunThunk(nint ui, void* user)
     {
         var state = (RunState)GCHandle.FromIntPtr((nint)user).Target!;
+
+        // The window exists before the first frame draws: hand it over, and make resizing fast.
+        state.Hooking();
 
         // The previous frame has been presented by now, so its painters and the
         // arena that holds this frame's argument strings can be reused.

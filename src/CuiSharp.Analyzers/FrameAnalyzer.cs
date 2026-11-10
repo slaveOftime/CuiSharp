@@ -20,7 +20,8 @@ public sealed class FrameAnalyzer : DiagnosticAnalyzer
 {
     /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-        [Diagnostics.BlockingCall, Diagnostics.ConfigureAwaitInComponent, Diagnostics.AsyncVoidInComponent, Diagnostics.AllocationInFrame];
+        [Diagnostics.BlockingCall, Diagnostics.ConfigureAwaitInComponent, Diagnostics.AsyncVoidInComponent,
+         Diagnostics.AllocationInFrame, Diagnostics.ReflectionUnderAot];
 
     /// <inheritdoc />
     public override void Initialize(AnalysisContext context)
@@ -39,6 +40,9 @@ public sealed class FrameAnalyzer : DiagnosticAnalyzer
             // CUI005 / CUI006: the hosting rules.
             start.RegisterSyntaxNodeAction(ctx => CheckConfigureAwait(ctx, types), SyntaxKind.InvocationExpression);
             start.RegisterSymbolAction(ctx => CheckAsyncVoid(ctx, types), SymbolKind.Method);
+
+            // CUI008: reflection-based serialization, which Native AOT trims away.
+            start.RegisterSyntaxNodeAction(ctx => CheckReflection(ctx, types), SyntaxKind.InvocationExpression);
 
             // CUI007: allocations in a frame method.
             start.RegisterSyntaxNodeAction(ctx => CheckAllocation(ctx, types),
@@ -95,11 +99,57 @@ public sealed class FrameAnalyzer : DiagnosticAnalyzer
             member.Expression.ToString() is "Thread" or "System.Threading.Thread")
         {
             context.ReportDiagnostic(Diagnostic.Create(Diagnostics.BlockingCall, invocation.GetLocation(), "Thread." + CalledName(invocation)));
+            return;
+        }
+
+        if (invocation.Expression is not MemberAccessExpressionSyntax call) return;
+        string owner = call.Expression.ToString();
+
+        // Task.Run(...) inside a frame: the work was moved off the frame thread into one started
+        // by the frame, which is the opposite of what a Mutation does — it keeps the result,
+        // notices cancellation, applies on the UI thread and reports the failure.
+        if (owner is "Task" or "System.Threading.Tasks.Task" && CalledName(invocation) == "Run")
+        {
+            context.ReportDiagnostic(Diagnostic.Create(Diagnostics.BlockingCall, invocation.GetLocation(), "Task.Run"));
+            return;
+        }
+
+        // File.* / Directory.*: the disk is not part of a frame, and one read per keystroke is the
+        // most common freeze in an immediate-mode app.
+        if (owner is "File" or "System.IO.File" or "Directory" or "System.IO.Directory")
+        {
+            context.ReportDiagnostic(Diagnostic.Create(Diagnostics.BlockingCall, invocation.GetLocation(),
+                owner + "." + CalledName(invocation)));
         }
     }
 
     private static bool IsAwaitable(ITypeSymbol type) =>
         type.Name is "Task" or "Task`1" or "ValueTask" or "ValueTask`1";
+
+    // ---- CUI008 -------------------------------------------------------------
+
+    /// <summary>
+    /// The serializers that reflect over a type at run time. Serializing a type without a
+    /// source-generated context publishes with warnings and fails on the target, so this is a
+    /// warning on the call rather than a note about the project.
+    /// </summary>
+    private static void CheckReflection(SyntaxNodeAnalysisContext context, KnownTypes types)
+    {
+        var invocation = (InvocationExpressionSyntax)context.Node;
+        if (context.SemanticModel.GetSymbolInfo(invocation, context.CancellationToken).Symbol is not IMethodSymbol method) return;
+        if (method.ContainingType?.Name != "JsonSerializer") return;
+        if (method.Name is not ("Serialize" or "Deserialize" or "SerializeAsync" or "DeserializeAsync" or "DeserializeAsyncEnumerable")) return;
+
+        // The overloads that take a JsonTypeInfo or a context carry the metadata the trimmer needs:
+        // those calls are the fix, so reporting them would be noise.
+        foreach (IParameterSymbol parameter in method.Parameters)
+        {
+            if (parameter.Type.Name is "JsonTypeInfo" or "JsonSerializerContext") return;
+        }
+
+        context.ReportDiagnostic(Diagnostic.Create(Diagnostics.ReflectionUnderAot, invocation.GetLocation(),
+            $"JsonSerializer.{method.Name}"));
+    }
 
     // ---- CUI005 -------------------------------------------------------------
 

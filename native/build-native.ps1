@@ -78,6 +78,9 @@ function Invoke-NativePatches {
 
 $flags = if ($Configuration -eq 'Release') { '/MT /O2 /Ob2 /DNDEBUG' } else { '/MTd /Od /Zi /DDEBUG' }
 
+$cuiRev = (& git -C $CuiSource rev-parse --short HEAD 2>$null)
+if (-not $cuiRev) { $cuiRev = 'unknown' }
+
 $CuiSource = Invoke-NativePatches
 
 Push-Location $CuiSource
@@ -115,4 +118,25 @@ finally {
 
 Get-ChildItem $here -Filter 'cui.*' | Where-Object { $_.Extension -in '.dll', '.lib' } |
     ForEach-Object { Write-Host ("    {0,-10} {1,8:N0} KB" -f $_.Name, ($_.Length / 1KB)) -ForegroundColor Green }
+
+# Recorded with the artifacts, not reconstructed later: a package that cannot say which
+# CUI revision and compiler produced its library is a package nobody can audit.
+$cl = (cl 2>&1 | Select-Object -First 1)
+$provenance = Join-Path $here 'native-provenance.txt'
+@(
+    "cui-rev=$cuiRev"
+    "os=Windows-$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)"
+    "cc=$cl"
+    "config=$Configuration"
+) | Set-Content -Path $provenance -Encoding utf8
+
+foreach ($name in 'cui.dll', 'cui.lib') {
+    $file = Join-Path $here $name
+    if (Test-Path $file) {
+        "file=$name sha256=$((Get-FileHash $file -Algorithm SHA256).Hash.ToLowerInvariant())" |
+            Add-Content -Path $provenance -Encoding utf8
+    }
+}
+
+Write-Host "Provenance written to $provenance." -ForegroundColor Green
 Write-Host 'Native artifacts ready.' -ForegroundColor Green

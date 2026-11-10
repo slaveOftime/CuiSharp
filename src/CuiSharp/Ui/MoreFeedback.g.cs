@@ -24,7 +24,7 @@ public static unsafe class MoreFeedbackUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_countdown_ex</summary>
+        /// <summary>* left to right in any interface: see cui__keep_ltr</summary>
         public void Countdown(UiText id, double secondsLeft, CountdownOpts o = default)
         {
             var __opts = o.ToNative();

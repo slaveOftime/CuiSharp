@@ -13,19 +13,20 @@ namespace CuiSharp.Gallery;
 
 internal sealed partial class GalleryApp : IDisposable
 {
-    public const int PageCount = 11;
+    public const int PageCount = 13;
 
     internal static readonly string[] PageNames =
     {
         "Overview", "Buttons", "Inputs", "Selection", "Navigation",
         "Overlays", "Feedback", "Data display", "Charts", "Studio", "Tools",
+        "Developer tools", "More developer tools",
     };
 
     internal static readonly string[] PageIcons =
     {
         Icons.LayoutDashboard, Icons.Zap, Icons.Type, Icons.SlidersHorizontal,
         Icons.Compass, Icons.Layers, Icons.Bell, Icons.Database, Icons.ChartLine,
-        Icons.SlidersHorizontal, Icons.Terminal,
+        Icons.SlidersHorizontal, Icons.Terminal, Icons.SquareTerminal, Icons.Bug,
     };
 
     private static readonly string[] AccentNames =

@@ -41,7 +41,12 @@ public sealed class Mutation<T> : IDisposable
     private readonly CancellationTokenSource _lifetime = new();
     private Task<T>? _pending;
     private Exception? _error;
-    private int _counted;
+
+    // The run this mutation is currently owned by. Bumped by every Run, read by a completion
+    // that arrives later: an operation the app has moved on from may not publish.
+    private long _generation;
+    private long _counted;        // the generation PendingWork is counting, 0 for none
+    private volatile bool _disposed;
 
     /// <summary>Creates a mutation around the work it runs.</summary>
     public Mutation(Func<CancellationToken, Task<T>> work) : this(work, apply: null) { }
@@ -66,18 +71,37 @@ public sealed class Mutation<T> : IDisposable
     /// </summary>
     public Exception? Error => Volatile.Read(ref _error);
 
-    /// <summary>Starts the operation. Re-entry is ignored, so it is safe to call every frame.</summary>
+    /// <summary>
+    /// Starts the operation — on the pool, never on the frame thread. Re-entry is ignored, so it is
+    /// safe to call every frame, and a run started after <see cref="Dispose"/> is ignored too: the
+    /// component that owned it is gone.
+    /// </summary>
     public void Run()
     {
-        if (IsRunning) return;
+        if (IsRunning || _disposed) return;
 
         Volatile.Write(ref _error, null);
         _pending = null;
+        long generation = Interlocked.Increment(ref _generation);
+
+        CancellationToken token;
+        try
+        {
+            token = _lifetime.Token;
+        }
+        catch (ObjectDisposedException error)
+        {
+            Volatile.Write(ref _error, error);
+            return;
+        }
 
         Task<T> task;
         try
         {
-            task = _work(_lifetime.Token);
+            // On the pool, because this is called from Draw: an `async` method runs its
+            // synchronous prefix on whoever calls it, so invoking it here would make the frame
+            // wait for work that was supposed to be off-frame. See skills/cui-dotnet/hosting.md.
+            task = Task.Run(() => _work(token), token);
         }
         catch (Exception error)
         {
@@ -89,12 +113,18 @@ public sealed class Mutation<T> : IDisposable
 
         _pending = task;
         PendingWork.Add();
-        Interlocked.Exchange(ref _counted, 1);
+        Interlocked.Exchange(ref _counted, generation);
 
         // Settle on completion, not on TryPublish: a component that is no longer
         // drawn never polls, and a finished operation must not keep the window
         // awake forever. The one owed frame is what makes the result visible.
-        task.ContinueWith(static (completed, state) => ((Mutation<T>)state!).Complete(completed), this,
+        task.ContinueWith(
+            static (completed, state) =>
+            {
+                (Mutation<T> owner, long run) = ((Mutation<T>, long))state!;
+                owner.Complete(completed, run);
+            },
+            (this, generation),
             CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
     }
 
@@ -115,43 +145,60 @@ public sealed class Mutation<T> : IDisposable
     }
 
     /// <summary>
-    /// Cancels a running operation. Optional: a mutation that is never disposed is
-    /// cancelled when the process exits, which is what an app usually wants.
+    /// Cancels a running operation and drops its result. Optional: a mutation that is never disposed
+    /// is cancelled when the process exits, which is what an app usually wants.
+    /// <para>
+    /// After this, a completion that arrives late — the work finished just before the page was
+    /// navigated away from — is dropped instead of applying into a component that no longer exists.
+    /// </para>
     /// </summary>
     public void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
         _lifetime.Cancel();
         _lifetime.Dispose();
         _pending = null;
-        Settle();
+        Settle(Volatile.Read(ref _counted));
     }
 
-    private void Complete(Task<T> task)
+    private void Complete(Task<T> task, long generation)
     {
+        // A result is published only by the run that still owns this mutation. A run that
+        // finished after the app moved on — restarted, navigated, disposed — is dropped, and
+        // dropping it must not touch the newer run's state either.
+        bool current = IsCurrent(generation);
+
         if (task.IsCompletedSuccessfully)
         {
             // A result with somewhere to go is applied on the UI thread, before the
             // next frame, so Draw reads state instead of polling.
-            if (_apply is not null) Completions.Post(this, task.Result);
+            if (_apply is not null && current) Completions.Post(this, task.Result, generation);
         }
-        else if (!_lifetime.IsCancellationRequested)
+        else if (current)
         {
             Volatile.Write(ref _error, task.Exception?.GetBaseException() ?? new TaskCanceledException(task));
         }
 
-        Settle();
+        Settle(generation);
     }
 
+    private bool IsCurrent(long generation) => !_disposed && Volatile.Read(ref _generation) == generation;
+
     // Called on the UI thread, once per completed frame.
-    internal void Apply(T value)
+    internal void Apply(T value, long generation)
     {
+        if (!IsCurrent(generation)) return;
         _pending = null;
         _apply?.Invoke(value);
     }
 
-    private void Settle()
+    // Each run counts pending work under its own generation, so a stale completion settles its
+    // own count and never the newer operation's.
+    private void Settle(long generation)
     {
-        if (Interlocked.Exchange(ref _counted, 0) == 0) return;
+        if (generation == 0) return;
+        if (Interlocked.CompareExchange(ref _counted, 0, generation) != generation) return;
         PendingWork.Remove();
     }
 }
@@ -205,7 +252,8 @@ internal static class Completions
 {
     private static readonly ConcurrentQueue<Action> Queue = new();
 
-    internal static void Post<T>(Mutation<T> owner, T value) => Queue.Enqueue(() => owner.Apply(value));
+    internal static void Post<T>(Mutation<T> owner, T value, long generation) =>
+        Queue.Enqueue(() => owner.Apply(value, generation));
 
     /// <summary>Runs everything that finished since the last frame, on the calling thread.</summary>
     internal static void Drain()

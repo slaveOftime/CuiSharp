@@ -91,7 +91,7 @@ using var dialog = ui.Dialog("confirm", ref open);        // opens only when ope
 
 - **Text is one type.** `ui.Text("Saved")`, `ui.Text("Saved"u8)` and `ui.Text($"Clicked {n,6:D3}")`
   are one method; interpolation formats straight into the frame arena.
-- **Options are structs with `init` properties**, one per component, defaulted to CUI's defaults.
+- **Options are structs of public fields**, one per component, defaulted to CUI's defaults.
 - **Ids are stable strings**; `ui.Keyed(items, key)` gives a list rows ids that survive reordering.
 - **Theme colours** come from `Color.Accent`, `ui.ColorOf(color)`, `ui.TokenColor(token)`, so light
   and dark work without a second palette.
@@ -179,8 +179,8 @@ Frame
 ```
 
 The app serves this itself (`CUISHARP_HEADLESS=1`), so what a tool sees is what a user sees — no
-debug mode, no mock, no second code path. `dotnet cui mcp` will expose the same over MCP
-([remaining work](docs/PLAN.md)).
+debug mode, no mock, no second code path. For a check that has to hold, prefer
+`CuiSharp.Testing`: frames on demand, milliseconds, and the reproduction stays in the suite.
 
 **Analyzers ship in the package** and turn the six mistakes that cost the most into build errors or
 warnings: a blocking call in a frame (`CUI001`), a container scope without `using` (`CUI002`), a
@@ -211,6 +211,12 @@ dotnet publish -c Release -r win-x64      # one executable, ~2 MB, nothing besid
 NativeAOT does not cross-compile between operating systems: publish on the platform you target
 (`libx11-dev` is needed at build time on Linux, not at run time).
 
+The package ships `win-x64`, `linux-x64` and `osx-arm64`. The Linux archive needs **glibc 2.31 or
+newer** (Debian 11, Ubuntu 20.04, RHEL 8); an older image fails at load with
+`version 'GLIBC_x.y' not found`, which `CuiSharpNativeException` restates with the packaged RIDs
+and the floor. `runtimes/native-provenance.txt` in the package records the revision, compiler and
+per-file hashes behind it; [native-abi.md](skills/cui-dotnet/native-abi.md) is the promise itself.
+
 ## Gallery and layout
 
 ```sh
@@ -225,14 +231,35 @@ src/CuiSharp.Analyzers/  CUI001-CUI007, packed into CuiSharp
 src/CuiSharp.Testing/    TestApp: drive a component without a window
 src/CuiSharp.Tools/      dotnet cui
 src/CuiSharp.Templates/  dotnet new cui-app
-samples/CuiSharp.Gallery/ eleven pages, one file per page
+samples/CuiSharp.Gallery/ thirteen pages, one file per page
 native/                  the CUI submodule and the two build scripts
 tools/                   bindgen.cs, regen.ps1, verify-template.ps1, snapshots.ps1
 bindings/                api.json (generated), overrides.json (inputs), coverage.txt (report)
-docs/                    PLAN (remaining work), ARCHITECTURE (rules), PERFORMANCE, HOSTING,
-                         RELEASING, api/ (generated), API-SURFACE.txt, images/gallery/
-skills/cui-dotnet/       SKILL.md — the authoring guide, for a person or an LLM
+docs/                    PLAN (remaining work), ARCHITECTURE (rules), PERFORMANCE, RELEASING,
+                         API-SURFACE.txt, images/gallery/
+skills/cui-dotnet/       what building an app needs: SKILL.md, llms.txt, api/, widgets, hosting, ABI
 ```
+
+## Where to read
+
+`skills/cui-dotnet/` is the whole of what building an app needs — the guide, the reference, the API
+pages, the widget behaviour and the ABI promise — and it is self-contained: nothing in it points at a
+file it does not carry. The NuGet package ships that same folder at that same path, so every path
+below works in either place.
+
+| Need | Path |
+|---|---|
+| **Start here:** how to write a UI, the workflow, the pitfalls | [skills/cui-dotnet/SKILL.md](skills/cui-dotnet/SKILL.md) |
+| Every widget and signature, one line each | [skills/cui-dotnet/llms.txt](skills/cui-dotnet/llms.txt) |
+| Options and records, one page per section | [skills/cui-dotnet/api/](skills/cui-dotnet/api) |
+| Components, `Mutation<T>`, dependency injection | [skills/cui-dotnet/hosting.md](skills/cui-dotnet/hosting.md) |
+| What each component does, and its keyboard | [skills/cui-dotnet/widgets.md](skills/cui-dotnet/widgets.md), [widgets-more.md](skills/cui-dotnet/widgets-more.md) |
+| RIDs carried, glibc floor, provenance | [skills/cui-dotnet/native-abi.md](skills/cui-dotnet/native-abi.md) |
+| Rules and decisions, before changing the framework | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+
+An assistant needs the first two: point it at the folder and say "read `SKILL.md`". `widgets.md` and
+`native-abi.md` are copies of CUI's documentation and of the ABI promise, regenerated with
+`pwsh tools/regen.ps1`; the rest of the folder is hand-written or generated from the headers.
 
 ## Contributing
 
@@ -243,19 +270,22 @@ pwsh tools/regen.ps1 -NoNative -NoDiff     # generated output is up to date
 ```
 
 `src/CuiSharp/Interop/*.g.cs`, `src/CuiSharp/Ui/*.g.cs`, `Icons.g.cs`, the generated ABI and option
-tests, `docs/api/*.md`, `llms.txt` and `bindings/{api.json,coverage.txt}` come from the CUI headers.
-Never edit them: change `tools/bindgen.cs` or `bindings/overrides.json`, then regenerate. Syncing a
-CUI release is checking out the new tag, running `regen.ps1`, and reviewing the `api.json` diff.
+tests, `skills/cui-dotnet/{llms.txt,api/*.md}` and `bindings/{api.json,coverage.txt}` come from the CUI
+headers. Never edit them: change `tools/bindgen.cs` or `bindings/overrides.json`, then regenerate.
+Syncing a CUI release is checking out the new tag, running `regen.ps1`, and reviewing the `api.json`
+diff. `skills/cui-dotnet/SKILL.md` is the one page written by hand.
 
-Rules and decisions: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Remaining work:
+Rules and decisions: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). What is left:
 [docs/PLAN.md](docs/PLAN.md). Authoring guide: [skills/cui-dotnet/SKILL.md](skills/cui-dotnet/SKILL.md).
+What changed, per version: [CHANGELOG.md](CHANGELOG.md).
 
 ## Status
 
-Pre-1.0: the API may still change. The binding covers every CUI function (356 generated wrappers,
-156 deliberate hand-written ones, 4 excluded with a written reason, 0 pending — see
-[bindings/coverage.txt](bindings/coverage.txt)). The nine core gallery pages are ported; the
-thirteen extended upstream pages are not yet.
+Pre-1.0: the API may still change. The binding covers all 492 CUI 1.3 functions: 166 option
+structs, 100 records, 278 generated wrappers, 167 deliberate hand-written ones, 6 excluded with a
+written reason, 0 pending — see [bindings/coverage.txt](bindings/coverage.txt). The gallery ports the
+nine core pages, four pages of this binding's own, and CUI 1.3's two developer-tools pages; the other
+fifteen extended upstream pages are not yet.
 
 ## License
 

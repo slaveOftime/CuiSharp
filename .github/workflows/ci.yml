@@ -7,7 +7,10 @@ on:
       - 'samples/**'
       - 'native/**'
       - 'skills/**'
+      - 'tools/**'
+      - 'bindings/**'
       - 'Directory.Build.props'
+      - 'Directory.Build.targets'
       - '*.slnx'
       - 'docs/**'
       - '.github/workflows/ci.yml'
@@ -18,7 +21,10 @@ on:
       - 'samples/**'
       - 'native/**'
       - 'skills/**'
+      - 'tools/**'
+      - 'bindings/**'
       - 'Directory.Build.props'
+      - 'Directory.Build.targets'
       - '*.slnx'
       - 'docs/**'
       - '.github/workflows/ci.yml'
@@ -28,6 +34,9 @@ env:
   DOTNET_NOLOGO: true
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
+  # The glibc the Linux native library is built against, and the image that has it.
+  # Part of the native cache key: a new baseline is a new library.
+  CUI_GLIBC_BASELINE: '2.31'
 
 jobs:
   # The suite draws real frames through the native library, so it needs CUI built
@@ -59,11 +68,31 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libx11-dev
 
+      - name: Submodule revision
+        id: cui
+        shell: pwsh
+        run: echo "sha=$(git rev-parse HEAD:native/CUI)" >> $env:GITHUB_OUTPUT
+
+      - name: Cache the native build
+        id: native-cache
+        uses: actions/cache@v4
+        with:
+          # Keyed on the submodule commit: a new CUI means a new native build, and nothing else does.
+          path: |
+            native/cui.dll
+            native/cui.lib
+            native/libcui.so
+            native/libcui.a
+            native/libcui.dylib
+          key: cui-native-${{ runner.os }}-glibc${{ env.CUI_GLIBC_BASELINE }}-${{ steps.cui.outputs.sha }}
+
       - name: Build CUI (native library)
+        if: steps.native-cache.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
           if ($IsWindows) { ./native/build-native.ps1 }
-          else { bash native/build-native.sh }
+          elseif ($IsMacOS) { bash native/build-native.sh }
+          else { bash native/build-native-container.sh debian:11 }
 
       - name: Restore
         run: dotnet restore CuiSharp.slnx
@@ -73,6 +102,30 @@ jobs:
 
       - name: Test
         run: dotnet test CuiSharp.slnx --configuration Release --no-build
+
+      # The other formatting gate: a build succeeds on formatted-looking code that
+      # `dotnet format` would rewrite.
+      - name: Format
+        if: runner.os == 'Windows'
+        run: dotnet format CuiSharp.slnx --verify-no-changes
+
+      # The public surface is the approval file, so a pull request that changes it prints the diff
+      # where the reviewer already is. `PublicSurfaceTests` fails when the file is stale; this shows
+      # what changed.
+      - name: Public surface diff
+        if: runner.os == 'Windows' && github.event_name == 'pull_request'
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          git fetch --depth=1 origin ${{ github.base_ref }} 2>$null
+          $diff = git diff origin/${{ github.base_ref }} -- docs/API-SURFACE.txt
+          if (-not $diff) { Write-Host 'the public surface did not change'; exit 0 }
+
+          '## The public surface changed' | Out-File $env:GITHUB_STEP_SUMMARY -Append
+          'Reviewed in `docs/API-SURFACE.txt`; 1.0 makes it a promise.' | Out-File $env:GITHUB_STEP_SUMMARY -Append
+          '```diff' | Out-File $env:GITHUB_STEP_SUMMARY -Append
+          $diff | Out-File $env:GITHUB_STEP_SUMMARY -Append
+          '```' | Out-File $env:GITHUB_STEP_SUMMARY -Append
 
   # The template content is not in the solution, so nothing else compiles it.
   # Scaffold it under a name that is not CuiSharp.* — a namespace-only difference
@@ -105,7 +158,8 @@ jobs:
         shell: pwsh
         run: |
           if ($IsWindows) { ./native/build-native.ps1 }
-          else { bash native/build-native.sh }
+          elseif ($IsMacOS) { bash native/build-native.sh }
+          else { bash native/build-native-container.sh debian:11 }
 
       - name: Pack the library and the template
         run: |
@@ -147,11 +201,18 @@ jobs:
           - os: windows-latest
             rid: win-x64
             exe: CuiGallery.exe
+          - os: ubuntu-22.04
+            rid: linux-x64
+            exe: CuiGallery
           - os: macos-latest
             rid: osx-arm64
             exe: CuiGallery
     steps:
       - uses: actions/checkout@v7.0.1
+
+      - name: Install Xvfb (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y xvfb
 
       - name: Checkout submodules (CUI)
         run: git submodule update --init --recursive
@@ -161,14 +222,40 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      - name: Submodule revision
+        id: cui
+        shell: pwsh
+        run: echo "sha=$(git rev-parse HEAD:native/CUI)" >> $env:GITHUB_OUTPUT
+
+      - name: Cache the native build
+        id: native-cache
+        uses: actions/cache@v4
+        with:
+          # Keyed on the submodule commit: a new CUI means a new native build, and nothing else does.
+          path: |
+            native/cui.dll
+            native/cui.lib
+            native/libcui.so
+            native/libcui.a
+            native/libcui.dylib
+          key: cui-native-${{ runner.os }}-glibc${{ env.CUI_GLIBC_BASELINE }}-${{ steps.cui.outputs.sha }}
+
       - name: Build CUI (native library)
+        if: steps.native-cache.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
           if ($IsWindows) { ./native/build-native.ps1 }
-          else { bash native/build-native.sh }
+          elseif ($IsMacOS) { bash native/build-native.sh }
+          else { bash native/build-native-container.sh debian:11 }
 
       - name: Publish
         run: dotnet publish samples/CuiSharp.Gallery -c Release -r ${{ matrix.rid }} -o artifacts/publish
+
+      # The size ceiling is a row in docs/PERFORMANCE.md: cheap to check, and deterministic.
+      - name: Size budget
+        if: matrix.rid == 'win-x64'
+        shell: pwsh
+        run: pwsh tools/budget-check.ps1 -AotBytes (Get-Item 'artifacts/publish/${{ matrix.exe }}').Length
 
       - name: Assert the exe is self-contained
         shell: pwsh
@@ -182,12 +269,18 @@ jobs:
             foreach ($forbidden in 'cui.dll', 'VCRUNTIME', 'MSVCP', 'coreclr', 'hostfxr') {
               if ($deps -match [regex]::Escape($forbidden)) { throw "unexpected dependency: $forbidden" }
             }
-          } else {
+          } elseif ($IsMacOS) {
             # A static CUI leaves only the system libraries; a dynamic libcui here means
             # the archive was not linked in.
             $deps = otool -L $exe
             Write-Host ($deps -join "`n")
             if ($deps -match 'libcui') { throw 'libcui was not linked in' }
+          } else {
+            # The x11 leg: the archive must be inside the executable, and GL is dlopened.
+            $deps = ldd $exe
+            Write-Host ($deps -join "`n")
+            if ($deps -match 'libcui') { throw 'libcui was not linked in' }
+            if (-not ($deps -match 'libX11')) { throw 'the x11 backend was not linked in' }
           }
           if (Test-Path 'artifacts/publish/libcui.dylib') { throw 'libcui.dylib was not linked in' }
           if (Test-Path 'artifacts/publish/cui.dll') { throw 'cui.dll was not linked in' }
@@ -208,6 +301,12 @@ jobs:
             if ($IsWindows) {
               $app = Start-Process -FilePath ./CuiGallery.exe -ArgumentList '--page=0' -Wait -PassThru
               $exit = $app.ExitCode
+            } elseif ($IsLinux) {
+              # A Linux runner has no display, and normal mode really opens an X11
+              # window (the tests avoid this by driving the software renderer
+              # headlessly). Xvfb is that window's server, virtualised.
+              xvfb-run -a ./CuiGallery --page=0
+              $exit = $LASTEXITCODE
             } else {
               ./CuiGallery --page=0
               $exit = $LASTEXITCODE
@@ -226,6 +325,114 @@ jobs:
           path: |
             artifacts/publish/${{ matrix.exe }}
             artifacts/publish/smoke.png
+
+  # Frame time on demand. The harness is stable enough to compare two runs on one machine and not
+  # stable enough to fail a pull request from a shared runner, so it runs when a person asks for it:
+  # Actions -> CI -> Run workflow. Both ceilings come from docs/PERFORMANCE.md.
+  budget:
+    name: Frame budget (on demand)
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Checkout submodules (CUI)
+        run: git submodule update --init --recursive
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6.1.0
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Submodule revision
+        id: cui
+        shell: pwsh
+        run: echo "sha=$(git rev-parse HEAD:native/CUI)" >> $env:GITHUB_OUTPUT
+
+      - name: Cache the native build
+        id: native-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            native/cui.dll
+            native/cui.lib
+          key: cui-native-${{ runner.os }}-glibc${{ env.CUI_GLIBC_BASELINE }}-${{ steps.cui.outputs.sha }}
+
+      - name: Build CUI (native library)
+        if: steps.native-cache.outputs.cache-hit != 'true'
+        run: ./native/build-native.ps1
+
+      - name: Measure and compare
+        shell: pwsh
+        run: |
+          dotnet run -c Release --project src/CuiSharp.Benchmarks -- --fps 900 |
+            Tee-Object -FilePath benchmark.txt
+          pwsh tools/budget-check.ps1 -Benchmark benchmark.txt
+
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: benchmark
+          path: benchmark.txt
+
+  # The package is what users get, so one job meets it the way they do: pack, scaffold from
+  # the package, build, test, publish a NativeAOT single file and drive it. The Linux leg links
+  # and runs on an image of the promised generation, and the library it links was built inside
+  # debian:11, so an ABI that a newer runner would hide fails here.
+  packaged-consumer:
+    name: Packaged consumer (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-22.04]
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Checkout submodules (CUI)
+        run: git submodule update --init --recursive
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6.1.0
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install X11 headers (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libx11-dev
+
+      - name: Submodule revision
+        id: cui
+        shell: pwsh
+        run: echo "sha=$(git rev-parse HEAD:native/CUI)" >> $env:GITHUB_OUTPUT
+
+      - name: Cache the native build
+        id: native-cache
+        uses: actions/cache@v4
+        with:
+          # Keyed on the submodule commit: a new CUI means a new native build, and nothing else does.
+          path: |
+            native/cui.dll
+            native/cui.lib
+            native/libcui.so
+            native/libcui.a
+            native/libcui.dylib
+          key: cui-native-${{ runner.os }}-glibc${{ env.CUI_GLIBC_BASELINE }}-${{ steps.cui.outputs.sha }}
+
+      - name: Build CUI (native library)
+        if: steps.native-cache.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          if ($IsWindows) { ./native/build-native.ps1 }
+          elseif ($IsMacOS) { bash native/build-native.sh }
+          else { bash native/build-native-container.sh debian:11 }
+
+      # Packs into a private cache, scaffolds from the package, tests (JIT frames through
+      # the software renderer), publishes AOT, checks the executable is alone in its
+      # folder, and drives the result with `dotnet cui`.
+      - name: Verify the template from the package
+        shell: pwsh
+        run: ./tools/verify-template.ps1
 
   # Benchmarks are a regression signal, not a gate: the JSON reports are uploaded
   # so a reviewer can compare a run against the previous one.
@@ -290,7 +497,8 @@ jobs:
         shell: pwsh
         run: |
           if ($IsWindows) { ./native/build-native.ps1 }
-          else { bash native/build-native.sh }
+          elseif ($IsMacOS) { bash native/build-native.sh }
+          else { bash native/build-native-container.sh debian:11 }
 
       # No --job: the suites carry [SimpleJob], and a CLI --job is *added* to those,
       # so every case ran twice. The iteration counts trim that one job instead:

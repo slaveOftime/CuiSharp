@@ -62,6 +62,16 @@ internal sealed unsafe class TextFieldPool
             slot.Buffer = (byte*)NativeMemory.AllocZeroed((nuint)slot.Capacity);
             _slots.Add(id, slot);
         }
+        else if (capacityHint > slot.Capacity)
+        {
+            // The caller asked for more room than the buffer has: the widget is told the
+            // slot's capacity, so growing only on demand would under-report it.
+            byte* grown = (byte*)NativeMemory.AllocZeroed((nuint)capacityHint);
+            NativeMemory.Free(slot.Buffer);
+            slot.Buffer = grown;
+            slot.Capacity = capacityHint;
+            slot.Encoded = null;   // the value must be written into the new buffer
+        }
 
         slot.LastSeen = _frame;
         if (!ReferenceEquals(slot.Encoded, value)) Write(slot, value);

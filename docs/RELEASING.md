@@ -6,8 +6,8 @@ number comes from a gate that can fail.
 ## 1. Decide the version
 
 `Directory.Build.props` holds the single `<Version>` that every package inherits. Pre-1.0 the minor
-number carries new surface and the patch carries fixes. While [PLAN.md](PLAN.md) still has open
-items in §1–§4 the version stays `0.x`; 1.0 is the release where the public surface becomes a
+number carries new surface and the patch carries fixes; the version stays `0.x` until the public
+surface is reviewed as a whole. 1.0 is the release where the public surface becomes a
 promise.
 
 ```xml
@@ -29,6 +29,9 @@ dotnet run -c Release --project src/CuiSharp.Benchmarks -- --fps 900
 
 What each one protects:
 
+The Linux native build must run inside the declared ABI baseline (`debian:11`, glibc 2.31), which is
+what `release.yml` and `ci.yml` pin; `build-native.sh` fails if the produced `libcui.so` needs more.
+
 | Gate | Fails when |
 |---|---|
 | `-warnaserror` | a warning appeared, including a nullable or doc-comment regression |
@@ -38,12 +41,12 @@ What each one protects:
 | `api-surface.ps1` | the public surface changed — read the diff, that is the review |
 | `verify-template.ps1` | what a user gets from `dotnet new` no longer builds, tests, publishes, or is drivable |
 | AOT publish | an IL2xxx/IL3xxx warning appeared |
-| `--fps 900` | the mean frame time is more than 10 % over [PLAN.md](PLAN.md)'s budget, or allocation is not 0 B |
+| `--fps 900` | the mean frame time is more than 10 % over the budget in [PERFORMANCE.md](PERFORMANCE.md), or allocation is not 0 B |
 
 ## 3. Regenerate the face of the release
 
 ```sh
-pwsh tools/snapshots.ps1                                          # light, eleven pages
+pwsh tools/snapshots.ps1                                          # light, thirteen pages
 pwsh tools/snapshots.ps1 -Theme dark -Suffix -dark -Pages overview,charts,studio,data
 ```
 
@@ -52,11 +55,14 @@ their own machine, so they are taken from the app — never edited.
 
 ## 4. Update the record
 
-- `CHANGELOG.md`: a new `## [x.y.z] — date` section, user-facing facts only (new API, behaviour
-  changes, fixes), each with the migration if there is one. Detail stays in the pull request.
-- `docs/PLAN.md`: move finished steps out; the file is only ever "what is left".
-- `llms.txt` and `skills/cui-dotnet/SKILL.md` are generated from the headers; check them in the
-  `regen` diff rather than editing them by hand.
+- `CHANGELOG.md`: move `## [Unreleased]` to `## [x.y.z] — date` and leave a fresh empty one above
+  it. User-facing facts only (new API, behaviour changes, fixes), each with the migration if there
+  is one; detail stays in the pull request. This section *is* the release page: `release.yml` runs
+  `tools/release-notes.ps1` and publishes it verbatim, so a version with no section — or one still
+  under `[Unreleased]` — fails the release instead of shipping without notes. Check it locally with
+  `pwsh tools/release-notes.ps1 -Version x.y.z`.
+- `skills/cui-dotnet/{llms.txt,api/*.md}` are generated from the headers; check them in the `regen`
+  diff rather than editing them by hand. `SKILL.md` beside them is hand-written.
 
 ## 5. Pack and inspect
 
@@ -76,7 +82,7 @@ unzip -l artifacts/packages/CuiSharp.Templates.*.nupkg | head -20
 
 | Package | Must contain |
 |---|---|
-| `CuiSharp` | `lib/net10.0/CuiSharp.dll`, `runtimes/win-x64/native/cui.{dll,lib}`, `analyzers/dotnet/cs/CuiSharp.Analyzers.dll`, `build/CuiSharp.targets`, `README.md` |
+| `CuiSharp` | `lib/net10.0/CuiSharp.dll`, each RID's `runtimes/<rid>/native/` files, `runtimes/native-provenance.txt` (revision, compiler, ABI, hashes — see [native-abi.md](../skills/cui-dotnet/native-abi.md)), `analyzers/dotnet/cs/CuiSharp.Analyzers.dll`, `build/CuiSharp.targets`, `README.md` |
 | `CuiSharp.Testing` | `lib/net10.0/CuiSharp.Testing.dll` and a dependency on `CuiSharp` |
 | `CuiSharp.Tools` | a `DotnetToolSettings.xml` with `CommandName=cui` |
 | `CuiSharp.Templates` | `content/CuiSharp.App/…` including the app, its tests and `AGENTS.md` |
@@ -92,9 +98,12 @@ dotnet new console -n Smoke && cd Smoke
 dotnet add package CuiSharp -s <repo>/artifacts/packages
 # paste the README's five-line example, then:
 dotnet run                       # a window opens
-dotnet publish -c Release -r win-x64
-ls bin/Release/net10.0/win-x64/publish/   # one executable, no cui.dll beside it
+dotnet publish -c Release -r <rid> -p:PublishAot=true
+ls bin/Release/net10.0/<rid>/publish/     # one executable, no native library beside it
 ```
+
+A publish for a RID the package does not carry, or without its archive, is an error naming the RID
+and the path — that is the package refusing to ship a binary that would fail at start.
 
 Then the template, from the same local feed:
 

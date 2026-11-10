@@ -57,6 +57,8 @@ $all = @(
     [pscustomobject]@{ Number = '09'; Key = 'charts';     Label = 'Charts' }
     [pscustomobject]@{ Number = '10'; Key = 'studio';     Label = 'Studio' }
     [pscustomobject]@{ Number = '11'; Key = 'tools';      Label = 'Tools' }
+    [pscustomobject]@{ Number = '12'; Key = 'devtools';   Label = 'Developer tools' }
+    [pscustomobject]@{ Number = '13'; Key = 'devtools2';  Label = 'More developer tools' }
 )
 
 $chosen = if ($wantedPages.Count -eq 0) { $all } else {

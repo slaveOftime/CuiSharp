@@ -16,6 +16,7 @@ native/libcui.so
 native/libcui.a
 native/*.exp
 native/*.pdb
+native/native-provenance.txt
 
 # BenchmarkDotNet scratch
 BenchmarkDotNet.Artifacts/
@@ -23,7 +24,9 @@ BenchmarkDotNet.Artifacts/
 # Test output
 TestResults/
 *.trx
-coverage.*
+# Anchored: unanchored, coverage.* also matched Ui/Coverage.g.cs on Windows
+# (core.ignoreCase), and the generated wrapper silently never got committed.
+/coverage.*
 # ...but the binding coverage manifest is generated evidence and is committed.
 !bindings/coverage.txt
 

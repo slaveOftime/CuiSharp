@@ -62,7 +62,7 @@ public static unsafe class DataGridUiExtensions
         /// <summary>Editable text cell: double click (or Enter on the cursor row) to edit, Enter or clicking away commits, Esc reverts. True when committed.</summary>
         public bool DataGridCellEdit(ref string buf, int cap)
         {
-            var __bufSlot = ui.RentText(Native.MakeId(ui.Handle, Utf8.Get(buf)), ref buf, (int)cap);
+            var __bufSlot = ui.RentText(Native.MakeId(ui.Handle, Utf8.Get(buf)) ^ 0x8d22cccbu, ref buf, (int)cap);
             var __result = Native.DataGridCellEdit(ui.Handle, (nint)__bufSlot.Buffer, (nuint)__bufSlot.Capacity);
             if (Ui.TextChanged(__bufSlot)) buf = Ui.DecodeText(__bufSlot);
             return __result != 0;
@@ -71,7 +71,7 @@ public static unsafe class DataGridUiExtensions
         /// <summary>The same editable text, inside the current cell (after an avatar, say).</summary>
         public bool DataGridEdit(ref string buf, int cap)
         {
-            var __bufSlot = ui.RentText(Native.MakeId(ui.Handle, Utf8.Get(buf)), ref buf, (int)cap);
+            var __bufSlot = ui.RentText(Native.MakeId(ui.Handle, Utf8.Get(buf)) ^ 0x05b0b400u, ref buf, (int)cap);
             var __result = Native.DataGridEdit(ui.Handle, (nint)__bufSlot.Buffer, (nuint)__bufSlot.Capacity);
             if (Ui.TextChanged(__bufSlot)) buf = Ui.DecodeText(__bufSlot);
             return __result != 0;
@@ -92,79 +92,10 @@ public static unsafe class DataGridUiExtensions
         {
             var __fields = Utf8.AllocFrame<NativeFilterField>(fields.Length);
             for (int i = 0; i < fields.Length; i++) __fields[i] = fields[i].ToNative();
-            var __searchSlot = ui.RentText(Native.MakeId(ui.Handle, Utf8.Get(id)), ref search, (int)searchCap);
+            var __searchSlot = ui.RentText(Native.MakeId(ui.Handle, Utf8.Get(id)) ^ 0xa0d7bcf1u, ref search, (int)searchCap);
             var __result = Native.FilterBar(ui.Handle, Utf8.Get(id), (nint)__fields, (int)(fields.Length), ref selected, (nint)__searchSlot.Buffer, (nuint)__searchSlot.Capacity);
             if (Ui.TextChanged(__searchSlot)) search = Ui.DecodeText(__searchSlot);
             WidgetRecorder.Note(ui.Handle, "FilterBar", id);
-            return __result != 0;
-        }
-
-        /// <summary>The next row in view: returns its node, or -1 when done. Then build its cells: cui_tree_table_name first, then cui_data_grid_cell(_text).</summary>
-        public int TreeTableRow()
-        {
-            var __result = Native.TreeTableRow(ui.Handle);
-            return __result;
-        }
-
-        /// <summary>The first cell: indentation, guides, the chevron, an icon and the name (cut short with a tooltip of the whole name when it does not fit).</summary>
-        public void TreeTableName(UiText label, UiText icon)
-        {
-            Native.TreeTableName(ui.Handle, Utf8.Get(label), Utf8.Get(icon));
-            WidgetRecorder.Note(ui.Handle, "TreeTableName", label);
-        }
-
-        /// <summary>cui_tree_table_depth</summary>
-        public int TreeTableDepth()
-        {
-            var __result = Native.TreeTableDepth(ui.Handle);
-            return __result;
-        }
-
-        /// <summary>cui_path_bar_ex</summary>
-        public PathBarResult PathBar(UiText id, ReadOnlySpan<string> segments, PathBarOpts o = default)
-        {
-            var __opts = o.ToNative();
-            var __result = Native.PathBar(ui.Handle, Utf8.Get(id), UiMarshal.Strings(segments), (int)(segments.Length), in __opts);
-            WidgetRecorder.Note(ui.Handle, "PathBar", id);
-            return PathBarResult.FromNative(__result);
-        }
-
-        /// <summary>True while the menu of separator *segment is showing: build menu items for the children of that segment, then call cui_path_bar_menu_end.</summary>
-        public OpenScope PathBarMenu(UiText id, ref int segment)
-        {
-            var __result = Native.PathBarMenuBegin(ui.Handle, Utf8.Get(id), ref segment);
-            return new OpenScope(ui.Handle, ScopeKind.PathBarMenu, "PathBarMenu", id, __result != 0);
-        }
-
-        /// <summary>Draws the body only when the container opens, and closes it on exceptions.</summary>
-        public void PathBarMenu(UiText id, ref int segment, DrawFn body)
-        {
-            ArgumentNullException.ThrowIfNull(body);
-            using var scope = ui.PathBarMenu(id, ref segment);
-            if (scope) body(ui);
-        }
-
-        /// <summary>path: the folder shown, yours; the browser writes it as you move around.</summary>
-        public FileBrowserResult FileBrowser(UiText id, ref string path, int pathCap = 1024, FileBrowserOpts o = default)
-        {
-            var __pathSlot = ui.RentText(Native.MakeId(ui.Handle, Utf8.Get(id)), ref path, (int)pathCap);
-            var __opts = o.ToNative();
-            var __result = Native.FileBrowser(ui.Handle, Utf8.Get(id), (nint)__pathSlot.Buffer, (nuint)__pathSlot.Capacity, in __opts);
-            if (Ui.TextChanged(__pathSlot)) path = Ui.DecodeText(__pathSlot);
-            WidgetRecorder.Note(ui.Handle, "FileBrowser", id);
-            return FileBrowserResult.FromNative(__result);
-        }
-
-        /// <summary>True once, with the chosen path in out, when the dialog is confirmed; *open turns false then, or on Cancel and Esc.</summary>
-        public bool FilePicker(UiText id, ref bool open, ref string @out, int outCap = 1024, FilePickerOpts o = default)
-        {
-            byte __open = (byte)(open ? 1 : 0);
-            var __outSlot = ui.RentText(Native.MakeId(ui.Handle, Utf8.Get(id)), ref @out, (int)outCap);
-            var __opts = o.ToNative();
-            var __result = Native.FilePicker(ui.Handle, Utf8.Get(id), (nint)(&__open), (nint)__outSlot.Buffer, (nuint)__outSlot.Capacity, in __opts);
-            open = __open != 0;
-            if (Ui.TextChanged(__outSlot)) @out = Ui.DecodeText(__outSlot);
-            WidgetRecorder.Note(ui.Handle, "FilePicker", id);
             return __result != 0;
         }
 

@@ -118,6 +118,14 @@
     "cui_file_picker_ex.out_cap": {
       "value": "1024",
       "why": "The picked path fits any real path, so the common call reads `ui.FilePicker(id, ref open, ref path)`."
+    },
+    "cui_schedule_picker_ex.cap": {
+      "value": "128",
+      "why": "A five-field expression and its spacing fit any real schedule, so the common call reads `ui.SchedulePicker(id, ref cron)`."
+    },
+    "cui_request_bar_ex.cap": {
+      "value": "2048",
+      "why": "Room for a URL with a full query, so the common call reads `ui.RequestBar(id, ref method, ref url)`."
     }
   },
   "parameterStorage": {
@@ -188,6 +196,15 @@
     "cui_cropper_ex.crop": {
       "storage": "value",
       "why": "The crop rectangle, converted for the call and read back after dragging."
+    },
+    "cui_trace_view_ex.view": {
+      "storage": "value",
+      "why": "The visible range and scroll are an in/out record: converted for the call and written back."
+    },
+    "cui_request_bar_ex.method": {
+      "storage": "enum",
+      "type": "HttpMethod",
+      "why": "CUI takes an int* the method menu writes: the wrapper keeps the caller's HttpMethod and hands over the int behind it."
     }
   },
   "scopes": {
@@ -524,10 +541,10 @@
       "why": "`CuiApp.Backend` (CuiApp.cs)."
     },
     "cui_app_file_dialog": {
-      "why": "`CuiApp.FileDialog` (CuiApp.cs) returns the chosen path or null."
+      "why": "`CuiWindow.PickFile` (CuiWindow.cs) returns a FilePickResult: picked, cancelled or failed, with the path."
     },
     "cui_app_open_url": {
-      "why": "`CuiApp.OpenUrl` (CuiApp.cs)."
+      "why": "`CuiWindow.OpenUrl` (CuiWindow.cs)."
     },
     "cui_app_screenshot": {
       "why": "`CuiApp.Screenshot` (CuiApp.cs)."
@@ -675,6 +692,36 @@
     },
     "cui_state_on_free": {
       "why": "`ui.State<T>(id, onFree)` (Ui.Draw.cs) reserves a state block whose header holds the callback, and the frame-callback bridge supplies the disposer CUI calls when it evicts that id."
+    },
+    "cui_regex_search": {
+      "why": "`CuiRegex.TrySearch(pattern, text, out match, out error, from, flags)` (Ui/CuiRegex.cs): the engine behind the tester, with the groups and their names decoded."
+    },
+    "cui_cron_next": {
+      "why": "`CuiCron.TryNext(cron, after, out next, utcOffsetMinutes)` (Ui/CuiCron.cs): the next run in a DateTimeOffset."
+    },
+    "cui_query_op_name": {
+      "why": "`CuiQuery.OperatorName(type, op)` and `OperatorCount(type)` (Ui/CuiQuery.cs)."
+    },
+    "cui_query_text": {
+      "why": "`CuiQuery.Text(fields, nodes, capacity)` (Ui/CuiQuery.cs) writes the sentence into the frame arena and copies it out."
+    },
+    "cui_query_match": {
+      "why": "`CuiQuery.Match(fields, nodes, values)` (Ui/CuiQuery.cs) tests a record's values against the filter."
+    },
+    "cui_trace_sort": {
+      "why": "`CuiFiles.SortTraceSpans(spans)` (Ui/CuiFiles.cs), beside the flame graph's own sort."
+    },
+    "cui_http_reason": {
+      "why": "`CuiHttp.Reason(status)` (Ui/CuiHttp.cs)."
+    },
+    "cui_http_method_name": {
+      "why": "`CuiHttp.MethodName(method)` (Ui/CuiHttp.cs)."
+    },
+    "cui_url_params": {
+      "why": "`CuiHttp.ParseQuery(url, capacity)` (Ui/CuiHttp.cs) decodes the query into KeyValue pairs."
+    },
+    "cui_url_set_params": {
+      "why": "`CuiHttp.SetQuery(url, pairs, capacity)` (Ui/CuiHttp.cs) returns the rewritten URL, or null when it does not fit."
     }
   },
   "outParams": {
@@ -701,7 +748,10 @@
     "cui_app": {
       "why": "Window/app ownership belongs to CuiApp; CuiSurface exposes the supported subset."
     },
-    "cui_render": {
+    "OpenGL renderer": {
+      "why": "Renderer interfaces are consumed by CuiSurface and the software raster path, not by Ui."
+    },
+    "software renderer": {
       "why": "Renderer interfaces are consumed by CuiSurface and the software raster path, not by Ui."
     },
     "Draw data (consumed by renderers)": {
@@ -956,6 +1006,174 @@
     "cui_image_view": {
       "name": "ImageView",
       "why": "An image viewer's zoom and centre, in image pixels."
+    },
+    "cui_diagnostic": {
+      "name": "ProblemItem",
+      "why": "One row of the problems panel: severity, position, source and code. Named for the panel, not Diagnostic, because that is Microsoft.CodeAnalysis.Diagnostic and System.Diagnostics.DiagnosticSource's name and an app that shows compiler diagnostics has both in scope."
+    },
+    "cui_pipeline_job": {
+      "name": "PipelineJob",
+      "why": "One CI job: its stage, status and duration. Copied into the frame arena by the wrapper."
+    },
+    "cui_query_field": {
+      "name": "QueryField",
+      "why": "One field a rule can filter on, with the choices a picker offers. Copied into the frame arena by the wrapper."
+    },
+    "cui_query_node": {
+      "name": "QueryNode",
+      "why": "One node of the filter tree, a rule or a group. The caller owns the array and the builder edits it in place."
+    },
+    "cui_keymap_binding": {
+      "name": "KeymapBinding",
+      "why": "One shortcut on the keyboard: its key, action and category. Copied into the frame arena by the wrapper."
+    },
+    "cui_commit": {
+      "name": "Commit",
+      "why": "One row of a commit graph: message, author, refs and its parents by row. Copied into the frame arena by the wrapper."
+    },
+    "cui_graph_node": {
+      "name": "GraphNode",
+      "why": "One node of a dependency graph. Copied into the frame arena by the wrapper."
+    },
+    "cui_graph_edge": {
+      "name": "GraphEdge",
+      "why": "One directed edge between two node indices. Copied into the frame arena by the wrapper."
+    },
+    "cui_net_request": {
+      "name": "NetRequest",
+      "why": "One request of a network waterfall, with its six timing phases. Copied into the frame arena by the wrapper."
+    },
+    "cui_trace_track": {
+      "name": "TraceTrack",
+      "why": "One lane of a trace viewer. Copied into the frame arena by the wrapper."
+    },
+    "cui_trace_span": {
+      "name": "TraceSpan",
+      "why": "One span in a trace lane, nested by depth. Sorted by cui_trace_sort before it is drawn."
+    },
+    "cui_trace_marker": {
+      "name": "TraceMarker",
+      "why": "One marker drawn across every lane: a frame, a GC pause, a deploy."
+    },
+    "cui_test_item": {
+      "name": "TestItem",
+      "why": "One row of a test tree: a suite or a test, with its status and duration."
+    },
+    "cui_stack_frame": {
+      "name": "StackFrame",
+      "why": "One call frame, with the source lines around it when its file is known."
+    },
+    "cui_uptime_service": {
+      "name": "UptimeService",
+      "why": "One status-page service with its per-day availability, oldest first."
+    },
+    "cui_histogram_series": {
+      "name": "HistogramSeries",
+      "why": "One series of an event histogram: a name, a count per bucket and a tone."
+    },
+    "cui_coverage_file": {
+      "name": "CoverageFile",
+      "why": "One file's line, branch and function coverage. The paths make the tree."
+    },
+    "cui_blame_commit": {
+      "name": "BlameCommit",
+      "why": "One commit in a blame gutter: hash, author, summary and time."
+    },
+    "cui_feature_flag": {
+      "name": "FeatureFlag",
+      "why": "One flag with a switch and a rollout per environment. The caller owns the array and the widget edits it in place."
+    },
+    "cui_api_endpoint": {
+      "name": "ApiEndpoint",
+      "why": "One endpoint of an API explorer, with the parameters it takes."
+    },
+    "cui_api_param": {
+      "name": "ApiParam",
+      "why": "One parameter of an endpoint: where it goes, its type and whether it is required."
+    },
+    "cui_kv_pair": {
+      "name": "KeyValue",
+      "why": "One key and value pair, enabled or secret. The caller owns the array and the editor edits it in place."
+    },
+    "cui_text_mark": {
+      "name": "TextMark",
+      "why": "One highlighted byte range in a code editor, colored by index."
+    },
+    "cui_problems_result": {
+      "name": "ProblemsResult",
+      "why": "What the problems panel reports: the selection, what was activated and how many rows passed the filters."
+    },
+    "cui_pipeline_result": {
+      "name": "PipelineResult",
+      "why": "The job under the pointer and the job clicked, or -1."
+    },
+    "cui_schedule_result": {
+      "name": "ScheduleResult",
+      "why": "Whether the cron expression changed, whether it is valid, and when it runs next."
+    },
+    "cui_keymap_result": {
+      "name": "KeymapResult",
+      "why": "The key clicked, or 0, and how many keys conflict, so an app can warn before a shortcut is added."
+    },
+    "cui_commit_graph_result": {
+      "name": "CommitGraphResult",
+      "why": "The commit clicked, activated or hovered, or -1."
+    },
+    "cui_graph_result": {
+      "name": "GraphResult",
+      "why": "The node clicked, activated or hovered, or -1."
+    },
+    "cui_waterfall_result": {
+      "name": "WaterfallResult",
+      "why": "The request clicked, activated or hovered, or -1."
+    },
+    "cui_trace_result": {
+      "name": "TraceResult",
+      "why": "Whether the selection or the view changed, and the span hovered."
+    },
+    "cui_regex_tester_result": {
+      "name": "RegexTesterResult",
+      "why": "Whether the pattern compiles, how many matches it found, and why it does not."
+    },
+    "cui_test_explorer_result": {
+      "name": "TestExplorerResult",
+      "why": "The selection, what was activated or run, and the pass and fail counts."
+    },
+    "cui_stack_trace_result": {
+      "name": "StackTraceResult",
+      "why": "The frame clicked, or -1."
+    },
+    "cui_request_bar_result": {
+      "name": "RequestBarResult",
+      "why": "Whether Send or Cancel was pressed, and whether the method or the URL changed."
+    },
+    "cui_uptime_result": {
+      "name": "UptimeResult",
+      "why": "The service and day under the pointer, or -1."
+    },
+    "cui_time_histogram_result": {
+      "name": "TimeHistogramResult",
+      "why": "Whether the selected range changed, and the bucket hovered."
+    },
+    "cui_coverage_result": {
+      "name": "CoverageResult",
+      "why": "The file activated, or -1, and the overall line coverage."
+    },
+    "cui_blame_result": {
+      "name": "BlameResult",
+      "why": "The commit clicked or hovered, or -1."
+    },
+    "cui_feature_flags_result": {
+      "name": "FeatureFlagsResult",
+      "why": "The flag and environment changed this frame, or -1."
+    },
+    "cui_api_explorer_result": {
+      "name": "ApiExplorerResult",
+      "why": "The endpoint selected or tried, or -1."
+    },
+    "cui_trace_view": {
+      "name": "TraceViewState",
+      "why": "The visible time range, the scroll and the measured range: the caller owns it and the viewer moves it. Named State because the widget's member is already TraceView."
     }
   },
   "extraOptionFields": {
@@ -1048,6 +1266,42 @@
     },
     "cui_tree_table_begin_ex": {
       "why": "Its `_end` returns a `cui_tree_table_events` struct holding a frame-memory `const int *load` plus its count: a record cannot carry a span, and copying it into an array every frame would allocate on the hot path. Rows, names and depths are wrapped; the lazy-load list stays raw."
+    },
+    "cui_regex_search": {
+      "why": "C helper: the regex engine. A static utility: the tester draws with it, and an app that searches its own data calls it without a frame."
+    },
+    "cui_cron_next": {
+      "why": "C helper: cron evaluation into a caller-owned int64. A static utility, not a frame call."
+    },
+    "cui_query_op_name": {
+      "why": "C helper: an operator's name by index. A static utility; the builder that shows the picker draws it."
+    },
+    "cui_query_text": {
+      "why": "C helper: renders a query into a caller buffer. Not a frame call; the builder wraps what it needs."
+    },
+    "cui_query_match": {
+      "why": "C helper: the filter test. Not a frame call; an app filtering its own list calls it directly."
+    },
+    "cui_trace_sort": {
+      "why": "C helper: orders spans in place. A static utility for a caller-owned array."
+    },
+    "cui_http_reason": {
+      "why": "C helper: a status code to its reason phrase. A static utility."
+    },
+    "cui_http_method_name": {
+      "why": "C helper: a method enum to its name. A static utility."
+    },
+    "cui_url_params": {
+      "why": "C helper: fills a caller-owned pair array. Not a frame call; the request bar wraps what it needs."
+    },
+    "cui_url_set_params": {
+      "why": "C helper: encodes pairs into a caller buffer. Not a frame call."
+    },
+    "cui_set_strings": {
+      "why": "CUI keeps the pointer and reads the table every frame, so the wrapper needs storage that outlives the call; the frame arena cannot provide it. A Localization owner is the shape this needs (docs/PLAN.md), and until it exists an app that translates calls the raw layer."
+    },
+    "cui_get_strings": {
+      "why": "Returns the pointer CUI keeps, which is the caller's own table or NULL for English: there is nothing to copy without the Localization owner above."
     }
   },
   "arrayLengths": {
@@ -1072,6 +1326,12 @@
       "cast": "int",
       "emit": false,
       "why": "One peak per channel, and `channels` is already a parameter: the wrapper checks the array against it."
+    },
+    "cui_blame_ex.lines": {
+      "length": "lineCommit.Length",
+      "cast": "int",
+      "emit": false,
+      "why": "Native reads one line per commit index, counted by the adjacent `line_count`, so the wrapper checks the two arrays agree and passes no length of its own."
     }
   },
   "stringResults": {
@@ -1080,6 +1340,9 @@
     },
     "cui_emoji_picker_ex": {
       "why": "Returns the picked emoji as a UTF-8 string in frame memory, or NULL while nothing is picked."
+    },
+    "cui_cron_describe": {
+      "why": "Returns a sentence in CUI frame memory, or NULL when the expression is invalid: the wrapper copies it."
     }
   },
   "textFields": {
@@ -1126,6 +1389,22 @@
     "cui_file_picker_ex.out": {
       "capacity": "out_cap",
       "why": "The picked path is written into this buffer when the dialog closes."
+    },
+    "cui_schedule_picker_ex.cron": {
+      "capacity": "cap",
+      "why": "The cron expression is a caller-owned string the picker reads and rewrites, so the wrapper rents it, passes it and reads it back."
+    },
+    "cui_request_bar_ex.url": {
+      "capacity": "cap",
+      "why": "The URL is a caller-owned string the bar edits (and Enter sends), so the wrapper rents it and reads it back."
+    },
+    "cui_regex_tester_ex.pattern": {
+      "capacity": "pattern_cap",
+      "why": "The pattern is a caller-owned string the tester edits, so the wrapper rents it and reads it back."
+    },
+    "cui_regex_tester_ex.text": {
+      "capacity": "text_cap",
+      "why": "The test text is a caller-owned string the tester edits, so the wrapper rents it and reads it back."
     }
   },
   "scopeResults": {
@@ -1223,6 +1502,34 @@
     "cui_emoji_picker_opts.tone": {
       "type": "int",
       "why": "The skin tone the picker changes (0 none .. 5 dark): `ref int` beside the options."
+    },
+    "cui_pipeline_opts.selected": {
+      "type": "int",
+      "why": "The selected job: a click moves it, so the wrapper takes a ref int and writes it back."
+    },
+    "cui_commit_graph_opts.selected": {
+      "type": "int",
+      "why": "The selected commit: the keys and a click move it, so the wrapper writes it back."
+    },
+    "cui_graph_opts.selected": {
+      "type": "int",
+      "why": "The selected node: a click moves it, so the wrapper writes it back."
+    },
+    "cui_waterfall_opts.selected": {
+      "type": "int",
+      "why": "The selected request: the keys and a click move it, so the wrapper writes it back."
+    },
+    "cui_api_explorer_opts.selected": {
+      "type": "int",
+      "why": "The open endpoint: a click moves it, so the wrapper writes it back."
+    },
+    "cui_keymap_opts.mods": {
+      "type": "Mods",
+      "why": "The modifiers the keyboard shows; the widget keeps them when it is null, so the wrapper passes a ref Mods."
+    },
+    "cui_regex_tester_opts.flags": {
+      "type": "RegexFlags",
+      "why": "The CUI_REGEX_* flags the tester toggles, so the wrapper passes a ref RegexFlags and writes it back."
     }
   },
   "arrayParams": {
@@ -1237,6 +1544,9 @@
     },
     "series@cui_scatter_chart_ex": {
       "why": "Scatter series are an array of records; count follows."
+    },
+    "line_commit@cui_blame_ex": {
+      "why": "One commit index per source line: an array despite the singular name, counted by the adjacent line_count."
     }
   },
   "optionArrayChecks": {
@@ -1268,11 +1578,28 @@
   "inOutArrays": {
     "cui_curve_editor_ex.keys": {
       "count": "count",
-      "why": "The editor moves, adds and removes keys: the wrapper copies the array and its count back."
+      "why": "The editor moves, adds and removes keys: the wrapper copies the array and its count back, on the frames it reports a change.",
+      "changedWhen": "__result.Changed != 0"
     },
     "cui_gradient_editor_ex.stops": {
       "count": "count",
-      "why": "The editor moves, adds and removes stops: the wrapper copies the array and its count back."
+      "why": "The editor moves, adds and removes stops: the wrapper copies the array and its count back, on the frames it reports a change.",
+      "changedWhen": "__result.Changed != 0"
+    },
+    "cui_kv_editor_ex.pairs": {
+      "count": "count",
+      "why": "The editor adds, edits and removes pairs: the wrapper copies the array and its count back, on the frames it reports a change, because converting a pair allocates its key and value strings.",
+      "changedWhen": "__result != 0"
+    },
+    "cui_query_builder_ex.nodes": {
+      "count": "count",
+      "why": "The builder adds, edits and removes nodes: the wrapper copies the array and its count back, on the frames it reports a change, because converting a node allocates its value string.",
+      "changedWhen": "__result != 0"
+    },
+    "cui_feature_flags_ex.flags": {
+      "count": "count",
+      "why": "The widget flips switches and sets rollouts: the wrapper copies the flags back on the frame the result names a changed flag, because converting one allocates its switch and rollout arrays.",
+      "changedWhen": "__result.Flag >= 0"
     }
   },
   "hiddenOptionFields": {
@@ -1302,6 +1629,10 @@
     "cui_fader_opts.meter": {
       "count": "meter_channels",
       "why": "The fader's meter takes `meter_channels` peaks, not `meter_count`."
+    },
+    "cui_keymap_opts.categories": {
+      "count": "category_count",
+      "why": "The legend's names are counted by `category_count`, not `category_count`'s plural form."
     }
   },
   "optionTextFields": {

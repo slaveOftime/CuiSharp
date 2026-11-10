@@ -16,12 +16,14 @@ a UI that needs an accessibility tree (CUI publishes none).
 
 1. [The one rule](#the-one-rule) · [A whole app](#a-whole-app) · [Cheat sheet](#cheat-sheet)
 2. [Frame-local types](#frame-local-types-and-text) · [Containers](#containers-are-using-scopes) ·
-   [Sizing](#sizing) · [Options](#options-are-init-properties) · [Colours](#colours-come-from-the-theme)
+   [Sizing](#sizing) · [Options](#options-are-structs-of-fields) · [Colours](#colours-come-from-the-theme)
 3. [State in `ref`](#state-goes-in-ref) · [Conditional containers](#containers-that-may-be-closed) ·
    [Custom controls](#custom-controls) · [Long series](#long-series-and-live-data)
 4. [Pitfalls](#pitfalls) · [Async work](#async-work) · [Renderer](#where-it-renders) · [Keyboard](#keyboard) ·
    [Theming](#theming) · [Design rules](#design-rules)
-5. [Testing](#testing-without-a-window) · [Driving a real app](#driving-a-running-app) · [Files](#files)
+5. [How to work on a UI](#how-to-work-on-a-ui) · [Testing](#testing-without-a-window) ·
+   [Driving a real app](#driving-a-running-app) · [Widget behaviour](#widget-behaviour) ·
+   [Files](#files)
 
 ## The one rule
 
@@ -130,9 +132,11 @@ A component that sizes itself (`Button`, `Badge`, `Heading`) takes no size. A co
 space (`Table`, `Chart`, `VirtualList`, `Canvas`) needs one: `Height = Size.Px(300)` or
 `Size.Fill`.
 
-## Options are `init` properties
+## Options are structs of fields
 
-One struct per component, named `<Component>Opts`, all-defaulted to CUI's own defaults:
+One struct per component, named `<Component>Opts`, all-defaulted to CUI's own defaults. Its members
+are public fields, so the object initializer is the whole API — there are no `init` accessors and
+nothing to construct with a builder:
 
 ```csharp
 ui.Button("Save", new ButtonOpts { Variant = ButtonVariant.Primary, Icon = Icons.Check });
@@ -169,8 +173,8 @@ an edit.
 ```csharp
 private string _name = "Maya Okafor";       // plain state
 
-if ((ui.Input("name", ref _name, new InputOpts { Label = "Full name" }) & CuiFlags.CUI_CHANGED) != 0)
-    Save(_name);
+InputResult result = ui.Input("name", ref _name, new InputOpts { Label = "Full name" });
+if (result.Changed) Save(_name);      // also .Submitted, .Focused, .Blurred, .Any
 ```
 
 `TextArea`, `Search`, `TagInput` and `OtpInput` work the same way.
@@ -211,7 +215,7 @@ internal static class MyControls
 {
     extension(Ui ui)
     {
-        public void Spark(ReadOnlySpan<float> values) =>
+        public void Spark(float[] values) =>        // an array: a paint lambda cannot capture a Span
             ui.Canvas("spark", Size.Fill, Size.Px(60), (paint, box) =>
             {
                 for (int i = 1; i < values.Length; i++)
@@ -343,6 +347,36 @@ Follow these or the result looks generic:
 - Spacing has rhythm: tight inside a group, clearly looser between groups.
 - Report a result in place ("Saved") rather than in a toast.
 
+## How to work on a UI
+
+Write the test first, then make it pass. It is the fastest loop and the only one that leaves
+evidence behind.
+
+1. **Model and layout belong in a test.** `TestApp.Start(page, 800, 600)` draws frames on demand, so
+   a click is deterministic, nothing sleeps, and the whole check costs milliseconds. Set the state
+   you need directly (`page.Draft = "Milk"`) instead of clicking your way to it.
+2. **Look at the pixels when the question is visual.** A semantic tree cannot tell you that a label
+   overflows, that two things overlap, or that the contrast is unreadable. `app.SavePng(...)` from a
+   test, or `dotnet cui png out.png` from the shell, then look at the file.
+3. **`dotnet cui` is for reaching the app the tests cannot.** It runs the real entry point, its real
+   startup code and its real size, with no edit to the app:
+
+   ```sh
+   dotnet cui tree          # what the first frame drew
+   dotnet cui click Save    # the frame that reacted
+   dotnet cui png shot.png  # the frame as an image
+   ```
+
+   Use it to see what a build actually starts up as, or to reproduce a bug in the shipped binary.
+   Do not build a workflow on it: a command costs a process, and a suite of them cannot be rerun by
+   anyone else.
+4. **Edit and look, repeatedly.** For a running window, `dotnet watch` in one terminal and edit in
+   the other; the app restarts or reloads and you look at it. That is a human loop — an agent should
+   prefer the test, because a test says pass or fail without anybody looking.
+
+The rule underneath all four: **one reproduction per task, in a file.** If a check mattered once, it
+belongs in the test suite, not in a shell history.
+
 ## Testing without a window
 
 `CuiSharp.Testing` drives the real component with no window. Frames happen when the test asks, so a
@@ -365,6 +399,14 @@ Assert.True(app.PaintedAnything());
   it — and a control beats a heading that repeats the text.
 - `MoveTo`, `Press`, `Release`, `Type`, `Key`, `Focus`, `Frame(n)` are the whole input surface; each
   draws the frames the input needs.
+- Time is not free: `Frame(n)` does not move the clock, so `app.Advance(TimeSpan, frames)` is how an
+  animation gets somewhere, and `app.Settle()` draws until nothing wants another frame instead of
+  the `sleep` loop every snapshot test used to write by hand. `app.Animating` is the flag behind it.
+- Name a control by id, not by the words on it, or the test breaks when the UI is translated:
+  `app.FindById("draft")`, `app.FindItem("pages", 1)` (the second tab, whatever it says), and
+  `id:draft` in a query string. `Find`/`FindButton` still rank by label for exploration.
+- `app.SavePng()` takes the pointer off the UI first, so a tooltip the last click left behind is not
+  in the picture; `app.ParkPointer()` does the same without saving.
 - A tab strip and a segmented control record each item, so `Find("Segment", "Dark")` and
   `click Markets` address the item, not the middle of the strip. Any other multi-item widget records
   the widget, and a test clicks it once.
@@ -398,23 +440,38 @@ speaks one command per line. No window, no code added to the app.
 ```sh
 dotnet cui tree                     # the controls of the last frame, nested
 dotnet cui find Save                # one control: kind, label, rectangle
+dotnet cui find id:draft            # or by the id the app gave it, in any language
 dotnet cui click Save               # click it, print the frame that reacted
 dotnet cui click Button "Save type" # be specific when a label is ambiguous
 dotnet cui click editor > Save      # or name the path to the control
 dotnet cui type Milk                # type into the focused control
 dotnet cui key Tab                  # a key by name
 dotnet cui png frame.png            # the frame as a PNG, to look at
-dotnet cui --stdin < commands.txt   # one process for a whole session
+dotnet cui --stdin < commands.txt   # many commands against one build, in order
 ```
+
+`--stdin` is the cheapest way to explore an app you have not read: one build, one startup, a page of
+answers. State carries across the commands because it is one process — but a run leaves nothing
+behind, so anything that should be checked twice belongs in a test instead.
 
 - `click` answers with the frame *after* the click; a transition may need `frame N` first.
 - `--frames N` draws N frames before the command; `--app bin/App.exe` inspects a published build;
   `--no-build` reuses the last build; `--` passes the rest to the app.
 - The app's own output — `Console.WriteLine`, a logger, a stack trace — reaches your stderr, so stdout
   is exactly the answer you asked for.
+- Text in a script the bundled Latin faces do not cover draws nothing at all, with no box and no
+  warning. `ui.UseSystemFontFallback("中文")` finds the face this machine has for it and registers it
+  as a fallback; call it once at startup, and check the language you ship.
 - The app serves this itself (`CUISHARP_HEADLESS=1`), so any app works.
   `<RuntimeHostConfigurationOption Include="CuiSharp.Headless" Value="false" Trim="true" />` removes
   it from a binary that wants the bytes back.
+
+## Widget behaviour
+
+Every component's behaviour — selection, focus, keyboard, what a return value means, when state
+survives a frame — is in `widgets.md` and `widgets-more.md`, beside this guide. Read the page for the
+widget instead of guessing from a signature: a data grid keeps its selection in your variables, a
+dialog is modal, a dropzone returns the paths it received.
 
 ## Components
 
@@ -430,6 +487,8 @@ dotnet cui --stdin < commands.txt   # one process for a whole session
 - **Studio** — `Knob(id, ref float, min, max)`, `Fader(id, ref float, min, max)`, `LevelMeter(id, values)`
 - **Calendar** — `MonthCalendar(id, ref Date, events, ref Date selected, MonthOpts)` returning `MonthResult`
 - **Workspace** — `Terminal(id, terminal, TerminalOpts)`, `LogView(id, log, LogViewOpts)`, `HexView`, `DiffView`, `CodeEditor`, `FileBrowser`, `FilePicker`, `ImageViewer`, `Cropper`
+- **Developer tools** — `TraceView(id, tracks, spans, ref TraceViewState, ref int selected)`, `Waterfall(id, requests, ref int selected)`, `GraphView(id, nodes, edges, ref int selected)`, `CommitGraph`, `Pipeline(id, stages, jobs, ref int selected)`, `Problems(id, items)`, `KvEditor(id, pairs, ref int count, capacity)`, `QueryBuilder(id, fields, nodes, ref int count, capacity)`, `SchedulePicker(id, ref string cron)`, `Keymap`, `TestExplorer`, `StackTrace`, `Blame`, `Coverage`, `RegexTester(id, ref pattern, patternCap, ref text, textCap, ref RegexFlags)`, `RequestBar(id, ref HttpMethod, ref url)` + `ResponseStatus`, `ApiExplorer`, `FeatureFlags(id, flags, envs)`, `Uptime`, `TimeHistogram` — each returns a typed result record, and the arrays it edits (`KvEditor`, `QueryBuilder`, `FeatureFlags`, the editors) come back through the `Span` you pass
+- **Without a frame** — the pure helpers the widgets use, callable from a component or a test: `CuiRegex.TrySearch(…)` with its groups, `CuiCron.TryNext(…)`, `CuiHttp.ParseQuery`/`SetQuery`/`Reason`/`MethodName`, `CuiQuery.Text`/`Match`/`OperatorName`, `CuiFiles.ListDirectory`/`SortFlameSpans`/`SortTraceSpans`, `CuiMath.EvaluateCurve`/`EvaluateGradient`/`DiffLines`
 - **AI interfaces** — `ChatComposer`, `ModelPicker`, `PromptSuggestions`, `Reasoning`, `ResponseActions`, `Citation`, `ContextMeter`, `AgentPlan`, `AgentStatus`
 - **Onboarding** — `Tour(id, steps, ref int step, TourOpts)`; build each `TourStep.Target` from `ui.LastId` right after the control
 - **Custom drawing** — inside `ui.Canvas(...)`, see [Custom controls](#custom-controls)
@@ -438,18 +497,23 @@ dotnet cui --stdin < commands.txt   # one process for a whole session
 - **Icons** — 168 constants generated from `cui_icons.h`: `Icons.Check`, `Icons.Plus`, `Icons.Search`, …
 
 Each generated component has one line of documentation with its exact signature in `llms.txt`, and a
-per-section page under `docs/api/`.
+per-section page under `api/`.
 
 ## Files
 
-| Need | Path |
+Everything below is in this folder, beside this guide; nothing here points outside it.
+
+| Need | File |
 |---|---|
-| this guide | `skills/cui-dotnet/SKILL.md` |
+| this guide: the rules, the workflow, the pitfalls | `SKILL.md` |
 | every signature, one line each | `llms.txt` |
-| option structs and their fields | `docs/api/Options.md` |
-| records used as array items | `docs/api/Records.md` |
-| hosting: components, mutations, DI | `docs/HOSTING.md` |
-| rules and decisions (read before changing the framework) | `docs/ARCHITECTURE.md` |
-| all components, working, one file per page | `samples/CuiSharp.Gallery/Pages/` |
-| a complete starting app with tests | `src/CuiSharp.Templates/CuiSharp.App/` |
-| measured cost per frame | `docs/PERFORMANCE.md` |
+| option structs and their fields | `api/Options.md` |
+| records used as array items | `api/Records.md` |
+| the whole API paged, one file per section | `api/` |
+| what each widget does, and its keyboard | `widgets.md`, `widgets-more.md` |
+| hosting: components, mutations, DI | `hosting.md` |
+| which RIDs the package carries, and the glibc floor | `native-abi.md` |
+
+Outside this folder the repository also has a complete app to start from (`dotnet new cui-app`), a
+working page per component (`samples/CuiSharp.Gallery/`), and the measured cost per frame
+(`docs/PERFORMANCE.md`).
