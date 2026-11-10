@@ -97,6 +97,9 @@ jobs:
     name: Pack and verify
     needs: native
     runs-on: windows-latest
+    env:
+      # One package cache location, so the cache step below and every restore agree.
+      NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
     steps:
       - uses: actions/checkout@v7.0.1
 
@@ -109,6 +112,15 @@ jobs:
         uses: actions/setup-dotnet@v6.1.0
         with:
           dotnet-version: 10.0.x
+
+      # A tag run rebuilds the same package graph the branch's CI just built; key
+      # the cache the way ci.yml does, so the two share it.
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.NUGET_PACKAGES }}
+          key: nuget-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Directory.Build.props', 'src/CuiSharp.Templates/**/*.csproj', 'src/CuiSharp*/**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-${{ runner.arch }}-
 
       # One directory per RID: Linux and macOS both build a libcui.a, so a shared
       # directory would have one archive overwrite the other.
@@ -150,8 +162,17 @@ jobs:
         shell: pwsh
         run: Copy-Item artifacts/native/win-x64/* native/
 
+      # The two test projects and what they reference — not the whole solution:
+      # the gallery and the benchmark suite were being built only to be ignored,
+      # and their restores were the slowest third of this step. The pack step
+      # builds whatever packing itself needs.
       - name: Test
-        run: dotnet test CuiSharp.slnx -c Release
+        shell: pwsh
+        run: |
+          dotnet test src/CuiSharp.Tests/CuiSharp.Tests.csproj -c Release
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          dotnet test src/CuiSharp.Templates/CuiSharp.App/CuiSharp.App.Tests/CuiSharp.App.Tests.csproj -c Release
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
 
       # The release page is the changelog section for this version, so it has to exist and be dated
       # before anything is built or pushed: a tag whose section still says unreleased used to fail
