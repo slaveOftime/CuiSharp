@@ -34,6 +34,9 @@ TestResults/
 *.png
 !docs/**/*.png
 
+# Agent harness settings — local to the machine that runs the agent
+.pi/
+
 # Editor and OS
 .DS_Store
 Thumbs.db
