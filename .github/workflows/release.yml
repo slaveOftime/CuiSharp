@@ -93,6 +93,11 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
 
+      # Two tests read the CUI submodule's docs (the widget pages the skill folder
+      # mirrors), and the job runs the whole suite to prove the packages work.
+      - name: Checkout submodules (CUI)
+        run: git submodule update --init --recursive
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v6.1.0
         with:
