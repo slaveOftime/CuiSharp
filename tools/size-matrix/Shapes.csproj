@@ -1,0 +1,83 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The app shapes tools/size-report.ps1 measures. One project, one shape per build:
+    -p:Shape=MIN|TABLE|CHART|FORM|RICH picks the #if block in Program.cs.
+
+    Deliberately not in CuiSharp.slnx: it is a measuring instrument, not a deliverable, and
+    it must be able to publish with a property set a user's app would never set. Like
+    CuiSharp.Benchmarks it is built by hand (tools/size-report.ps1), not by the solution.
+
+    Nothing here comes from Directory.Build.targets: that file wires the template's project
+    names to the local native library, and this project is not one of them.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>SizeMatrix</RootNamespace>
+    <AssemblyName>Shape$(Shape)</AssemblyName>
+    <DefineConstants Condition="'$(Shape)' != ''">$(DefineConstants);$(Shape)</DefineConstants>
+    <CuiNativeLib Condition="'$(CuiNativeLib)' == ''">..\..\native\cui.lib</CuiNativeLib>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\CuiSharp\CuiSharp.csproj" />
+  </ItemGroup>
+
+  <!--
+    The headless channel is a feature switch, so it is either compiled in or not. Trimming it
+    out is worth more than every other knob here put together (see docs/SIZE.md), which is why
+    the matrix measures it as a separate width rather than folding it into "tuned".
+  -->
+  <ItemGroup Condition="'$(CuiNoHeadless)' == 'true'">
+    <RuntimeHostConfigurationOption Include="CuiSharp.Headless" Value="false" Trim="true" />
+  </ItemGroup>
+
+  <!-- The same publish profile the template and the gallery use. -->
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' != ''">
+    <SelfContained>true</SelfContained>
+    <PublishAot>true</PublishAot>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <OptimizationPreference>Size</OptimizationPreference>
+    <StripSymbols>true</StripSymbols>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <DebuggerSupport>false</DebuggerSupport>
+    <IlcGenerateStackTraceData>false</IlcGenerateStackTraceData>
+    <IlcDisableReflection>true</IlcDisableReflection>
+    <AllowedReferenceRelatedFileExtensions>.none</AllowedReferenceRelatedFileExtensions>
+  </PropertyGroup>
+
+  <!-- -p:CuiSizeTuned=true adds the switches docs/SIZE.md counts as the "tuned" profile. -->
+  <PropertyGroup Condition="'$(CuiSizeTuned)' == 'true'">
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <EventSourceSupport>false</EventSourceSupport>
+    <MetadataUpdaterSupport>false</MetadataUpdaterSupport>
+    <StackTraceSupport>false</StackTraceSupport>
+    <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
+    <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
+    <XmlResolverIsNetworkingEnabledByDefault>false</XmlResolverIsNetworkingEnabledByDefault>
+    <UseNativeHttpHandler>true</UseNativeHttpHandler>
+  </PropertyGroup>
+
+  <!-- CUI is linked from the static archive, exactly as the package does for a consumer. -->
+  <ItemGroup Condition="'$(PublishAot)' == 'true' And $([MSBuild]::IsOSPlatform('Windows'))">
+    <DirectPInvoke Include="cui" />
+    <NativeLibrary Include="$(CuiNativeLib)" />
+    <LinkerArg Include="user32.lib" />
+    <LinkerArg Include="gdi32.lib" />
+    <LinkerArg Include="opengl32.lib" />
+    <LinkerArg Include="shell32.lib" />
+    <LinkerArg Include="imm32.lib" />
+    <LinkerArg Include="dwmapi.lib" />
+    <LinkerArg Include="comdlg32.lib" />
+    <LinkerArg Include="ole32.lib" />
+    <LinkerArg Include="/OPT:REF" />
+    <LinkerArg Include="/OPT:ICF" />
+  </ItemGroup>
+
+</Project>

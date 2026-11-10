@@ -44,7 +44,7 @@ samples/CuiSharp.Gallery/     thirteen pages of every component, one file per pa
 native/                       submodule + the two build scripts
 tools/                        bindgen.cs, regen.ps1, verify-template.ps1, api-surface.ps1, snapshots.ps1
 bindings/                     api.json (generated IR), overrides.json (inputs), coverage.txt (report)
-docs/                         maintainer notes: PLAN, ARCHITECTURE, PERFORMANCE, RELEASING, images/
+docs/                         maintainer notes: PLAN, ARCHITECTURE, PERFORMANCE, SIZE, RELEASING, images/
 skills/cui-dotnet/            what an app needs: SKILL.md, llms.txt, api/*.md, widgets, hosting, ABI
 ```
 

@@ -6,6 +6,24 @@ in [ARCHITECTURE.md](ARCHITECTURE.md). Every item here passes the same gates as 
 
 ## 1. Open work
 
+- **The size profile, measured in [SIZE.md](SIZE.md)**. A minimal app is 58% .NET runtime, 19% CUI
+  native and 3% CuiSharp's own code, and the widget code an app does not use is already dropped by
+  `/OPT:REF`; so a second "mini" package would save about 2% of the bytes for a second binding,
+  analyzer set and release artifact. Land these instead, each measured:
+  - **The `tuned` NativeAOT switches by default** in what the template publishes
+    (`UseSystemResourceKeys`, `EventSourceSupport=false`, `MetadataUpdaterSupport=false`,
+    `StackTraceSupport=false`, `HttpActivityPropagationSupport=false`, `UseNativeHttpHandler=true`,
+    and the unsafe-serialization pair): −128 512 B on the smallest app, −156 672 B on the gallery.
+    The two that change observable behaviour need a line in the template and in the docs.
+  - **`CuiSharp.Headless` off unless asked for**: one MSBuild property in `build/CuiSharp.targets`
+    whose default is `false`, with `CuiSharp.Tools` and the gallery turning it back on and the
+    template documenting `dotnet run -p:CuiSharpHeadless=true`. Worth −181 248 B on a windowed app.
+  - **`ScopeEnds.Close` must not name every container.** It roots all 39 `*_end` functions from
+    every app that opens one container, which drags `cui_pickers`, `cui_dock` and their
+    dependencies in unasked and stops a reduced archive from linking at all. −24 064 B, and the
+    generator change that would let a widget set and a binary be coupled.
+  - **A size row per shape** in `tools/budget-check.ps1`, fed by `tools/size-report.ps1`, so an
+    upstream bump that reaches a used widget fails as a number instead of arriving in a release.
 - **The gallery pages for the extended components** (`examples/gallery_more.c`'s other fifteen):
   *Developer tools* and *More developer tools* cover CUI 1.3's twenty, but actions, smart inputs,
   pickers, capture, disclosure, reader, data grid, code, social and media, planning, more charts,

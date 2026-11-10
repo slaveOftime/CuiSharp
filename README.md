@@ -73,7 +73,8 @@ or holding them across an `await`. Nothing can outlive the frame, so nothing can
 | **A million rows** | Lists virtualize (~12 µs); charts decimate long feeds for free (`ChartOpts.MaxPoints`). |
 | **Hot reload** | The frame loop is managed, so `dotnet watch` patches your UI between frames. |
 
-Numbers, method and caveats: [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
+Numbers, method and caveats: [docs/PERFORMANCE.md](docs/PERFORMANCE.md). What is in the published
+executable, and what each widget costs: [docs/SIZE.md](docs/SIZE.md).
 
 ## What it looks like
 
