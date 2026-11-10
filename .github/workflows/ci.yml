@@ -60,6 +60,9 @@ jobs:
   test:
     name: Build and test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    env:
+      NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
     strategy:
       fail-fast: false
       matrix:
@@ -91,6 +94,13 @@ jobs:
         id: cui
         shell: pwsh
         run: echo "sha=$(git rev-parse HEAD:native/CUI)" >> $env:GITHUB_OUTPUT
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.NUGET_PACKAGES }}
+          key: nuget-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Directory.Build.props', 'src/CuiSharp.Templates/**/*.csproj', 'src/CuiSharp*/**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Cache the native build
         id: native-cache
@@ -412,7 +422,11 @@ jobs:
   packaged-consumer:
     name: Packaged consumer (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 12
+    # A ceiling against a stalled job, not a target: a cold runner spends minutes in package
+    # restore alone. The step below is where a hang is usually visible first.
+    timeout-minutes: 25
+    env:
+      NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
     strategy:
       fail-fast: false
       matrix:
@@ -432,6 +446,16 @@ jobs:
         if: runner.os == 'Linux'
         timeout-minutes: 6
         run: bash tools/ci-linux-deps.sh clang zlib1g-dev libx11-dev
+
+      # The scaffolded app restores xunit and friends from nuget.org on every cold runner. Keep
+      # those packages; the CuiSharp the gate verifies is versioned uniquely per run, so a cache
+      # can never satisfy it.
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.NUGET_PACKAGES }}
+          key: nuget-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Directory.Build.props', 'src/CuiSharp.Templates/**/*.csproj', 'src/CuiSharp*/**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Submodule revision
         id: cui
@@ -465,7 +489,7 @@ jobs:
       # folder, and drives the result with `dotnet cui`.
       - name: Verify the template from the package
         shell: pwsh
-        timeout-minutes: 6
+        timeout-minutes: 15
         run: ./tools/verify-template.ps1
 
   # Benchmarks are a regression signal, not a gate: the JSON reports are uploaded

@@ -44,9 +44,11 @@ function Step([string] $text) { Write-Host "==> $text" -ForegroundColor Cyan }
 try {
     New-Item -ItemType Directory -Path $packages -Force | Out-Null
 
-    # A private package cache, so a released CuiSharp of the same version number
-    # cannot be used instead of the one just built.
-    $env:NUGET_PACKAGES = Join-Path $work 'nuget'
+    # A private package cache, unless the caller supplies one (CI caches a stable folder). Isolation
+    # still holds either way: the version below is unique to this run, so no cached CuiSharp can
+    # satisfy it and only the third-party packages are reused.
+    if (-not $env:NUGET_PACKAGES) { $env:NUGET_PACKAGES = Join-Path $work 'nuget' }
+    $ownPackageCache = $env:NUGET_PACKAGES -eq (Join-Path $work 'nuget')
 
     # A version unique to this run: nuget.org already has the repository's version,
     # and the app must resolve the package built here or the check proves nothing.
@@ -298,7 +300,7 @@ public static class CuiMiniWindowProbe
 }
 finally {
     if ($templateInstalled) { & dotnet new uninstall CuiSharp.Templates | Out-Null }
-    Remove-Item Env:NUGET_PACKAGES -ErrorAction SilentlyContinue
+    if ($ownPackageCache) { Remove-Item Env:NUGET_PACKAGES -ErrorAction SilentlyContinue }
     Pop-Location
     if ($Keep) { Write-Host "kept: $work" } else { Remove-Item $work -Recurse -Force -ErrorAction SilentlyContinue }
 }
