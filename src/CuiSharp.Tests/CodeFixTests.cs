@@ -135,6 +135,38 @@ public sealed class CodeFixTests
         Assert.Empty(actions);
     }
 
+    [Theory]
+    [InlineData("for (int i = 0; i < 3; i++)", "i")]
+    [InlineData("foreach (int i in new[] { 0, 1, 2 })", "i")]
+    public async Task KeyingARepeatedWidgetGivesEveryRowItsOwnState(string loop, string key)
+    {
+        string source = Prologue + "public static class Probe { public static void Draw(Ui ui) { string[] names = [\"a\", \"b\", \"c\"]; " +
+            loop + " { ui.Input(\"name\", ref names[i]); } } }";
+        var fixedCompilation = await FixAsync(source, "CUI004");
+        string fixedText = fixedCompilation.SyntaxTrees.Single().ToString();
+        Assert.Contains($"using (ui.Id({key}))", fixedText, StringComparison.Ordinal);
+        // The wrap must not drop or duplicate what the loop drew.
+        using var app = HeadlessApp.Start(DrawFrom(fixedCompilation), 480, 320);
+        Assert.Empty(app.Faults);
+        Assert.Equal(3, app.Tree.Descendants().Count(n => n.Kind == "Input" && n.Text == "name"));
+        app.Frame();
+        Assert.Empty(app.Faults);
+    }
+
+    [Fact]
+    public async Task AWhileLoopHasNoPerRowKeySoItsConstantIdIsNotRewritten()
+    {
+        string source = Prologue + "public static class Probe { public static void Draw(Ui ui) { int i = 0; string text = \"\"; " +
+            "while (i++ < 3) { ui.Input(\"name\", ref text); } } }";
+        using var workspace = new AdhocWorkspace();
+        Document document = DocumentFor(workspace, source);
+        var diagnostic = Assert.Single((await AnalyzeAsync(document)).Where(d => d.Id == "CUI004"));
+        var actions = new List<CodeAction>();
+        await new WidgetIdCodeFixProvider().RegisterCodeFixesAsync(
+            new CodeFixContext(document, diagnostic, (action, _) => actions.Add(action), CancellationToken.None));
+        Assert.Empty(actions);
+    }
+
     private static async Task<CSharpCompilation> FixAsync(string source, string id)
     {
         using var workspace = new AdhocWorkspace();
@@ -142,7 +174,12 @@ public sealed class CodeFixTests
         var compilation = (await document.Project.GetCompilationAsync())!;
         Assert.Empty(compilation.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error));
         var diagnostic = (await AnalyzeAsync(document)).First(d => d.Id == id);
-        CodeFixProvider provider = id == "CUI005" ? new ConfigureAwaitCodeFixProvider() : new ScopeCodeFixProvider();
+        CodeFixProvider provider = id switch
+        {
+            "CUI004" => new WidgetIdCodeFixProvider(),
+            "CUI005" => new ConfigureAwaitCodeFixProvider(),
+            _ => new ScopeCodeFixProvider(),
+        };
         var actions = new List<CodeAction>();
         await provider.RegisterCodeFixesAsync(new CodeFixContext(document, diagnostic, (action, _) => actions.Add(action), CancellationToken.None));
         CodeAction action = Assert.Single(actions);
@@ -152,7 +189,7 @@ public sealed class CodeFixTests
         fixedDocument = await Formatter.FormatAsync(fixedDocument);
         var fixedCompilation = (CSharpCompilation)(await fixedDocument.Project.GetCompilationAsync())!;
         Assert.Empty(fixedCompilation.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error));
-        Assert.DoesNotContain(await AnalyzeAsync(fixedDocument), d => d.Id is "CUI002" or "CUI003" or "CUI005");
+        Assert.DoesNotContain(await AnalyzeAsync(fixedDocument), d => d.Id is "CUI002" or "CUI003" or "CUI004" or "CUI005");
         return fixedCompilation;
     }
 

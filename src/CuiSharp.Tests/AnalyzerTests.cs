@@ -341,9 +341,11 @@ public class AnalyzerTests
             }
             """);
 
-        // The id argument of each widget call: ui.Text takes text, the button takes its label,
-        // so only the widgets whose first parameter is an id are candidates.
-        Assert.DoesNotContain(found, f => f.StartsWith("CUI004", StringComparison.Ordinal) && f.Contains("row", StringComparison.Ordinal));
+        // The id argument of each widget call: a widget's first UiText argument is what CUI keys
+        // the widget's state by, so a constant label in a row loop is exactly the bug CUI004 names.
+        string[] constantIds = found.Where(f => f.StartsWith("CUI004", StringComparison.Ordinal)).ToArray();
+        Assert.Equal("CUI004", Assert.Single(constantIds).Split(':')[0]);
+        Assert.Contains("'Open'", constantIds[0], StringComparison.Ordinal);
     }
 
     [Fact]

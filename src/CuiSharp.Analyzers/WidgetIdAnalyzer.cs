@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -44,10 +46,14 @@ public sealed class WidgetIdAnalyzer : DiagnosticAnalyzer
         if (InsideIdScope(invocation)) return;
 
         IMethodSymbol? method = context.SemanticModel.GetSymbolInfo(invocation, context.CancellationToken).Symbol as IMethodSymbol;
-        if (method is null || !types.IsUiMethod(method)) return;
+        if (method is null || !types.IsUiMethod(method, invocation, context.SemanticModel, context.CancellationToken)) return;
 
         if (method.Parameters.Length == 0 || method.Parameters[0].Type.SpecialType != SpecialType.None) return;
         if (method.Parameters[0].Type.ToDisplayString() != "CuiSharp.UiText") return;
+
+        // An addressing call targets an id that already exists elsewhere; it registers no state of
+        // its own, so a constant target inside a loop is not a row collision.
+        if (AddressingMethods.Contains(method.Name)) return;
 
         var first = invocation.ArgumentList.Arguments[0].Expression;
         if (first is not LiteralExpressionSyntax literal || literal.Token.ValueText.Length == 0) return;
@@ -55,6 +61,12 @@ public sealed class WidgetIdAnalyzer : DiagnosticAnalyzer
         // A label-and-id pair (ui.Tree("node", ...)) is still a constant id.
         context.ReportDiagnostic(Diagnostic.Create(Diagnostics.ConstantIdInLoop, literal.GetLocation(), literal.Token.ValueText));
     }
+
+    /// <summary>
+    /// Calls that reference an existing id instead of registering a new one. A new C function of
+    /// this shape belongs here with a one-line why, the same way an override does.
+    /// </summary>
+    private static readonly HashSet<string> AddressingMethods = new(StringComparer.Ordinal) { "ScrollTo" };
 
     private static bool InsideIdScope(SyntaxNode node)
     {

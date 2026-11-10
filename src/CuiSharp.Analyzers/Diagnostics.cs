@@ -1,5 +1,7 @@
 using System.Collections.Immutable;
+using System.Threading;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace CuiSharp.Analyzers;
@@ -130,8 +132,19 @@ internal sealed class KnownTypes
     /// <summary>True for the scope kinds whose body only makes sense when they opened.</summary>
     internal bool IsConditionalScope(ITypeSymbol? type) => SymbolEquals(type, OpenScope) || SymbolEquals(type, GridScope);
 
-    internal bool IsUiMethod(IMethodSymbol method) =>
-        method.ContainingType is not null && SymbolEquals(method.ContainingType, Ui) && method.IsExtensionMethod;
+    /// <summary>
+    /// True for a widget call on a <c>Ui</c>: a member of <c>Ui</c> itself, a classic extension
+    /// method, or a C# 14 <c>extension(Ui ui)</c> member. The last reports <c>IsExtensionMethod ==
+    /// false</c> and a synthetic containing type, so the receiver the caller used decides.
+    /// </summary>
+    internal bool IsUiMethod(IMethodSymbol method, SyntaxNode invocation, SemanticModel model, CancellationToken token)
+    {
+        if (method.ContainingType is not null && SymbolEquals(method.ContainingType, Ui)) return true;
+        if (method.IsExtensionMethod && method.ReceiverType is { } receiver && SymbolEquals(receiver, Ui)) return true;
+        if (invocation is not InvocationExpressionSyntax call ||
+            call.Expression is not MemberAccessExpressionSyntax { Expression: { } target }) return false;
+        return model.GetTypeInfo(target, token).Type is { } receiverType && SymbolEquals(receiverType, Ui);
+    }
 
     /// <summary>True for the frame-local <c>Ui</c> value itself.</summary>
     internal bool IsUi(ITypeSymbol type) => SymbolEquals(type, Ui);
