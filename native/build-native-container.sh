@@ -39,9 +39,9 @@ docker run --rm \
     # the Release file expired and only warn on its way to the same failure.
     sed -i "s|deb.debian.org/debian-security|archive.debian.org/debian-security|" /etc/apt/sources.list
     echo "Acquire::Check-Valid-Until \"false\";" > /etc/apt/apt.conf.d/99-archive
-    apt-get update -qq
+    apt-get -o Acquire::Retries=5 update -qq
     # X11 headers because CUI'"'"'s only hard Linux dependency is Xlib.
-    apt-get install -y -qq --no-install-recommends \
+    apt-get install -y -qq -o Acquire::Retries=5 --no-install-recommends \
       build-essential cmake pkg-config libx11-dev binutils git ca-certificates python3-pip >/dev/null
     # Bullseye ships cmake 3.18, and the CUI 1.3 CMakeLists uses $<CONFIG:Rel,Min>
     # with several configurations — an expression that needs 3.19. The submodule
