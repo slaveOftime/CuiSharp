@@ -4425,6 +4425,15 @@ enum CuiSharp.LoaderStyle
   Grid
   Orbit
   Pulse
+class CuiSharp.Localization
+  Void Dispose()
+  ctor()
+  property String Today { get; set; }
+  property String[] Months { get; set; }
+  property String[] MonthsShort { get; set; }
+  property String[] Weekdays { get; set; }
+  property String[] WeekdaysMin { get; set; }
+  property String[] WeekdaysShort { get; set; }
 class CuiSharp.LogBuffer
   String Text()
   Void Append(String, LogLevel, Double)
@@ -5899,6 +5908,7 @@ struct CuiSharp.Ui
   Void PushClip(RectF)
   Void ReorderBegin(UiText, Int32[])
   Void RequestRedraw()
+  Void SetLocalization(Localization)
   Void SetReducedMotion(Boolean)
   Void ToggleTheme()
   property Accent Accent { get; set; }
@@ -5908,6 +5918,7 @@ struct CuiSharp.Ui
   property Boolean WantsMouse { get; }
   property Cursor Cursor { get; }
   property Double Time { get; }
+  property Localization Localization { get; }
   property Mods Modifiers { get; }
   property RectF LastRect { get; }
   property Single DeltaTime { get; }

@@ -166,6 +166,10 @@ public sealed unsafe class CuiApp : IDisposable
         using (_frame.EnterPaint()) alive = Native.AppFrame(_handle) != 0;
         _frame.Reset();
 
+        // The frame that just presented is over: a changed name table reaches the next one, and a
+        // block it may still have been reading is freed here.
+        _frame.SyncLocalization(_ctx);
+
         // Everything the last frame copied for argument strings is dead now.
         Utf8.BeginFrame();
 
@@ -326,6 +330,7 @@ public sealed unsafe class CuiApp : IDisposable
         // arena that holds this frame's argument strings can be reused.
         state.Frame.Reset();
         Utf8.BeginFrame();
+        state.Frame.SyncLocalization(ui);
         state.Draw(new Ui(ui, state.Frame));
     }
 
@@ -353,5 +358,6 @@ public sealed unsafe class CuiApp : IDisposable
         Native.AppDestroy(_handle);
         _handle = 0;
         _frame.Reset();
+        _frame.Release();
     }
 }

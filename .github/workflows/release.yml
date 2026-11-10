@@ -134,6 +134,24 @@ jobs:
       - name: Test
         run: dotnet test CuiSharp.slnx -c Release
 
+      # The release page is the changelog section for this version, so it has to exist and be dated
+      # before anything is built or pushed: a tag whose section still says unreleased used to fail
+      # only in the last job, after the packages were already on nuget.org. Both a tag and a manual
+      # dispatch resolve their version here, the same way the pack step does.
+      - name: Release notes exist for this version
+        shell: pwsh
+        run: |
+          $version = '${{ github.event.inputs.version }}'
+          if (-not $version -and '${{ github.ref_type }}' -eq 'tag') {
+            $version = '${{ github.ref_name }}'.TrimStart('v')
+          }
+          if (-not $version) { throw 'no release version: tag v*.*.* or pass the version input' }
+
+          $notes = pwsh tools/release-notes.ps1 -Version $version
+          if ($LASTEXITCODE -ne 0) { throw "no release notes for $version" }
+          "Release notes for **$version** found" | Out-File $env:GITHUB_STEP_SUMMARY -Append
+          $notes | Write-Host
+
       # One step for all four packages, so the version and the native directories are
       # spelled once. `dotnet pack` builds the tool's output for PackAsTool.
       - name: Pack the four packages

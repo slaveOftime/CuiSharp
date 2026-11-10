@@ -4,10 +4,23 @@ Every user-visible change, newest first. Pre-1.0 the minor number carries new su
 carries fixes. The section for a tag is what the GitHub release publishes, so the two cannot say
 different things.
 
-## Unreleased
+## [0.3.1] — unreleased
+
+The date components speak another language, and the data grid owns its state.
 
 ### Added
 
+- **`Localization` and `ui.SetLocalization(table)`** translate the month, weekday and "Today" text
+  the date picker, the calendars, the gantt and the file browser show — the table `cui_set_strings`
+  takes, which stayed `EXCLUDED` in 0.3.0 because CUI keeps the pointer and reads it every frame.
+  A `Localization` object holds the managed names (twelve months, their short forms, three weekday
+  forms and `Today`, each entry nullable so a partial table falls back to English) and owns one
+  unmanaged block, rebuilt only when a name changes; the surface keeps the object alive the way it
+  keeps the theme, and `ui.Localization` reads back what is published. `null` restores English, and
+  a table with nothing in it costs no block at all. One call is enough — a name changed afterwards
+  reaches the next frame by itself — publishing the same table every frame allocates 0 B, and a
+  table disposed while it is still published is freed at the frame boundary that follows, never
+  under the frame reading it. A table belongs to one surface: publishing it to a second one throws.
 - `GridState` and `ui.DataGrid(id, columns, rowCount, state[, body], options)`: persistent selection,
   visible range, sorting and keyboard state, with a `GridScope` that writes interactions back when
   it closes, including on exceptions. CUI002/CUI003 enforce disposing and checking this scope.

@@ -168,6 +168,11 @@ public sealed unsafe partial class CuiSurface : IDisposable
 
         _frame.Reset();
         Utf8.BeginFrame();
+
+        // A name table published or edited since the last frame is handed to CUI before this
+        // frame draws, and blocks the frame just presented could still read are freed here.
+        _frame.SyncLocalization(_ctx);
+
         _recorderBelow = WidgetRecorder.BeginFrame(_recorder);
 
         // A surface is how a test draws a frame, so it reports the same numbers a window does.
@@ -325,6 +330,7 @@ public sealed unsafe partial class CuiSurface : IDisposable
             Native.Destroy(_ctx);
             _ctx = 0;
             _frame.Reset();
+            _frame.Release();
         }
 
         if (_sw != 0)
