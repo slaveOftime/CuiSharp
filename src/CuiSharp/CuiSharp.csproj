@@ -90,7 +90,7 @@
     which is why it does not need a package of its own.
   -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.14" />
   </ItemGroup>
 
   <ItemGroup>
@@ -111,16 +111,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(MSBuildThisFileDirectory)../CuiSharp.Analyzers/CuiSharp.Analyzers.csproj"
-                      ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
-    <None Include="$(MSBuildThisFileDirectory)../CuiSharp.Analyzers/bin/$(Configuration)/netstandard2.0/CuiSharp.Analyzers.dll"
-          Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)../CuiSharp.Analyzers/CuiSharp.Analyzers.csproj" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
+    <None Include="$(MSBuildThisFileDirectory)../CuiSharp.Analyzers/bin/$(Configuration)/netstandard2.0/CuiSharp.Analyzers.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../CuiSharp.CodeFixes/CuiSharp.CodeFixes.csproj" ReferenceOutputAssembly="false" />
-    <None Include="../CuiSharp.CodeFixes/bin/$(Configuration)/netstandard2.0/CuiSharp.CodeFixes.dll"
-          Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="../CuiSharp.CodeFixes/bin/$(Configuration)/netstandard2.0/CuiSharp.CodeFixes.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
   </ItemGroup>
 
   <!--
@@ -189,13 +186,9 @@
       <_CuiProvenanceLine Include="@(_CuiOsxProvenance->'osx-arm64 %(Identity)')" />
     </ItemGroup>
 
-    <Error Condition="'@(_CuiBuiltRid)' != '' And '%(_CuiBuiltRid.Identity)' != 'rid=%(_CuiBuiltRid.ExpectedRid)'"
-           Text="Native build declares %(_CuiBuiltRid.Identity), but would be packaged as %(_CuiBuiltRid.ExpectedRid). Use the matching CuiNative*Dir or CuiNativeRid; do not relabel an archive from another CPU." />
+    <Error Condition="'@(_CuiBuiltRid)' != '' And '%(_CuiBuiltRid.Identity)' != 'rid=%(_CuiBuiltRid.ExpectedRid)'" Text="Native build declares %(_CuiBuiltRid.Identity), but would be packaged as %(_CuiBuiltRid.ExpectedRid). Use the matching CuiNative*Dir or CuiNativeRid; do not relabel an archive from another CPU." />
 
-    <WriteLinesToFile File="$(IntermediateOutputPath)native-provenance.txt"
-                      Lines="@(_CuiProvenanceLine)"
-                      Overwrite="true"
-                      WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile File="$(IntermediateOutputPath)native-provenance.txt" Lines="@(_CuiProvenanceLine)" Overwrite="true" WriteOnlyWhenDifferent="true" />
 
     <ItemGroup>
       <TfmSpecificPackageFile Include="$(IntermediateOutputPath)native-provenance.txt">

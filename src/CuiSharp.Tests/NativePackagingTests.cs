@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO.Compression;
+using System.Reflection;
 using System.Text.Json;
 
 namespace CuiSharp.Tests;
@@ -139,12 +140,26 @@ public sealed class NativePackagingTests
         }
         var fixes = zip.GetEntry("analyzers/dotnet/cs/CuiSharp.CodeFixes.dll");
         Assert.NotNull(fixes);
-        using var content = fixes.Open();
-        using var actual = new MemoryStream();
-        await content.CopyToAsync(actual);
-        Assert.Equal(await File.ReadAllBytesAsync(typeof(CodeFixes.ScopeCodeFixProvider).Assembly.Location), actual.ToArray());
+        // Identity, not bytes: the package is packed in Release whatever configuration the test ran
+        // in, so comparing it with the loaded assembly would only compare build configurations.
+        Assert.Equal("CuiSharp.CodeFixes", await PackedAssemblyName(zip, "analyzers/dotnet/cs/CuiSharp.CodeFixes.dll"));
+        Assert.Equal("CuiSharp.Analyzers", await PackedAssemblyName(zip, "analyzers/dotnet/cs/CuiSharp.Analyzers.dll"));
         using var manifest = new StreamReader(Assert.Single(zip.Entries, e => e.FullName.EndsWith(".nuspec", StringComparison.Ordinal)).Open());
         Assert.DoesNotContain("<dependency id=\"CuiSharp.CodeFixes\"", await manifest.ReadToEndAsync(), StringComparison.Ordinal);
+    }
+
+    private static async Task<string> PackedAssemblyName(ZipArchive zip, string path)
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "cui-packed-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            string file = Path.Combine(directory, Path.GetFileName(path));
+            using (var entry = Assert.Single(zip.Entries, e => e.FullName == path).Open())
+            using (var copy = File.Create(file)) await entry.CopyToAsync(copy);
+            return AssemblyName.GetAssemblyName(file).Name!;
+        }
+        finally { Directory.Delete(directory, recursive: true); }
     }
 
     private static async Task<(int Exit, string Output)> RunAsync(params string[] arguments)
