@@ -64,7 +64,7 @@ native/CUI/include/cui/*.h
      Icons.g.cs                     embedded glyphs
      Tests/Abi.g.cs                 sizeof and every field offset, asserted
      Tests/OptionMappings.g.cs      one test that every option maps every field
-     docs/api/*.md, llms.txt, skills/cui-dotnet/SKILL.md, bindings/coverage.txt
+     skills/cui-dotnet/{llms.txt,api/*.md}, skills/cui-dotnet/SKILL.md, bindings/coverage.txt
 ```
 
 The convention table the generator's default rules implement:

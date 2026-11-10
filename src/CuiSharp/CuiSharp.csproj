@@ -86,16 +86,12 @@
     <None Include="build\CuiSharp.targets" Pack="true" PackagePath="build/" />
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />
     <!--
-      What a reader needs to answer "how does this widget behave?" without the repository: the
-      reference, the guide, the native ABI promise, and CUI's own component documentation. They
-      ship as they are so the package explains itself; the widget pages are upstream copies made at
-      pack time and never edited here (docs/ARCHITECTURE.md, D2).
+      The bundle is the one thing a consumer reads: guide, reference, API pages, widget behaviour and
+      the ABI promise. It ships at the same path it has in the repository, so a path in a doc works
+      in both places (skills/cui-dotnet/README.md).
     -->
-    <None Include="..\..\llms.txt" Pack="true" PackagePath="docs/" Visible="false" Condition="Exists('..\..\llms.txt')" />
-    <None Include="..\..\skills\cui-dotnet\SKILL.md" Pack="true" PackagePath="docs/" Visible="false" />
-    <None Include="..\..\docs\NATIVE-ABI.md" Pack="true" PackagePath="docs/" Visible="false" />
-    <None Include="..\..\native\CUI\docs\components.md" Pack="true" PackagePath="docs/widgets.md" Visible="false" />
-    <None Include="..\..\native\CUI\docs\components-more.md" Pack="true" PackagePath="docs/widgets-more.md" Visible="false" />
+    <None Include="..\..\skills\cui-dotnet\**\*.md" Pack="true" PackagePath="skills/cui-dotnet/%(RecursiveDir)%(Filename)%(Extension)" Visible="false" />
+    <None Include="..\..\skills\cui-dotnet\llms.txt" Pack="true" PackagePath="skills/cui-dotnet/" Visible="false" />
   </ItemGroup>
 
   <ItemGroup>

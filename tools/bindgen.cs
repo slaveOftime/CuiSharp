@@ -85,8 +85,11 @@ foreach (var (module, code) in idiomatic.Widgets())
     Write(Path.Combine(root, "src", "CuiSharp", "Ui", module + ".g.cs"), code);
 Write(Path.Combine(root, "src", "CuiSharp", "Ui", "ScopeEnds.g.cs"), idiomatic.ScopeEnds());
 Write(Path.Combine(bindingsDir, "coverage.txt"), idiomatic.Coverage());
-foreach (var (path, text) in idiomatic.ApiDocs()) Write(Path.Combine(root, path), text);
-Write(Path.Combine(root, "llms.txt"), idiomatic.LlmsTxt(ManualMembers.Scan(root)));
+// One home for everything a consumer reads: the skill folder is what the package ships, so the
+// reference and the per-section pages are written there and link to each other relatively.
+string bundle = Path.Combine(root, "skills", "cui-dotnet");
+foreach (var (path, text) in idiomatic.ApiDocs()) Write(Path.Combine(bundle, path), text);
+Write(Path.Combine(bundle, "llms.txt"), idiomatic.LlmsTxt(ManualMembers.Scan(root)));
 
 Console.WriteLine($"{api.Functions.Length} functions, {api.Structs.Length} structs, {api.Enums.Length} enums, " +
                   $"{api.Constants.Length} constants, {api.Icons.Length} icons, {api.Skipped.Length} skipped");
@@ -2430,7 +2433,7 @@ sealed class Idiomatic
                 sb.AppendLine(summary);
                 sb.AppendLine();
             }
-            yield return (Path.Combine("docs", "api", name + ".md"), sb.ToString());
+            yield return (Path.Combine("api", name + ".md"), sb.ToString());
         }
 
         // The options reference: the field names an LLM has to guess at otherwise.
@@ -2455,7 +2458,7 @@ sealed class Idiomatic
             }
             options.AppendLine();
         }
-        yield return (Path.Combine("docs", "api", "Options.md"), options.ToString());
+        yield return (Path.Combine("api", "Options.md"), options.ToString());
 
         var records = new StringBuilder();
         records.AppendLine("# Records");
@@ -2472,7 +2475,7 @@ sealed class Idiomatic
                 records.AppendLine($"- `{field.Name}`: {field.Type}");
             records.AppendLine();
         }
-        yield return (Path.Combine("docs", "api", "Records.md"), records.ToString());
+        yield return (Path.Combine("api", "Records.md"), records.ToString());
     }
 
     /// <summary>
@@ -2550,15 +2553,15 @@ sealed class Idiomatic
             foreach (var w in module.OrderBy(w => w.Name, StringComparer.Ordinal))
             {
                 string summary = w.Native.Doc.Length == 0 ? "" : " — " + OneLine(w.Native.Doc);
-                sb.AppendLine($"- `ui.{w.Name}({Signature(w.Params)})` → `{w.Return}`{summary}  ([{module.Key}](docs/api/{file}.md))");
+                sb.AppendLine($"- `ui.{w.Name}({Signature(w.Params)})` → `{w.Return}`{summary}  ([{module.Key}](api/{file}.md))");
             }
         }
         sb.AppendLine();
         sb.AppendLine("## Documents");
         sb.AppendLine();
-        sb.AppendLine("- [Options](docs/api/Options.md): every option struct and its fields.");
-        sb.AppendLine("- [Records](docs/api/Records.md): item types for the widgets that take arrays.");
-        sb.AppendLine("- [Hosting](docs/HOSTING.md): components, mutation, dependency injection.");
+        sb.AppendLine("- [Options](api/Options.md): every option struct and its fields.");
+        sb.AppendLine("- [Records](api/Records.md): item types for the widgets that take arrays.");
+        sb.AppendLine("- [Hosting](hosting.md): components, mutation, dependency injection.");
         if (manual.Count > 0)
         {
             sb.AppendLine();
@@ -2570,11 +2573,13 @@ sealed class Idiomatic
                 sb.AppendLine($"- `ui.{name}(...)` ([{file}](src/CuiSharp/Ui/{file}))");
         }
 
-        sb.AppendLine("- [Coverage](bindings/coverage.txt): which C functions are wrapped, manual, excluded or pending.");
-        sb.AppendLine("- [Guide](skills/cui-dotnet/SKILL.md): the authoring rules, the pitfalls, the component list.");
-        sb.AppendLine("- [Architecture](docs/ARCHITECTURE.md): decisions, layout, the generator pipeline.");
-        sb.AppendLine("- [Plan](docs/PLAN.md): what is still missing, and the gates a step must pass.");
-        sb.AppendLine("- [Performance](docs/PERFORMANCE.md): measured cost per frame and the allocation model.");
+        sb.AppendLine("- [Widgets](widgets.md) and [more widgets](widgets-more.md): what each component does, and what it does with the keyboard.");
+        sb.AppendLine("- [Native ABI](native-abi.md): the RIDs the package carries, and the glibc floor.");
+        sb.AppendLine("- [Guide](SKILL.md): the authoring rules, the pitfalls, the component list.");
+        sb.AppendLine();
+        sb.AppendLine("Everything above is in this folder, beside this file, so the package explains itself.");
+        sb.AppendLine("The repository adds the maintainer notes: `docs/ARCHITECTURE.md` (decisions and layout),");
+        sb.AppendLine("`docs/PLAN.md`, `docs/PERFORMANCE.md`, and `bindings/coverage.txt` (which C functions are wrapped).");
         return sb.ToString();
     }
 

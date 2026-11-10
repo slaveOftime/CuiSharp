@@ -37,6 +37,30 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'native build failed' }
     }
 
+    # One folder holds everything a consumer reads — the guide, the reference, the API pages and the
+    # widget behaviour — so it is the one thing the package ships and the one place to look.
+    $bundle = Join-Path $root 'skills/cui-dotnet'
+
+    # Pages that live elsewhere in the repository and are published into the bundle verbatim, with a
+    # header naming where they came from. A copy is never edited here: change the source and rerun.
+    $staged = @(
+        @{ From = 'native/CUI/docs/components.md'; To = 'widgets.md' }
+        @{ From = 'native/CUI/docs/components-more.md'; To = 'widgets-more.md' }
+        @{ From = 'docs/NATIVE-ABI.md'; To = 'native-abi.md' }
+        @{ From = 'docs/HOSTING.md'; To = 'hosting.md' }
+    )
+
+    function Copy-Bundled {
+        $null = New-Item -ItemType Directory -Force -Path $bundle
+        foreach ($doc in $staged) {
+            $source = Join-Path $root $doc.From
+            if (-not (Test-Path $source)) { throw "bundle: missing $($doc.From)" }
+            $header = "<!-- Copied from $($doc.From) by tools/regen.ps1. Do not edit: change the source and rerun. -->" + "`n`n"
+            $text = (Get-Content -Raw -Path $source).Replace("`r`n", "`n").TrimEnd() + "`n"
+            [System.IO.File]::WriteAllText((Join-Path $bundle $doc.To), $header + $text)
+        }
+    }
+
     $generated = @(
         'bindings/api.json'
         'bindings/coverage.txt'
@@ -47,8 +71,8 @@ try {
         'src/CuiSharp/Icons.g.cs'
         'src/CuiSharp.Tests/Abi.g.cs'
         'src/CuiSharp.Tests/OptionMappings.g.cs'
-        'llms.txt'
-    )
+        'skills/cui-dotnet/llms.txt'
+    ) + @($staged | ForEach-Object { 'skills/cui-dotnet/' + $_.To })
 
     function Get-GeneratedHash {
         $sb = [System.Text.StringBuilder]::new()
@@ -57,8 +81,10 @@ try {
         $uiFiles = Get-ChildItem (Join-Path $root 'src/CuiSharp/Ui') -Filter '*.g.cs' |
             ForEach-Object { 'src/CuiSharp/Ui/' + $_.Name }
         # Generated documentation too, so a stale reference fails -NoDiff like stale code.
-        $docFiles = Get-ChildItem (Join-Path $root 'docs/api') -Filter '*.md' |
-            ForEach-Object { 'docs/api/' + $_.Name }
+        $apiDocs = Join-Path $bundle 'api'
+        $docFiles = if (Test-Path $apiDocs) {
+            Get-ChildItem $apiDocs -Filter '*.md' | ForEach-Object { 'skills/cui-dotnet/api/' + $_.Name }
+        } else { @() }
         $paths = @($generated) + @($uiFiles) + @($docFiles)
         foreach ($f in ($paths | Sort-Object -Unique)) {
             $path = Join-Path $root $f
@@ -72,7 +98,10 @@ try {
         return $sb.ToString()
     }
 
+    # Snapshot first: a copy that was edited by hand has to be a diff, not a silent repair.
     $before = Get-GeneratedHash
+    Copy-Bundled
+
     Write-Host 'bindgen: reading headers'
     & dotnet run (Join-Path $root 'tools/bindgen.cs')
     if ($LASTEXITCODE -ne 0) { throw 'bindgen failed' }

@@ -14,8 +14,9 @@ something that looks odd.
 ## Hard rules
 
 - **Never hand-edit generated files**: `src/CuiSharp/Interop/*.g.cs`, `src/CuiSharp/Ui/*.g.cs`,
-  `src/CuiSharp/Icons.g.cs`, `src/CuiSharp.Tests/*.g.cs`, `docs/api/*.md`, `llms.txt`,
-  `bindings/{api.json,coverage.txt}`. Change `tools/bindgen.cs` or `bindings/overrides.json`, then
+  `src/CuiSharp/Icons.g.cs`, `src/CuiSharp.Tests/*.g.cs`, `skills/cui-dotnet/{llms.txt,api/*.md}`,
+  `bindings/{api.json,coverage.txt}`, and the bundle's `widgets*.md`, `hosting.md`, `native-abi.md`
+  (copies). Change `tools/bindgen.cs`, `bindings/overrides.json` or the source page, then
   `pwsh tools/regen.ps1`.
 - **Never edit `native/CUI/`** — it is a pinned upstream submodule, and `native/patches/` is empty on
   purpose. Native behaviour belongs upstream; if you think you need a patch, stop and ask.
@@ -61,7 +62,7 @@ On Windows, close a running app before rebuilding: `cui.dll` is locked while it 
 | a new analyzer | `src/CuiSharp.Analyzers/`, one file per rule, plus a case in `AnalyzerTests` |
 | the gallery | `samples/CuiSharp.Gallery/Pages/*.cs`, one page per file |
 | the template | `src/CuiSharp.Templates/CuiSharp.App/` |
-| docs a user reads | `README.md`, `skills/cui-dotnet/SKILL.md`, `docs/ARCHITECTURE.md`, `docs/api/*.md` (generated) |
+| docs a user reads | `README.md`, the bundle `skills/cui-dotnet/` (guide, reference, API pages, widget docs), `docs/ARCHITECTURE.md` |
 
 ## Style
 

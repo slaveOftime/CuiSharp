@@ -470,7 +470,7 @@ behind, so anything that should be checked twice belongs in a test instead.
 
 Every component's behaviour — selection, focus, keyboard, what a return value means, when state
 survives a frame — is in `docs/widgets.md` and `docs/widgets-more.md`, which ship inside the package
-next to this guide and the API reference (`docs/llms.txt`). Read the page for the widget instead of
+next to this guide, together with the API reference (`llms.txt`). Read the page for the widget instead of
 guessing from a signature: a data grid keeps its selection in your variables, a dialog is modal, a
 dropzone returns the paths it received.
 
@@ -496,7 +496,7 @@ dropzone returns the paths it received.
 - **Icons** — 168 constants generated from `cui_icons.h`: `Icons.Check`, `Icons.Plus`, `Icons.Search`, …
 
 Each generated component has one line of documentation with its exact signature in `llms.txt`, and a
-per-section page under `docs/api/`.
+per-section page under `api/`.
 
 ## Files
 
@@ -504,8 +504,8 @@ per-section page under `docs/api/`.
 |---|---|
 | this guide | `skills/cui-dotnet/SKILL.md` |
 | every signature, one line each | `llms.txt` |
-| option structs and their fields | `docs/api/Options.md` |
-| records used as array items | `docs/api/Records.md` |
+| option structs and their fields | `api/Options.md` |
+| records used as array items | `api/Records.md` |
 | hosting: components, mutations, DI | `docs/HOSTING.md` |
 | rules and decisions (read before changing the framework) | `docs/ARCHITECTURE.md` |
 | all components, working, one file per page | `samples/CuiSharp.Gallery/Pages/` |

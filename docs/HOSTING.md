@@ -100,4 +100,4 @@ usually simpler: `dotnet cui tree` against the app project drives it with its ow
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) — decisions and the generator pipeline.
 - [../skills/cui-dotnet/SKILL.md](../skills/cui-dotnet/SKILL.md) — how to write pages.
-- [../docs/api/Options.md](api/Options.md) — every option struct.
+- [skills/cui-dotnet/api/Options.md](../skills/cui-dotnet/api/Options.md) — every option struct.

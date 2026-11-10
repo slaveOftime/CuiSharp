@@ -45,7 +45,7 @@ public class DocumentationDriftTests
             .ToArray();
 
         Assert.NotEmpty(options);
-        string fields = Read(Path.Combine("docs", "api", "Options.md"));
+        string fields = Read(Path.Combine("api", "Options.md"));
 
         var missing = options.Where(o => !fields.Contains($"## `{o}`", StringComparison.Ordinal)).ToArray();
         Assert.True(missing.Length == 0, "option types with no fields documented: " + string.Join(", ", missing));

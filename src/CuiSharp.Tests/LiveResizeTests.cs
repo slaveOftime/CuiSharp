@@ -58,77 +58,89 @@ public class NativeAbiClaimTests
     [Fact]
     public void TheTargetsShipTheRidsTheErrorNames()
     {
-        string targets = File.ReadAllText(Path.Combine(RepositoryRoot, "src", "CuiSharp", "build", "CuiSharp.targets"));
+        string targets = Read("src", "CuiSharp", "build", "CuiSharp.targets");
 
-        foreach (string rid in CuiNative.RidList)
-        {
-            Assert.Contains(rid, targets, StringComparison.Ordinal);
-        }
+        foreach (string rid in CuiNative.RidList) Assert.Contains(rid, targets, StringComparison.Ordinal);
     }
 
     [Fact]
     public void TheDocumentedGlibcFloorIsTheOneTheErrorNames()
     {
-        string abi = File.ReadAllText(Path.Combine(RepositoryRoot, "docs", "NATIVE-ABI.md"));
-        string script = File.ReadAllText(Path.Combine(RepositoryRoot, "native", "build-native.sh"));
-
-        Assert.Contains(CuiNative.LinuxFloor, abi, StringComparison.Ordinal);
-        Assert.Contains($"CUI_GLIBC_BASELINE:-{CuiNative.LinuxFloor}", script, StringComparison.Ordinal);
+        Assert.Contains(CuiNative.LinuxFloor, Read("docs", "NATIVE-ABI.md"), StringComparison.Ordinal);
+        Assert.Contains($"CUI_GLIBC_BASELINE:-{CuiNative.LinuxFloor}", Read("native", "build-native.sh"), StringComparison.Ordinal);
     }
 
-    private static string RepositoryRoot
-    {
-        get
-        {
-            string? directory = AppContext.BaseDirectory;
-            while (directory is not null && !File.Exists(Path.Combine(directory, "CuiSharp.slnx")))
-                directory = Path.GetDirectoryName(directory);
-            return directory ?? throw new InvalidOperationException("the repository root was not found");
-        }
-    }
+    private static string Read(params string[] parts) =>
+        File.ReadAllText(Path.Combine([RepositoryRoot, .. parts]));
+
+    private static string RepositoryRoot => TestPaths.RepositoryRoot;
 }
 
 /// <summary>
-/// A package has to explain itself: the guide, the reference, the ABI promise and the widget
-/// behaviour pages are what an agent or a person reads instead of cloning the repository, and the
-/// report from a real app was that none of it was in the package.
+/// The bundle is the one folder a consumer reads, and the one thing the package ships. Neither is
+/// worth much if the package forgets it or the copies drift from the pages they were made from.
 /// </summary>
 public class PackagedDocsTests
 {
     [Fact]
-    public void ThePackageCarriesTheGuides()
+    public void ThePackageShipsTheBundleAtThePathTheRepositoryUses()
     {
-        string csproj = File.ReadAllText(Path.Combine(RepositoryRoot, "src", "CuiSharp", "CuiSharp.csproj"));
+        string csproj = File.ReadAllText(Path.Combine(TestPaths.RepositoryRoot, "src", "CuiSharp", "CuiSharp.csproj"));
+
+        // Same path in both, so a path in a document works wherever it is read.
+        Assert.Contains("skills/cui-dotnet/", csproj, StringComparison.Ordinal);
+        Assert.Contains("llms.txt", csproj, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void EveryBundledCopyMatchesItsSource()
+    {
+        (string Source, string Copy)[] staged =
+        [
+            ("native/CUI/docs/components.md", "widgets.md"),
+            ("native/CUI/docs/components-more.md", "widgets-more.md"),
+            ("docs/NATIVE-ABI.md", "native-abi.md"),
+            ("docs/HOSTING.md", "hosting.md"),
+        ];
+
+        foreach ((string source, string copy) in staged)
+        {
+            string original = File.ReadAllText(Path.Combine(TestPaths.RepositoryRoot, source));
+            string bundled = File.ReadAllText(Path.Combine(TestPaths.RepositoryRoot, "skills", "cui-dotnet", copy));
+
+            Assert.StartsWith("<!-- Copied from " + source, bundled, StringComparison.Ordinal);
+            string body = bundled[(bundled.IndexOf("-->", StringComparison.Ordinal) + 3)..].TrimStart();
+            Assert.Equal(original.ReplaceLineEndings("\n").TrimEnd(), body.ReplaceLineEndings("\n").TrimEnd());
+        }
+    }
+
+    [Fact]
+    public void TheBundleHoldsEverythingAReaderNeeds()
+    {
+        string bundle = Path.Combine(TestPaths.RepositoryRoot, "skills", "cui-dotnet");
 
         foreach (string file in (string[])
         [
-            "llms.txt", "SKILL.md", "NATIVE-ABI.md", "components.md", "components-more.md",
+            "SKILL.md", "README.md", "llms.txt", "widgets.md", "widgets-more.md", "hosting.md", "native-abi.md",
         ])
         {
-            Assert.Contains(file, csproj, StringComparison.Ordinal);
+            Assert.True(File.Exists(Path.Combine(bundle, file)), $"the bundle is missing {file}");
         }
+
+        Assert.NotEmpty(Directory.GetFiles(Path.Combine(bundle, "api"), "*.md"));
     }
 
     [Fact]
     public void TheWidgetPagesSayWhatTheWidgetsDo()
     {
-        // The pages are upstream's; this asserts they are the ones with behaviour in them rather
-        // than a table of links that would ship an empty promise.
-        string widgets = File.ReadAllText(Path.Combine(RepositoryRoot, "native", "CUI", "docs", "components-more.md"));
-        string widgets2 = File.ReadAllText(Path.Combine(RepositoryRoot, "native", "CUI", "docs", "components.md"));
+        // CUI's own pages, not a table of links that would ship an empty promise.
+        string more = Read("skills", "cui-dotnet", "widgets-more.md");
+        string first = Read("skills", "cui-dotnet", "widgets.md");
 
-        Assert.Contains("Up and Down move and the selection follows", widgets, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("keyboard", widgets2, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Up and Down move and the selection follows", more, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("keyboard", first, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static string RepositoryRoot
-    {
-        get
-        {
-            string? directory = AppContext.BaseDirectory;
-            while (directory is not null && !File.Exists(Path.Combine(directory, "CuiSharp.slnx")))
-                directory = Path.GetDirectoryName(directory);
-            return directory ?? throw new InvalidOperationException("the repository root was not found");
-        }
-    }
+    private static string Read(params string[] parts) =>
+        File.ReadAllText(Path.Combine([TestPaths.RepositoryRoot, .. parts]));
 }

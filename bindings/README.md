@@ -94,7 +94,7 @@ and missing reasons fail generation.
 Code: `src/CuiSharp/Interop/*.g.cs`, `src/CuiSharp/Ui/*.g.cs`, `src/CuiSharp/Icons.g.cs`,
 `src/CuiSharp.Tests/Abi.g.cs`, `src/CuiSharp.Tests/OptionMappings.g.cs`.
 
-Reference: `docs/api/<section>.md`, `docs/api/Options.md`, `docs/api/Records.md`, and
+Reference: `skills/cui-dotnet/api/<section>.md`, `.../api/Options.md`, `.../api/Records.md`, and
 `llms.txt` — the same plans that emit the code emit the documentation, so the
 reference cannot describe an API that does not exist. `bindings/coverage.txt`
 accounts for every C function: `GENERATED`, `MANUAL`, `EXCLUDED` or `PENDING`, each
