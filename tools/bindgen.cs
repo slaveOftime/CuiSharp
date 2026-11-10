@@ -2765,6 +2765,7 @@ sealed class Idiomatic
         sb.AppendLine("- `Color.Oklch(l, c, hue, alpha)`, `Color.Mix(a, b, t)`, `color.WithAlpha(f)`, `ui.ColorOf(color)`, `ui.TokenColor(token)`, `Ui.AccentName(accent)`, `Ui.KeyName(key)`.");
         sb.AppendLine("- `CuiMath.DiffLines(old, new)` / `DiffWords(old, new)` / `EvaluateCurve(keys, x)` / `EvaluateGradient(stops, t)` / `PathMatches(path, filter)`; `MarkdownText.ToggleTask(ref text, offset, result)`; `CuiFiles.ListDirectory(path)`; `CuiSurface` input: `MouseMove`, `MouseDown`, `MouseUp`, `Click`, `Scroll`, `KeyDown`, `KeyUp`, `Type`, `Focus`, `FileDrop`.");
         sb.AppendLine("- `ui.Theme` and `ui.Accent`: assign `Theme.Dark` or `Accent.Blue` from inside any frame and CUI animates the change; `ui.ToggleTheme()` is the dark-mode command.");
+        sb.AppendLine("- `ui.SetLocalization(table)` and `ui.Localization`: the month, weekday and \"Today\" names the date components show. A `Localization` object holds the names (each nullable, falling back to English), owns the unmanaged table CUI reads every frame, and the surface keeps it alive; null restores English.");
         sb.AppendLine();
         sb.AppendLine("## API");
         sb.AppendLine();

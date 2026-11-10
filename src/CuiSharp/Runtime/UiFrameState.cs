@@ -1,3 +1,6 @@
+using System.Runtime.InteropServices;
+using CuiSharp.Interop;
+
 namespace CuiSharp;
 
 /// <summary>A synchronous frame body. The UI cannot be captured or retained.</summary>
@@ -24,6 +27,80 @@ internal sealed class UiFrameState
     /// <summary>Per-id UTF-8 buffers for the pooled <c>ref string</c> text inputs.</summary>
     internal readonly TextFieldPool Text = new();
 
+    /// <summary>
+    /// The name table this surface published. Kept for two reasons: it is what keeps the table's
+    /// unmanaged block alive while CUI holds the pointer, and it is the one that is asked for the
+    /// new block when a name changed.
+    /// </summary>
+    internal Localization? Localization;
+
+    /// <summary>The block native was last handed, so re-syncing an unchanged table is a no-op.</summary>
+    internal nint LocalizationBlock;
+
+    // A table that was disposed while published: native still reads its block, so the pointer is
+    // cleared at the next boundary, and only then can the block go.
+    private bool _localizationClear;
+
+    // Blocks native may still be reading — replaced or orphaned during the frame just gone. They
+    // are freed at the boundary that follows it, never inside the frame that dropped them.
+    private readonly List<nint> _retiredBlocks = [];
+
+    /// <summary>
+    /// Frame start: tells the context which table to read, then frees the blocks only the frame
+    /// that already presented could have been reading. Everything before this point in the frame
+    /// sees the same table the rest of it does.
+    /// </summary>
+    internal void SyncLocalization(nint ctx)
+    {
+        if (_localizationClear)
+        {
+            Native.SetStrings(ctx, 0);
+            _localizationClear = false;
+        }
+
+        if (Localization is { } table)
+        {
+            nint block = table.Publish();
+            if (block != LocalizationBlock)
+            {
+                LocalizationBlock = block;
+                Native.SetStrings(ctx, block);
+            }
+        }
+
+        FreeRetired();
+    }
+
+    /// <summary>Keeps a replaced block until the frame that could still read it has painted.</summary>
+    internal void Retire(nint block) => _retiredBlocks.Add(block);
+
+    /// <summary>
+    /// Takes the block of a table that is going away. Native reads it until the next boundary, so
+    /// the pointer is cleared there and the block freed with the rest.
+    /// </summary>
+    internal void Orphan(Localization table, nint block)
+    {
+        if (!ReferenceEquals(Localization, table)) return;
+
+        Localization = null;
+        LocalizationBlock = 0;
+        _localizationClear = true;
+        if (block != 0) _retiredBlocks.Add(block);
+    }
+
+    /// <summary>
+    /// Lets the published table go when the surface is disposed, so the app may dispose it too.
+    /// The context is already gone here, so there is nothing to tell native.
+    /// </summary>
+    internal void Release()
+    {
+        Localization?.Detach(this);
+        Localization = null;
+        LocalizationBlock = 0;
+        _localizationClear = false;
+        FreeRetired();
+    }
+
     internal void Reset()
     {
         Painters.Clear();
@@ -32,6 +109,13 @@ internal sealed class UiFrameState
         Text.BeginFrame();
     }
     internal PaintScope EnterPaint() => new(this);
+
+    private unsafe void FreeRetired()
+    {
+        if (_retiredBlocks.Count == 0) return;
+        foreach (nint block in _retiredBlocks) NativeMemory.Free((void*)block);
+        _retiredBlocks.Clear();
+    }
 
     internal readonly ref struct PaintScope : IDisposable
     {

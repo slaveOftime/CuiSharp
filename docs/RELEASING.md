@@ -55,11 +55,12 @@ their own machine, so they are taken from the app — never edited.
 
 ## 4. Update the record
 
-- `CHANGELOG.md`: move `## [Unreleased]` to `## [x.y.z] — date` and leave a fresh empty one above
-  it. User-facing facts only (new API, behaviour changes, fixes), each with the migration if there
-  is one; detail stays in the pull request. This section *is* the release page: `release.yml` runs
-  `tools/release-notes.ps1` and publishes it verbatim, so a version with no section — or one still
-  under `[Unreleased]` — fails the release instead of shipping without notes. Check it locally with
+- `CHANGELOG.md`: give the version its section, `## [x.y.z] — unreleased` while the work is going
+  in and `## [x.y.z] — date` once the release is cut. User-facing facts only (new API, behaviour
+  changes, fixes), each with the migration if there is one; detail stays in the pull request. This
+  section *is* the release page: `release.yml` runs `tools/release-notes.ps1` and publishes it
+  verbatim, so a version with no section — or one still marked unreleased — fails the pack job,
+  before anything is pushed to nuget.org. Check it locally with
   `pwsh tools/release-notes.ps1 -Version x.y.z`.
 - `skills/cui-dotnet/{llms.txt,api/*.md}` are generated from the headers; check them in the `regen`
   diff rather than editing them by hand. `SKILL.md` beside them is hand-written.

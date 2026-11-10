@@ -37,8 +37,8 @@ retained-pointer storage.
 | `src/CuiSharp/Ui/Records.g.cs` | Data records used as array items (`Choice`, `Command`, `TableColumn`, `TableSort`): friendly constructor, `ToNative()`, and `FromNative()` where write-back is meaningful. |
 | `src/CuiSharp.Tests/OptionMappings.g.cs` | One consolidated test covering every generated option's populated fields, sentinel and null/false defaults. A swapped field is a single generator bug, so it is one test, not one per option. |
 
-Current state: **166** option structs, **100** data records, **278** generated wrappers, **167**
-deliberate hand-written ones, **6** excluded, **4** variadic skipped, **0** pending — 492 C
+Current state: **166** option structs, **100** data records, **278** generated wrappers, **169**
+deliberate hand-written ones, **4** excluded, **4** variadic skipped, **0** pending — 492 C
 functions, every one with a status. Pointer-heavy options are withheld rather than exposed with guessed
 ownership. Charts, texture handles, text-buffer inputs and reorder are hand-written on purpose, and
 `coverage.txt` names the member and the file for every one of them.

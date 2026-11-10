@@ -24,13 +24,6 @@ tell the two roles apart from the declaration alone.
 
 - **`dotnet new cui-script`** — one file, `#:package CuiSharp@*`, `dotnet run app.cs` opens a window.
   The template covers the solution case only. Prove it in `verify-template.ps1`.
-- **A `Localization` owner for `cui_set_strings`.** CUI keeps the pointer to its month, weekday and
-  "Today" table and reads it every frame, so the wrapper needs storage that outlives the call — the
-  frame arena cannot provide it, and the two functions stay `EXCLUDED` until it exists. The shape:
-  a `Localization` class holding the managed strings, one unmanaged block rebuilt when they change,
-  and `ui.SetLocalization(table)`; `CuiSurface`/`CuiApp` own the instance the way they own the
-  theme. Twelve month names, their short forms, three weekday forms and `Today`, each entry
-  nullable so a partial table falls back to English.
 - **The gallery pages for the extended components** (`examples/gallery_more.c`'s other fifteen):
   *Developer tools* and *More developer tools* cover CUI 1.3's twenty, but actions, smart inputs,
   pickers, capture, disclosure, reader, data grid, code, social and media, planning, more charts,

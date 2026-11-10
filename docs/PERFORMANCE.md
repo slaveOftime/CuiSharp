@@ -24,7 +24,7 @@ CI → Run workflow) because a shared runner is too noisy to fail one.
 | Gallery frame, 1240x820, software raster | **0.82 ms** mean (p50 0.69, p95 1.13, p99 1.33) | budget 0.90 ms, `--fps 900` |
 | Build only (a GPU would rasterize) | 0.02 ms | same run |
 | Managed allocation per frame | **0 B** | `FrameLifecycleTests`, `NewComponentTests` |
-| Gallery AOT executable, win-x64 | 2 579 456 B | budget 2.7 MB |
+| Gallery AOT executable, win-x64 | 2 580 992 B | budget 2.7 MB |
 | A million virtual list rows | ~12 µs | `--scale` |
 | A million chart points, undecimated | 45.9 ms | why decimation exists |
 | A million chart points, decimated to 800 | 0.018 ms | same |
@@ -35,7 +35,8 @@ twenty components it added are about 5 000 lines of new C (`cui_devtools.c`, `cu
 `cui_devviews.c`, `cui_graph.c`, `cui_regex.c`) compiled into the same library. The frame time did not
 move, because a page still draws only the widgets on it. The ceiling moved with the binary rather
 than the other way round, and it is a round number above the measurement, so the next regression still
-fails the gate.
+fails the gate. `Localization` added 1 536 B on top of that, and no measurable frame time: it costs
+one null test per frame, and a published table is compared slot by slot only when one is attached.
 
 ## Scale: a million of something
 

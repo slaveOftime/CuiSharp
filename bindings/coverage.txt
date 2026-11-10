@@ -155,8 +155,8 @@ MANUAL cui_get_accent: `ui.Accent` getter (Ui.Frame.cs).
 MANUAL cui_theme_get: `ui.TokenColor` and `CuiSurface`/`CuiApp` own the theme pointer; the raw struct stays internal.
 MANUAL cui_set_reduced_motion: `ui.SetReducedMotion(bool)` (Ui.Frame.cs).
 MANUAL cui_color_of: `ui.ColorOf(color)` (Ui.Frame.cs) resolves a token to channels the frame is drawing with.
-EXCLUDED cui_set_strings: CUI keeps the pointer and reads the table every frame, so the wrapper needs storage that outlives the call; the frame arena cannot provide it. A Localization owner is the shape this needs (docs/PLAN.md), and until it exists an app that translates calls the raw layer.
-EXCLUDED cui_get_strings: Returns the pointer CUI keeps, which is the caller's own table or NULL for English: there is nothing to copy without the Localization owner above.
+MANUAL cui_set_strings: `ui.SetLocalization(table)` (Ui/Ui.Localization.cs): CUI keeps the pointer and reads it every frame, so the `Localization` class owns the unmanaged table and the surface keeps the instance alive.
+MANUAL cui_get_strings: Returns the pointer CUI keeps, which is the published table's block or NULL for English: `ui.Localization` answers it without handing out a raw pointer.
 MANUAL cui_token_color: `ui.TokenColor(token)` (Ui.Frame.cs).
 MANUAL cui_accent_name: `Ui.AccentName(accent)` (Ui.Frame.cs).
 MANUAL cui_oklch: `Color.Oklch(l, c, hue, alpha)` (Interop/Types.cs): the space the themes are built in.
