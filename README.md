@@ -200,8 +200,10 @@ warnings: a blocking call in a frame (`CUI001`), a container scope without `usin
 popover body that never checks `Open` (`CUI003`), a constant id in a loop (`CUI004`),
 `ConfigureAwait(false)` or `async void` in a component (`CUI005`, `CUI006`), and an allocation in a
 frame (`CUI007`), plus reflection-based JSON serialization under AOT (`CUI008`). Each message says
-what to do instead. IDE quick fixes add scope disposal/conditional guards (`CUI002`, `CUI003`) and
-remove an awaited BCL `ConfigureAwait` (`CUI005`). The other rules still require a manual rewrite.
+what to do instead. IDE quick fixes add scope disposal/conditional guards (`CUI002`, `CUI003`),
+key repeated widgets (`CUI004`), and remove an awaited BCL `ConfigureAwait` (`CUI005`). The id fix
+uses the widget's receiver and a foreach item or an unambiguous changing integer counter;
+nested loops and while/do loops need explicit keys. The other rules still require a manual rewrite.
 
 ## Install and publish
 

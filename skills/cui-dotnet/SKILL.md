@@ -307,10 +307,14 @@ million-sample feed holds 144 fps with 0 B of managed allocation per frame.
 | Frame rate sags | allocation per frame: LINQ, `new`, string concat | interpolate into a widget; hoist arrays with `static readonly` (CUI007) |
 | An async handler deadlocks or the app crashes at shutdown | `ConfigureAwait(false)` or `async void` in a component | await normally in `Mutation`/`Run` (CUI005, CUI006) |
 
-IDE quick fixes are available for scope disposal (`CUI002`), conditional-body guards (`CUI003`)
-and an awaited BCL `ConfigureAwait` (`CUI005`). Scope fixes are individual, not fix-all, and are
-not offered if the added guard would introduce a compiler error. The remaining rules still need
-a manual rewrite.
+IDE quick fixes are available for scope disposal (`CUI002`), conditional-body guards (`CUI003`),
+repeated-widget keys (`CUI004`) and an awaited BCL `ConfigureAwait` (`CUI005`). Scope/id fixes are
+individual, not fix-all, and are not offered if they introduce a compiler error. The id fix uses
+that widget's receiver and the foreach item or a changing integer for-loop counter; a using
+container's children remain inside it. Nested loops, while/do loops and ambiguous keys need an
+explicit `ui.Id(item.Id)` or `ui.Keyed(items, key)` rewrite. Prefer stable model keys when rows can
+move or be removed. Display text and existing-id targets are not collisions. The remaining rules
+still need a manual rewrite.
 
 Verifying:
 - **Abandoned array literals cost arena space, not correctness.** Every array handed to CUI is copied

@@ -11,10 +11,11 @@ in [ARCHITECTURE.md](ARCHITECTURE.md). Every item here passes the same gates as 
   pickers, capture, disclosure, reader, data grid, code, social and media, planning, more charts,
   motion, AI, audio and files still draw only in C's own gallery. One page per commit-sized slice;
   a missing wrapper is a generator or `overrides.json` fix, never a hand edit.
-- **Remaining analyzer code fixes** for CUI001, CUI004, CUI006–CUI008. CUI002/CUI003 now rewrite
-  scope disposal and guards; CUI005 removes an awaited BCL `ConfigureAwait(bool)`. IDE-only fixes ship
-  in a separate assembly so command-line analyzers do not depend on Workspaces. Still needed: safe
-  rewrites for the remaining rules and sequential fix-all for overlapping scope bodies.
+- **Remaining analyzer code fixes** for CUI001, CUI006–CUI008. CUI002/CUI003 rewrite scope disposal
+  and guards; CUI004 keys repeated widgets in simple for/foreach loops; CUI005 removes an awaited
+  BCL `ConfigureAwait(bool)`. IDE-only fixes ship in a separate assembly so command-line analyzers
+  do not depend on Workspaces. Still needed: safe rewrites for the remaining rules and sequential
+  fix-all for overlapping scope bodies. Nested loops and ambiguous row keys remain manual.
 
 ## 2. Where upstream has to move first
 

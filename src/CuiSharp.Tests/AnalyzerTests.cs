@@ -38,13 +38,16 @@ public class AnalyzerTests
         return [.. references];
     }
 
-    private static async Task<string[]> AnalyzeAsync(string source)
+    private static async Task<string[]> AnalyzeAsync(string source, bool requireValidCompilation = false)
     {
         var compilation = CSharpCompilation.Create(
             "AnalyzerProbe",
             [CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.CSharp14))],
             References,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable));
+
+        if (requireValidCompilation)
+            Assert.Empty(compilation.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error));
 
         var analyzers = ImmutableArray.Create<DiagnosticAnalyzer>(
             new FrameAnalyzer(), new ScopeAnalyzer(), new WidgetIdAnalyzer());
@@ -365,6 +368,57 @@ public class AnalyzerTests
             """);
 
         Assert.DoesNotContain(found, f => f.StartsWith("CUI004", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("ui.Text(\"same\");")]
+    [InlineData("ui.Heading(\"same\");")]
+    [InlineData("ui.Label(\"same\");")]
+    [InlineData("ui.Secondary(\"same\");")]
+    [InlineData("ui.Muted(\"same\");")]
+    [InlineData("ui.Code(\"same\");")]
+    [InlineData("ui.Kbd(\"same\");")]
+    [InlineData("ui.Badge(\"same\");")]
+    [InlineData("ui.Avatar(\"same\");")]
+    [InlineData("ui.Icon(\"same\");")]
+    [InlineData("ui.MeasureText(\"same\");")]
+    [InlineData("ui.DrawText(\"same\", 0, 0, Color.Foreground);")]
+    [InlineData("ui.NavSection(\"same\");")]
+    [InlineData("ui.Metric(\"same\", \"1\");")]
+    [InlineData("ui.TimelineItem(\"same\");")]
+    [InlineData("ui.MenuLabel(\"same\");")]
+    [InlineData("ui.Tooltip(\"same\");")]
+    [InlineData("ui.Toast(\"same\");")]
+    [InlineData("ui.ScrollTo(\"same\", 0);")]
+    [InlineData("ui.RectOf(\"same\");")]
+    [InlineData("ui.MakeId(\"same\");")]
+    [InlineData("ui.PopoverOpen(\"same\");")]
+    [InlineData("ui.PopoverClose(\"same\");")]
+    [InlineData("ui.PopoverToggle(\"same\");")]
+    [InlineData("ui.PopoverIsOpen(\"same\");")]
+    [InlineData("ui.CodeEditorGoto(\"same\", 0, 0);")]
+    [InlineData("ui.CodeEditorSelect(\"same\", 0, 0);")]
+    [InlineData("ui.CodeEditorFind(\"same\", \"query\");")]
+    [InlineData("ui.HexViewGoto(\"same\", 0);")]
+    [InlineData("ui.SignatureClear(\"same\");")]
+    public async Task DisplayTextAndExistingIdTargetsAreNotRowState(string call)
+    {
+        string[] found = await AnalyzeAsync(Prologue + "public static class Page { public static void Draw(Ui ui) { " +
+            "for (int i = 0; i < 3; i++) { " + call + " } } }", requireValidCompilation: true);
+        Assert.DoesNotContain(found, f => f.StartsWith("CUI004", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("ui.Button(\"same\");")]
+    [InlineData("ui.Input(\"same\", ref text);")]
+    [InlineData("ui.Gauge(\"same\", .5f);")]
+    [InlineData("ui.Meter(\"same\", 1, 2);")]
+    [InlineData("ui.ProgressRing(\"same\", .5f);")]
+    public async Task InteractiveAndAnimatedLabelsStillNeedRowKeys(string call)
+    {
+        string[] found = await AnalyzeAsync(Prologue + "public static class Page { public static void Draw(Ui ui) { string text = \"\"; " +
+            "for (int i = 0; i < 3; i++) { " + call + " } } }", requireValidCompilation: true);
+        Assert.Single(found, f => f.StartsWith("CUI004", StringComparison.Ordinal));
     }
 
     // ---- CUI005 / CUI006 ----------------------------------------------------

@@ -148,7 +148,9 @@ public sealed class CodeFixTests
         // The wrap must not drop or duplicate what the loop drew.
         using var app = HeadlessApp.Start(DrawFrom(fixedCompilation), 480, 320);
         Assert.Empty(app.Faults);
-        Assert.Equal(3, app.Tree.Descendants().Count(n => n.Kind == "Input" && n.Text == "name"));
+        var inputs = app.Tree.Descendants().Where(n => n.Kind == "Input" && n.Text == "name").ToArray();
+        Assert.Equal(3, inputs.Length);
+        Assert.Equal(3, inputs.Select(n => n.Id).Distinct().Count());
         app.Frame();
         Assert.Empty(app.Faults);
     }
@@ -161,6 +163,80 @@ public sealed class CodeFixTests
         using var workspace = new AdhocWorkspace();
         Document document = DocumentFor(workspace, source);
         var diagnostic = Assert.Single((await AnalyzeAsync(document)).Where(d => d.Id == "CUI004"));
+        var actions = new List<CodeAction>();
+        await new WidgetIdCodeFixProvider().RegisterCodeFixesAsync(
+            new CodeFixContext(document, diagnostic, (action, _) => actions.Add(action), CancellationToken.None));
+        Assert.Empty(actions);
+    }
+
+    [Fact]
+    public async Task KeyingAUsingDeclarationKeepsItsChildrenInTheContainer()
+    {
+        string source = Prologue + "public static class Probe { public static float Ratio = .5f; public static void Draw(Ui ui) { " +
+            "for (int i = 0; i < 2; i++) { using var split = ui.Split(\"row\", ref Ratio); ui.Button($\"child{i}\"); } } }";
+        var fixedCompilation = await FixAsync(source, "CUI004");
+        using var app = HeadlessApp.Start(DrawFrom(fixedCompilation), 480, 320);
+        var children = app.Tree.Descendants().Where(n => n.Kind == "Button").ToArray();
+        Assert.Equal(2, children.Length);
+        Assert.All(children, child => Assert.Equal("Split", child.Parent!.Kind));
+        var splits = app.Tree.Descendants().Where(n => n.Kind == "Split").ToArray();
+        Assert.Equal(2, splits.Select(n => n.Id).Distinct().Count());
+        app.Frame();
+        Assert.Empty(app.Faults);
+    }
+
+    [Theory]
+    [InlineData("other")]
+    [InlineData("@event")]
+    public async Task TheIdScopeUsesTheReceiverOfTheReportedWidget(string receiver)
+    {
+        string source = Prologue + "public static class Probe { public static void Draw(Ui ui, Ui " + receiver + ") { " +
+            "for (int i = 0; i < 3; i++) { " + receiver + ".Button(\"same\"); } } }";
+        var fixedCompilation = await FixAsync(source, "CUI004");
+        Assert.Contains($"using ({receiver}.Id(i))", fixedCompilation.SyntaxTrees.Single().ToString(), StringComparison.Ordinal);
+        var draw = Emit(fixedCompilation).GetType("Probe")!.GetMethod("Draw")!.CreateDelegate<DrawTwo>();
+        using var first = CuiSurface.Create(480, 320);
+        using var second = CuiSurface.Create(480, 320);
+        first.RecordWidgets = second.RecordWidgets = true;
+        first.BeginFrame();
+        second.BeginFrame();
+        draw(first.Ui, second.Ui);
+        second.EndFrame();
+        first.EndFrame();
+        Assert.Empty(first.Widgets);
+        Assert.Equal(3, second.Widgets.Count);
+        Assert.Equal(3, second.Widgets.Select(w => w.Id).Distinct().Count());
+        Assert.Empty(first.Faults);
+        Assert.Empty(second.Faults);
+    }
+
+    private delegate void DrawTwo(Ui first, Ui second);
+
+    [Theory]
+    [InlineData("for (int i = 0; i < 3; i++) {", "}")]
+    [InlineData("int i = 0; for (i = 0; i < 3; i++) {", "}")]
+    [InlineData("for (int @event = 0; @event < 3; @event++) {", "}")]
+    public async Task OnlyAChangingCounterIsUsedAsTheForLoopKey(string before, string after)
+    {
+        string source = Prologue + "public static class Probe { public static void Draw(Ui ui) { " +
+            before + " ui.Button(\"same\"); " + after + " } }";
+        await FixAsync(source, "CUI004");
+    }
+
+    [Theory]
+    [InlineData("int i = 0; for (int key = 42; i < 3; i++) {")]
+    [InlineData("for (int i = 0; i < 3;) {")]
+    [InlineData("for (int i = 0; i < 2; i++) { for (int j = 0; j < 3; j++) {", "} }")]
+    [InlineData("int i = 0; do {", "} while (i++ < 3);")]
+    public async Task ALoopWithoutAnUnambiguousChangingKeyHasNoFix(string before, string after = "}")
+    {
+        string source = Prologue + "public static class Probe { public static void Draw(Ui ui) { " +
+            before + " ui.Button(\"same\"); " + after + " } }";
+        using var workspace = new AdhocWorkspace();
+        Document document = DocumentFor(workspace, source);
+        var compilation = (await document.Project.GetCompilationAsync())!;
+        Assert.Empty(compilation.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error));
+        var diagnostic = Assert.Single(await AnalyzeAsync(document), d => d.Id == "CUI004");
         var actions = new List<CodeAction>();
         await new WidgetIdCodeFixProvider().RegisterCodeFixesAsync(
             new CodeFixContext(document, diagnostic, (action, _) => actions.Add(action), CancellationToken.None));

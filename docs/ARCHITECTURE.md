@@ -134,6 +134,11 @@ declaration's block. A rewrite that introduces a compiler error is not offered. 
 is deliberately unavailable until overlapping body edits can be applied sequentially. CUI005
 removes only an awaited BCL `Task`/`ValueTask.ConfigureAwait(bool)`, not a look-alike method, a
 configured awaitable stored in a local, or `ConfigureAwaitOptions` (which can suppress exceptions).
+CUI004 wraps a widget in an id scope on its actual receiver, and a using declaration together with
+its remaining children. It only chooses a foreach item or an integer counter incremented/decremented
+by the same for loop; nested loops, while/do loops and ambiguous keys require a manual rewrite.
+No fix-all is offered. Display-only text and calls addressing an existing id are not row collisions;
+labels used to animate widgets (Gauge, Meter, ProgressRing) still need distinct keys.
 
 ## Frame model
 

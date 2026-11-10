@@ -51,9 +51,9 @@ public sealed class WidgetIdAnalyzer : DiagnosticAnalyzer
         if (method.Parameters.Length == 0 || method.Parameters[0].Type.SpecialType != SpecialType.None) return;
         if (method.Parameters[0].Type.ToDisplayString() != "CuiSharp.UiText") return;
 
-        // An addressing call targets an id that already exists elsewhere; it registers no state of
-        // its own, so a constant target inside a loop is not a row collision.
-        if (AddressingMethods.Contains(method.Name)) return;
+        // UiText is also used for display text and for addressing state owned elsewhere.
+        // Neither registers per-row state keyed by this argument.
+        if (NonRowIdMethods.Contains(method.Name)) return;
 
         var first = invocation.ArgumentList.Arguments[0].Expression;
         if (first is not LiteralExpressionSyntax literal || literal.Token.ValueText.Length == 0) return;
@@ -62,11 +62,22 @@ public sealed class WidgetIdAnalyzer : DiagnosticAnalyzer
         context.ReportDiagnostic(Diagnostic.Create(Diagnostics.ConstantIdInLoop, literal.GetLocation(), literal.Token.ValueText));
     }
 
-    /// <summary>
-    /// Calls that reference an existing id instead of registering a new one. A new C function of
-    /// this shape belongs here with a one-line why, the same way an override does.
-    /// </summary>
-    private static readonly HashSet<string> AddressingMethods = new(StringComparer.Ordinal) { "ScrollTo" };
+    // Reviewed against native implementations, not just UiText's signature. In particular,
+    // Gauge, Meter and ProgressRing animate by their label and must NOT be excluded as display.
+    private static readonly HashSet<string> NonRowIdMethods = new(StringComparer.Ordinal)
+    {
+        // Plain text/drawing has no label-keyed state (nowrap Text salts its id with node_count).
+        "Text", "Heading", "Label", "Secondary", "Muted", "Code", "Kbd", "Badge", "Avatar",
+        "Icon", "DrawText", "DrawIcon", "MeasureText", "NavSection", "Metric", "TimelineItem",
+        "MenuLabel", "ChatDivider", "TreeTableName",
+        // Targets an existing widget, uses the last widget's id, or allocates an independent handle.
+        "ScrollTo", "MakeId", "RectOf", "Tooltip", "Toast", "Id",
+        "PopoverOpen", "PopoverClose", "PopoverToggle", "PopoverIsOpen",
+        "CodeEditorGoto", "CodeEditorSelect", "CodeEditorFind", "HexViewGoto", "SignatureClear",
+        "DockSave", "DockLoad",
+        // Pure helpers or resource loading, not a widget keyed by the string.
+        "LoadFont", "EmojiFontLoadFile", "EmojiSupported", "DrawEmoji", "Emoji", "CronDescribe",
+    };
 
     private static bool InsideIdScope(SyntaxNode node)
     {
