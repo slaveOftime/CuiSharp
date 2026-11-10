@@ -92,7 +92,7 @@ What the user did this frame, one event per call; call them after cui_node_edito
 public bool NodeLinkRemoved(ref int linkId)
 ```
 
-cui_node_link_removed
+Part of cui_node_link — A link from an output pin to an input pin. Returns true while it is selected.
 
 ## `NodeOutput`
 
@@ -124,4 +124,4 @@ cui_shortcut_label
 public bool ShortcutRecorder(UiText id, ref KeyCombo combo, ShortcutRecorderOpts o = default)
 ```
 
-cui_shortcut_recorder_ex
+* left to right in any interface: see cui__keep_ltr

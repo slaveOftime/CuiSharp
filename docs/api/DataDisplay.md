@@ -92,7 +92,7 @@ Next cell; put any components inside, or use cui_table_cell_text.
 public void TableCellText(UiText text)
 ```
 
-cui_table_cell_text
+Part of cui_table_cell — Next cell; put any components inside, or use cui_table_cell_text.
 
 ## `TableRow`
 

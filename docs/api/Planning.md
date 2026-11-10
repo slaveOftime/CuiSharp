@@ -20,7 +20,7 @@ protected override void Draw(Ui ui)
 public int Gantt(UiText id, ReadOnlySpan<GanttTask> tasks, Date origin, int days, GanttOpts o = default)
 ```
 
-cui_gantt_ex
+* left to right in any interface: see cui__keep_ltr
 
 ## `Kanban`
 
@@ -60,4 +60,4 @@ cui_month_calendar_ex
 public int WeekCalendar(UiText id, Date weekStart, ReadOnlySpan<CalendarEvent> events, WeekOpts o = default)
 ```
 
-cui_week_calendar_ex
+* left to right in any interface: see cui__keep_ltr

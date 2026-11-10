@@ -91,6 +91,29 @@ public class AnalyzerTests
     }
 
     [Fact]
+    public async Task DiskAndPoolWorkStartedInAFrameIsReported()
+    {
+        string[] found = await AnalyzeAsync(Prologue + """
+            public sealed class Page : Component
+            {
+                public override void Draw(Ui ui)
+                {
+                    File.WriteAllText("out.txt", "x");
+                    _ = Directory.Exists(".");
+                    _ = Task.Run(() => 1);
+                }
+            }
+            """);
+
+        string[] reported = [.. found.Where(f => f.StartsWith("CUI001", StringComparison.Ordinal))];
+
+        // The disk and a frame-started task are the two ways work lands back on the frame thread.
+        Assert.Equal(3, reported.Length);
+        Assert.Contains(reported, f => f.Contains("File.WriteAllText", StringComparison.Ordinal));
+        Assert.Contains(reported, f => f.Contains("Task.Run", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task AwaitingTheSameWorkIsNotReported()
     {
         string[] found = await AnalyzeAsync(Prologue + """

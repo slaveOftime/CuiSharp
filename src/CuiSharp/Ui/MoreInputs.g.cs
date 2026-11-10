@@ -42,7 +42,7 @@ public static unsafe class MoreInputsUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_shortcut_recorder_ex</summary>
+        /// <summary>* left to right in any interface: see cui__keep_ltr</summary>
         public bool ShortcutRecorder(UiText id, ref KeyCombo combo, ShortcutRecorderOpts o = default)
         {
             var __combo = combo.ToNative();
@@ -134,7 +134,7 @@ public static unsafe class MoreInputsUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_node_link_removed</summary>
+        /// <summary>Part of cui_node_link — A link from an output pin to an input pin. Returns true while it is selected.</summary>
         public bool NodeLinkRemoved(ref int linkId)
         {
             var __result = Native.NodeLinkRemoved(ui.Handle, ref linkId);

@@ -20,7 +20,7 @@ protected override void Draw(Ui ui)
 public void CodeBlock(UiText id, UiText code, CodeOpts o = default)
 ```
 
-cui_code_block_ex
+* left to right in any interface: see cui__keep_ltr
 
 ## `CodeEditor`
 
@@ -28,7 +28,7 @@ cui_code_block_ex
 public CodeEditorResult CodeEditor(UiText id, ref string buf, int cap, CodeEditorOpts o = default)
 ```
 
-cui_code_editor_ex
+* left to right in any interface: see cui__keep_ltr
 
 ## `CodeEditorFind`
 
@@ -60,7 +60,7 @@ On the next frame: select bytes anchor..cursor, focus and scroll there.
 public DiffResult DiffView(UiText id, UiText oldText, UiText newText, ref int current, DiffOpts o = default)
 ```
 
-cui_diff_view_ex
+* left to right in any interface: see cui__keep_ltr
 
 ## `JsonView`
 
@@ -68,7 +68,7 @@ cui_diff_view_ex
 public bool JsonView(UiText id, UiText json, JsonOpts o = default)
 ```
 
-cui_json_view_ex
+* left to right in any interface: see cui__keep_ltr
 
 ## `Markdown`
 

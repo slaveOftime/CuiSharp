@@ -56,7 +56,7 @@ public static unsafe class TextUiExtensions
             WidgetRecorder.Note(ui.Handle, "Code", text);
         }
 
-        /// <summary>cui_kbd</summary>
+        /// <summary>* left to right in any interface: see cui__keep_ltr</summary>
         public void Kbd(UiText keys)
         {
             Native.Kbd(ui.Handle, Utf8.Get(keys));

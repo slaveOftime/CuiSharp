@@ -32,13 +32,20 @@ public readonly struct SemanticWidget
     /// <summary>True for a container that recorded itself because the app named it.</summary>
     public readonly bool IsContainer;
 
-    internal SemanticWidget(string kind, string text, RectF rect, int depth, bool container)
+    /// <summary>
+    /// The id CUI laid this widget out under. Stable while the widget exists, and unrelated to
+    /// the text, so it is what a test can hold on to when the label is translated.
+    /// </summary>
+    public readonly uint Id;
+
+    internal SemanticWidget(string kind, string text, RectF rect, int depth, bool container, uint id)
     {
         Kind = kind;
         Text = text;
         Rect = rect;
         Depth = depth;
         IsContainer = container;
+        Id = id;
     }
 
     /// <summary>The point at the middle: where a simulated click goes.</summary>
@@ -309,7 +316,7 @@ internal sealed class FrameRecorder
         foreach (Pending widget in _pending)
         {
             RectF rect = UiMarshal.FromNative(Native.GetRect(ui, widget.Id));
-            var entry = new SemanticWidget(widget.Kind, widget.Decode(), rect, widget.Depth, widget.Container);
+            var entry = new SemanticWidget(widget.Kind, widget.Decode(), rect, widget.Depth, widget.Container, widget.Id);
             _entries.Add(entry);
             if (!widget.Container) _controls.Add(entry);
         }

@@ -52,7 +52,7 @@ cui_carousel_slide_begin
 public void Counter(UiText id, double value, CounterOpts o = default)
 ```
 
-cui_counter_ex
+* left to right in any interface: see cui__keep_ltr
 
 ## `ImageCompare`
 

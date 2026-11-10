@@ -52,6 +52,23 @@ Unattended workflow this leaves: edit → `dotnet test` → look at a PNG when t
 (`app.SavePng` in a test, or `dotnet cui png`). Human-in-the-loop: `dotnet watch` in one window,
 edit in the other. Both are documented in the guide's "How to work on a UI".
 
+## Second pass: an app's feedback, five checkpoints
+
+An external Native-AOT app reported what building on 0.1.0 cost it. The full triage is
+[FEEDBACK-TRIAGE.md](FEEDBACK-TRIAGE.md); what shipped from it:
+
+| Checkpoint | Result |
+|---|---|
+| **Window resize** (maintainer's own bug) | A drag cost two frames and two display waits per mouse step. `Hosting/LiveResize` subclasses CUI's window procedure instead of patching it: **2180 ms → 1444 ms** for the same 20-step script against the real window, one frame per step, and vsync dropped for the drag. |
+| **Lifecycle and OS integration** | `OnInitialized` no longer runs before the window (`CuiApplication.Run` stopped initializing eagerly, which contradicted `Component`'s own doc). New `CuiWindow` — handle, backend, renderer, title, minimize/maximize/close — on `CuiApp.Window`, `CuiApplication.Window` and `CuiAppOptions.WindowCreated`. Native load failures explain themselves (`CuiSharpNativeException`). |
+| **Headless ergonomics** | `Advance(TimeSpan, frames)`, `Settle()`, `Animating`, `ParkPointer()`, pointer-free `SavePng`, `FindById`, `FindItem(id, index)`, `id:` queries, `SemanticWidget.Id`. |
+| **Fonts** | `UseSystemFontFallback("中文")` probes the faces each OS ships and registers the first that *paints* the sample — advance cannot answer it, a `.notdef` has one too. The fallback chain, global scan and atlas limit are documented. |
+| **Docs** | The package now carries `docs/llms.txt`, `docs/SKILL.md`, `docs/NATIVE-ABI.md` and CUI's own 2 065-line component documentation — CuiSharp shipped none of it before. Header and definition comments now reach the `.g.cs`; the reference lists the hand-written members it used to omit. |
+| **Analyzer** | `CUI001` also reports `File.*`, `Directory.*` and `Task.Run` inside a frame. |
+
+Tests went from 435 to 452. Budgets held: gallery AOT 2 134 016 B (≤ 2.1 MB), template 2 582 016 B
+(≤ 2.6 MB), benchmark mean 0.82 ms with 0 B per frame.
+
 ## Open, optional
 
 **P5 public APIs** — native file/folder dialogs, exact brand tokens, window icon operations — is
@@ -61,7 +78,7 @@ still unimplemented, only worth doing when an app needs it. Nothing else from th
 
 ```sh
 dotnet build CuiSharp.slnx -c Release -warnaserror      # passed
-dotnet test  CuiSharp.slnx -c Release                   # passed (435 + 28; was 412 + 28)
+dotnet test  CuiSharp.slnx -c Release                   # passed (452 + 28; was 412 + 28)
 dotnet format CuiSharp.slnx --verify-no-changes         # passed
 pwsh tools/regen.ps1 -NoNative -NoDiff                  # passed, no generated drift
 pwsh tools/verify-template.ps1                          # passed (pack → JIT tests → AOT → dotnet cui)

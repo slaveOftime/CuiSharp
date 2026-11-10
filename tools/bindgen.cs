@@ -49,6 +49,9 @@ var overrides = File.Exists(overridesPath)
     ? JsonSerializer.Deserialize<Overrides>(File.ReadAllText(overridesPath), Json.Options) ?? new Overrides()
     : new Overrides();
 
+// Where CUI documents itself when a header does not: the comment above the definition.
+var sources = ImplementationDocs.Scan(Path.Combine(root, "native", "CUI", "src"));
+
 string[] headers =
 [
     Path.Combine(includeDir, "cui", "cui.h"),
@@ -56,7 +59,7 @@ string[] headers =
     Path.Combine(includeDir, "cui", "cui_render.h"),
 ];
 
-var reader = new HeaderReader(includeDir, clangInclude, overrides);
+var reader = new HeaderReader(includeDir, clangInclude, overrides, sources);
 foreach (string header in headers) reader.Read(header);
 reader.ReadIcons(Path.Combine(includeDir, "cui", "cui_icons.h"));
 
@@ -83,7 +86,7 @@ foreach (var (module, code) in idiomatic.Widgets())
 Write(Path.Combine(root, "src", "CuiSharp", "Ui", "ScopeEnds.g.cs"), idiomatic.ScopeEnds());
 Write(Path.Combine(bindingsDir, "coverage.txt"), idiomatic.Coverage());
 foreach (var (path, text) in idiomatic.ApiDocs()) Write(Path.Combine(root, path), text);
-Write(Path.Combine(root, "llms.txt"), idiomatic.LlmsTxt());
+Write(Path.Combine(root, "llms.txt"), idiomatic.LlmsTxt(ManualMembers.Scan(root)));
 
 Console.WriteLine($"{api.Functions.Length} functions, {api.Structs.Length} structs, {api.Enums.Length} enums, " +
                   $"{api.Constants.Length} constants, {api.Icons.Length} icons, {api.Skipped.Length} skipped");
@@ -148,6 +151,109 @@ static string StageHeaders(string root)
     }
 
     return Path.Combine(stageRoot, "include");
+}
+
+/// <summary>
+/// Comments that sit above a function's definition. Many CUI functions are declared with no
+/// documentation at all and explained where they are implemented; a wrapper that only says
+/// <c>cui_button_ex</c> makes a reader open the C source, which is the cost this removes.
+/// </summary>
+sealed class ImplementationDocs
+{
+    private readonly Dictionary<string, string> _comments = new(StringComparer.Ordinal);
+
+    public static ImplementationDocs Scan(string directory)
+    {
+        var docs = new ImplementationDocs();
+        if (!Directory.Exists(directory)) return docs;
+
+        foreach (string file in Directory.EnumerateFiles(directory, "*.c", SearchOption.AllDirectories).OrderBy(f => f, StringComparer.Ordinal))
+        {
+            if (file.Contains($"{Path.DirectorySeparatorChar}third_party{Path.DirectorySeparatorChar}", StringComparison.Ordinal)) continue;
+            docs.Read(File.ReadAllLines(file));
+        }
+
+        return docs;
+    }
+
+    public string CommentFor(string function) =>
+        _comments.TryGetValue(function, out string? text) ? text : "";
+
+    private void Read(string[] lines)
+    {
+        for (int i = 0; i < lines.Length; i++)
+        {
+            string line = lines[i];
+
+            // A definition starts at column zero and opens a body; a prototype ends in `;`.
+            if (line.Length == 0 || line[0] is ' ' or '	' or '/' or '*' or '#') continue;
+            if (!line.Contains('(') || line.TrimEnd().EndsWith(';')) continue;
+
+            string? name = FunctionName(line);
+            if (name is null || _comments.ContainsKey(name)) continue;
+
+            string comment = CommentAbove(lines, i);
+            if (comment.Length > 0) _comments[name] = comment;
+        }
+    }
+
+    /// <summary>The CUI function a definition line defines, or null when it defines something else.</summary>
+    private static string? FunctionName(string line)
+    {
+        int open = line.IndexOf('(');
+        if (open <= 0) return null;
+
+        int start = open;
+        while (start > 0 && (char.IsLetterOrDigit(line[start - 1]) || line[start - 1] == '_')) start--;
+        string name = line[start..open];
+        // `cui__x` is an internal helper: its comment describes implementation, not the API.
+        return name.StartsWith("cui_", StringComparison.Ordinal) && name.Length > 4 && name[4] != '_' ? name : null;
+    }
+
+    /// <summary>A section banner: `/* ---- */` and the title bar under it describe a region, not a function.</summary>
+    private static bool IsRule(string line)
+    {
+        if (line.Contains("---", StringComparison.Ordinal)) return true;
+        foreach (char c in line)
+        {
+            if (c is not ('*' or '=' or '-' or '/' or ' ')) return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>The block or line comments immediately above <paramref name="index"/>.</summary>
+    private static string CommentAbove(string[] lines, int index)
+    {
+        var collected = new List<string>();
+        int i = index - 1;
+        while (i >= 0)
+        {
+            string line = lines[i].Trim();
+            if (line.Length == 0)
+            {
+                if (collected.Count > 0) break;
+                i--;
+                continue;
+            }
+
+            if (line.StartsWith('*') || line.StartsWith("/*", StringComparison.Ordinal) || line.StartsWith("//", StringComparison.Ordinal))
+            {
+                collected.Add(line.TrimStart('*').TrimStart('/').Replace("*/", "", StringComparison.Ordinal).Trim());
+                i--;
+                continue;
+            }
+
+            break;
+        }
+
+        // A block with a rule in it is a section banner: it names a region of the file, and
+        // attaching "Public" or "Chat" to a function documents nothing.
+        if (collected.Exists(IsRule)) return "";
+
+        collected.Reverse();
+        return string.Join(" ", collected.Where(l => l.Length > 0)).Trim();
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -413,7 +519,7 @@ static class Json
 // that are only known once every declaration has been seen.
 // ---------------------------------------------------------------------------
 
-sealed class HeaderReader(string includeDir, string clangInclude, Overrides overrides) : IDisposable
+sealed class HeaderReader(string includeDir, string clangInclude, Overrides overrides, ImplementationDocs sources) : IDisposable
 {
     private readonly List<(string CName, long Size, FieldDecl[] Fields)> _structs = [];
     private readonly List<(string CName, EnumDecl Decl)> _enums = [];
@@ -646,6 +752,38 @@ sealed class HeaderReader(string includeDir, string clangInclude, Overrides over
     private static string WithoutEx(string name) =>
         name.EndsWith("_ex", StringComparison.Ordinal) ? name[..^3] : name;
 
+    /// <summary>
+    /// The documentation of the longest documented function this one is a member of:
+    /// <c>cui_data_grid_row</c> is documented by <c>cui_data_grid_begin</c>.
+    /// </summary>
+    private static string ScopeDoc(Dictionary<string, string> documented, string name)
+    {
+        string best = "";
+        foreach ((string other, string text) in documented)
+        {
+            if (other.Length >= name.Length || !name.StartsWith(other, StringComparison.Ordinal)) continue;
+            if (name[other.Length] != '_' || other.Length <= best.Length) continue;
+            best = other;
+        }
+
+        return best.Length == 0 ? "" : "Part of " + best + " — " + documented[best];
+    }
+
+    /// <summary>
+    /// The comment a header did not carry. CUI documents most of its behaviour next to the code that
+    /// implements it, and a wrapper whose only documentation is `cui_button_ex` sends a reader into
+    /// the C source — so when the declaration says nothing, the definition's own comment is used.
+    /// </summary>
+    private static string FirstSentence(string fromHeader, string fromSource, string fromScope)
+    {
+        string text = fromHeader.Length > 0 ? fromHeader : fromSource;
+        if (text.Length == 0) text = fromScope;
+        if (text.Length == 0) return "";
+
+        // One line, because a summary is read as a tooltip and grepped by an agent.
+        return string.Join(" ", text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+    }
+
     private FunctionModel[] ReadFunctions(Mapper mapper, Overrides overrides)
     {
         // Two C functions collapse to one C# name only when one is the `_ex` twin
@@ -656,9 +794,21 @@ sealed class HeaderReader(string includeDir, string clangInclude, Overrides over
             .GroupBy(f => Names.Pascal(WithoutEx(f.Spelling[4..])))
             .ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal);
 
+        // A scope's members (`data_grid_row`, `data_grid_cell`) carry no comment of their own;
+        // the behaviour is documented on the function that opens the scope. Saying "part of X,
+        // which documents …" points a reader at the managed API instead of the C source.
+        Dictionary<string, string> documented = [];
+        foreach (FunctionDecl candidate in _functions)
+        {
+            string text = Doc(candidate.Handle);
+            if (text.Length == 0) text = sources.CommentFor(candidate.Spelling);
+            if (text.Length > 0) documented[candidate.Spelling] = text;
+        }
+
         var result = new List<FunctionModel>();
         foreach (FunctionDecl function in _functions)
         {
+            string scopeDoc = ScopeDoc(documented, function.Spelling);
             if (overrides.SkipFunctions.Contains(function.Spelling)) continue;
 
             string bare = Names.Pascal(WithoutEx(function.Spelling[4..]));
@@ -680,7 +830,8 @@ sealed class HeaderReader(string includeDir, string clangInclude, Overrides over
                 mapper.Return(function.Handle.ResultType),
                 parameters,
                 overrides.SuppressGcTransition.Contains(function.Spelling),
-                Describe(function.Handle.ResultType), Module(function.Handle), Doc(function.Handle)));
+                Describe(function.Handle.ResultType), Module(function.Handle),
+                FirstSentence(Doc(function.Handle), sources.CommentFor(function.Spelling), scopeDoc)));
         }
 
         return [.. result];
@@ -2328,7 +2479,7 @@ sealed class Idiomatic
     /// The whole API as one flat file an assistant can read in a single call: what
     /// the library is, the rules that make code work, and one line per widget.
     /// </summary>
-    public string LlmsTxt()
+    public string LlmsTxt(IReadOnlyList<(string Name, string File)> manual)
     {
         var sb = new StringBuilder();
         sb.AppendLine("# CuiSharp");
@@ -2408,6 +2559,17 @@ sealed class Idiomatic
         sb.AppendLine("- [Options](docs/api/Options.md): every option struct and its fields.");
         sb.AppendLine("- [Records](docs/api/Records.md): item types for the widgets that take arrays.");
         sb.AppendLine("- [Hosting](docs/HOSTING.md): components, mutation, dependency injection.");
+        if (manual.Count > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("## Members with no C function behind them");
+            sb.AppendLine();
+            sb.AppendLine("Hand-written, because the wrapper needs state a C call cannot carry; they are part of the same `ui`.");
+            sb.AppendLine();
+            foreach ((string name, string file) in manual)
+                sb.AppendLine($"- `ui.{name}(...)` ([{file}](src/CuiSharp/Ui/{file}))");
+        }
+
         sb.AppendLine("- [Coverage](bindings/coverage.txt): which C functions are wrapped, manual, excluded or pending.");
         sb.AppendLine("- [Guide](skills/cui-dotnet/SKILL.md): the authoring rules, the pitfalls, the component list.");
         sb.AppendLine("- [Architecture](docs/ARCHITECTURE.md): decisions, layout, the generator pipeline.");
@@ -2569,12 +2731,13 @@ static class BindgenChecks
             line.StartsWith("RAW-SKIP ", StringComparison.Ordinal));
         Check("coverage accounts for every function", accounted == api.Functions.Length + api.Skipped.Length);
 
-        string llms = first.LlmsTxt();
+        // The self-check counts generated wrappers only, so the hand-written list is passed empty.
+        string llms = first.LlmsTxt([]);
         string apiSection = llms[llms.IndexOf("\n## API", StringComparison.Ordinal)..];
         apiSection = apiSection[..apiSection.IndexOf("\n## Documents", StringComparison.Ordinal)];
         int documented = Lines(apiSection).Count(line => line.StartsWith("- `ui.", StringComparison.Ordinal));
         Check("every wrapper appears in llms.txt", documented == first.DocumentedWidgets());
-        Check("docs are deterministic", first.LlmsTxt() == second.LlmsTxt()
+        Check("docs are deterministic", first.LlmsTxt([]) == second.LlmsTxt([])
             && first.ApiDocs().SequenceEqual(second.ApiDocs()));
 
         static IEnumerable<string> Lines(string text) =>
@@ -2688,5 +2851,40 @@ static class Names
         string id = Pascal(name);
         if (id.Length == 0) return "Value";
         return char.IsDigit(id[0]) ? "D" + id : id;
+    }
+}
+
+/// <summary>
+/// The `ui` members that are written by hand rather than generated from a C function: fonts,
+/// frame queries, input and the rest of the `Ui.*.cs` partials. The reference an assistant reads
+/// has to list them, or it says the API does not exist while the guide uses it.
+/// </summary>
+static class ManualMembers
+{
+    public static IReadOnlyList<(string Name, string File)> Scan(string root)
+    {
+        string directory = Path.Combine(root, "src", "CuiSharp", "Ui");
+        if (!Directory.Exists(directory)) return [];
+
+        // `public <type> <Name>(` inside a file that is not generated.
+        var member = new System.Text.RegularExpressions.Regex(
+            @"^\s*public\s+(?:static\s+)?[\w<>\[\],\.\? ]+\s+(\w+)\s*\(",
+            System.Text.RegularExpressions.RegexOptions.Multiline);
+
+        var found = new SortedDictionary<string, string>(StringComparer.Ordinal);
+        foreach (string file in Directory.EnumerateFiles(directory, "Ui.*.cs").OrderBy(f => f, StringComparer.Ordinal))
+        {
+            if (file.EndsWith(".g.cs", StringComparison.Ordinal)) continue;
+
+            foreach (System.Text.RegularExpressions.Match match in member.Matches(File.ReadAllText(file)))
+            {
+                string name = match.Groups[1].Value;
+                // Public members here are PascalCase; the rest is the regex catching a type name.
+                if (name.Length == 0 || !char.IsUpper(name[0])) continue;
+                found.TryAdd(name, Path.GetFileName(file));
+            }
+        }
+
+        return [.. found.Select(pair => (pair.Key, pair.Value))];
     }
 }

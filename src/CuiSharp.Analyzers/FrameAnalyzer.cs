@@ -95,6 +95,27 @@ public sealed class FrameAnalyzer : DiagnosticAnalyzer
             member.Expression.ToString() is "Thread" or "System.Threading.Thread")
         {
             context.ReportDiagnostic(Diagnostic.Create(Diagnostics.BlockingCall, invocation.GetLocation(), "Thread." + CalledName(invocation)));
+            return;
+        }
+
+        if (invocation.Expression is not MemberAccessExpressionSyntax call) return;
+        string owner = call.Expression.ToString();
+
+        // Task.Run(...) inside a frame: the work was moved off the frame thread into one started
+        // by the frame, which is the opposite of what a Mutation does — it keeps the result,
+        // notices cancellation, applies on the UI thread and reports the failure.
+        if (owner is "Task" or "System.Threading.Tasks.Task" && CalledName(invocation) == "Run")
+        {
+            context.ReportDiagnostic(Diagnostic.Create(Diagnostics.BlockingCall, invocation.GetLocation(), "Task.Run"));
+            return;
+        }
+
+        // File.* / Directory.*: the disk is not part of a frame, and one read per keystroke is the
+        // most common freeze in an immediate-mode app.
+        if (owner is "File" or "System.IO.File" or "Directory" or "System.IO.Directory")
+        {
+            context.ReportDiagnostic(Diagnostic.Create(Diagnostics.BlockingCall, invocation.GetLocation(),
+                owner + "." + CalledName(invocation)));
         }
     }
 

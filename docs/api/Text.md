@@ -36,7 +36,7 @@ cui_heading
 public void Kbd(UiText keys)
 ```
 
-cui_kbd
+* left to right in any interface: see cui__keep_ltr
 
 ## `Label`
 

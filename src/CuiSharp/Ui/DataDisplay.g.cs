@@ -118,7 +118,7 @@ public static unsafe class DataDisplayUiExtensions
             Native.TableCell(ui.Handle);
         }
 
-        /// <summary>cui_table_cell_text</summary>
+        /// <summary>Part of cui_table_cell — Next cell; put any components inside, or use cui_table_cell_text.</summary>
         public void TableCellText(UiText text)
         {
             Native.TableCellText(ui.Handle, Utf8.Get(text));

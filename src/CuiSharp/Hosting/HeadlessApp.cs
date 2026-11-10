@@ -169,14 +169,75 @@ public class HeadlessApp : IDisposable
     }
 
     /// <summary>Draws one frame and returns this app, so calls chain.</summary>
-    public HeadlessApp Frame(int count = 1)
+    public HeadlessApp Frame(int count = 1) => Frame(count, 1f / 60f);
+
+    /// <summary>
+    /// Moves the clock forward by <paramref name="time"/> over <paramref name="frames"/> frames.
+    /// Frames are free but time is not: an animation is only as far along as the clock says, so a
+    /// snapshot taken without advancing is a snapshot of an animation that never started.
+    /// </summary>
+    public HeadlessApp Advance(TimeSpan time, int frames = 1)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(frames);
+        return Frame(frames, (float)(time.TotalSeconds / frames));
+    }
+
+    /// <summary>
+    /// Draws frames until nothing wants another one, moving the clock by <paramref name="step"/>
+    /// each time. This is the replacement for a <c>sleep</c> loop: an animation that takes half a
+    /// second settles in a few milliseconds, and the count says how long it took.
+    /// </summary>
+    /// <param name="maxFrames">The most frames to draw, so a widget that never settles cannot hang a test.</param>
+    /// <param name="step">How much time one frame represents.</param>
+    /// <returns>How many frames were needed; <paramref name="maxFrames"/> means it did not settle.</returns>
+    public int Settle(int maxFrames = 240, TimeSpan? step = null)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxFrames);
+        float dt = (float)((step ?? TimeSpan.FromSeconds(1.0 / 60)).TotalSeconds);
+
+        int drawn = 0;
+        while (drawn < maxFrames)
+        {
+            Frame(1, dt);
+            drawn++;
+            if (!Animating) break;
+        }
+
+        return drawn;
+    }
+
+    /// <summary>
+    /// True when something in the last frame asked for another one: an animation in flight, a
+    /// transition, work that finished on a pool thread. <see cref="Settle"/> is the loop around it.
+    /// </summary>
+    public bool Animating => !_disposed && Native.NeedsRedraw(_surface.Handle) != 0;
+
+    /// <summary>
+    /// Takes the pointer off the app and draws the frame that reacts, so a screenshot is of the UI
+    /// and not of the tooltip the last click left behind. <see cref="SavePng"/> does this itself.
+    /// </summary>
+    public HeadlessApp ParkPointer()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        // The leave has to be drawn before it can be seen, and the frame that shows it is the
+        // one that starts any fade: settling finishes that rather than waiting on the leave.
+        _surface.MouseLeave();
+        Frame();
+        Settle();
+        return this;
+    }
+
+    /// <summary>Draws <paramref name="count"/> frames of <paramref name="deltaSeconds"/> each.</summary>
+    private HeadlessApp Frame(int count, float deltaSeconds)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         for (int i = 0; i < count; i++)
         {
             _faults.Clear();
-            _surface.BeginFrame();
+            Component.BeginFrame();
+            _surface.BeginFrame(deltaSeconds);
             try
             {
                 // Render, not Draw: the component's own error boundary reports a throw into
@@ -188,6 +249,11 @@ public class HeadlessApp : IDisposable
             {
                 _surface.EndFrame();
             }
+
+            // A component that wants the next frame says so here too, so Animating means the same
+            // thing in a test as in a window. PendingWork is deliberately left out: it is
+            // process-wide, and one leaked operation would make every later test look animated.
+            if (Component.AnyWantFrames) Native.RequestRedraw(_surface.Handle);
 
             foreach (Exception fault in _surface.Faults) _faults.Add(fault.Message);
         }
@@ -254,6 +320,57 @@ public class HeadlessApp : IDisposable
     /// <summary>Finds a text field by its id.</summary>
     public WidgetTarget FindInput(string id) => Find("Input", id);
 
+    /// <summary>
+    /// Finds a widget by the exact text the app drew it with — its id, for every widget that has
+    /// one — and never by a partial or fuzzy match. This is the query to write when a label can be
+    /// translated: <c>FindById("draft")</c> keeps working in another language, while
+    /// <c>Find("draft")</c> was only ever guessing.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Nothing in the last frame carries that text.</exception>
+    public WidgetTarget FindById(string id)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(id);
+        foreach (SemanticNode node in Tree.SelfAndDescendants())
+        {
+            if (string.Equals(node.Text, id, StringComparison.Ordinal)) return new WidgetTarget(this, node);
+        }
+
+        throw new InvalidOperationException($"No widget with id \"{id}\". The frame drew:\n{Print()}");
+    }
+
+    /// <summary>
+    /// The <paramref name="index"/>th item of the multi-item widget drawn with
+    /// <paramref name="id"/>: a tab, a segment, a row. The label of an item is translatable, its
+    /// position is not, so this is how a test names one without hard-coding the words.
+    /// </summary>
+    /// <param name="id">The id the widget was drawn with, e.g. <c>pages</c>.</param>
+    /// <param name="index">Which item, counting from zero.</param>
+    public WidgetTarget FindItem(string id, int index)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(id);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+
+        IReadOnlyList<SemanticWidget> frame = _surface.SemanticFrame;
+        int start = -1;
+        for (int i = 0; i < frame.Count; i++)
+        {
+            if (frame[i].IsContainer && string.Equals(frame[i].Text, id, StringComparison.Ordinal)) { start = i; break; }
+        }
+
+        if (start < 0) throw new InvalidOperationException($"No widget with id \"{id}\". The frame drew:\n{Print()}");
+
+        int depth = frame[start].Depth, seen = 0;
+        for (int i = start + 1; i < frame.Count && frame[i].Depth > depth; i++)
+        {
+            if (frame[i].Depth != depth + 1 || frame[i].IsContainer) continue;
+            if (seen++ != index) continue;
+            if (Tree.FindById(frame[i].Id) is { } node) return new WidgetTarget(this, node);
+            break;
+        }
+
+        throw new InvalidOperationException($"\"{id}\" has no item {index}. The frame drew:\n{Print()}");
+    }
+
     /// <summary>Moves the pointer and draws the frame that reacts to the move (hover, tooltip).</summary>
     public HeadlessApp MoveTo(float x, float y)
     {
@@ -319,10 +436,15 @@ public class HeadlessApp : IDisposable
         return false;
     }
 
-    /// <summary>Writes the last frame as a PNG and returns the path, for a human or an agent to look at.</summary>
-    public string SavePng(string? path = null)
+    /// <summary>
+    /// Writes the last frame as a PNG and returns the path, for a human or an agent to look at.
+    /// The pointer is taken off the UI first, so a hover tooltip left by the last click is not in
+    /// the picture; pass <paramref name="parked"/> = false to photograph the app as it stands.
+    /// </summary>
+    public string SavePng(string? path = null, bool parked = true)
     {
         path ??= Path.Combine(Path.GetTempPath(), $"cui-{Guid.NewGuid():N}.png");
+        if (parked) ParkPointer();
         ReadOnlySpan<byte> pixels = RawPixels;
         int w = _surface.PixelWidth, h = _surface.PixelHeight;
 

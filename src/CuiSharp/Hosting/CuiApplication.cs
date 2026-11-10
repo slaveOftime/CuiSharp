@@ -36,6 +36,13 @@ public sealed class CuiApplication : IDisposable
     public IServiceProvider Services => _services;
 
     /// <summary>
+    /// The OS window — the native handle, the backend, and which renderer actually drew — available
+    /// from the first frame onward, and null before the loop starts. This is what
+    /// <see cref="CuiAppOptions.WindowCreated"/> hands over.
+    /// </summary>
+    public CuiWindow? Window { get; private set; }
+
+    /// <summary>
     /// Resolves the root component and runs the UI loop on the calling thread until
     /// the window closes. The window owns the loop: CUI's callback drives every
     /// frame, including the frames the OS asks for while a window is being resized.
@@ -67,8 +74,21 @@ public sealed class CuiApplication : IDisposable
     public int Run(Component root)
     {
         ArgumentNullException.ThrowIfNull(root);
-        root.Initialize();
-        return CuiApp.Run(_window, ui => Host(root, ui), _args);
+
+        // The root initializes on the first frame that draws it, as any component under
+        // CuiApp.Run does. Initializing it here would run OnInitialized before the window exists:
+        // anything that needs the OS window — a taskbar icon, an AppUserModelID, a caption — would
+        // silently do nothing.
+        CuiAppOptions window = _window with
+        {
+            WindowCreated = created =>
+            {
+                Window = created;
+                _window.WindowCreated?.Invoke(created);
+            },
+        };
+
+        return CuiApp.Run(window, ui => Host(root, ui), _args);
     }
 
     /// <inheritdoc />

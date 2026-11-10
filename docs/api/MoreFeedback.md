@@ -36,4 +36,4 @@ cui_checklist_ex
 public void Countdown(UiText id, double secondsLeft, CountdownOpts o = default)
 ```
 
-cui_countdown_ex
+* left to right in any interface: see cui__keep_ltr

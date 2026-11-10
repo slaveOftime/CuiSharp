@@ -523,6 +523,7 @@ class CuiSharp.CuiApp
   Void ToggleMaximize()
   property Boolean IsMaximized { get; }
   property Boolean IsSoftwareRenderer { get; }
+  property CuiWindow Window { get; }
   property IntPtr NativeWindow { get; }
   property String Backend { get; }
   property Ui Ui { get; }
@@ -536,6 +537,7 @@ class CuiSharp.CuiAppOptions
   String ToString()
   ctor()
   property Accent Accent { get; set; }
+  property Action<CuiWindow> WindowCreated { get; set; }
   property Boolean Continuous { get; set; }
   property Boolean FixedSize { get; set; }
   property Boolean FollowSystemTheme { get; set; }
@@ -557,6 +559,7 @@ class CuiSharp.CuiMath
   static Nullable<ValueTuple<DiffRange[], DiffRange[]>> DiffWords(String, String, Int32)
   static Single EvaluateCurve(ReadOnlySpan<CurveKey>, Single)
   static ValueTuple<DiffHunk[], DiffStats> DiffLines(String, String, Boolean, Int32)
+class CuiSharp.CuiSharpNativeException : InvalidOperationException
 class CuiSharp.CuiSurface
   String DroppedFile(Int32)
   Void BeginFrame(Single)
@@ -597,6 +600,16 @@ class CuiSharp.CuiSurface
   static CuiSurface Create(Int32, Int32, Single, Int32, Theme, Accent)
 class CuiSharp.CuiTree
   static Int32 Sort(TreeNode[], Int32, Comparison<Int32>, String)
+class CuiSharp.CuiWindow
+  Void Minimize()
+  Void RequestClose()
+  Void SetTitle(String)
+  Void ToggleMaximize()
+  property Boolean IsMaximized { get; }
+  property Boolean IsSoftwareRenderer { get; }
+  property IntPtr NativeWindow { get; }
+  property String Backend { get; }
+  property ValueTuple<Int32, Int32> PixelSize { get; }
 enum CuiSharp.Cursor
   Arrow
   Count
@@ -1049,11 +1062,13 @@ enum CuiSharp.Font
 class CuiSharp.FontUiExtensions
   static Font LoadFont(Ui, ReadOnlySpan<Byte>, Boolean)
   static Font LoadFont(Ui, UiText)
+  static Font UseSystemFontFallback(Ui, String)
   static Void AddFontFallback(Ui, Font, Font)
   static Void SetFont(Ui, Font, Font)
 class CuiSharp.FontUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
   Font LoadFont(ReadOnlySpan<Byte>, Boolean)
   Font LoadFont(UiText)
+  Font UseSystemFontFallback(String)
   Void AddFontFallback(Font, Font)
   Void SetFont(Font, Font)
 class CuiSharp.FontUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4+<M>$D152016828D0F2CB0A8B78500F4F70D3
@@ -1181,6 +1196,7 @@ class CuiSharp.Hosting.CuiApplication
   Int32 Run()
   Int32 Run(Component)
   Void Dispose()
+  property CuiWindow Window { get; set; }
   property IServiceProvider Services { get; }
   static CuiApplicationBuilder CreateBuilder(String[])
 class CuiSharp.Hosting.CuiApplicationBuilder
@@ -1211,21 +1227,27 @@ class CuiSharp.Hosting.FrameStats
 class CuiSharp.Hosting.HeadlessApp
   Boolean PaintedAnything()
   Boolean TryFind(String, out WidgetTarget)
+  HeadlessApp Advance(TimeSpan, Int32)
   HeadlessApp Focus(Boolean)
   HeadlessApp Frame(Int32)
   HeadlessApp Key(Key, Mods)
   HeadlessApp MoveTo(Single, Single)
+  HeadlessApp ParkPointer()
   HeadlessApp Press()
   HeadlessApp Release()
   HeadlessApp Type(String)
+  Int32 Settle(Int32, Nullable<TimeSpan>)
   String Print(Boolean)
-  String SavePng(String)
+  String SavePng(String, Boolean)
   String ToString()
   Void Dispose()
   WidgetTarget Find(String)
   WidgetTarget Find(String, String)
   WidgetTarget FindButton(String)
+  WidgetTarget FindById(String)
   WidgetTarget FindInput(String)
+  WidgetTarget FindItem(String, Int32)
+  property Boolean Animating { get; }
   property Component Root { get; }
   property CuiSurface Surface { get; }
   property IReadOnlyList<SemanticWidget> Widgets { get; }
@@ -4411,6 +4433,7 @@ class CuiSharp.SemanticNode
   property String Kind { get; }
   property String Path { get; }
   property String Text { get; }
+  property UInt32 Id { get; }
 struct CuiSharp.SemanticWidget
   Boolean Contains(Single, Single)
   String ToString()
@@ -4419,6 +4442,7 @@ struct CuiSharp.SemanticWidget
   field RectF Rect
   field String Kind
   field String Text
+  field UInt32 Id
   property ValueTuple<Single, Single> Center { get; }
 struct CuiSharp.Series
   ctor(String, Single[], Int32, Color)

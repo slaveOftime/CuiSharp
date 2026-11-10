@@ -24768,7 +24768,7 @@
         "Kind": "Void"
       },
       "Module": "Text",
-      "Doc": ""
+      "Doc": "* left to right in any interface: see cui__keep_ltr"
     },
     {
       "CName": "cui_link",
@@ -28722,7 +28722,7 @@
         "Kind": "Void"
       },
       "Module": "Data display",
-      "Doc": ""
+      "Doc": "Part of cui_table_cell — Next cell; put any components inside, or use cui_table_cell_text."
     },
     {
       "CName": "cui_table_end",
@@ -32284,7 +32284,7 @@
         "Kind": "Void"
       },
       "Module": "Code",
-      "Doc": ""
+      "Doc": "* left to right in any interface: see cui__keep_ltr"
     },
     {
       "CName": "cui_json_view_ex",
@@ -32352,7 +32352,7 @@
         "Kind": "Bool"
       },
       "Module": "Code",
-      "Doc": ""
+      "Doc": "* left to right in any interface: see cui__keep_ltr"
     },
     {
       "CName": "cui_markdown_ex",
@@ -32536,7 +32536,7 @@
         "Kind": "Record"
       },
       "Module": "Code",
-      "Doc": ""
+      "Doc": "* left to right in any interface: see cui__keep_ltr"
     },
     {
       "CName": "cui_code_editor_goto",
@@ -32788,7 +32788,7 @@
         "Kind": "Record"
       },
       "Module": "Code",
-      "Doc": ""
+      "Doc": "* left to right in any interface: see cui__keep_ltr"
     },
     {
       "CName": "cui_diff_view_rows",
@@ -33831,7 +33831,7 @@
         "Kind": "Void"
       },
       "Module": "Media",
-      "Doc": ""
+      "Doc": "* left to right in any interface: see cui__keep_ltr"
     },
     {
       "CName": "cui_ticker_ex",
@@ -37144,7 +37144,7 @@
         "Kind": "Int"
       },
       "Module": "Planning",
-      "Doc": ""
+      "Doc": "* left to right in any interface: see cui__keep_ltr"
     },
     {
       "CName": "cui_month_calendar_ex",
@@ -37328,7 +37328,7 @@
         "Kind": "Int"
       },
       "Module": "Planning",
-      "Doc": ""
+      "Doc": "* left to right in any interface: see cui__keep_ltr"
     },
     {
       "CName": "cui_hover_card_begin",
@@ -37856,7 +37856,7 @@
         "Kind": "Void"
       },
       "Module": "More feedback",
-      "Doc": ""
+      "Doc": "* left to right in any interface: see cui__keep_ltr"
     },
     {
       "CName": "cui_checklist_ex",
@@ -39552,7 +39552,7 @@
         "Kind": "Bool"
       },
       "Module": "More inputs",
-      "Doc": ""
+      "Doc": "* left to right in any interface: see cui__keep_ltr"
     },
     {
       "CName": "cui_shortcut_label",
@@ -40149,7 +40149,7 @@
         "Kind": "Bool"
       },
       "Module": "More inputs",
-      "Doc": ""
+      "Doc": "Part of cui_node_link — A link from an output pin to an input pin. Returns true while it is selected."
     },
     {
       "CName": "cui_node_deleted",
@@ -42387,7 +42387,7 @@
         "Kind": "Record"
       },
       "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
-      "Doc": ""
+      "Doc": "* left to right in any interface: see cui__keep_ltr"
     },
     {
       "CName": "cui_emoji_font_load_file",
@@ -44478,7 +44478,7 @@
         "Kind": "Void"
       },
       "Module": "Custom drawing",
-      "Doc": ""
+      "Doc": "Part of cui_state — Persistent per-id storage for your own components (zeroed on first use). State not used for about 300 frames is freed (and zeroed again if it comes back), so it suits what can be rebuilt. For resources held in it, such as textures, set a function that frees them: it runs when the state goes or the context is destroyed."
     },
     {
       "CName": "cui_animate",
@@ -44584,7 +44584,7 @@
         "Kind": "Float"
       },
       "Module": "Custom drawing",
-      "Doc": ""
+      "Doc": "Part of cui_animate — Animation helpers. Values move toward target with a spring and request frames while moving. Reduced motion makes them snap."
     },
     {
       "CName": "cui_get_draw_data",

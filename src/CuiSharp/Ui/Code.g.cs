@@ -13,7 +13,7 @@ public static unsafe class CodeUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_code_block_ex</summary>
+        /// <summary>* left to right in any interface: see cui__keep_ltr</summary>
         public void CodeBlock(UiText id, UiText code, CodeOpts o = default)
         {
             var __opts = o.ToNative();
@@ -21,7 +21,7 @@ public static unsafe class CodeUiExtensions
             WidgetRecorder.Note(ui.Handle, "CodeBlock", id);
         }
 
-        /// <summary>cui_json_view_ex</summary>
+        /// <summary>* left to right in any interface: see cui__keep_ltr</summary>
         public bool JsonView(UiText id, UiText json, JsonOpts o = default)
         {
             var __opts = o.ToNative();
@@ -39,7 +39,7 @@ public static unsafe class CodeUiExtensions
             return MarkdownResult.FromNative(__result);
         }
 
-        /// <summary>cui_code_editor_ex</summary>
+        /// <summary>* left to right in any interface: see cui__keep_ltr</summary>
         public CodeEditorResult CodeEditor(UiText id, ref string buf, int cap, CodeEditorOpts o = default)
         {
             var __bufSlot = ui.RentText(Native.MakeId(ui.Handle, Utf8.Get(id)), ref buf, (int)cap);
@@ -71,7 +71,7 @@ public static unsafe class CodeUiExtensions
             WidgetRecorder.Note(ui.Handle, "CodeEditorFind", id);
         }
 
-        /// <summary>cui_diff_view_ex</summary>
+        /// <summary>* left to right in any interface: see cui__keep_ltr</summary>
         public DiffResult DiffView(UiText id, UiText oldText, UiText newText, ref int current, DiffOpts o = default)
         {
             int __current = (int)(current);

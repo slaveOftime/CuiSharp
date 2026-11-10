@@ -42,7 +42,11 @@ public readonly struct WidgetQuery
     internal static WidgetQuery Of(string? kind, string text, string[]? path = null) =>
         new(text, kind, path ?? []);
 
-    /// <summary>Reads a query: <c>Save</c>, <c>Button "Save"</c>, <c>editor &gt; Save</c>.</summary>
+    /// <summary>
+    /// Reads a query: <c>Save</c>, <c>Button "Save"</c>, <c>editor &gt; Save</c>, or
+    /// <c>id:draft</c> for a widget by the id it was drawn with — the one form that keeps working
+    /// when the label is translated.
+    /// </summary>
     public static WidgetQuery Parse(string query)
     {
         ArgumentException.ThrowIfNullOrEmpty(query);

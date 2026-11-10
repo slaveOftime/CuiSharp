@@ -22,13 +22,14 @@ public sealed class SemanticNode
 {
     private readonly List<SemanticNode> _children = [];
 
-    private SemanticNode(string kind, string text, RectF rect, int depth, SemanticNode? parent)
+    private SemanticNode(string kind, string text, RectF rect, int depth, SemanticNode? parent, uint id = 0)
     {
         Kind = kind;
         Text = text;
         Rect = rect;
         Depth = depth;
         Parent = parent;
+        Id = id;
     }
 
     /// <summary>The wrapper that drew it: <c>Button</c>, <c>Input</c>, <c>Card</c>.</summary>
@@ -48,6 +49,12 @@ public sealed class SemanticNode
 
     /// <summary>Everything drawn inside it, in drawing order.</summary>
     public IReadOnlyList<SemanticNode> Children => _children;
+
+    /// <summary>
+    /// The id CUI laid it out under — for an item of a tab strip or a segmented control, the id
+    /// the widget derived for that item. Unrelated to the label, so it survives translation.
+    /// </summary>
+    public uint Id { get; }
 
     /// <summary>True when the app drew something inside it, so it can be a parent.</summary>
     public bool IsContainer { get; private set; }
@@ -83,6 +90,22 @@ public sealed class SemanticNode
 
     internal bool TryFind(WidgetQuery query, out SemanticNode node)
     {
+        // `id:draft` is the exact-id form: no ranking, no partial match, no language.
+        if (query.Path.Length == 0 && query.Kind is null && query.Text.StartsWith("id:", StringComparison.Ordinal))
+        {
+            string id = query.Text[3..];
+            foreach (SemanticNode candidate in SelfAndDescendants())
+            {
+                if (!string.Equals(candidate.Text, id, StringComparison.Ordinal)) continue;
+
+                node = candidate;
+                return true;
+            }
+
+            node = null!;
+            return false;
+        }
+
         if (query.Path.Length > 0)
         {
             // Walk the named containers, outermost first, then search what the last one holds.
@@ -160,7 +183,7 @@ public sealed class SemanticNode
         "Heading" or "Label" or "Text" or "Muted" or "Badge" or "Caption" or "Code" or "Kbd" or
         "Divider" or "Spacer" or "Icon" or "ProgressBar" or "Spinner";
 
-    private IEnumerable<SemanticNode> SelfAndDescendants()
+    internal IEnumerable<SemanticNode> SelfAndDescendants()
     {
         yield return this;
         foreach (SemanticNode descendant in Descendants()) yield return descendant;
@@ -190,6 +213,17 @@ public sealed class SemanticNode
     public override string ToString() => Label;
 
     /// <summary>Rebuilds the nesting from what a frame recorded.</summary>
+    /// <summary>Finds a node by the id CUI gave it, below this one.</summary>
+    internal SemanticNode? FindById(uint id)
+    {
+        foreach (SemanticNode candidate in SelfAndDescendants())
+        {
+            if (candidate.Id == id) return candidate;
+        }
+
+        return null;
+    }
+
     internal static SemanticNode Build(IReadOnlyList<SemanticWidget> entries)
     {
         var root = new SemanticNode("Frame", "", default, 0, null) { IsContainer = true };
@@ -207,11 +241,11 @@ public sealed class SemanticNode
 
             if (!entry.IsContainer)
             {
-                open[^1]._children.Add(new SemanticNode(entry.Kind, entry.Text, entry.Rect, entry.Depth, open[^1]));
+                open[^1]._children.Add(new SemanticNode(entry.Kind, entry.Text, entry.Rect, entry.Depth, open[^1], entry.Id));
                 continue;
             }
 
-            var container = new SemanticNode(entry.Kind, entry.Text, entry.Rect, entry.Depth, open[^1])
+            var container = new SemanticNode(entry.Kind, entry.Text, entry.Rect, entry.Depth, open[^1], entry.Id)
             {
                 IsContainer = true,
             };

@@ -112,6 +112,27 @@ and `app.Settle()`, plus an `Animating` flag so a test knows when nothing is in 
   shape around it.
 - An accessibility tree stays a known gap for the same reason.
 
+## Implemented since this triage
+
+Everything below is verified, with the test or measurement named.
+
+| Item | What shipped |
+|---|---|
+| **Window resize is extremely slow** (added by the maintainer) | `Hosting/LiveResize` subclasses CUI's window procedure: a drag no longer draws in `WM_SIZE`, the coalesced paint draws the new size once, and the display wait is dropped for the length of the drag. Measured with an identical script that drives the real window: **2180 ms → 1444 ms** for 20 size steps, and a size step now costs one frame instead of two. `LiveResizeTests` pins the message rules. |
+| **B1** `OnInitialized` before the window | `CuiApplication.Run` no longer initializes the root eagerly; it runs on the first frame that draws it, as `Component` documents. The window is handed over before that frame (`CuiAppOptions.WindowCreated`). |
+| **B2** bare loader failure | `CuiSharpNativeException` restates `DllNotFoundException` / `BadImageFormatException` / `EntryPointNotFoundException` with the packaged RIDs, the glibc floor and the remedies. `NativeAbiClaimTests` keeps the numbers honest against `CuiSharp.targets` and `NATIVE-ABI.md`. |
+| **B3** tooltip in screenshots | `HeadlessApp.SavePng` parks the pointer and settles before capturing; `ParkPointer()` does the same alone. |
+| **B4** frames do not advance time | `HeadlessApp.Advance(TimeSpan, frames)`, `Settle()`, `Animating`; the harness also asks for redraws the way the windowed host does. `TestLoopTests` covers all three. |
+| **S** id-based finding | `FindById(id)`, `FindItem(id, index)` (the second tab, whatever it says), `id:` in query strings, and `SemanticWidget.Id`/`SemanticNode.Id`. |
+| **S** window surface | `CuiWindow` (`NativeWindow`, `Backend`, `IsSoftwareRenderer`, `PixelSize`, `IsMaximized`, `SetTitle`, `Minimize`, `ToggleMaximize`, `RequestClose`) on `CuiApp.Window` and `CuiApplication.Window`. |
+| **D1** docs not in the package | The nupkg now carries `docs/llms.txt`, `docs/SKILL.md`, `docs/NATIVE-ABI.md` and CUI's own `docs/widgets.md` + `docs/widgets-more.md` (2 065 lines of per-component behaviour and keyboard handling, which CuiSharp was not shipping at all). |
+| **D2** font behaviour undocumented | `AddFontFallback` documents the four-fallback chain, the global scan, the atlas limit and the silent-miss rule; `ui.UseSystemFontFallback("中文")` finds the face the machine has and registers it. The probe paints the sample, because a missing glyph still reports a `.notdef` advance — measuring cannot answer it. |
+| **D4** publish guidance | README states the RID list, the glibc 2.35 floor and where the provenance lives. |
+| **D5** widget behaviour docs | Header comments (and, when a header has none, the comment above the definition) now reach the `.g.cs`. Members of a documented scope inherit a "part of X" line. 664 members still have no comment anywhere upstream — that is upstream's work, not something to invent here. |
+| **M** analyzer | `CUI001` now reports `File.*`, `Directory.*` and `Task.Run` inside a frame, with `Mutation` in the message. |
+
+Still open, needing a decision: the glibc tier, `CuiDiagnostics.Report()`, golden-image comparison, an injectable file-picker, and the `DataGrid`/`Segmented` managed shapes.
+
 ## Recommended order
 
 1. **B1 + D3** (lifecycle bug and its doc) and **B3** (snapshot overlays): one PR, all cheap, all

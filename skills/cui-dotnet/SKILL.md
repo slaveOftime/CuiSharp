@@ -22,7 +22,8 @@ a UI that needs an accessibility tree (CUI publishes none).
 4. [Pitfalls](#pitfalls) · [Async work](#async-work) · [Renderer](#where-it-renders) · [Keyboard](#keyboard) ·
    [Theming](#theming) · [Design rules](#design-rules)
 5. [How to work on a UI](#how-to-work-on-a-ui) · [Testing](#testing-without-a-window) ·
-   [Driving a real app](#driving-a-running-app) · [Files](#files)
+   [Driving a real app](#driving-a-running-app) · [Widget behaviour](#widget-behaviour) ·
+   [Files](#files)
 
 ## The one rule
 
@@ -398,6 +399,14 @@ Assert.True(app.PaintedAnything());
   it — and a control beats a heading that repeats the text.
 - `MoveTo`, `Press`, `Release`, `Type`, `Key`, `Focus`, `Frame(n)` are the whole input surface; each
   draws the frames the input needs.
+- Time is not free: `Frame(n)` does not move the clock, so `app.Advance(TimeSpan, frames)` is how an
+  animation gets somewhere, and `app.Settle()` draws until nothing wants another frame instead of
+  the `sleep` loop every snapshot test used to write by hand. `app.Animating` is the flag behind it.
+- Name a control by id, not by the words on it, or the test breaks when the UI is translated:
+  `app.FindById("draft")`, `app.FindItem("pages", 1)` (the second tab, whatever it says), and
+  `id:draft` in a query string. `Find`/`FindButton` still rank by label for exploration.
+- `app.SavePng()` takes the pointer off the UI first, so a tooltip the last click left behind is not
+  in the picture; `app.ParkPointer()` does the same without saving.
 - A tab strip and a segmented control record each item, so `Find("Segment", "Dark")` and
   `click Markets` address the item, not the middle of the strip. Any other multi-item widget records
   the widget, and a test clicks it once.
@@ -431,6 +440,7 @@ speaks one command per line. No window, no code added to the app.
 ```sh
 dotnet cui tree                     # the controls of the last frame, nested
 dotnet cui find Save                # one control: kind, label, rectangle
+dotnet cui find id:draft            # or by the id the app gave it, in any language
 dotnet cui click Save               # click it, print the frame that reacted
 dotnet cui click Button "Save type" # be specific when a label is ambiguous
 dotnet cui click editor > Save      # or name the path to the control
@@ -449,9 +459,20 @@ behind, so anything that should be checked twice belongs in a test instead.
   `--no-build` reuses the last build; `--` passes the rest to the app.
 - The app's own output — `Console.WriteLine`, a logger, a stack trace — reaches your stderr, so stdout
   is exactly the answer you asked for.
+- Text in a script the bundled Latin faces do not cover draws nothing at all, with no box and no
+  warning. `ui.UseSystemFontFallback("中文")` finds the face this machine has for it and registers it
+  as a fallback; call it once at startup, and check the language you ship.
 - The app serves this itself (`CUISHARP_HEADLESS=1`), so any app works.
   `<RuntimeHostConfigurationOption Include="CuiSharp.Headless" Value="false" Trim="true" />` removes
   it from a binary that wants the bytes back.
+
+## Widget behaviour
+
+Every component's behaviour — selection, focus, keyboard, what a return value means, when state
+survives a frame — is in `docs/widgets.md` and `docs/widgets-more.md`, which ship inside the package
+next to this guide and the API reference (`docs/llms.txt`). Read the page for the widget instead of
+guessing from a signature: a data grid keeps its selection in your variables, a dialog is modal, a
+dropzone returns the paths it received.
 
 ## Components
 
