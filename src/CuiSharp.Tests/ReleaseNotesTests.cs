@@ -10,26 +10,88 @@ namespace CuiSharp.Tests;
 /// </summary>
 public class ReleaseNotesTests
 {
+    /// <summary>
+    /// The version being built has a section, dated once the release is cut and "unreleased"
+    /// while the work is still going in. A version with no section at all is a build nobody
+    /// can write notes for.
+    /// </summary>
     [Fact]
-    public void TheVersionBeingBuiltHasADatedSection()
+    public void TheVersionBeingBuiltHasASection()
     {
         string version = Version();
         string? heading = Section(version);
 
         Assert.True(heading is not null, $"CHANGELOG.md has no section for the version in Directory.Build.props ({version})");
-        Assert.Matches(@"^## \[" + Regex.Escape(version) + @"\] — \d{4}-\d{2}-\d{2}$", heading!);
+        Assert.Matches(@"^## \[" + Regex.Escape(version) + @"\] — (unreleased|\d{4}-\d{2}-\d{2})$", heading!);
     }
 
+    /// <summary>
+    /// The changelog may carry a numbered section marked unreleased — that is work in progress —
+    /// but the release must never publish one: the guard lives in <c>release-notes.ps1</c>, which
+    /// <c>release.yml</c> runs, and this proves it refuses an unreleased section and accepts the
+    /// dated one. Checked against a fixture, so the test survives the real section being dated.
+    /// </summary>
     [Fact]
-    public void NoSectionIsLeftSayingUnreleased()
+    public void TheReleaseRefusesAnUnreleasedSection()
     {
-        // `[Unreleased]` is the bucket for work in progress; a numbered version that still says
-        // "unreleased" is a release that was tagged without its notes.
-        var stale = Regex.Matches(Changelog(), @"^## \[(\d+\.\d+\.\d+)\] — unreleased$", RegexOptions.Multiline)
-            .Select(m => m.Groups[1].Value)
-            .ToArray();
+        string dir = Path.Combine(Path.GetTempPath(), "cuisharp-release-notes-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            string path = Path.Combine(dir, "CHANGELOG.md");
+            string script = Path.Combine(TestPaths.RepositoryRoot, "tools", "release-notes.ps1");
 
-        Assert.True(stale.Length == 0, "tagged without notes: " + string.Join(", ", stale));
+            File.WriteAllText(path, Unreleased + "\n" + Dated + "\n");
+            (int code, string output) = Run(script, "-Version", "0.3.1", "-Path", path);
+            Assert.NotEqual(0, code);
+            Assert.Contains("unreleased", output, StringComparison.OrdinalIgnoreCase);
+
+            File.WriteAllText(path, Dated);
+            (code, output) = Run(script, "-Version", "0.3.1", "-Path", path);
+            Assert.Equal(0, code);
+            Assert.Contains("shipped", output, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    private const string Unreleased = """
+        # Changelog
+
+        ## [0.3.1] — unreleased
+
+        ### Added
+
+        - shipped
+        """;
+
+    private const string Dated = """
+        # Changelog
+
+        ## [0.3.1] — 2026-11-10
+
+        ### Added
+
+        - shipped
+        """;
+
+    private static (int Code, string Output) Run(string script, params string[] arguments)
+    {
+        var info = new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = "pwsh",
+            ArgumentList = { "-NoProfile", "-File", script },
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        };
+        foreach (string argument in arguments) info.ArgumentList.Add(argument);
+
+        using var process = System.Diagnostics.Process.Start(info)!;
+        string output = process.StandardOutput.ReadToEnd() + process.StandardError.ReadToEnd();
+        process.WaitForExit();
+        return (process.ExitCode, output);
     }
 
     [Fact]

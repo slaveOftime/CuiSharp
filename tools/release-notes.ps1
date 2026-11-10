@@ -56,6 +56,12 @@ if ($start -lt 0) {
     throw "release-notes: CHANGELOG.md has no section for $wanted. Add '## [$wanted] — <date>' with what changed, then release."
 }
 
+# A section still marked unreleased is work in progress: publishing it would ship
+# notes nobody agreed were finished. Asking for Unreleased itself is the draft view.
+if ($wanted -ne 'Unreleased' -and $lines[$start] -match '^## \[[^\]]+\] — unreleased$') {
+    throw "release-notes: the section for $wanted is unreleased. Date it ('## [$wanted] — <date>') when the release is cut."
+}
+
 $body = ($lines[($start + 1)..($end - 1)] -join "`n").Trim()
 if ($body.Length -eq 0) { throw "release-notes: the section for $wanted is empty." }
 if ($body -match '(?im)^- (nothing yet|tbd)') { throw "release-notes: the section for $wanted says nothing yet." }
