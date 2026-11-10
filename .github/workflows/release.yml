@@ -174,10 +174,10 @@ jobs:
         timeout-minutes: 15
         shell: pwsh
         run: |
-          $blame = @('--blame-hang-timeout', '6m', '--blame-hang-dump', 'full')
-          dotnet test src/CuiSharp.Tests/CuiSharp.Tests.csproj -c Release @blame
+          $blame = @('--blame-hang-timeout', '6m', '--blame-hang-dump-type', 'full')
+          dotnet test @blame -c Release src/CuiSharp.Tests/CuiSharp.Tests.csproj
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          dotnet test src/CuiSharp.Templates/CuiSharp.App/CuiSharp.App.Tests/CuiSharp.App.Tests.csproj -c Release @blame
+          dotnet test @blame -c Release src/CuiSharp.Templates/CuiSharp.App/CuiSharp.App.Tests/CuiSharp.App.Tests.csproj
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
 
       # The release page is the changelog section for this version, so it has to exist and be dated
