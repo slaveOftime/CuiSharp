@@ -90,9 +90,9 @@ unzip -l artifacts/packages/CuiSharp.Templates.*.nupkg | head -20
 
 `dotnet pack` warns when no native artifacts are found, because a managed-only package installs
 cleanly and then fails at the first frame. Release packing must assemble all five RIDs from their
-own runners, including the new Windows/Linux ARM64 legs; do not release until their native, AOT
-and packaged-consumer gates pass. Separate RID directories prevent same-named archives from
-replacing each other.
+own runners, including the Windows/Linux ARM64 legs. Separate RID directories prevent same-named
+archives from replacing each other, and a `rid=` stamp that disagrees with the package path fails
+the pack instead of mislabelling an archive.
 
 ## 6. Smoke-test the packages the way a user gets them
 

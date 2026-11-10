@@ -14,11 +14,13 @@ The date components speak another language, and the data grid owns its state.
   push/PR checks; select `benchmarks` or `budget` when dispatching CI. Linux dependency setup skips
   already-installed packages and bounds apt/network waits without removing consumer verification.
 - **IDE quick fixes for CUI002, CUI003 and CUI005** add `using`, guard conditional container
-  bodies, and remove an awaited BCL `ConfigureAwait`. Scope fixes refuse rewrites that introduce
-  compiler errors; overlapping scope fix-all and fixes for the other rules remain open.
-- **Windows/Linux ARM64 build and packaging plumbing** selects each RID's own native toolchain,
-  archive, linker inputs and provenance. CI/release legs run on native ARM64 runners; their builds
-  and execution gates still need to pass before ARM64 assets can be released.
+  bodies, and remove an awaited BCL `ConfigureAwait(bool)`. Scope fixes refuse rewrites that
+  introduce compiler errors or unsafe overloads; overlapping scope fix-all and fixes for the other
+  rules remain open. `CUI002` also catches a discarded scope in a value-less expression body.
+- **Windows/Linux ARM64 builds** select each RID's own native toolchain, archive, linker inputs and
+  provenance, and reject an archive whose build stamp names another CPU. Verified on hosted
+  `windows-11-arm` and `ubuntu-24.04-arm` runners: native build, full suite, NativeAOT render and
+  packaged consumer all pass for `win-arm64` and `linux-arm64`.
 - **`dotnet new cui-mini`** generates a file-based C# app with `#:package CuiSharp@*`:
   `dotnet new cui-mini -n demo1` creates only `demo1.cs` in the current directory, without a new
   folder. `dotnet run demo1.cs` opens a native window with a counter and theme switch, no project

@@ -227,7 +227,8 @@ NativeAOT does not cross-compile between operating systems: publish on the platf
 (`libx11-dev` is needed at build time on Linux, not at run time).
 
 The native build/release matrix targets `win-x64`, `win-arm64`, `linux-x64`, `linux-arm64` and
-`osx-arm64`; the new ARM64 Windows/Linux legs still need runner verification before release.
+`osx-arm64`. The ARM64 legs build on, and are verified by, hosted `windows-11-arm` and
+`ubuntu-24.04-arm` runners.
 The Linux archive needs **glibc 2.31 or
 newer** (Debian 11, Ubuntu 20.04, RHEL 8); an older image fails at load with
 `version 'GLIBC_x.y' not found`, which `CuiSharpNativeException` restates with the packaged RIDs

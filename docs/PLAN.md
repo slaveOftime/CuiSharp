@@ -11,13 +11,9 @@ in [ARCHITECTURE.md](ARCHITECTURE.md). Every item here passes the same gates as 
   pickers, capture, disclosure, reader, data grid, code, social and media, planning, more charts,
   motion, AI, audio and files still draw only in C's own gallery. One page per commit-sized slice;
   a missing wrapper is a generator or `overrides.json` fix, never a hand edit.
-- **`win-arm64` and `linux-arm64` runner verification** — build scripts, exact-RID packaging,
-  native provenance, AOT linker selection and CI/release legs are wired. Local tests prove artifact
-  isolation and ARM64 archive selection, not ARM64 execution. Keep this open until `windows-11-arm`
-  and `ubuntu-24.04-arm` pass native builds, the full suite, AOT rendering and packaged consumers.
 - **Remaining analyzer code fixes** for CUI001, CUI004, CUI006–CUI008. CUI002/CUI003 now rewrite
-  scope disposal and guards; CUI005 removes an awaited BCL `ConfigureAwait`. IDE-only fixes ship in
-  a separate assembly so command-line analyzers do not depend on Workspaces. Still needed: safe
+  scope disposal and guards; CUI005 removes an awaited BCL `ConfigureAwait(bool)`. IDE-only fixes ship
+  in a separate assembly so command-line analyzers do not depend on Workspaces. Still needed: safe
   rewrites for the remaining rules and sequential fix-all for overlapping scope bodies.
 
 ## 2. Where upstream has to move first

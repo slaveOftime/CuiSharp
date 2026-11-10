@@ -21,8 +21,8 @@ pwsh native/build-native.ps1     # Windows
 
 Binaries are **not committed**; they are derived from the submodule. Windows selects the host
 OS's MSVC architecture (override with `-Architecture x64` or `arm64`); Linux builds natively for
-the container's CPU. CI/release use a separate native runner per RID and architecture-specific
-cache keys. The new Windows/Linux ARM64 legs still await runner verification.
+the container's CPU. CI and release use a separate native runner per RID, architecture-specific
+cache keys, and a cold native cache whenever the build scripts change.
 
 For release packing, keep each RID's files and provenance in a separate directory; a shared
 `cui.lib` or `libcui.a` filename does not identify its architecture.

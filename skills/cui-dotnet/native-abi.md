@@ -14,9 +14,10 @@ against is a promise, not an accident of the build machine.
 | `linux-arm64` | `libcui.so`, `libcui.a` | native `ubuntu-24.04-arm` runner, `debian:11` ARM64, glibc **2.31** | glibc 2.31 on ARM64, Xlib for the x11 backend |
 | `osx-arm64` | `libcui.dylib`, `libcui.a` | `macos-latest`, `CMAKE_OSX_DEPLOYMENT_TARGET=12.0` | macOS 12 (Monterey) on Apple silicon |
 
-The new Windows/Linux ARM64 legs are wired but still await runner verification before release.
-Each RID is compiled on its own CPU/OS runner, never populated by copying an x64 archive. A local
-pack labels the flat native build using the SDK's RID (override with `CuiNativeRid` when needed).
+The Windows/Linux ARM64 legs build and pass their gates on hosted `windows-11-arm` and
+`ubuntu-24.04-arm` runners. Each RID is compiled on its own CPU/OS runner, never populated by
+copying an x64 archive. A local pack labels the flat native build using the SDK's RID (override with
+`CuiNativeRid` when needed).
 Release packing supplies separate `CuiNativeWinDir`, `CuiNativeWinArm64Dir`, `CuiNativeLinuxDir`,
 `CuiNativeLinuxArm64Dir` and `CuiNativeOsxDir`; the package records each RID's own compiler metadata
 and hashes. The build's `rid=` stamp is validated against the package path, so a cross-built
@@ -81,4 +82,4 @@ dotnet publish -c Release -r <rid>            # AOT: links the archive, one exec
 
 CI runs exactly that in `ci.yml`'s `packaged-consumer` job, on the oldest supported Linux image
 (`ubuntu-22.04`) as well as Windows. ARM64 legs use native Windows/Linux ARM64 runners, with the
-native library coming only from the package; those new legs still await a green CI run.
+native library coming only from the package.
