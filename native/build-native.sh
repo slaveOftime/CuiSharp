@@ -37,9 +37,10 @@ fi
 # tools/bindgen.cs reads the same staged headers. See docs/PLAN.md section 4.3.
 repo="$(cd "$here/.." && pwd)"
 cui_rev="$(git -C "$src" rev-parse --short HEAD 2>/dev/null || echo unknown)"
-stage="$repo/artifacts/native-src"
-rm -rf "$stage"
-mkdir -p "$stage"
+# Outside the repository on purpose: the container build runs as root, and a
+# root-owned artifacts/ later rejects the runner user's pack output with
+# "access denied". Scratch in TMPDIR keeps the tree free of root-owned dirs.
+stage="$(mktemp -d "${TMPDIR:-/tmp}/cui-native-src.XXXXXX")"
 tar -C "$src" --exclude=build-shared --exclude=build-static --exclude=.git -cf - . | tar -C "$stage" -xf -
 for patch in "$here"/patches/*.patch; do
   [[ -e "$patch" ]] || continue
