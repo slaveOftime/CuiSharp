@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Reflection;
+using System.Text;
 using System.Text.Json;
 
 namespace CuiSharp.Tests;
@@ -194,7 +195,11 @@ public sealed class NativePackagingTests
     {
         var text = new StringBuilder();
         var buffer = new char[4096];
-        try { while (await reader.ReadAsync(buffer, token) > 0) text.Append(buffer, 0, buffer.Length); }
+        try
+        {
+            int read;
+            while ((read = await reader.ReadAsync(buffer, token)) > 0) text.Append(buffer, 0, read);
+        }
         catch (OperationCanceledException) { }
         return text.ToString();
     }
