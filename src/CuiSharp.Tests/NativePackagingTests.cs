@@ -165,14 +165,38 @@ public sealed class NativePackagingTests
     private static async Task<(int Exit, string Output)> RunAsync(params string[] arguments)
     {
         var info = new ProcessStartInfo("dotnet") { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
+        // MSBuild's node reuse leaves worker processes running after the build
+        // exits, and they inherit the redirected pipes: ReadToEnd would wait on
+        // handles that never close — fifteen idle minutes, or forever. Reuse off,
+        // and every read bounded, so a wedge fails instead of parking a release.
+        info.Environment["MSBUILDDISABLENODEREUSE"] = "1";
         foreach (string argument in arguments) info.ArgumentList.Add(argument);
         using var process = Process.Start(info)!;
-        Task<string> stdout = process.StandardOutput.ReadToEndAsync();
-        Task<string> stderr = process.StandardError.ReadToEndAsync();
-        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(90));
-        try { await process.WaitForExitAsync(timeout.Token); }
-        finally { if (!process.HasExited) { process.Kill(entireProcessTree: true); await process.WaitForExitAsync(); } }
-        return (process.ExitCode, await stdout + await stderr);
+        using var done = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+        Task<string> stdout = ReadAsync(process.StandardOutput, done.Token);
+        Task<string> stderr = ReadAsync(process.StandardError, done.Token);
+        try { await process.WaitForExitAsync(done.Token); }
+        catch (OperationCanceledException)
+        {
+            process.Kill(entireProcessTree: true);
+            await process.WaitForExitAsync();
+        }
+        // The process is gone; its pipes may not be. Ten seconds is enough for
+        // the children that die with their parent — partial output still asserts,
+        // and a stuck read names itself here instead of hanging the run.
+        using var drain = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        return (process.HasExited ? process.ExitCode : -1,
+            await stdout.WaitAsync(drain.Token) + await stderr.WaitAsync(drain.Token));
+    }
+
+    // Partial output is the point: a cancelled read keeps what arrived.
+    private static async Task<string> ReadAsync(StreamReader reader, CancellationToken token)
+    {
+        var text = new StringBuilder();
+        var buffer = new char[4096];
+        try { while (await reader.ReadAsync(buffer, token) > 0) text.Append(buffer, 0, buffer.Length); }
+        catch (OperationCanceledException) { }
+        return text.ToString();
     }
 
     private sealed class NativeFixture : IDisposable
