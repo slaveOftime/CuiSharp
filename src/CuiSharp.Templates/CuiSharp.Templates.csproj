@@ -8,7 +8,7 @@
     <IsPackable>true</IsPackable>
     <PackageId>CuiSharp.Templates</PackageId>
     <Title>CuiSharp project templates</Title>
-    <Description>dotnet new templates for CuiSharp: a native desktop app in plain C# with no XAML and no managed UI framework, scaffolded as a solution with a demo app and a test project.</Description>
+    <Description>dotnet new templates for CuiSharp: a native desktop app in plain C# with no XAML and no managed UI framework, either one runnable C# file or a solution with a demo app and a test project.</Description>
     <PackageTags>cui;cui sharp;templates;dotnet-new;desktop;nativeaot</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageType>Template</PackageType>
@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <Content Include="CuiSharp.App\**\*" Exclude="CuiSharp.App\**\bin\**;CuiSharp.App\**\obj\**" />
+    <Content Include="CuiSharp.Mini\**\*" Exclude="CuiSharp.Mini\**\bin\**;CuiSharp.Mini\**\obj\**" />
     <Compile Remove="**\*.cs" />
     <None Remove="**\*" />
     <!-- After the Remove: the readme goes to the package root, not into the template content. -->

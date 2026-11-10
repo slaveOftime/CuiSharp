@@ -12,6 +12,8 @@
       1. pack CuiSharp and CuiSharp.Templates into a temporary folder
       2. install the template, `dotnet new cui-app`, and point the app at that folder
       3. build, test, and (unless -NoPublish) publish a NativeAOT single file
+      4. generate cui-mini, run its named .cs file and check its button through the headless protocol
+      5. on Windows, observe the file-based app's native window and close it
 
     -Keep leaves the generated app and packages in place for inspection.
 
@@ -33,6 +35,7 @@ Push-Location $root
 $work = Join-Path ([System.IO.Path]::GetTempPath()) ("cui-template-" + [guid]::NewGuid().ToString('N').Substring(0, 8))
 $packages = Join-Path $work 'packages'
 $app = Join-Path $work 'TodoApp'
+$miniApp = Join-Path $work 'mini'
 $templateInstalled = $false
 
 function Step([string] $text) { Write-Host "==> $text" -ForegroundColor Cyan }
@@ -169,7 +172,108 @@ internal static class AnalyzerProbe
     $lines = ($tree -split "`n" | Select-Object -Skip 1 -First 4 | ForEach-Object { $_.Trim() })
     Write-Host ('    ' + ($lines -join ' / ')) -ForegroundColor Green
 
-    Write-Host 'template verified' -ForegroundColor Green
+    Step 'generating and running a file-based app'
+    $defaultMini = Join-Path $work 'demo1'
+    & dotnet new cui-mini -o $defaultMini | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw 'generating the default mini app failed' }
+    $defaultFiles = @(Get-ChildItem $defaultMini -Recurse -File)
+    if ($defaultFiles.Count -ne 1 -or $defaultFiles[0].Name -cne 'demo1.cs' -or
+        (Get-Content $defaultFiles[0].FullName -First 1) -ne '#:package CuiSharp@*') {
+        throw 'dotnet new cui-mini -o demo1 must generate only demo1.cs referencing CuiSharp@*'
+    }
+    # An explicit -n also names the file and gives the native window a unique title.
+    $miniName = 'CuiMini' + [guid]::NewGuid().ToString('N')
+    $miniFile = "$miniName.cs"
+    & dotnet new cui-mini -n $miniName -o $miniApp --CuiSharpVersion $version | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw 'generating the mini app failed' }
+    $generated = @(Get-ChildItem $miniApp -Recurse -File)
+    if ($generated.Count -ne 1 -or $generated[0].Name -cne $miniFile) {
+        throw "cui-mini must generate exactly one file named $miniFile"
+    }
+    Copy-Item (Join-Path $app 'NuGet.config') (Join-Path $miniApp 'NuGet.config')
+
+    $psi = [System.Diagnostics.ProcessStartInfo]::new('dotnet')
+    $psi.WorkingDirectory = $miniApp
+    foreach ($argument in @('run', $miniFile, '--no-launch-profile')) { $psi.ArgumentList.Add($argument) }
+    $psi.UseShellExecute = $false
+    $psi.RedirectStandardInput = $true
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError = $true
+    $psi.StandardOutputEncoding = [System.Text.UTF8Encoding]::new($false, $true)
+    $psi.Environment['CUISHARP_HEADLESS'] = '1'
+    $mini = [System.Diagnostics.Process]::Start($psi)
+    try {
+        # Drain both streams while building/restoring; neither pipe may block the child.
+        $stdout = $mini.StandardOutput.ReadToEndAsync()
+        $stderr = $mini.StandardError.ReadToEndAsync()
+        $mini.StandardInput.WriteLine("tree`nclick Increment`ntree`nquit")
+        $mini.StandardInput.Close()
+        if (-not $mini.WaitForExit(180000)) { throw "dotnet run $miniFile timed out" }
+        $output = $stdout.GetAwaiter().GetResult()
+        $errors = $stderr.GetAwaiter().GetResult()
+        if ($mini.ExitCode -ne 0) { throw "dotnet run $miniFile failed: $errors $output" }
+        if ($output -notmatch 'CUI-READY 480 320' -or $output -match 'CUI-ERR' -or
+            ([regex]::Matches($output, 'CUI-OK ').Count -ne 4) -or
+            $output -notmatch 'Clicked 0 times' -or $output -notmatch 'Clicked 1 times') {
+            throw "the file-based app did not draw and react to its button: $output"
+        }
+        Write-Host "    $miniFile drew a frame and Increment changed its state" -ForegroundColor Green
+    }
+    finally {
+        if (-not $mini.HasExited) { $mini.Kill($true); $mini.WaitForExit() }
+        $mini.Dispose()
+    }
+
+    if ($IsWindows) {
+        Step 'observing the file-based app window'
+        if (-not ('CuiMiniWindowProbe' -as [type])) {
+            Add-Type @'
+using System;
+using System.Runtime.InteropServices;
+public static class CuiMiniWindowProbe
+{
+    // IntPtr.Zero is a real NULL class name; PowerShell converts $null to an empty string.
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    public static extern IntPtr FindWindow(IntPtr className, string title);
+    [DllImport("user32.dll")]
+    public static extern bool IsWindowVisible(IntPtr window);
+    [DllImport("user32.dll")]
+    public static extern bool PostMessage(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
+}
+'@
+        }
+        $psi.Environment['CUISHARP_HEADLESS'] = '0'
+        $psi.ArgumentList.Add('--no-build')
+        $mini = [System.Diagnostics.Process]::Start($psi)
+        try {
+            $stdout = $mini.StandardOutput.ReadToEndAsync()
+            $stderr = $mini.StandardError.ReadToEndAsync()
+            $deadline = [DateTime]::UtcNow.AddSeconds(30)
+            $window = [IntPtr]::Zero
+            while (-not $mini.HasExited -and [DateTime]::UtcNow -lt $deadline) {
+                $window = [CuiMiniWindowProbe]::FindWindow([IntPtr]::Zero, $miniName)
+                if ($window -ne [IntPtr]::Zero -and [CuiMiniWindowProbe]::IsWindowVisible($window)) { break }
+                Start-Sleep -Milliseconds 50
+            }
+            if ($window -eq [IntPtr]::Zero -or -not [CuiMiniWindowProbe]::IsWindowVisible($window)) {
+                if (-not $mini.HasExited) { $mini.Kill($true); $mini.WaitForExit() }
+                throw "dotnet run $miniFile did not open a visible native window: $($stderr.GetAwaiter().GetResult()) $($stdout.GetAwaiter().GetResult())"
+            }
+            if (-not [CuiMiniWindowProbe]::PostMessage($window, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero)) {
+                throw 'could not send WM_CLOSE to the mini app window'
+            }
+            if (-not $mini.WaitForExit(30000)) { throw 'the mini app did not exit after its window closed' }
+            if ($mini.ExitCode -ne 0) { throw "the mini app window failed: $($stderr.GetAwaiter().GetResult())" }
+            Write-Host '    visible native window opened and closed cleanly' -ForegroundColor Green
+        }
+        finally {
+            if (-not $mini.HasExited) { $mini.Kill($true); $mini.WaitForExit() }
+            $mini.Dispose()
+        }
+    }
+    else { Write-Host '    native window smoke skipped (no portable desktop assumed); headless interaction passed' }
+
+    Write-Host 'templates verified' -ForegroundColor Green
 }
 finally {
     if ($templateInstalled) { & dotnet new uninstall CuiSharp.Templates | Out-Null }

@@ -34,6 +34,13 @@ draw again. Conditional UI is an `if`; a list is a `for`.
 
 ## A whole app
 
+For a file-based C# app: install `CuiSharp.Templates`, then `dotnet new cui-mini -n demo1`
+and `dotnet run demo1.cs`. This creates only `demo1.cs` in the current directory, without a new
+folder. Add `-o <folder>` only for a separate output directory.
+The generated file uses `#:package CuiSharp@*`; pass
+`--CuiSharpVersion <version>` to the template to pin it. Use `cui-app` instead for a solution with
+components, services and tests.
+
 ```csharp
 using CuiSharp;
 
@@ -574,6 +581,6 @@ Everything below is in this folder, beside this guide; nothing here points outsi
 | hosting: components, mutations, DI | `hosting.md` |
 | which RIDs the package carries, and the glibc floor | `native-abi.md` |
 
-Outside this folder the repository also has a complete app to start from (`dotnet new cui-app`), a
+Outside this folder the repository also has a complete solution or file-based C# app to start from (`dotnet new cui-app` / `cui-mini`), a
 working page per component (`samples/CuiSharp.Gallery/`), and the measured cost per frame
 (`docs/PERFORMANCE.md`).

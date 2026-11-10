@@ -6,8 +6,6 @@ in [ARCHITECTURE.md](ARCHITECTURE.md). Every item here passes the same gates as 
 
 ## 1. Not started
 
-- **`dotnet new cui-script`** — one file, `#:package CuiSharp@*`, `dotnet run app.cs` opens a window.
-  The template covers the solution case only. Prove it in `verify-template.ps1`.
 - **The gallery pages for the extended components** (`examples/gallery_more.c`'s other fifteen):
   *Developer tools* and *More developer tools* cover CUI 1.3's twenty, but actions, smart inputs,
   pickers, capture, disclosure, reader, data grid, code, social and media, planning, more charts,

@@ -23,6 +23,19 @@ and a decimated chart — with a light/dark switch, a footer that reports the fr
 interval, frame rate and allocations, a test project that clicks through real frames, and an
 `AGENTS.md` for whoever edits it next.
 
+For a quick experiment, generate a file-based C# app (no project or solution):
+
+```sh
+dotnet new cui-mini -n demo1
+dotnet run demo1.cs
+```
+
+`-n demo1` creates only `demo1.cs` in the current directory, without a new folder. Add `-o <folder>`
+only when you want a separate output directory. The file starts with `#:package CuiSharp@*`,
+resolving the latest stable package. Use
+`--CuiSharpVersion 0.3.1` when generating to pin a version. Its counter and theme switch use the
+same frame API as a full app; `CUISHARP_HEADLESS=1` runs it without a window for automation.
+
 Also `dotnet add package CuiSharp` for an existing project. Requires the .NET 10 SDK.
 
 ## The one idea
@@ -230,7 +243,7 @@ src/CuiSharp/            the library: Interop (generated), Ui, Runtime, Semantic
 src/CuiSharp.Analyzers/  CUI001-CUI007, packed into CuiSharp
 src/CuiSharp.Testing/    TestApp: drive a component without a window
 src/CuiSharp.Tools/      dotnet cui
-src/CuiSharp.Templates/  dotnet new cui-app
+src/CuiSharp.Templates/  dotnet new cui-app / cui-mini
 samples/CuiSharp.Gallery/ thirteen pages, one file per page
 native/                  the CUI submodule and the two build scripts
 tools/                   bindgen.cs, regen.ps1, verify-template.ps1, snapshots.ps1

@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "yappologistic",
+  "classifications": ["CuiSharp", "Desktop", "UI"],
+  "identity": "CuiSharp.Mini",
+  "name": "CuiSharp file-based app",
+  "shortName": "cui-mini",
+  "description": "A file-based C# app: dotnet run <name>.cs opens a native window, with no project or solution.",
+  "tags": {
+    "language": "C#",
+    "type": "item"
+  },
+  "sourceName": "MiniApp",
+  "preferNameDirectory": false,
+  "symbols": {
+    "CuiSharpVersion": {
+      "type": "parameter",
+      "datatype": "text",
+      "defaultValue": "*",
+      "replaces": "__CUISHARP_VERSION__",
+      "description": "The CuiSharp package version. Defaults to the latest stable version."
+    }
+  }
+}

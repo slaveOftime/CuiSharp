@@ -10,6 +10,12 @@ The date components speak another language, and the data grid owns its state.
 
 ### Added
 
+- **`dotnet new cui-mini`** generates a file-based C# app with `#:package CuiSharp@*`:
+  `dotnet new cui-mini -n demo1` creates only `demo1.cs` in the current directory, without a new
+  folder. `dotnet run demo1.cs` opens a native window with a counter and theme switch, no project
+  or solution. An optional `-o <folder>` selects a separate output directory.
+  `--CuiSharpVersion` pins the package when needed. The template gate checks the generated file's
+  headless button interaction and, on Windows, observes its visible window opening and closing.
 - **`Localization` and `ui.SetLocalization(table)`** translate the month, weekday and "Today" text
   the date picker, the calendars, the gantt and the file browser show — the table `cui_set_strings`
   takes, which stayed `EXCLUDED` in 0.3.0 because CUI keeps the pointer and reads it every frame.
