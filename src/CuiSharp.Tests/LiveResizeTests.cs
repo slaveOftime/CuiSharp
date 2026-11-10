@@ -67,7 +67,7 @@ public class NativeAbiClaimTests
     [Fact]
     public void TheDocumentedGlibcFloorIsTheOneTheErrorNames()
     {
-        Assert.Contains(CuiNative.LinuxFloor, Read("docs", "NATIVE-ABI.md"), StringComparison.Ordinal);
+        Assert.Contains(CuiNative.LinuxFloor, Read("skills", "cui-dotnet", "native-abi.md"), StringComparison.Ordinal);
         Assert.Contains($"CUI_GLIBC_BASELINE:-{CuiNative.LinuxFloor}", Read("native", "build-native.sh"), StringComparison.Ordinal);
     }
 
@@ -78,73 +78,101 @@ public class NativeAbiClaimTests
 }
 
 /// <summary>
-/// The skill folder is the entry point a person or an assistant is pointed at, and the package ships
-/// it at the same path. It holds only pages that have no other home, so nothing is maintained twice —
-/// which means every link out of it has to resolve, in the repository and in the package.
+/// The skill folder is the whole of what an app needs, and the package ships it at the same path. It
+/// is self-contained on purpose: a reader who lands in it never has to leave to answer a question,
+/// and nothing in it may point at a file it does not carry.
 /// </summary>
 public class PackagedDocsTests
 {
-    [Fact]
-    public void TheBundleHoldsOnlyItsOwnPages()
-    {
-        string bundle = Path.Combine(TestPaths.RepositoryRoot, "skills", "cui-dotnet");
+    private static readonly string[] Expected =
+    [
+        "SKILL.md", "llms.txt", "hosting.md", "native-abi.md", "widgets.md", "widgets-more.md",
+        "api/Options.md", "api/Records.md",
+    ];
 
-        // SKILL.md is the entry; a second README would be the first sign of a copy creeping back in.
-        Assert.True(File.Exists(Path.Combine(bundle, "SKILL.md")));
-        Assert.True(File.Exists(Path.Combine(bundle, "llms.txt")));
+    [Fact]
+    public void TheFolderHoldsEverythingAReaderNeeds()
+    {
+        string bundle = Bundle;
+
+        var missing = Expected.Where(file => !File.Exists(Path.Combine(bundle, file))).ToArray();
+        Assert.True(missing.Length == 0, "the folder is missing: " + string.Join(", ", missing));
+
+        // SKILL.md is the entry; a second README would compete with it.
+        Assert.False(File.Exists(Path.Combine(bundle, "README.md")));
         Assert.NotEmpty(Directory.GetFiles(Path.Combine(bundle, "api"), "*.md"));
-
-        string[] stray = [.. Directory.EnumerateFiles(bundle, "*", SearchOption.AllDirectories)
-            .Select(path => Path.GetRelativePath(bundle, path))
-            .Where(relative => !relative.EndsWith(".md", StringComparison.Ordinal) && !relative.EndsWith("llms.txt", StringComparison.Ordinal))
-            .Where(relative => relative != "SKILL.md" && !relative.StartsWith("api" + Path.DirectorySeparatorChar, StringComparison.Ordinal))];
-
-        Assert.True(stray.Length == 0, "the bundle holds pages of its own only: " + string.Join(", ", stray));
     }
 
     [Fact]
-    public void EveryLinkInTheReferenceResolves()
+    public void NothingInTheFolderPointsOutsideIt()
     {
-        string bundle = Path.Combine(TestPaths.RepositoryRoot, "skills", "cui-dotnet");
-        string reference = File.ReadAllText(Path.Combine(bundle, "llms.txt"));
+        string bundle = Bundle;
+        var escapes = new List<string>();
 
-        var links = Regex.Matches(reference, @"\]\(([^)#]+\.[A-Za-z]+)\)")
-            .Select(m => m.Groups[1].Value)
-            .Distinct()
-            .ToArray();
+        foreach (string page in Directory.EnumerateFiles(bundle, "*.*", SearchOption.AllDirectories))
+        {
+            string text = File.ReadAllText(page);
+            foreach (Match link in Regex.Matches(text, @"\]\(([^)#]+\.(?:md|txt|png|jpg|svg))\)"))
+            {
+                string target = link.Groups[1].Value;
+                if (target.Contains("://", StringComparison.Ordinal)) continue;
 
-        Assert.NotEmpty(links);
-        var broken = links
-            .Where(link => !link.Contains("://", StringComparison.Ordinal))
-            .Where(link => !File.Exists(Path.GetFullPath(Path.Combine(bundle, link))))
-            .ToArray();
+                string resolved = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(page)!, target));
+                if (!resolved.StartsWith(bundle, StringComparison.Ordinal) || !File.Exists(resolved))
+                    escapes.Add($"{Path.GetRelativePath(bundle, page)} -> {target}");
+            }
+        }
 
-        // Only pages travel with the reference; a link to a source file would dangle in the package.
-        Assert.True(broken.Length == 0, "llms.txt links to files that are not there: " + string.Join(", ", broken));
+        Assert.True(escapes.Count == 0, "links that leave the folder or dangle: " + string.Join(", ", escapes));
     }
 
     [Fact]
-    public void ThePackageShipsTheReferenceAndEverythingItLinksTo()
+    public void TheWidgetPagesAreCuisOwnWithThePicturesTakenOut()
+    {
+        foreach ((string source, string copy) in ((string Source, string Copy)[])
+        [
+            ("native/CUI/docs/components.md", "widgets.md"),
+            ("native/CUI/docs/components-more.md", "widgets-more.md"),
+        ])
+        {
+            string original = File.ReadAllText(Path.Combine(TestPaths.RepositoryRoot, source));
+            string bundled = File.ReadAllText(Path.Combine(Bundle, copy));
+
+            Assert.StartsWith("<!-- Copied from " + source, bundled, StringComparison.Ordinal);
+            string body = bundled[(bundled.IndexOf("-->", StringComparison.Ordinal) + 3)..].TrimStart();
+
+            // The only difference is the one this folder cannot carry: the screenshots, and the
+            // names the two pages use for each other.
+            string expected = Regex.Replace(original, "<picture>.*?</picture>\\s*", "", RegexOptions.Singleline);
+            expected = Regex.Replace(expected, "<img[^>]*>\\s*", "");
+            expected = Regex.Replace(expected, @"!\[[^\]]*\]\(images/[^)]*\)\s*", "");
+            expected = expected.Replace("](components-more.md)", "](widgets-more.md)").Replace("](components.md)", "](widgets.md)");
+
+            Assert.Equal(expected.ReplaceLineEndings("\n").TrimEnd(), body.ReplaceLineEndings("\n").TrimEnd());
+            Assert.DoesNotContain("images/", body, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public void ThePackageShipsTheFolderAndNothingElseIsNeeded()
     {
         string csproj = File.ReadAllText(Path.Combine(TestPaths.RepositoryRoot, "src", "CuiSharp", "CuiSharp.csproj"));
 
-        Assert.Contains("skills/cui-dotnet", csproj, StringComparison.Ordinal);
+        Assert.Contains("skills/cui-dotnet/", csproj, StringComparison.Ordinal);
 
-        // Each document the reference links to is packed from where it is written: packed, not copied.
-        foreach (string packed in (string[])["HOSTING.md", "NATIVE-ABI.md", "components.md", "components-more.md"])
-        {
-            Assert.Contains(packed, csproj, StringComparison.Ordinal);
-        }
+        // The pages a reader needs travel inside the folder; nothing else has to be packed for it.
+        Assert.DoesNotContain(@"..\docs\HOSTING.md", csproj, StringComparison.Ordinal);
+        Assert.DoesNotContain(@"..\docs\NATIVE-ABI.md", csproj, StringComparison.Ordinal);
     }
 
     [Fact]
     public void TheWidgetPagesSayWhatTheWidgetsDo()
     {
-        // CUI's own pages, shipped by reference rather than paraphrased here.
-        string more = File.ReadAllText(Path.Combine(TestPaths.RepositoryRoot, "native", "CUI", "docs", "components-more.md"));
-        string first = File.ReadAllText(Path.Combine(TestPaths.RepositoryRoot, "native", "CUI", "docs", "components.md"));
-
-        Assert.Contains("Up and Down move and the selection follows", more, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("keyboard", first, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Up and Down move and the selection follows",
+            File.ReadAllText(Path.Combine(Bundle, "widgets-more.md")), StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("keyboard",
+            File.ReadAllText(Path.Combine(Bundle, "widgets.md")), StringComparison.OrdinalIgnoreCase);
     }
+
+    private static string Bundle => Path.Combine(TestPaths.RepositoryRoot, "skills", "cui-dotnet");
 }

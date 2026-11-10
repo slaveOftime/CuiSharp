@@ -79,7 +79,7 @@ unzip -l artifacts/packages/CuiSharp.Templates.*.nupkg | head -20
 
 | Package | Must contain |
 |---|---|
-| `CuiSharp` | `lib/net10.0/CuiSharp.dll`, each RID's `runtimes/<rid>/native/` files, `runtimes/native-provenance.txt` (revision, compiler, ABI, hashes — see [NATIVE-ABI.md](NATIVE-ABI.md)), `analyzers/dotnet/cs/CuiSharp.Analyzers.dll`, `build/CuiSharp.targets`, `README.md` |
+| `CuiSharp` | `lib/net10.0/CuiSharp.dll`, each RID's `runtimes/<rid>/native/` files, `runtimes/native-provenance.txt` (revision, compiler, ABI, hashes — see [native-abi.md](../skills/cui-dotnet/native-abi.md)), `analyzers/dotnet/cs/CuiSharp.Analyzers.dll`, `build/CuiSharp.targets`, `README.md` |
 | `CuiSharp.Testing` | `lib/net10.0/CuiSharp.Testing.dll` and a dependency on `CuiSharp` |
 | `CuiSharp.Tools` | a `DotnetToolSettings.xml` with `CommandName=cui` |
 | `CuiSharp.Templates` | `content/CuiSharp.App/…` including the app, its tests and `AGENTS.md` |

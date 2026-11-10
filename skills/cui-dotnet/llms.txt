@@ -321,7 +321,7 @@
 
 - [Options](api/Options.md): every option struct and its fields.
 - [Records](api/Records.md): item types for the widgets that take arrays.
-- [Hosting](../../docs/HOSTING.md): components, mutation, dependency injection.
+- [Hosting](hosting.md): components, mutation, dependency injection.
 
 ## Members with no C function behind them
 
@@ -384,10 +384,9 @@ Hand-written, because the wrapper needs state a C call cannot carry; they are pa
 - `ui.TreeTable(...)` — hand-written in `Ui/Ui.TreeTable.cs`
 - `ui.TreeTableRow(...)` — hand-written in `Ui/Ui.TreeTable.cs`
 - `ui.UseSystemFontFallback(...)` — hand-written in `Ui/Ui.Fonts.cs`
-- [Widgets](../../native/CUI/docs/components.md) and [more widgets](../../native/CUI/docs/components-more.md): what each component does, and what it does with the keyboard.
-- [Native ABI](../../docs/NATIVE-ABI.md): the RIDs the package carries, and the glibc floor.
+- [Widgets](widgets.md) and [more widgets](widgets-more.md): what each component does, and what it does with the keyboard.
+- [Native ABI](native-abi.md): the RIDs the package carries, and the glibc floor.
 - [Guide](SKILL.md): the authoring rules, the pitfalls, the component list.
 
-Every path above is relative to this file, which is `skills/cui-dotnet/` in the repository
-and in the package. Maintainer notes: `docs/ARCHITECTURE.md` (decisions and layout),
-`docs/PLAN.md`, `docs/PERFORMANCE.md`, and `bindings/coverage.txt` (which C functions are wrapped).
+Every path above is in this folder, which is the whole of what an app needs: it is the same
+folder in the repository and in the package, and nothing in it points outside itself.

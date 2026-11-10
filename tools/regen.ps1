@@ -37,9 +37,34 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'native build failed' }
     }
 
-    # The folder holds only what has no other home: the hand-written guide, the generated reference
-    # and the generated API pages. Everything else a reader needs stays where it is written.
+    # The folder is self-contained: it is the whole of what an app needs, and nothing in it points
+    # outside itself. Two of its pages are CUI's own — a submodule file cannot be moved out of the
+    # submodule, so those are copied on every run, with a header naming where they came from.
     $bundle = Join-Path $root 'skills/cui-dotnet'
+
+    $staged = @(
+        @{ From = 'native/CUI/docs/components.md'; To = 'widgets.md' }
+        @{ From = 'native/CUI/docs/components-more.md'; To = 'widgets-more.md' }
+    )
+
+    function Copy-Bundled {
+        foreach ($doc in $staged) {
+            $source = Join-Path $root $doc.From
+            if (-not (Test-Path $source)) { throw "bundle: missing $($doc.From)" }
+            $header = "<!-- Copied from $($doc.From) by tools/regen.ps1. Do not edit: change the source and rerun.$([Environment]::NewLine)$([Environment]::NewLine)Screenshots are dropped: their 215 files and 28 MB stay in the CUI submodule, and a page that linked to them would not resolve inside this folder. -->" + "`n`n"
+            $text = (Get-Content -Raw -Path $source).Replace("`r`n", "`n").TrimEnd() + "`n"
+
+            # The pictures are the only thing in these pages that lives outside the folder: drop both
+            # the `<picture>` markup and the plain `![alt](images/…)` form the pages also use.
+            $text = [regex]::Replace($text, '<picture>.*?</picture>\s*', '')
+            $text = [regex]::Replace($text, '<img[^>]*>\s*', '')
+            $text = [regex]::Replace($text, '!\[[^\]]*\]\(images/[^)]*\)\s*', '')
+
+            # The pages name each other as `components.md`; here they are widgets.md.
+            $text = $text.Replace('](components-more.md)', '](widgets-more.md)').Replace('](components.md)', '](widgets.md)')
+            [System.IO.File]::WriteAllText((Join-Path $bundle $doc.To), $header + $text)
+        }
+    }
 
     $generated = @(
         'bindings/api.json'
@@ -52,7 +77,7 @@ try {
         'src/CuiSharp.Tests/Abi.g.cs'
         'src/CuiSharp.Tests/OptionMappings.g.cs'
         'skills/cui-dotnet/llms.txt'
-    )
+    ) + @($staged | ForEach-Object { 'skills/cui-dotnet/' + $_.To })
 
     function Get-GeneratedHash {
         $sb = [System.Text.StringBuilder]::new()
@@ -78,7 +103,9 @@ try {
         return $sb.ToString()
     }
 
+    # Snapshotted before staging, so a copy that was edited by hand is a diff, not a silent repair.
     $before = Get-GeneratedHash
+    Copy-Bundled
 
     Write-Host 'bindgen: reading headers'
     & dotnet run (Join-Path $root 'tools/bindgen.cs')

@@ -469,10 +469,9 @@ behind, so anything that should be checked twice belongs in a test instead.
 ## Widget behaviour
 
 Every component's behaviour — selection, focus, keyboard, what a return value means, when state
-survives a frame — is in CUI's own pages: [`components.md`](../../native/CUI/docs/components.md) and
-[`components-more.md`](../../native/CUI/docs/components-more.md). Read the page for the widget instead
-of guessing from a signature: a data grid keeps its selection in your variables, a dialog is modal, a
-dropzone returns the paths it received.
+survives a frame — is in `widgets.md` and `widgets-more.md`, beside this guide. Read the page for the
+widget instead of guessing from a signature: a data grid keeps its selection in your variables, a
+dialog is modal, a dropzone returns the paths it received.
 
 ## Components
 
@@ -500,16 +499,19 @@ per-section page under `api/`.
 
 ## Files
 
-| Need | Path |
+Everything below is in this folder, beside this guide; nothing here points outside it.
+
+| Need | File |
 |---|---|
-| this guide | `skills/cui-dotnet/SKILL.md` |
-| what each widget does, and its keyboard | `native/CUI/docs/components.md`, `components-more.md` |
-| which RIDs the package carries, and the glibc floor | `docs/NATIVE-ABI.md` |
+| this guide: the rules, the workflow, the pitfalls | `SKILL.md` |
 | every signature, one line each | `llms.txt` |
 | option structs and their fields | `api/Options.md` |
 | records used as array items | `api/Records.md` |
-| hosting: components, mutations, DI | `docs/HOSTING.md` |
-| rules and decisions (read before changing the framework) | `docs/ARCHITECTURE.md` |
-| all components, working, one file per page | `samples/CuiSharp.Gallery/Pages/` |
-| a complete starting app with tests | `src/CuiSharp.Templates/CuiSharp.App/` |
-| measured cost per frame | `docs/PERFORMANCE.md` |
+| the whole API paged, one file per section | `api/` |
+| what each widget does, and its keyboard | `widgets.md`, `widgets-more.md` |
+| hosting: components, mutations, DI | `hosting.md` |
+| which RIDs the package carries, and the glibc floor | `native-abi.md` |
+
+Outside this folder the repository also has a complete app to start from (`dotnet new cui-app`), a
+working page per component (`samples/CuiSharp.Gallery/`), and the measured cost per frame
+(`docs/PERFORMANCE.md`).

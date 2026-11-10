@@ -9,7 +9,7 @@ describe code that has since changed. Cost is the agent time I estimate for us t
 
 | Report item | Status here |
 |---|---|
-| Linux binary requires GLIBC_2.43, nothing loads | `native/build-native.sh` refuses a `libcui.so` needing more than `CUI_GLIBC_BASELINE` (2.35) and writes provenance; release builds native on `ubuntu-22.04`; the package carries `runtimes/native-provenance.txt`; `docs/NATIVE-ABI.md` states the floor. **The 0.1.0 artifact predates this** — a new package must be built and the floor verified on a 2.35 box |
+| Linux binary requires GLIBC_2.43, nothing loads | `native/build-native.sh` refuses a `libcui.so` needing more than `CUI_GLIBC_BASELINE` (2.35) and writes provenance; release builds native on `ubuntu-22.04`; the package carries `runtimes/native-provenance.txt`; `skills/cui-dotnet/native-abi.md` states the floor. **The 0.1.0 artifact predates this** — a new package must be built and the floor verified on a 2.35 box |
 | AOT publish leaves `cui.dll` / `cui.lib` beside the exe, apps hand-roll a verify target | `CuiSharpDropNativeFilesFromAotPublish` removes them on every platform; `verify-template.ps1` fails if anything but the executable remains. Their `VerifySingleExecutable` target is unnecessary — a doc line, not a feature |
 | "No way to print the native revision" | Provenance is in the package and names `repository … @ rev` |
 | Analyzer does not warn on blocking I/O in a frame | `CUI001` already reports `Task.Result`, `.Wait()`, `GetAwaiter().GetResult()`, `Thread.Sleep/SpinWait/Yield` and suggests `Mutation`. It does **not** cover `File.*`/`Directory.*`/`Task.Run` — see below |
@@ -43,7 +43,7 @@ and `app.Settle()`, plus an `Animating` flag so a test knows when nothing is in 
 ## Confirmed doc gaps (cheap, high yield for an agent)
 
 - **D1 — the docs an agent needs are not in the package.** `S`
-  `llms.txt`, `skills/cui-dotnet/SKILL.md` and `docs/NATIVE-ABI.md` exist in the repo and are not
+  `llms.txt`, `skills/cui-dotnet/SKILL.md` and the ABI page exist in the repo and are not
   packed; the package ships `README.md` only. Pack them, plus a short `docs/agents.md` (the loop, the
   pitfalls, the publish recipe).
 - **D2 — font fallback behaviour is only in `cui_text.c`.** `S`

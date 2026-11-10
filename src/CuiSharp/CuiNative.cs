@@ -39,7 +39,7 @@ public sealed class CuiSharpNativeException : InvalidOperationException
 
             To build the native library for this machine, run native/build-native.sh (or .ps1) in the
             CuiSharp repository, then point the build at it with -p:CuiNativeLinuxDir, -p:CuiNativeWinDir
-            or -p:CuiNativeOsxDir. See docs/NATIVE-ABI.md.
+            or -p:CuiNativeOsxDir. See skills/cui-dotnet/native-abi.md.
 
             Loader message: {error.Message}
             """,
@@ -50,7 +50,7 @@ public sealed class CuiSharpNativeException : InvalidOperationException
 /// <summary>
 /// What the packaged native library promises. Kept here as one place the build and the docs are
 /// checked against (<c>NativeAbiClaimTests</c> reads <c>CuiSharp.targets</c> and
-/// <c>docs/NATIVE-ABI.md</c> and fails when they disagree with this).
+/// <c>skills/cui-dotnet/native-abi.md</c> and fails when they disagree with this).
 /// </summary>
 internal static class CuiNative
 {

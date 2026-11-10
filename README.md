@@ -215,7 +215,7 @@ The package ships `win-x64`, `linux-x64` and `osx-arm64`. The Linux archive need
 newer** (Ubuntu 22.04, Debian 12, RHEL 9); an older image fails at load with
 `version 'GLIBC_x.y' not found`, which `CuiSharpNativeException` restates with the packaged RIDs
 and the floor. `runtimes/native-provenance.txt` in the package records the revision, compiler and
-per-file hashes behind it; [docs/NATIVE-ABI.md](docs/NATIVE-ABI.md) is the promise itself.
+per-file hashes behind it; [native-abi.md](skills/cui-dotnet/native-abi.md) is the promise itself.
 
 ## Gallery and layout
 
@@ -235,28 +235,31 @@ samples/CuiSharp.Gallery/ eleven pages, one file per page
 native/                  the CUI submodule and the two build scripts
 tools/                   bindgen.cs, regen.ps1, verify-template.ps1, snapshots.ps1
 bindings/                api.json (generated), overrides.json (inputs), coverage.txt (report)
-docs/                    PLAN (remaining work), ARCHITECTURE (rules), PERFORMANCE, HOSTING,
-                         RELEASING, NATIVE-ABI, API-SURFACE.txt, images/gallery/
-skills/cui-dotnet/       the bundle: the guide, the reference, the API pages, the widget docs
+docs/                    PLAN (remaining work), ARCHITECTURE (rules), PERFORMANCE, RELEASING,
+                         API-SURFACE.txt, images/gallery/
+skills/cui-dotnet/       what building an app needs: SKILL.md, llms.txt, api/, widgets, hosting, ABI
 ```
 
 ## Where to read
 
-The skill folder is the entry point for building an app — one folder, three kinds of page, no
-duplicated copies of anything:
+`skills/cui-dotnet/` is the whole of what building an app needs — the guide, the reference, the API
+pages, the widget behaviour and the ABI promise — and it is self-contained: nothing in it points at a
+file it does not carry. The NuGet package ships that same folder at that same path, so every path
+below works in either place.
 
 | Need | Path |
 |---|---|
 | **Start here:** how to write a UI, the workflow, the pitfalls | [skills/cui-dotnet/SKILL.md](skills/cui-dotnet/SKILL.md) |
 | Every widget and signature, one line each | [skills/cui-dotnet/llms.txt](skills/cui-dotnet/llms.txt) |
 | Options and records, one page per section | [skills/cui-dotnet/api/](skills/cui-dotnet/api) |
-| What each component does, and its keyboard | [native/CUI/docs/components.md](native/CUI/docs/components.md), [components-more.md](native/CUI/docs/components-more.md) |
-| Components, `Mutation<T>`, dependency injection | [docs/HOSTING.md](docs/HOSTING.md) |
-| RIDs carried, glibc floor, provenance | [docs/NATIVE-ABI.md](docs/NATIVE-ABI.md) |
+| Components, `Mutation<T>`, dependency injection | [skills/cui-dotnet/hosting.md](skills/cui-dotnet/hosting.md) |
+| What each component does, and its keyboard | [skills/cui-dotnet/widgets.md](skills/cui-dotnet/widgets.md), [widgets-more.md](skills/cui-dotnet/widgets-more.md) |
+| RIDs carried, glibc floor, provenance | [skills/cui-dotnet/native-abi.md](skills/cui-dotnet/native-abi.md) |
 | Rules and decisions, before changing the framework | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 
-An assistant needs the first two: point it at the folder and say "read `SKILL.md`". The package ships
-the same paths, so a link works whether you are reading the repository or the installed package.
+An assistant needs the first two: point it at the folder and say "read `SKILL.md`". `widgets.md` and
+`native-abi.md` are copies of CUI's documentation and of the ABI promise, regenerated with
+`pwsh tools/regen.ps1`; the rest of the folder is hand-written or generated from the headers.
 
 ## Contributing
 
@@ -273,7 +276,7 @@ Syncing a CUI release is checking out the new tag, running `regen.ps1`, and revi
 diff. `skills/cui-dotnet/SKILL.md` is the one page written by hand.
 
 Rules and decisions: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Remaining work:
-[docs/PLAN.md](docs/PLAN.md). Authoring guide: the bundle below.
+[docs/PLAN.md](docs/PLAN.md). Authoring guide: [skills/cui-dotnet/SKILL.md](skills/cui-dotnet/SKILL.md).
 
 ## Status
 

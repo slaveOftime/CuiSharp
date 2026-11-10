@@ -100,7 +100,7 @@ public sealed class Mutation<T> : IDisposable
         {
             // On the pool, because this is called from Draw: an `async` method runs its
             // synchronous prefix on whoever calls it, so invoking it here would make the frame
-            // wait for work that was supposed to be off-frame. See docs/HOSTING.md.
+            // wait for work that was supposed to be off-frame. See skills/cui-dotnet/hosting.md.
             task = Task.Run(() => _work(token), token);
         }
         catch (Exception error)
