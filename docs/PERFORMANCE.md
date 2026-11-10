@@ -25,7 +25,10 @@ re-measure before quoting them.
 
 The two rows that decide a regression are read by `tools/budget-check.ps1`, which fails a run over
 either ceiling: the size check runs on every pull request, and the frame check on demand (Actions →
-CI → Run workflow → **budget**) because a shared runner is too noisy to fail one.
+CI → Run workflow → **budget**) because a shared runner is too noisy to fail one. That on-demand job
+reports its numbers in the run summary and warns instead of failing: a hosted runner measured 1.69 ms
+where the reference machine measures 0.82 ms, so the script itself is the gate when it is run on the
+machine the budget came from.
 
 | | Value | Where it is enforced |
 |---|---|---|
