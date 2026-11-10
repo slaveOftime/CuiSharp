@@ -42,7 +42,14 @@ docker run --rm \
     apt-get update -qq
     # X11 headers because CUI'"'"'s only hard Linux dependency is Xlib.
     apt-get install -y -qq --no-install-recommends \
-      build-essential cmake pkg-config libx11-dev binutils git ca-certificates >/dev/null
+      build-essential cmake pkg-config libx11-dev binutils git ca-certificates python3-pip >/dev/null
+    # Bullseye ships cmake 3.18, and the CUI 1.3 CMakeLists uses $<CONFIG:Rel,Min>
+    # with several configurations — an expression that needs 3.19. The submodule
+    # is pinned and not ours to patch, so build with a current cmake instead; the
+    # compiler and glibc stay the image version, which is what the baseline
+    # promise rests on.
+    pip3 install -q "cmake>=3.28"
+    echo "    cmake:  $(cmake --version | head -1 | awk "{print \$3}")"
     . /etc/os-release
     echo "    image:  $PRETTY_NAME"
     echo "    glibc:  $(ldd --version | head -1 | awk "{print \$NF}")"
