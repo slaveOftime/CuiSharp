@@ -86,12 +86,17 @@
     <None Include="build\CuiSharp.targets" Pack="true" PackagePath="build/" />
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />
     <!--
-      The bundle is the one thing a consumer reads: guide, reference, API pages, widget behaviour and
-      the ABI promise. It ships at the same path it has in the repository, so a path in a doc works
-      in both places (skills/cui-dotnet/README.md).
+      The bundle is what a consumer reads: the guide, the reference and the API pages, at the path
+      they have in the repository so a relative link works in both. The pages the reference links to
+      are packed from where they are written, not copied, so there is still one copy of each
+      (skills/cui-dotnet/SKILL.md is the entry point; there is no other README).
     -->
     <None Include="..\..\skills\cui-dotnet\**\*.md" Pack="true" PackagePath="skills/cui-dotnet/%(RecursiveDir)%(Filename)%(Extension)" Visible="false" />
     <None Include="..\..\skills\cui-dotnet\llms.txt" Pack="true" PackagePath="skills/cui-dotnet/" Visible="false" />
+    <None Include="..\..\docs\HOSTING.md" Pack="true" PackagePath="docs/" Visible="false" />
+    <None Include="..\..\docs\NATIVE-ABI.md" Pack="true" PackagePath="docs/" Visible="false" />
+    <None Include="..\..\native\CUI\docs\components.md" Pack="true" PackagePath="native/CUI/docs/" Visible="false" />
+    <None Include="..\..\native\CUI\docs\components-more.md" Pack="true" PackagePath="native/CUI/docs/" Visible="false" />
   </ItemGroup>
 
   <ItemGroup>

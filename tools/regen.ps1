@@ -37,29 +37,9 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'native build failed' }
     }
 
-    # One folder holds everything a consumer reads — the guide, the reference, the API pages and the
-    # widget behaviour — so it is the one thing the package ships and the one place to look.
+    # The folder holds only what has no other home: the hand-written guide, the generated reference
+    # and the generated API pages. Everything else a reader needs stays where it is written.
     $bundle = Join-Path $root 'skills/cui-dotnet'
-
-    # Pages that live elsewhere in the repository and are published into the bundle verbatim, with a
-    # header naming where they came from. A copy is never edited here: change the source and rerun.
-    $staged = @(
-        @{ From = 'native/CUI/docs/components.md'; To = 'widgets.md' }
-        @{ From = 'native/CUI/docs/components-more.md'; To = 'widgets-more.md' }
-        @{ From = 'docs/NATIVE-ABI.md'; To = 'native-abi.md' }
-        @{ From = 'docs/HOSTING.md'; To = 'hosting.md' }
-    )
-
-    function Copy-Bundled {
-        $null = New-Item -ItemType Directory -Force -Path $bundle
-        foreach ($doc in $staged) {
-            $source = Join-Path $root $doc.From
-            if (-not (Test-Path $source)) { throw "bundle: missing $($doc.From)" }
-            $header = "<!-- Copied from $($doc.From) by tools/regen.ps1. Do not edit: change the source and rerun. -->" + "`n`n"
-            $text = (Get-Content -Raw -Path $source).Replace("`r`n", "`n").TrimEnd() + "`n"
-            [System.IO.File]::WriteAllText((Join-Path $bundle $doc.To), $header + $text)
-        }
-    }
 
     $generated = @(
         'bindings/api.json'
@@ -72,7 +52,7 @@ try {
         'src/CuiSharp.Tests/Abi.g.cs'
         'src/CuiSharp.Tests/OptionMappings.g.cs'
         'skills/cui-dotnet/llms.txt'
-    ) + @($staged | ForEach-Object { 'skills/cui-dotnet/' + $_.To })
+    )
 
     function Get-GeneratedHash {
         $sb = [System.Text.StringBuilder]::new()
@@ -98,9 +78,7 @@ try {
         return $sb.ToString()
     }
 
-    # Snapshot first: a copy that was edited by hand has to be a diff, not a silent repair.
     $before = Get-GeneratedHash
-    Copy-Bundled
 
     Write-Host 'bindgen: reading headers'
     & dotnet run (Join-Path $root 'tools/bindgen.cs')

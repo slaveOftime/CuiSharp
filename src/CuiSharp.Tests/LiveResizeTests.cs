@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using CuiSharp.Hosting;
 using CuiSharp.Interop;
 
@@ -77,70 +78,73 @@ public class NativeAbiClaimTests
 }
 
 /// <summary>
-/// The bundle is the one folder a consumer reads, and the one thing the package ships. Neither is
-/// worth much if the package forgets it or the copies drift from the pages they were made from.
+/// The skill folder is the entry point a person or an assistant is pointed at, and the package ships
+/// it at the same path. It holds only pages that have no other home, so nothing is maintained twice —
+/// which means every link out of it has to resolve, in the repository and in the package.
 /// </summary>
 public class PackagedDocsTests
 {
     [Fact]
-    public void ThePackageShipsTheBundleAtThePathTheRepositoryUses()
-    {
-        string csproj = File.ReadAllText(Path.Combine(TestPaths.RepositoryRoot, "src", "CuiSharp", "CuiSharp.csproj"));
-
-        // Same path in both, so a path in a document works wherever it is read.
-        Assert.Contains("skills/cui-dotnet/", csproj, StringComparison.Ordinal);
-        Assert.Contains("llms.txt", csproj, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void EveryBundledCopyMatchesItsSource()
-    {
-        (string Source, string Copy)[] staged =
-        [
-            ("native/CUI/docs/components.md", "widgets.md"),
-            ("native/CUI/docs/components-more.md", "widgets-more.md"),
-            ("docs/NATIVE-ABI.md", "native-abi.md"),
-            ("docs/HOSTING.md", "hosting.md"),
-        ];
-
-        foreach ((string source, string copy) in staged)
-        {
-            string original = File.ReadAllText(Path.Combine(TestPaths.RepositoryRoot, source));
-            string bundled = File.ReadAllText(Path.Combine(TestPaths.RepositoryRoot, "skills", "cui-dotnet", copy));
-
-            Assert.StartsWith("<!-- Copied from " + source, bundled, StringComparison.Ordinal);
-            string body = bundled[(bundled.IndexOf("-->", StringComparison.Ordinal) + 3)..].TrimStart();
-            Assert.Equal(original.ReplaceLineEndings("\n").TrimEnd(), body.ReplaceLineEndings("\n").TrimEnd());
-        }
-    }
-
-    [Fact]
-    public void TheBundleHoldsEverythingAReaderNeeds()
+    public void TheBundleHoldsOnlyItsOwnPages()
     {
         string bundle = Path.Combine(TestPaths.RepositoryRoot, "skills", "cui-dotnet");
 
-        foreach (string file in (string[])
-        [
-            "SKILL.md", "README.md", "llms.txt", "widgets.md", "widgets-more.md", "hosting.md", "native-abi.md",
-        ])
-        {
-            Assert.True(File.Exists(Path.Combine(bundle, file)), $"the bundle is missing {file}");
-        }
-
+        // SKILL.md is the entry; a second README would be the first sign of a copy creeping back in.
+        Assert.True(File.Exists(Path.Combine(bundle, "SKILL.md")));
+        Assert.True(File.Exists(Path.Combine(bundle, "llms.txt")));
         Assert.NotEmpty(Directory.GetFiles(Path.Combine(bundle, "api"), "*.md"));
+
+        string[] stray = [.. Directory.EnumerateFiles(bundle, "*", SearchOption.AllDirectories)
+            .Select(path => Path.GetRelativePath(bundle, path))
+            .Where(relative => !relative.EndsWith(".md", StringComparison.Ordinal) && !relative.EndsWith("llms.txt", StringComparison.Ordinal))
+            .Where(relative => relative != "SKILL.md" && !relative.StartsWith("api" + Path.DirectorySeparatorChar, StringComparison.Ordinal))];
+
+        Assert.True(stray.Length == 0, "the bundle holds pages of its own only: " + string.Join(", ", stray));
+    }
+
+    [Fact]
+    public void EveryLinkInTheReferenceResolves()
+    {
+        string bundle = Path.Combine(TestPaths.RepositoryRoot, "skills", "cui-dotnet");
+        string reference = File.ReadAllText(Path.Combine(bundle, "llms.txt"));
+
+        var links = Regex.Matches(reference, @"\]\(([^)#]+\.[A-Za-z]+)\)")
+            .Select(m => m.Groups[1].Value)
+            .Distinct()
+            .ToArray();
+
+        Assert.NotEmpty(links);
+        var broken = links
+            .Where(link => !link.Contains("://", StringComparison.Ordinal))
+            .Where(link => !File.Exists(Path.GetFullPath(Path.Combine(bundle, link))))
+            .ToArray();
+
+        // Only pages travel with the reference; a link to a source file would dangle in the package.
+        Assert.True(broken.Length == 0, "llms.txt links to files that are not there: " + string.Join(", ", broken));
+    }
+
+    [Fact]
+    public void ThePackageShipsTheReferenceAndEverythingItLinksTo()
+    {
+        string csproj = File.ReadAllText(Path.Combine(TestPaths.RepositoryRoot, "src", "CuiSharp", "CuiSharp.csproj"));
+
+        Assert.Contains("skills/cui-dotnet", csproj, StringComparison.Ordinal);
+
+        // Each document the reference links to is packed from where it is written: packed, not copied.
+        foreach (string packed in (string[])["HOSTING.md", "NATIVE-ABI.md", "components.md", "components-more.md"])
+        {
+            Assert.Contains(packed, csproj, StringComparison.Ordinal);
+        }
     }
 
     [Fact]
     public void TheWidgetPagesSayWhatTheWidgetsDo()
     {
-        // CUI's own pages, not a table of links that would ship an empty promise.
-        string more = Read("skills", "cui-dotnet", "widgets-more.md");
-        string first = Read("skills", "cui-dotnet", "widgets.md");
+        // CUI's own pages, shipped by reference rather than paraphrased here.
+        string more = File.ReadAllText(Path.Combine(TestPaths.RepositoryRoot, "native", "CUI", "docs", "components-more.md"));
+        string first = File.ReadAllText(Path.Combine(TestPaths.RepositoryRoot, "native", "CUI", "docs", "components.md"));
 
         Assert.Contains("Up and Down move and the selection follows", more, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("keyboard", first, StringComparison.OrdinalIgnoreCase);
     }
-
-    private static string Read(params string[] parts) =>
-        File.ReadAllText(Path.Combine([TestPaths.RepositoryRoot, .. parts]));
 }

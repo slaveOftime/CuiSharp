@@ -58,8 +58,8 @@ their own machine, so they are taken from the app — never edited.
 - `CHANGELOG.md`: a new `## [x.y.z] — date` section, user-facing facts only (new API, behaviour
   changes, fixes), each with the migration if there is one. Detail stays in the pull request.
 - `docs/PLAN.md`: move finished steps out; the file is only ever "what is left".
-- `llms.txt` and `skills/cui-dotnet/SKILL.md` are generated from the headers; check them in the
-  `regen` diff rather than editing them by hand.
+- `skills/cui-dotnet/{llms.txt,api/*.md}` are generated from the headers; check them in the `regen`
+  diff rather than editing them by hand. `SKILL.md` beside them is hand-written.
 
 ## 5. Pack and inspect
 

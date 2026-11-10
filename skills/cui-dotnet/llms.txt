@@ -321,73 +321,73 @@
 
 - [Options](api/Options.md): every option struct and its fields.
 - [Records](api/Records.md): item types for the widgets that take arrays.
-- [Hosting](hosting.md): components, mutation, dependency injection.
+- [Hosting](../../docs/HOSTING.md): components, mutation, dependency injection.
 
 ## Members with no C function behind them
 
 Hand-written, because the wrapper needs state a C call cannot carry; they are part of the same `ui`.
 
-- `ui.AccentName(...)` ([Ui.Frame.cs](src/CuiSharp/Ui/Ui.Frame.cs))
-- `ui.AddFontFallback(...)` ([Ui.Fonts.cs](src/CuiSharp/Ui/Ui.Fonts.cs))
-- `ui.Animate(...)` ([Ui.Draw.cs](src/CuiSharp/Ui/Ui.Draw.cs))
-- `ui.AnimateSpring(...)` ([Ui.Draw.cs](src/CuiSharp/Ui/Ui.Draw.cs))
-- `ui.Canvas(...)` ([Ui.Draw.cs](src/CuiSharp/Ui/Ui.Draw.cs))
-- `ui.Clip(...)` ([Ui.Draw.cs](src/CuiSharp/Ui/Ui.Draw.cs))
-- `ui.ColorOf(...)` ([Ui.Frame.cs](src/CuiSharp/Ui/Ui.Frame.cs))
-- `ui.DateToday(...)` ([Ui.Overlays.cs](src/CuiSharp/Ui/Ui.Overlays.cs))
-- `ui.DiffRows(...)` ([Ui.Diff.cs](src/CuiSharp/Ui/Ui.Diff.cs))
-- `ui.Disabled(...)` ([Ui.Frame.cs](src/CuiSharp/Ui/Ui.Frame.cs))
-- `ui.Dispose(...)` ([Ui.Draw.cs](src/CuiSharp/Ui/Ui.Draw.cs))
-- `ui.DrawArc(...)` ([Ui.Draw.cs](src/CuiSharp/Ui/Ui.Draw.cs))
-- `ui.DrawCircle(...)` ([Ui.Draw.cs](src/CuiSharp/Ui/Ui.Draw.cs))
-- `ui.DrawIcon(...)` ([Ui.Draw.cs](src/CuiSharp/Ui/Ui.Draw.cs))
-- `ui.DrawImage(...)` ([Ui.Draw.cs](src/CuiSharp/Ui/Ui.Draw.cs))
-- `ui.DrawLine(...)` ([Ui.Draw.cs](src/CuiSharp/Ui/Ui.Draw.cs))
-- `ui.DrawPolygon(...)` ([Ui.Draw.cs](src/CuiSharp/Ui/Ui.Draw.cs))
-- `ui.DrawPolyline(...)` ([Ui.Draw.cs](src/CuiSharp/Ui/Ui.Draw.cs))
-- `ui.DrawRect(...)` ([Ui.Draw.cs](src/CuiSharp/Ui/Ui.Draw.cs))
-- `ui.DrawRectGradient(...)` ([Ui.Draw.cs](src/CuiSharp/Ui/Ui.Draw.cs))
-- `ui.DrawShadow(...)` ([Ui.Draw.cs](src/CuiSharp/Ui/Ui.Draw.cs))
-- `ui.DrawText(...)` ([Ui.Draw.cs](src/CuiSharp/Ui/Ui.Draw.cs))
-- `ui.GetEnumerator(...)` ([Ui.IdScopes.cs](src/CuiSharp/Ui/Ui.IdScopes.cs))
-- `ui.HexView(...)` ([Ui.Hex.cs](src/CuiSharp/Ui/Ui.Hex.cs))
-- `ui.Icon(...)` ([Ui.Overlays.cs](src/CuiSharp/Ui/Ui.Overlays.cs))
-- `ui.Id(...)` ([Ui.Overlays.cs](src/CuiSharp/Ui/Ui.Overlays.cs))
-- `ui.KeyDown(...)` ([Ui.Frame.cs](src/CuiSharp/Ui/Ui.Frame.cs))
-- `ui.KeyName(...)` ([Ui.Frame.cs](src/CuiSharp/Ui/Ui.Frame.cs))
-- `ui.KeyPressed(...)` ([Ui.Frame.cs](src/CuiSharp/Ui/Ui.Frame.cs))
-- `ui.LinesThatFit(...)` ([Ui.Frame.cs](src/CuiSharp/Ui/Ui.Frame.cs))
-- `ui.LoadFont(...)` ([Ui.Fonts.cs](src/CuiSharp/Ui/Ui.Fonts.cs))
-- `ui.LogView(...)` ([Ui.Log.cs](src/CuiSharp/Ui/Ui.Log.cs))
-- `ui.MakeId(...)` ([Ui.Draw.cs](src/CuiSharp/Ui/Ui.Draw.cs))
-- `ui.MeasureText(...)` ([Ui.Frame.cs](src/CuiSharp/Ui/Ui.Frame.cs))
-- `ui.MouseClicked(...)` ([Ui.Frame.cs](src/CuiSharp/Ui/Ui.Frame.cs))
-- `ui.MouseDown(...)` ([Ui.Frame.cs](src/CuiSharp/Ui/Ui.Frame.cs))
-- `ui.MoveNext(...)` ([Ui.IdScopes.cs](src/CuiSharp/Ui/Ui.IdScopes.cs))
-- `ui.OtpInput(...)` ([Ui.Overlays.cs](src/CuiSharp/Ui/Ui.Overlays.cs))
-- `ui.PopClip(...)` ([Ui.Draw.cs](src/CuiSharp/Ui/Ui.Draw.cs))
-- `ui.PushClip(...)` ([Ui.Draw.cs](src/CuiSharp/Ui/Ui.Draw.cs))
-- `ui.RectOf(...)` ([Ui.Frame.cs](src/CuiSharp/Ui/Ui.Frame.cs))
-- `ui.ReorderBegin(...)` ([Ui.Overlays.cs](src/CuiSharp/Ui/Ui.Overlays.cs))
-- `ui.ReorderEnd(...)` ([Ui.Overlays.cs](src/CuiSharp/Ui/Ui.Overlays.cs))
-- `ui.ReorderItem(...)` ([Ui.Overlays.cs](src/CuiSharp/Ui/Ui.Overlays.cs))
-- `ui.RequestWakeup(...)` ([Ui.Terminal.cs](src/CuiSharp/Ui/Ui.Terminal.cs))
-- `ui.SetFont(...)` ([Ui.Fonts.cs](src/CuiSharp/Ui/Ui.Fonts.cs))
-- `ui.SetReducedMotion(...)` ([Ui.Frame.cs](src/CuiSharp/Ui/Ui.Frame.cs))
-- `ui.Shortcut(...)` ([Ui.Overlays.cs](src/CuiSharp/Ui/Ui.Overlays.cs))
-- `ui.Sort(...)` ([Ui.TreeTable.cs](src/CuiSharp/Ui/Ui.TreeTable.cs))
-- `ui.TagInput(...)` ([Ui.Overlays.cs](src/CuiSharp/Ui/Ui.Overlays.cs))
-- `ui.Terminal(...)` ([Ui.Terminal.cs](src/CuiSharp/Ui/Ui.Terminal.cs))
-- `ui.ToString(...)` ([Ui.TreeTable.cs](src/CuiSharp/Ui/Ui.TreeTable.cs))
-- `ui.ToggleTheme(...)` ([Ui.Frame.cs](src/CuiSharp/Ui/Ui.Frame.cs))
-- `ui.TokenColor(...)` ([Ui.Frame.cs](src/CuiSharp/Ui/Ui.Frame.cs))
-- `ui.TreeTable(...)` ([Ui.TreeTable.cs](src/CuiSharp/Ui/Ui.TreeTable.cs))
-- `ui.TreeTableRow(...)` ([Ui.TreeTable.cs](src/CuiSharp/Ui/Ui.TreeTable.cs))
-- `ui.UseSystemFontFallback(...)` ([Ui.Fonts.cs](src/CuiSharp/Ui/Ui.Fonts.cs))
-- [Widgets](widgets.md) and [more widgets](widgets-more.md): what each component does, and what it does with the keyboard.
-- [Native ABI](native-abi.md): the RIDs the package carries, and the glibc floor.
+- `ui.AccentName(...)` — hand-written in `Ui/Ui.Frame.cs`
+- `ui.AddFontFallback(...)` — hand-written in `Ui/Ui.Fonts.cs`
+- `ui.Animate(...)` — hand-written in `Ui/Ui.Draw.cs`
+- `ui.AnimateSpring(...)` — hand-written in `Ui/Ui.Draw.cs`
+- `ui.Canvas(...)` — hand-written in `Ui/Ui.Draw.cs`
+- `ui.Clip(...)` — hand-written in `Ui/Ui.Draw.cs`
+- `ui.ColorOf(...)` — hand-written in `Ui/Ui.Frame.cs`
+- `ui.DateToday(...)` — hand-written in `Ui/Ui.Overlays.cs`
+- `ui.DiffRows(...)` — hand-written in `Ui/Ui.Diff.cs`
+- `ui.Disabled(...)` — hand-written in `Ui/Ui.Frame.cs`
+- `ui.Dispose(...)` — hand-written in `Ui/Ui.Draw.cs`
+- `ui.DrawArc(...)` — hand-written in `Ui/Ui.Draw.cs`
+- `ui.DrawCircle(...)` — hand-written in `Ui/Ui.Draw.cs`
+- `ui.DrawIcon(...)` — hand-written in `Ui/Ui.Draw.cs`
+- `ui.DrawImage(...)` — hand-written in `Ui/Ui.Draw.cs`
+- `ui.DrawLine(...)` — hand-written in `Ui/Ui.Draw.cs`
+- `ui.DrawPolygon(...)` — hand-written in `Ui/Ui.Draw.cs`
+- `ui.DrawPolyline(...)` — hand-written in `Ui/Ui.Draw.cs`
+- `ui.DrawRect(...)` — hand-written in `Ui/Ui.Draw.cs`
+- `ui.DrawRectGradient(...)` — hand-written in `Ui/Ui.Draw.cs`
+- `ui.DrawShadow(...)` — hand-written in `Ui/Ui.Draw.cs`
+- `ui.DrawText(...)` — hand-written in `Ui/Ui.Draw.cs`
+- `ui.GetEnumerator(...)` — hand-written in `Ui/Ui.IdScopes.cs`
+- `ui.HexView(...)` — hand-written in `Ui/Ui.Hex.cs`
+- `ui.Icon(...)` — hand-written in `Ui/Ui.Overlays.cs`
+- `ui.Id(...)` — hand-written in `Ui/Ui.Overlays.cs`
+- `ui.KeyDown(...)` — hand-written in `Ui/Ui.Frame.cs`
+- `ui.KeyName(...)` — hand-written in `Ui/Ui.Frame.cs`
+- `ui.KeyPressed(...)` — hand-written in `Ui/Ui.Frame.cs`
+- `ui.LinesThatFit(...)` — hand-written in `Ui/Ui.Frame.cs`
+- `ui.LoadFont(...)` — hand-written in `Ui/Ui.Fonts.cs`
+- `ui.LogView(...)` — hand-written in `Ui/Ui.Log.cs`
+- `ui.MakeId(...)` — hand-written in `Ui/Ui.Draw.cs`
+- `ui.MeasureText(...)` — hand-written in `Ui/Ui.Frame.cs`
+- `ui.MouseClicked(...)` — hand-written in `Ui/Ui.Frame.cs`
+- `ui.MouseDown(...)` — hand-written in `Ui/Ui.Frame.cs`
+- `ui.MoveNext(...)` — hand-written in `Ui/Ui.IdScopes.cs`
+- `ui.OtpInput(...)` — hand-written in `Ui/Ui.Overlays.cs`
+- `ui.PopClip(...)` — hand-written in `Ui/Ui.Draw.cs`
+- `ui.PushClip(...)` — hand-written in `Ui/Ui.Draw.cs`
+- `ui.RectOf(...)` — hand-written in `Ui/Ui.Frame.cs`
+- `ui.ReorderBegin(...)` — hand-written in `Ui/Ui.Overlays.cs`
+- `ui.ReorderEnd(...)` — hand-written in `Ui/Ui.Overlays.cs`
+- `ui.ReorderItem(...)` — hand-written in `Ui/Ui.Overlays.cs`
+- `ui.RequestWakeup(...)` — hand-written in `Ui/Ui.Terminal.cs`
+- `ui.SetFont(...)` — hand-written in `Ui/Ui.Fonts.cs`
+- `ui.SetReducedMotion(...)` — hand-written in `Ui/Ui.Frame.cs`
+- `ui.Shortcut(...)` — hand-written in `Ui/Ui.Overlays.cs`
+- `ui.Sort(...)` — hand-written in `Ui/Ui.TreeTable.cs`
+- `ui.TagInput(...)` — hand-written in `Ui/Ui.Overlays.cs`
+- `ui.Terminal(...)` — hand-written in `Ui/Ui.Terminal.cs`
+- `ui.ToString(...)` — hand-written in `Ui/Ui.TreeTable.cs`
+- `ui.ToggleTheme(...)` — hand-written in `Ui/Ui.Frame.cs`
+- `ui.TokenColor(...)` — hand-written in `Ui/Ui.Frame.cs`
+- `ui.TreeTable(...)` — hand-written in `Ui/Ui.TreeTable.cs`
+- `ui.TreeTableRow(...)` — hand-written in `Ui/Ui.TreeTable.cs`
+- `ui.UseSystemFontFallback(...)` — hand-written in `Ui/Ui.Fonts.cs`
+- [Widgets](../../native/CUI/docs/components.md) and [more widgets](../../native/CUI/docs/components-more.md): what each component does, and what it does with the keyboard.
+- [Native ABI](../../docs/NATIVE-ABI.md): the RIDs the package carries, and the glibc floor.
 - [Guide](SKILL.md): the authoring rules, the pitfalls, the component list.
 
-Everything above is in this folder, beside this file, so the package explains itself.
-The repository adds the maintainer notes: `docs/ARCHITECTURE.md` (decisions and layout),
+Every path above is relative to this file, which is `skills/cui-dotnet/` in the repository
+and in the package. Maintainer notes: `docs/ARCHITECTURE.md` (decisions and layout),
 `docs/PLAN.md`, `docs/PERFORMANCE.md`, and `bindings/coverage.txt` (which C functions are wrapped).

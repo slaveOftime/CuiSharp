@@ -242,22 +242,21 @@ skills/cui-dotnet/       the bundle: the guide, the reference, the API pages, th
 
 ## Where to read
 
-Everything someone needs to build an app ships in one folder — `skills/cui-dotnet/` — and the NuGet
-package carries it at that same path, so a link works whether you are reading the repository or the
-package you just installed:
+The skill folder is the entry point for building an app — one folder, three kinds of page, no
+duplicated copies of anything:
 
-| | In this repository | In the package |
-|---|---|---|
-| Start here: how to write a UI, the pitfalls, the workflow | [SKILL.md](skills/cui-dotnet/SKILL.md) | `skills/cui-dotnet/SKILL.md` |
-| Every widget and signature, one line each | [llms.txt](skills/cui-dotnet/llms.txt) | `skills/cui-dotnet/llms.txt` |
-| Options and records, per section | [api/](skills/cui-dotnet/api) | `skills/cui-dotnet/api/` |
-| What each component does, and its keyboard | [widgets.md](skills/cui-dotnet/widgets.md), [widgets-more.md](skills/cui-dotnet/widgets-more.md) | same |
-| Components, `Mutation<T>`, dependency injection | [hosting.md](skills/cui-dotnet/hosting.md) | `skills/cui-dotnet/hosting.md` |
-| RIDs carried, glibc floor, provenance | [native-abi.md](skills/cui-dotnet/native-abi.md) | `skills/cui-dotnet/native-abi.md` |
+| Need | Path |
+|---|---|
+| **Start here:** how to write a UI, the workflow, the pitfalls | [skills/cui-dotnet/SKILL.md](skills/cui-dotnet/SKILL.md) |
+| Every widget and signature, one line each | [skills/cui-dotnet/llms.txt](skills/cui-dotnet/llms.txt) |
+| Options and records, one page per section | [skills/cui-dotnet/api/](skills/cui-dotnet/api) |
+| What each component does, and its keyboard | [native/CUI/docs/components.md](native/CUI/docs/components.md), [components-more.md](native/CUI/docs/components-more.md) |
+| Components, `Mutation<T>`, dependency injection | [docs/HOSTING.md](docs/HOSTING.md) |
+| RIDs carried, glibc floor, provenance | [docs/NATIVE-ABI.md](docs/NATIVE-ABI.md) |
+| Rules and decisions, before changing the framework | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 
-An assistant needs the first two: point it at the folder and say "read `SKILL.md`". What produces
-each file — and which ones are copies that must not be edited — is
-[the bundle's README](skills/cui-dotnet/README.md).
+An assistant needs the first two: point it at the folder and say "read `SKILL.md`". The package ships
+the same paths, so a link works whether you are reading the repository or the installed package.
 
 ## Contributing
 
@@ -268,11 +267,10 @@ pwsh tools/regen.ps1 -NoNative -NoDiff     # generated output is up to date
 ```
 
 `src/CuiSharp/Interop/*.g.cs`, `src/CuiSharp/Ui/*.g.cs`, `Icons.g.cs`, the generated ABI and option
-tests, the bundle's `llms.txt` and `api/*.md`, and `bindings/{api.json,coverage.txt}` come from the
-CUI headers; the bundle's `widgets*.md`, `hosting.md` and `native-abi.md` are copies of pages kept
-elsewhere.
-Never edit them: change `tools/bindgen.cs` or `bindings/overrides.json`, then regenerate. Syncing a
-CUI release is checking out the new tag, running `regen.ps1`, and reviewing the `api.json` diff.
+tests, `skills/cui-dotnet/{llms.txt,api/*.md}` and `bindings/{api.json,coverage.txt}` come from the CUI
+headers. Never edit them: change `tools/bindgen.cs` or `bindings/overrides.json`, then regenerate.
+Syncing a CUI release is checking out the new tag, running `regen.ps1`, and reviewing the `api.json`
+diff. `skills/cui-dotnet/SKILL.md` is the one page written by hand.
 
 Rules and decisions: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Remaining work:
 [docs/PLAN.md](docs/PLAN.md). Authoring guide: the bundle below.

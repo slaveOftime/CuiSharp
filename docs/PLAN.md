@@ -115,8 +115,8 @@ See [RELEASING.md](RELEASING.md) for the mechanics. What 1.0 additionally needs:
 - Analyzer code fixes for `CUI001`–`CUI007` (diagnostics and messages exist; no fixes yet).
 - The public surface reviewed once as a whole — `docs/API-SURFACE.txt` read top to bottom — because
   after 1.0 it is a promise.
-- `skills/cui-dotnet/SKILL.md` and `llms.txt` regenerated from the final surface, and the gallery
-  snapshots retaken (`pwsh tools/snapshots.ps1`).
+- `skills/cui-dotnet/` reviewed against the final surface (`SKILL.md` by hand, `llms.txt` and
+  `api/*.md` regenerated), and the gallery snapshots retaken (`pwsh tools/snapshots.ps1`).
 
 ## Budgets
 

@@ -469,9 +469,9 @@ behind, so anything that should be checked twice belongs in a test instead.
 ## Widget behaviour
 
 Every component's behaviour — selection, focus, keyboard, what a return value means, when state
-survives a frame — is in `docs/widgets.md` and `docs/widgets-more.md`, which ship inside the package
-next to this guide, together with the API reference (`llms.txt`). Read the page for the widget instead of
-guessing from a signature: a data grid keeps its selection in your variables, a dialog is modal, a
+survives a frame — is in CUI's own pages: [`components.md`](../../native/CUI/docs/components.md) and
+[`components-more.md`](../../native/CUI/docs/components-more.md). Read the page for the widget instead
+of guessing from a signature: a data grid keeps its selection in your variables, a dialog is modal, a
 dropzone returns the paths it received.
 
 ## Components
@@ -503,6 +503,8 @@ per-section page under `api/`.
 | Need | Path |
 |---|---|
 | this guide | `skills/cui-dotnet/SKILL.md` |
+| what each widget does, and its keyboard | `native/CUI/docs/components.md`, `components-more.md` |
+| which RIDs the package carries, and the glibc floor | `docs/NATIVE-ABI.md` |
 | every signature, one line each | `llms.txt` |
 | option structs and their fields | `api/Options.md` |
 | records used as array items | `api/Records.md` |

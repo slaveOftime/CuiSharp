@@ -2561,7 +2561,7 @@ sealed class Idiomatic
         sb.AppendLine();
         sb.AppendLine("- [Options](api/Options.md): every option struct and its fields.");
         sb.AppendLine("- [Records](api/Records.md): item types for the widgets that take arrays.");
-        sb.AppendLine("- [Hosting](hosting.md): components, mutation, dependency injection.");
+        sb.AppendLine("- [Hosting](../../docs/HOSTING.md): components, mutation, dependency injection.");
         if (manual.Count > 0)
         {
             sb.AppendLine();
@@ -2570,15 +2570,16 @@ sealed class Idiomatic
             sb.AppendLine("Hand-written, because the wrapper needs state a C call cannot carry; they are part of the same `ui`.");
             sb.AppendLine();
             foreach ((string name, string file) in manual)
-                sb.AppendLine($"- `ui.{name}(...)` ([{file}](src/CuiSharp/Ui/{file}))");
+                // Named, not linked: source files are not part of the package this ships in.
+                sb.AppendLine($"- `ui.{name}(...)` — hand-written in `Ui/{file}`");
         }
 
-        sb.AppendLine("- [Widgets](widgets.md) and [more widgets](widgets-more.md): what each component does, and what it does with the keyboard.");
-        sb.AppendLine("- [Native ABI](native-abi.md): the RIDs the package carries, and the glibc floor.");
+        sb.AppendLine("- [Widgets](../../native/CUI/docs/components.md) and [more widgets](../../native/CUI/docs/components-more.md): what each component does, and what it does with the keyboard.");
+        sb.AppendLine("- [Native ABI](../../docs/NATIVE-ABI.md): the RIDs the package carries, and the glibc floor.");
         sb.AppendLine("- [Guide](SKILL.md): the authoring rules, the pitfalls, the component list.");
         sb.AppendLine();
-        sb.AppendLine("Everything above is in this folder, beside this file, so the package explains itself.");
-        sb.AppendLine("The repository adds the maintainer notes: `docs/ARCHITECTURE.md` (decisions and layout),");
+        sb.AppendLine("Every path above is relative to this file, which is `skills/cui-dotnet/` in the repository");
+        sb.AppendLine("and in the package. Maintainer notes: `docs/ARCHITECTURE.md` (decisions and layout),");
         sb.AppendLine("`docs/PLAN.md`, `docs/PERFORMANCE.md`, and `bindings/coverage.txt` (which C functions are wrapped).");
         return sb.ToString();
     }
