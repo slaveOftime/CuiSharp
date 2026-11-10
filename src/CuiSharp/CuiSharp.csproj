@@ -130,8 +130,13 @@
       <_CuiProvenanceLine Include="CuiSharp $(Version) native artifacts" />
       <_CuiProvenanceLine Include="@(_CuiHashedNative->'%(Rid) %(Filename)%(Extension) %(FileHash)')" />
       <_CuiProvenanceLine Include="repository $(RepositoryUrl) @ $(SourceRevisionId)" Condition="'$(SourceRevisionId)' != ''" />
-      <_CuiProvenanceLine Include="$([System.IO.File]::ReadAllLines('$(CuiNativeDir)native-provenance.txt'))" Condition="Exists('$(CuiNativeDir)native-provenance.txt')" />
     </ItemGroup>
+
+    <!-- ReadAllLines is not a property function MSBuild will run, so the native build's own
+         revision and compiler lines arrive through a task, appended after the header above. -->
+    <ReadLinesFromFile File="$(CuiNativeDir)native-provenance.txt" Condition="Exists('$(CuiNativeDir)native-provenance.txt')">
+      <Output TaskParameter="Lines" ItemName="_CuiProvenanceLine" />
+    </ReadLinesFromFile>
 
     <WriteLinesToFile File="$(IntermediateOutputPath)native-provenance.txt"
                       Lines="@(_CuiProvenanceLine)"

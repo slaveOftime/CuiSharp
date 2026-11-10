@@ -231,7 +231,7 @@ src/CuiSharp.Analyzers/  CUI001-CUI007, packed into CuiSharp
 src/CuiSharp.Testing/    TestApp: drive a component without a window
 src/CuiSharp.Tools/      dotnet cui
 src/CuiSharp.Templates/  dotnet new cui-app
-samples/CuiSharp.Gallery/ eleven pages, one file per page
+samples/CuiSharp.Gallery/ thirteen pages, one file per page
 native/                  the CUI submodule and the two build scripts
 tools/                   bindgen.cs, regen.ps1, verify-template.ps1, snapshots.ps1
 bindings/                api.json (generated), overrides.json (inputs), coverage.txt (report)
@@ -281,10 +281,11 @@ What changed, per version: [CHANGELOG.md](CHANGELOG.md).
 
 ## Status
 
-Pre-1.0: the API may still change. The binding covers every CUI function (356 generated wrappers,
-156 deliberate hand-written ones, 4 excluded with a written reason, 0 pending — see
-[bindings/coverage.txt](bindings/coverage.txt)). The nine core gallery pages are ported; the
-thirteen extended upstream pages are not yet.
+Pre-1.0: the API may still change. The binding covers all 492 CUI 1.3 functions: 166 option
+structs, 100 records, 278 generated wrappers, 167 deliberate hand-written ones, 6 excluded with a
+written reason, 0 pending — see [bindings/coverage.txt](bindings/coverage.txt). The gallery ports the
+nine core pages, four pages of this binding's own, and CUI 1.3's two developer-tools pages; the other
+fifteen extended upstream pages are not yet.
 
 ## License
 

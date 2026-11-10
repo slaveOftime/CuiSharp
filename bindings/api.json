@@ -869,6 +869,166 @@
       ]
     },
     {
+      "CName": "cui_strings",
+      "CsName": "NativeStrings",
+      "Size": 368,
+      "Helpers": [
+        {
+          "CsName": "NativeStringsMonthArray",
+          "ElementType": "nint",
+          "Length": 12
+        },
+        {
+          "CsName": "NativeStringsMonthShortArray",
+          "ElementType": "nint",
+          "Length": 12
+        },
+        {
+          "CsName": "NativeStringsWeekdayArray",
+          "ElementType": "nint",
+          "Length": 7
+        },
+        {
+          "CsName": "NativeStringsWeekdayShortArray",
+          "ElementType": "nint",
+          "Length": 7
+        },
+        {
+          "CsName": "NativeStringsWeekdayMinArray",
+          "ElementType": "nint",
+          "Length": 7
+        }
+      ],
+      "Fields": [
+        {
+          "CName": "month",
+          "CsName": "Month",
+          "CsType": "NativeStringsMonthArray",
+          "CType": "const char *[12]",
+          "ArrayLength": 12,
+          "Type": {
+            "Spelling": "const char *[12]",
+            "Kind": "ConstantArray",
+            "Element": {
+              "Spelling": "const char *",
+              "Kind": "Pointer",
+              "Element": {
+                "Spelling": "const char",
+                "Kind": "Char_S",
+                "IsConst": true
+              }
+            }
+          },
+          "Doc": "\"January\" ..."
+        },
+        {
+          "CName": "month_short",
+          "CsName": "MonthShort",
+          "CsType": "NativeStringsMonthShortArray",
+          "CType": "const char *[12]",
+          "Offset": 96,
+          "ArrayLength": 12,
+          "Type": {
+            "Spelling": "const char *[12]",
+            "Kind": "ConstantArray",
+            "Element": {
+              "Spelling": "const char *",
+              "Kind": "Pointer",
+              "Element": {
+                "Spelling": "const char",
+                "Kind": "Char_S",
+                "IsConst": true
+              }
+            }
+          },
+          "Doc": "\"Jan\" ..."
+        },
+        {
+          "CName": "weekday",
+          "CsName": "Weekday",
+          "CsType": "NativeStringsWeekdayArray",
+          "CType": "const char *[7]",
+          "Offset": 192,
+          "ArrayLength": 7,
+          "Type": {
+            "Spelling": "const char *[7]",
+            "Kind": "ConstantArray",
+            "Element": {
+              "Spelling": "const char *",
+              "Kind": "Pointer",
+              "Element": {
+                "Spelling": "const char",
+                "Kind": "Char_S",
+                "IsConst": true
+              }
+            }
+          },
+          "Doc": "\"Monday\" ... \"Sunday\""
+        },
+        {
+          "CName": "weekday_short",
+          "CsName": "WeekdayShort",
+          "CsType": "NativeStringsWeekdayShortArray",
+          "CType": "const char *[7]",
+          "Offset": 248,
+          "ArrayLength": 7,
+          "Type": {
+            "Spelling": "const char *[7]",
+            "Kind": "ConstantArray",
+            "Element": {
+              "Spelling": "const char *",
+              "Kind": "Pointer",
+              "Element": {
+                "Spelling": "const char",
+                "Kind": "Char_S",
+                "IsConst": true
+              }
+            }
+          },
+          "Doc": "\"Mon\" ..."
+        },
+        {
+          "CName": "weekday_min",
+          "CsName": "WeekdayMin",
+          "CsType": "NativeStringsWeekdayMinArray",
+          "CType": "const char *[7]",
+          "Offset": 304,
+          "ArrayLength": 7,
+          "Type": {
+            "Spelling": "const char *[7]",
+            "Kind": "ConstantArray",
+            "Element": {
+              "Spelling": "const char *",
+              "Kind": "Pointer",
+              "Element": {
+                "Spelling": "const char",
+                "Kind": "Char_S",
+                "IsConst": true
+              }
+            }
+          },
+          "Doc": "\"Mo\" ..."
+        },
+        {
+          "CName": "today",
+          "CsName": "Today",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 360,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "\"Today\""
+        }
+      ]
+    },
+    {
       "CName": "cui_text_metrics",
       "CsName": "NativeTextMetrics",
       "Size": 20,
@@ -7776,9 +7936,52 @@
       ]
     },
     {
+      "CName": "cui_text_mark",
+      "CsName": "NativeTextMark",
+      "Size": 12,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "start",
+          "CsName": "Start",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "end",
+          "CsName": "End",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "color",
+          "CsName": "Color",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        }
+      ]
+    },
+    {
       "CName": "cui_code_editor_opts",
       "CsName": "NativeCodeEditorOpts",
-      "Size": 48,
+      "Size": 64,
       "Helpers": [],
       "Fields": [
         {
@@ -7807,7 +8010,7 @@
               "IsConst": true
             }
           },
-          "Doc": "as cui_code_block: \"c\", \"cpp\", \"js\", \"ts\", \"python\", \"rust\", \"go\", \"json\", \"shell\"; NULL plain"
+          "Doc": "as cui_code_block: \"c\", \"cpp\", \"js\", \"ts\", \"python\", \"rust\", \"go\", \"json\", \"shell\"; \"text\" for none"
         },
         {
           "CName": "width",
@@ -7921,6 +8124,35 @@
             }
           },
           "Doc": "shown while the text is empty"
+        },
+        {
+          "CName": "marks",
+          "CsName": "Marks",
+          "CsType": "nint",
+          "CType": "const cui_text_mark *",
+          "Offset": 48,
+          "Type": {
+            "Spelling": "const cui_text_mark *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_text_mark",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          },
+          "Doc": "ranges to highlight (search results, regex matches), sorted by start"
+        },
+        {
+          "CName": "mark_count",
+          "CsName": "MarkCount",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 56,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
         }
       ]
     },
@@ -19389,6 +19621,3892 @@
       ]
     },
     {
+      "CName": "cui_kv_pair",
+      "CsName": "NativeKvPair",
+      "Size": 322,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "key",
+          "CsName": "Key",
+          "CsType": "sbyte",
+          "CType": "char[64]",
+          "IsFixedBuffer": true,
+          "ArrayLength": 64,
+          "Type": {
+            "Spelling": "char[64]",
+            "Kind": "ConstantArray",
+            "Element": {
+              "Spelling": "char",
+              "Kind": "Char_S"
+            }
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "value",
+          "CsName": "Value",
+          "CsType": "sbyte",
+          "CType": "char[256]",
+          "Offset": 64,
+          "IsFixedBuffer": true,
+          "ArrayLength": 256,
+          "Type": {
+            "Spelling": "char[256]",
+            "Kind": "ConstantArray",
+            "Element": {
+              "Spelling": "char",
+              "Kind": "Char_S"
+            }
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "enabled",
+          "CsName": "Enabled",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 320,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "secret",
+          "CsName": "Secret",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 321,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        }
+      ]
+    },
+    {
+      "CName": "cui_kv_editor_opts",
+      "CsName": "NativeKvEditorOpts",
+      "Size": 40,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "key_placeholder",
+          "CsName": "KeyPlaceholder",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "default \"Key\""
+        },
+        {
+          "CName": "value_placeholder",
+          "CsName": "ValuePlaceholder",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "default \"Value\""
+        },
+        {
+          "CName": "no_toggles",
+          "CsName": "NoToggles",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "no checkboxes: every pair is on"
+        },
+        {
+          "CName": "no_secrets",
+          "CsName": "NoSecrets",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 25,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "no eye button"
+        },
+        {
+          "CName": "read_only",
+          "CsName": "ReadOnly",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 26,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "NativeSize",
+          "CType": "cui_size",
+          "Offset": 28,
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          },
+          "Doc": "default fill"
+        }
+      ]
+    },
+    {
+      "CName": "cui_diagnostic",
+      "CsName": "NativeDiagnostic",
+      "Size": 48,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "severity",
+          "CsName": "Severity",
+          "CsType": "Severity",
+          "CType": "cui_severity",
+          "Type": {
+            "Spelling": "cui_severity",
+            "Kind": "Enum"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "message",
+          "CsName": "Message",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "file",
+          "CsName": "File",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "groups the rows; NULL or \"\" groups as \"No file\""
+        },
+        {
+          "CName": "line",
+          "CsName": "Line",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "1 based; 0 leaves it out"
+        },
+        {
+          "CName": "column",
+          "CsName": "Column",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 28,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "1 based; 0 leaves it out"
+        },
+        {
+          "CName": "source",
+          "CsName": "Source",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "\"gcc\", \"clang-tidy\"... (may be NULL)"
+        },
+        {
+          "CName": "code",
+          "CsName": "Code",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 40,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "\"-Wunused-variable\"... (may be NULL)"
+        }
+      ]
+    },
+    {
+      "CName": "cui_problems_opts",
+      "CsName": "NativeProblemsOpts",
+      "Size": 20,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "NativeSize",
+          "CType": "cui_size",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "height",
+          "CsName": "Height",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 12,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "no_toolbar",
+          "CsName": "NoToolbar",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        }
+      ]
+    },
+    {
+      "CName": "cui_problems_result",
+      "CsName": "NativeProblemsResult",
+      "Size": 12,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "selected",
+          "CsName": "Selected",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "diagnostic selected, or -1"
+        },
+        {
+          "CName": "activated",
+          "CsName": "Activated",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "diagnostic opened this frame (Enter, double-click), or -1"
+        },
+        {
+          "CName": "shown",
+          "CsName": "Shown",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "diagnostics that pass the filters"
+        }
+      ]
+    },
+    {
+      "CName": "cui_pipeline_job",
+      "CsName": "NativePipelineJob",
+      "Size": 24,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "name",
+          "CsName": "Name",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "stage",
+          "CsName": "Stage",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "index into the stage names"
+        },
+        {
+          "CName": "status",
+          "CsName": "Status",
+          "CsType": "JobStatus",
+          "CType": "cui_job_status",
+          "Offset": 12,
+          "Type": {
+            "Spelling": "cui_job_status",
+            "Kind": "Enum"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "duration",
+          "CsName": "Duration",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "seconds; negative when it has not run"
+        },
+        {
+          "CName": "allow_failure",
+          "CsName": "AllowFailure",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 20,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "a failure does not fail the stage"
+        }
+      ]
+    },
+    {
+      "CName": "cui_pipeline_opts",
+      "CsName": "NativePipelineOpts",
+      "Size": 24,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "job shown selected, set on a click"
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "NativeSize",
+          "CType": "cui_size",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          },
+          "Doc": "job shown selected, set on a click"
+        },
+        {
+          "CName": "selected",
+          "CsName": "Selected",
+          "CsType": "nint",
+          "CType": "int *",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "int *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "int",
+              "Kind": "Int"
+            }
+          },
+          "Doc": "job shown selected, set on a click"
+        }
+      ]
+    },
+    {
+      "CName": "cui_pipeline_result",
+      "CsName": "NativePipelineResult",
+      "Size": 8,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "clicked",
+          "CsName": "Clicked",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "job indices, or -1"
+        },
+        {
+          "CName": "hovered",
+          "CsName": "Hovered",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "job indices, or -1"
+        }
+      ]
+    },
+    {
+      "CName": "cui_query_field",
+      "CsName": "NativeQueryField",
+      "Size": 32,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "name",
+          "CsName": "Name",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "type",
+          "CsName": "Type",
+          "CsType": "QueryType",
+          "CType": "cui_query_type",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "cui_query_type",
+            "Kind": "Enum"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "choices",
+          "CsName": "Choices",
+          "CsType": "nint",
+          "CType": "const char *const *",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "const char *const *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char *const",
+              "Kind": "Pointer",
+              "IsConst": true,
+              "Element": {
+                "Spelling": "const char",
+                "Kind": "Char_S",
+                "IsConst": true
+              }
+            }
+          },
+          "Doc": "CUI_QUERY_CHOICE: the values to pick from"
+        },
+        {
+          "CName": "choice_count",
+          "CsName": "ChoiceCount",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        }
+      ]
+    },
+    {
+      "CName": "cui_query_node",
+      "CsName": "NativeQueryNode",
+      "Size": 80,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "depth",
+          "CsName": "Depth",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "0 for the outer group"
+        },
+        {
+          "CName": "group",
+          "CsName": "Group",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "any",
+          "CsName": "Any",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 5,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "group: any rule (or) instead of all (and)"
+        },
+        {
+          "CName": "field",
+          "CsName": "Field",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "rule: index into the fields"
+        },
+        {
+          "CName": "op",
+          "CsName": "Op",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 12,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "rule: see cui_query_op_name"
+        },
+        {
+          "CName": "value",
+          "CsName": "Value",
+          "CsType": "sbyte",
+          "CType": "char[64]",
+          "Offset": 16,
+          "IsFixedBuffer": true,
+          "ArrayLength": 64,
+          "Type": {
+            "Spelling": "char[64]",
+            "Kind": "ConstantArray",
+            "Element": {
+              "Spelling": "char",
+              "Kind": "Char_S"
+            }
+          },
+          "Doc": "rule: the text, number or choice compared with"
+        }
+      ]
+    },
+    {
+      "CName": "cui_query_opts",
+      "CsName": "NativeQueryOpts",
+      "Size": 20,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "default 3"
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "NativeSize",
+          "CType": "cui_size",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          },
+          "Doc": "default 3"
+        },
+        {
+          "CName": "max_depth",
+          "CsName": "MaxDepth",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 12,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "default 3"
+        },
+        {
+          "CName": "read_only",
+          "CsName": "ReadOnly",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        }
+      ]
+    },
+    {
+      "CName": "cui_schedule_opts",
+      "CsName": "NativeScheduleOpts",
+      "Size": 32,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "NativeSize",
+          "CType": "cui_size",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "now",
+          "CsName": "Now",
+          "CsType": "long",
+          "CType": "int64_t",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "int64_t",
+            "Kind": "LongLong"
+          },
+          "Doc": "the next runs are counted from here, Unix seconds; 0: the clock"
+        },
+        {
+          "CName": "utc",
+          "CsName": "Utc",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "times in UTC instead of local time"
+        },
+        {
+          "CName": "next_count",
+          "CsName": "NextCount",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 28,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "runs listed, default 3, 0 hides them"
+        }
+      ]
+    },
+    {
+      "CName": "cui_schedule_result",
+      "CsName": "NativeScheduleResult",
+      "Size": 16,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "changed",
+          "CsName": "Changed",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "the next run, Unix seconds, 0 none"
+        },
+        {
+          "CName": "valid",
+          "CsName": "Valid",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 1,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "the next run, Unix seconds, 0 none"
+        },
+        {
+          "CName": "next",
+          "CsName": "Next",
+          "CsType": "long",
+          "CType": "int64_t",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "int64_t",
+            "Kind": "LongLong"
+          },
+          "Doc": "the next run, Unix seconds, 0 none"
+        }
+      ]
+    },
+    {
+      "CName": "cui_keymap_binding",
+      "CsName": "NativeKeymapBinding",
+      "Size": 24,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "combo",
+          "CsName": "Combo",
+          "CsType": "NativeKeyCombo",
+          "CType": "cui_key_combo",
+          "Type": {
+            "Spelling": "cui_key_combo",
+            "Kind": "Record"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "action",
+          "CsName": "Action",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "category",
+          "CsName": "Category",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "index into the categories, colors the key"
+        }
+      ]
+    },
+    {
+      "CName": "cui_keymap_opts",
+      "CsName": "NativeKeymapOpts",
+      "Size": 48,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "NativeSize",
+          "CType": "cui_size",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "categories",
+          "CsName": "Categories",
+          "CsType": "nint",
+          "CType": "const char *const *",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "const char *const *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char *const",
+              "Kind": "Pointer",
+              "IsConst": true,
+              "Element": {
+                "Spelling": "const char",
+                "Kind": "Char_S",
+                "IsConst": true
+              }
+            }
+          },
+          "Doc": "names for the legend"
+        },
+        {
+          "CName": "category_count",
+          "CsName": "CategoryCount",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "mods",
+          "CsName": "Mods",
+          "CsType": "nint",
+          "CType": "int *",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "int *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "int",
+              "Kind": "Int"
+            }
+          },
+          "Doc": "the modifiers shown; NULL: kept for you"
+        },
+        {
+          "CName": "no_function_row",
+          "CsName": "NoFunctionRow",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 40,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        }
+      ]
+    },
+    {
+      "CName": "cui_keymap_result",
+      "CsName": "NativeKeymapResult",
+      "Size": 8,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "clicked",
+          "CsName": "Clicked",
+          "CsType": "Key",
+          "CType": "cui_key",
+          "Type": {
+            "Spelling": "cui_key",
+            "Kind": "Enum"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "conflicts",
+          "CsName": "Conflicts",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        }
+      ]
+    },
+    {
+      "CName": "cui_commit",
+      "CsName": "NativeCommit",
+      "Size": 48,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "hash",
+          "CsName": "Hash",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "message",
+          "CsName": "Message",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "the first line is shown"
+        },
+        {
+          "CName": "author",
+          "CsName": "Author",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "date",
+          "CsName": "Date",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "already formatted: \"2 hours ago\", \"Mar 3\""
+        },
+        {
+          "CName": "refs",
+          "CsName": "Refs",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "\"main, origin/main, tag: v1.2\", may be NULL"
+        },
+        {
+          "CName": "parent",
+          "CsName": "Parent",
+          "CsType": "int",
+          "CType": "int[2]",
+          "Offset": 40,
+          "IsFixedBuffer": true,
+          "ArrayLength": 2,
+          "Type": {
+            "Spelling": "int[2]",
+            "Kind": "ConstantArray",
+            "Element": {
+              "Spelling": "int",
+              "Kind": "Int"
+            }
+          },
+          "Doc": "row of each parent, -1 for none"
+        }
+      ]
+    },
+    {
+      "CName": "cui_commit_graph_opts",
+      "CsName": "NativeCommitGraphOpts",
+      "Size": 24,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "NativeSize",
+          "CType": "cui_size",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "height",
+          "CsName": "Height",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 12,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "selected",
+          "CsName": "Selected",
+          "CsType": "nint",
+          "CType": "int *",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "int *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "int",
+              "Kind": "Int"
+            }
+          },
+          "Doc": ""
+        }
+      ]
+    },
+    {
+      "CName": "cui_commit_graph_result",
+      "CsName": "NativeCommitGraphResult",
+      "Size": 12,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "clicked",
+          "CsName": "Clicked",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "activated",
+          "CsName": "Activated",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "hovered",
+          "CsName": "Hovered",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        }
+      ]
+    },
+    {
+      "CName": "cui_graph_node",
+      "CsName": "NativeGraphNode",
+      "Size": 24,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "label",
+          "CsName": "Label",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "detail",
+          "CsName": "Detail",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "tone",
+          "CsName": "Tone",
+          "CsType": "Tone",
+          "CType": "cui_tone",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "cui_tone",
+            "Kind": "Enum"
+          },
+          "Doc": ""
+        }
+      ]
+    },
+    {
+      "CName": "cui_graph_edge",
+      "CsName": "NativeGraphEdge",
+      "Size": 8,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "from",
+          "CsName": "From",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "to",
+          "CsName": "To",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        }
+      ]
+    },
+    {
+      "CName": "cui_graph_opts",
+      "CsName": "NativeGraphOpts",
+      "Size": 32,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "NativeSize",
+          "CType": "cui_size",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "height",
+          "CsName": "Height",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 12,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "top_down",
+          "CsName": "TopDown",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "selected",
+          "CsName": "Selected",
+          "CsType": "nint",
+          "CType": "int *",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "int *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "int",
+              "Kind": "Int"
+            }
+          },
+          "Doc": ""
+        }
+      ]
+    },
+    {
+      "CName": "cui_graph_result",
+      "CsName": "NativeGraphResult",
+      "Size": 12,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "clicked",
+          "CsName": "Clicked",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "activated",
+          "CsName": "Activated",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "hovered",
+          "CsName": "Hovered",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        }
+      ]
+    },
+    {
+      "CName": "cui_net_request",
+      "CsName": "NativeNetRequest",
+      "Size": 72,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "name",
+          "CsName": "Name",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "path or URL; the last part is shown"
+        },
+        {
+          "CName": "method",
+          "CsName": "Method",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "\"GET\""
+        },
+        {
+          "CName": "status",
+          "CsName": "Status",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "0 while pending or when it failed"
+        },
+        {
+          "CName": "type",
+          "CsName": "Type",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "\"fetch\", \"script\", \"image\"..."
+        },
+        {
+          "CName": "size",
+          "CsName": "Size",
+          "CsType": "double",
+          "CType": "double",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "double",
+            "Kind": "Double"
+          },
+          "Doc": "bytes transferred"
+        },
+        {
+          "CName": "start",
+          "CsName": "Start",
+          "CsType": "double",
+          "CType": "double",
+          "Offset": 40,
+          "Type": {
+            "Spelling": "double",
+            "Kind": "Double"
+          },
+          "Doc": "seconds from the start of the page"
+        },
+        {
+          "CName": "timing",
+          "CsName": "Timing",
+          "CsType": "float",
+          "CType": "float[6]",
+          "Offset": 48,
+          "IsFixedBuffer": true,
+          "ArrayLength": 6,
+          "Type": {
+            "Spelling": "float[6]",
+            "Kind": "ConstantArray",
+            "Element": {
+              "Spelling": "float",
+              "Kind": "Float"
+            }
+          },
+          "Doc": "seconds: queued, dns, connect, tls, waiting, download"
+        }
+      ]
+    },
+    {
+      "CName": "cui_waterfall_opts",
+      "CsName": "NativeWaterfallOpts",
+      "Size": 40,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "seconds; 0: no line"
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "NativeSize",
+          "CType": "cui_size",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          },
+          "Doc": "seconds; 0: no line"
+        },
+        {
+          "CName": "height",
+          "CsName": "Height",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 12,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "seconds; 0: no line"
+        },
+        {
+          "CName": "selected",
+          "CsName": "Selected",
+          "CsType": "nint",
+          "CType": "int *",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "int *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "int",
+              "Kind": "Int"
+            }
+          },
+          "Doc": "seconds; 0: no line"
+        },
+        {
+          "CName": "dom_loaded",
+          "CsName": "DomLoaded",
+          "CsType": "double",
+          "CType": "double",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "double",
+            "Kind": "Double"
+          },
+          "Doc": "seconds; 0: no line"
+        },
+        {
+          "CName": "loaded",
+          "CsName": "Loaded",
+          "CsType": "double",
+          "CType": "double",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "double",
+            "Kind": "Double"
+          },
+          "Doc": "seconds; 0: no line"
+        }
+      ]
+    },
+    {
+      "CName": "cui_waterfall_result",
+      "CsName": "NativeWaterfallResult",
+      "Size": 12,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "clicked",
+          "CsName": "Clicked",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "activated",
+          "CsName": "Activated",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "hovered",
+          "CsName": "Hovered",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        }
+      ]
+    },
+    {
+      "CName": "cui_trace_track",
+      "CsName": "NativeTraceTrack",
+      "Size": 16,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "name",
+          "CsName": "Name",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "collapsed",
+          "CsName": "Collapsed",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        }
+      ]
+    },
+    {
+      "CName": "cui_trace_span",
+      "CsName": "NativeTraceSpan",
+      "Size": 40,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "name",
+          "CsName": "Name",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "start",
+          "CsName": "Start",
+          "CsType": "double",
+          "CType": "double",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "double",
+            "Kind": "Double"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "end",
+          "CsName": "End",
+          "CsType": "double",
+          "CType": "double",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "double",
+            "Kind": "Double"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "track",
+          "CsName": "Track",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "depth",
+          "CsName": "Depth",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 28,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "color_key",
+          "CsName": "ColorKey",
+          "CsType": "uint",
+          "CType": "uint32_t",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "uint32_t",
+            "Kind": "UInt"
+          },
+          "Doc": ""
+        }
+      ]
+    },
+    {
+      "CName": "cui_trace_marker",
+      "CsName": "NativeTraceMarker",
+      "Size": 24,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "name",
+          "CsName": "Name",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "time",
+          "CsName": "Time",
+          "CsType": "double",
+          "CType": "double",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "double",
+            "Kind": "Double"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "tone",
+          "CsName": "Tone",
+          "CsType": "Tone",
+          "CType": "cui_tone",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "cui_tone",
+            "Kind": "Enum"
+          },
+          "Doc": ""
+        }
+      ]
+    },
+    {
+      "CName": "cui_trace_view",
+      "CsName": "NativeTraceView",
+      "Size": 40,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "start",
+          "CsName": "Start",
+          "CsType": "double",
+          "CType": "double",
+          "Type": {
+            "Spelling": "double",
+            "Kind": "Double"
+          },
+          "Doc": "visible time range; end <= start fits everything"
+        },
+        {
+          "CName": "end",
+          "CsName": "End",
+          "CsType": "double",
+          "CType": "double",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "double",
+            "Kind": "Double"
+          },
+          "Doc": "visible time range; end <= start fits everything"
+        },
+        {
+          "CName": "scroll",
+          "CsName": "Scroll",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "points scrolled down"
+        },
+        {
+          "CName": "mark_start",
+          "CsName": "MarkStart",
+          "CsType": "double",
+          "CType": "double",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "double",
+            "Kind": "Double"
+          },
+          "Doc": "measured range; mark_end <= mark_start: none"
+        },
+        {
+          "CName": "mark_end",
+          "CsName": "MarkEnd",
+          "CsType": "double",
+          "CType": "double",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "double",
+            "Kind": "Double"
+          },
+          "Doc": "measured range; mark_end <= mark_start: none"
+        }
+      ]
+    },
+    {
+      "CName": "cui_trace_opts",
+      "CsName": "NativeTraceOpts",
+      "Size": 40,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "NativeSize",
+          "CType": "cui_size",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "height",
+          "CsName": "Height",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 12,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "default 320"
+        },
+        {
+          "CName": "row_height",
+          "CsName": "RowHeight",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "default 20"
+        },
+        {
+          "CName": "markers",
+          "CsName": "Markers",
+          "CsType": "nint",
+          "CType": "const cui_trace_marker *",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "const cui_trace_marker *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_trace_marker",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "marker_count",
+          "CsName": "MarkerCount",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        }
+      ]
+    },
+    {
+      "CName": "cui_trace_result",
+      "CsName": "NativeTraceResult",
+      "Size": 8,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "selection_changed",
+          "CsName": "SelectionChanged",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "view_changed",
+          "CsName": "ViewChanged",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 1,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "hovered",
+          "CsName": "Hovered",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        }
+      ]
+    },
+    {
+      "CName": "cui_regex_match",
+      "CsName": "NativeRegexMatch",
+      "Size": 332,
+      "Helpers": [
+        {
+          "CsName": "NativeRegexMatchGroupNameArray2",
+          "ElementType": "sbyte",
+          "Length": 24
+        },
+        {
+          "CsName": "NativeRegexMatchGroupNameArray1",
+          "ElementType": "NativeRegexMatchGroupNameArray2",
+          "Length": 10
+        }
+      ],
+      "Fields": [
+        {
+          "CName": "start",
+          "CsName": "Start",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "bytes"
+        },
+        {
+          "CName": "end",
+          "CsName": "End",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "bytes"
+        },
+        {
+          "CName": "groups",
+          "CsName": "Groups",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "capture groups in the pattern"
+        },
+        {
+          "CName": "group_start",
+          "CsName": "GroupStart",
+          "CsType": "int",
+          "CType": "int[10]",
+          "Offset": 12,
+          "IsFixedBuffer": true,
+          "ArrayLength": 10,
+          "Type": {
+            "Spelling": "int[10]",
+            "Kind": "ConstantArray",
+            "Element": {
+              "Spelling": "int",
+              "Kind": "Int"
+            }
+          },
+          "Doc": "1 based; -1 when a group took no part"
+        },
+        {
+          "CName": "group_end",
+          "CsName": "GroupEnd",
+          "CsType": "int",
+          "CType": "int[10]",
+          "Offset": 52,
+          "IsFixedBuffer": true,
+          "ArrayLength": 10,
+          "Type": {
+            "Spelling": "int[10]",
+            "Kind": "ConstantArray",
+            "Element": {
+              "Spelling": "int",
+              "Kind": "Int"
+            }
+          },
+          "Doc": "1 based; -1 when a group took no part"
+        },
+        {
+          "CName": "group_name",
+          "CsName": "GroupName",
+          "CsType": "NativeRegexMatchGroupNameArray1",
+          "CType": "char[10][24]",
+          "Offset": 92,
+          "ArrayLength": 10,
+          "Type": {
+            "Spelling": "char[10][24]",
+            "Kind": "ConstantArray",
+            "Element": {
+              "Spelling": "char[24]",
+              "Kind": "ConstantArray",
+              "Element": {
+                "Spelling": "char",
+                "Kind": "Char_S"
+              }
+            }
+          },
+          "Doc": ""
+        }
+      ]
+    },
+    {
+      "CName": "cui_regex_tester_opts",
+      "CsName": "NativeRegexTesterOpts",
+      "Size": 24,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "NativeSize",
+          "CType": "cui_size",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "height",
+          "CsName": "Height",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 12,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "of the test text, default 180"
+        },
+        {
+          "CName": "flags",
+          "CsName": "Flags",
+          "CsType": "nint",
+          "CType": "int *",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "int *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "int",
+              "Kind": "Int"
+            }
+          },
+          "Doc": "CUI_REGEX_*; NULL: kept for you"
+        }
+      ]
+    },
+    {
+      "CName": "cui_regex_tester_result",
+      "CsName": "NativeRegexTesterResult",
+      "Size": 16,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "valid",
+          "CsName": "Valid",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "matches",
+          "CsName": "Matches",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "error",
+          "CsName": "Error",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": ""
+        }
+      ]
+    },
+    {
+      "CName": "cui_test_item",
+      "CsName": "NativeTestItem",
+      "Size": 32,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "name",
+          "CsName": "Name",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "depth",
+          "CsName": "Depth",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "0 for the top suites"
+        },
+        {
+          "CName": "status",
+          "CsName": "Status",
+          "CsType": "JobStatus",
+          "CType": "cui_job_status",
+          "Offset": 12,
+          "Type": {
+            "Spelling": "cui_job_status",
+            "Kind": "Enum"
+          },
+          "Doc": "a suite's own status is ignored when it has tests"
+        },
+        {
+          "CName": "duration",
+          "CsName": "Duration",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "seconds, negative when it has not run"
+        },
+        {
+          "CName": "message",
+          "CsName": "Message",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "why it failed, may be NULL"
+        }
+      ]
+    },
+    {
+      "CName": "cui_test_explorer_opts",
+      "CsName": "NativeTestExplorerOpts",
+      "Size": 16,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "default 320"
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "NativeSize",
+          "CType": "cui_size",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          },
+          "Doc": "default 320"
+        },
+        {
+          "CName": "height",
+          "CsName": "Height",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 12,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "default 320"
+        }
+      ]
+    },
+    {
+      "CName": "cui_test_explorer_result",
+      "CsName": "NativeTestExplorerResult",
+      "Size": 32,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "selected",
+          "CsName": "Selected",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "items, or -1"
+        },
+        {
+          "CName": "activated",
+          "CsName": "Activated",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "items, or -1"
+        },
+        {
+          "CName": "run",
+          "CsName": "Run",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "item whose run button was pressed this frame, or -1"
+        },
+        {
+          "CName": "run_all",
+          "CsName": "RunAll",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 12,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "passed",
+          "CsName": "Passed",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "tests, not suites"
+        },
+        {
+          "CName": "failed",
+          "CsName": "Failed",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 20,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "tests, not suites"
+        },
+        {
+          "CName": "skipped",
+          "CsName": "Skipped",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "tests, not suites"
+        },
+        {
+          "CName": "total",
+          "CsName": "Total",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 28,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "tests, not suites"
+        }
+      ]
+    },
+    {
+      "CName": "cui_stack_frame",
+      "CsName": "NativeStackFrame",
+      "Size": 48,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "function",
+          "CsName": "Function",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "file",
+          "CsName": "File",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "line",
+          "CsName": "Line",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "1 based; 0 leaves it out"
+        },
+        {
+          "CName": "column",
+          "CsName": "Column",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 20,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "1 based; 0 leaves it out"
+        },
+        {
+          "CName": "external",
+          "CsName": "External",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "library or runtime code"
+        },
+        {
+          "CName": "source",
+          "CsName": "Source",
+          "CsType": "nint",
+          "CType": "const char *const *",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "const char *const *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char *const",
+              "Kind": "Pointer",
+              "IsConst": true,
+              "Element": {
+                "Spelling": "const char",
+                "Kind": "Char_S",
+                "IsConst": true
+              }
+            }
+          },
+          "Doc": "lines around the frame, may be NULL"
+        },
+        {
+          "CName": "source_count",
+          "CsName": "SourceCount",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 40,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "source_first",
+          "CsName": "SourceFirst",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 44,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "line number of source[0]"
+        }
+      ]
+    },
+    {
+      "CName": "cui_stack_trace_opts",
+      "CsName": "NativeStackTraceOpts",
+      "Size": 40,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "NativeSize",
+          "CType": "cui_size",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "title",
+          "CsName": "Title",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "\"TypeError\""
+        },
+        {
+          "CName": "message",
+          "CsName": "Message",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "\"Cannot read properties of undefined\""
+        },
+        {
+          "CName": "lang",
+          "CsName": "Lang",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "highlights the source, as the code block"
+        }
+      ]
+    },
+    {
+      "CName": "cui_stack_trace_result",
+      "CsName": "NativeStackTraceResult",
+      "Size": 4,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "clicked",
+          "CsName": "Clicked",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "frame, or -1"
+        }
+      ]
+    },
+    {
+      "CName": "cui_request_bar_opts",
+      "CsName": "NativeRequestBarOpts",
+      "Size": 24,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "NativeSize",
+          "CType": "cui_size",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "loading",
+          "CsName": "Loading",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 12,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "placeholder",
+          "CsName": "Placeholder",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": ""
+        }
+      ]
+    },
+    {
+      "CName": "cui_request_bar_result",
+      "CsName": "NativeRequestBarResult",
+      "Size": 3,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "send",
+          "CsName": "Send",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "cancel",
+          "CsName": "Cancel",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 1,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "changed",
+          "CsName": "Changed",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 2,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        }
+      ]
+    },
+    {
+      "CName": "cui_uptime_service",
+      "CsName": "NativeUptimeService",
+      "Size": 24,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "name",
+          "CsName": "Name",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "days",
+          "CsName": "Days",
+          "CsType": "nint",
+          "CType": "const float *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const float *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const float",
+              "Kind": "Float",
+              "IsConst": true
+            }
+          },
+          "Doc": "oldest first: the fraction of the day it was up, 0..1; negative: no data"
+        },
+        {
+          "CName": "day_count",
+          "CsName": "DayCount",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        }
+      ]
+    },
+    {
+      "CName": "cui_uptime_opts",
+      "CsName": "NativeUptimeOpts",
+      "Size": 24,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "the date of the last value, for the tooltips"
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "NativeSize",
+          "CType": "cui_size",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          },
+          "Doc": "the date of the last value, for the tooltips"
+        },
+        {
+          "CName": "last_day",
+          "CsName": "LastDay",
+          "CsType": "NativeDate",
+          "CType": "cui_date",
+          "Offset": 12,
+          "Type": {
+            "Spelling": "cui_date",
+            "Kind": "Record"
+          },
+          "Doc": "the date of the last value, for the tooltips"
+        }
+      ]
+    },
+    {
+      "CName": "cui_uptime_result",
+      "CsName": "NativeUptimeResult",
+      "Size": 8,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "service",
+          "CsName": "Service",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "under the pointer, or -1"
+        },
+        {
+          "CName": "day",
+          "CsName": "Day",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "under the pointer, or -1"
+        }
+      ]
+    },
+    {
+      "CName": "cui_histogram_series",
+      "CsName": "NativeHistogramSeries",
+      "Size": 24,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "name",
+          "CsName": "Name",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "counts",
+          "CsName": "Counts",
+          "CsType": "nint",
+          "CType": "const float *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const float *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const float",
+              "Kind": "Float",
+              "IsConst": true
+            }
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "tone",
+          "CsName": "Tone",
+          "CsType": "Tone",
+          "CType": "cui_tone",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "cui_tone",
+            "Kind": "Enum"
+          },
+          "Doc": ""
+        }
+      ]
+    },
+    {
+      "CName": "cui_time_histogram_opts",
+      "CsName": "NativeTimeHistogramOpts",
+      "Size": 20,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "default 140"
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "NativeSize",
+          "CType": "cui_size",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          },
+          "Doc": "default 140"
+        },
+        {
+          "CName": "height",
+          "CsName": "Height",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 12,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "default 140"
+        },
+        {
+          "CName": "utc",
+          "CsName": "Utc",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        }
+      ]
+    },
+    {
+      "CName": "cui_time_histogram_result",
+      "CsName": "NativeTimeHistogramResult",
+      "Size": 8,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "selection_changed",
+          "CsName": "SelectionChanged",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "bucket, or -1"
+        },
+        {
+          "CName": "hovered",
+          "CsName": "Hovered",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "bucket, or -1"
+        }
+      ]
+    },
+    {
+      "CName": "cui_coverage_file",
+      "CsName": "NativeCoverageFile",
+      "Size": 32,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "path",
+          "CsName": "Path",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "\"src/core/layout.c\""
+        },
+        {
+          "CName": "lines",
+          "CsName": "Lines",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "lines_hit",
+          "CsName": "LinesHit",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 12,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "branches",
+          "CsName": "Branches",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "0 branches: not measured"
+        },
+        {
+          "CName": "branches_hit",
+          "CsName": "BranchesHit",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 20,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "0 branches: not measured"
+        },
+        {
+          "CName": "functions",
+          "CsName": "Functions",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "functions_hit",
+          "CsName": "FunctionsHit",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 28,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        }
+      ]
+    },
+    {
+      "CName": "cui_coverage_opts",
+      "CsName": "NativeCoverageOpts",
+      "Size": 24,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "percent; default 50 and 80"
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "NativeSize",
+          "CType": "cui_size",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          },
+          "Doc": "percent; default 50 and 80"
+        },
+        {
+          "CName": "height",
+          "CsName": "Height",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 12,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "percent; default 50 and 80"
+        },
+        {
+          "CName": "low",
+          "CsName": "Low",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "percent; default 50 and 80"
+        },
+        {
+          "CName": "high",
+          "CsName": "High",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 20,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "percent; default 50 and 80"
+        }
+      ]
+    },
+    {
+      "CName": "cui_coverage_result",
+      "CsName": "NativeCoverageResult",
+      "Size": 8,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "activated",
+          "CsName": "Activated",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "file, or -1"
+        },
+        {
+          "CName": "lines",
+          "CsName": "Lines",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "percent of all lines covered"
+        }
+      ]
+    },
+    {
+      "CName": "cui_blame_commit",
+      "CsName": "NativeBlameCommit",
+      "Size": 32,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "hash",
+          "CsName": "Hash",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "Unix seconds"
+        },
+        {
+          "CName": "author",
+          "CsName": "Author",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "Unix seconds"
+        },
+        {
+          "CName": "summary",
+          "CsName": "Summary",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "Unix seconds"
+        },
+        {
+          "CName": "time",
+          "CsName": "Time",
+          "CsType": "long",
+          "CType": "int64_t",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "int64_t",
+            "Kind": "LongLong"
+          },
+          "Doc": "Unix seconds"
+        }
+      ]
+    },
+    {
+      "CName": "cui_blame_opts",
+      "CsName": "NativeBlameOpts",
+      "Size": 40,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "NativeSize",
+          "CType": "cui_size",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "height",
+          "CsName": "Height",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 12,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "default 360"
+        },
+        {
+          "CName": "lang",
+          "CsName": "Lang",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "highlights the code, as the code block"
+        },
+        {
+          "CName": "now",
+          "CsName": "Now",
+          "CsType": "long",
+          "CType": "int64_t",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "int64_t",
+            "Kind": "LongLong"
+          },
+          "Doc": "ages are counted to here; 0: the clock"
+        },
+        {
+          "CName": "first_line",
+          "CsName": "FirstLine",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "number of the first line, default 1"
+        }
+      ]
+    },
+    {
+      "CName": "cui_blame_result",
+      "CsName": "NativeBlameResult",
+      "Size": 8,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "clicked",
+          "CsName": "Clicked",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "commits, or -1"
+        },
+        {
+          "CName": "hovered",
+          "CsName": "Hovered",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "commits, or -1"
+        }
+      ]
+    },
+    {
+      "CName": "cui_feature_flag",
+      "CsName": "NativeFeatureFlag",
+      "Size": 56,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "key",
+          "CsName": "Key",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "description",
+          "CsName": "Description",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "on",
+          "CsName": "On",
+          "CsType": "byte",
+          "CType": "_Bool[8]",
+          "Offset": 16,
+          "IsFixedBuffer": true,
+          "ArrayLength": 8,
+          "Type": {
+            "Spelling": "_Bool[8]",
+            "Kind": "ConstantArray",
+            "Element": {
+              "Spelling": "_Bool",
+              "Kind": "Bool"
+            }
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "rollout",
+          "CsName": "Rollout",
+          "CsType": "int",
+          "CType": "int[8]",
+          "Offset": 24,
+          "IsFixedBuffer": true,
+          "ArrayLength": 8,
+          "Type": {
+            "Spelling": "int[8]",
+            "Kind": "ConstantArray",
+            "Element": {
+              "Spelling": "int",
+              "Kind": "Int"
+            }
+          },
+          "Doc": "percent of users while on; 0 and 100 mean everyone"
+        }
+      ]
+    },
+    {
+      "CName": "cui_feature_flags_opts",
+      "CsName": "NativeFeatureFlagsOpts",
+      "Size": 16,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "default fits the flags"
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "NativeSize",
+          "CType": "cui_size",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          },
+          "Doc": "default fits the flags"
+        },
+        {
+          "CName": "height",
+          "CsName": "Height",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 12,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "default fits the flags"
+        }
+      ]
+    },
+    {
+      "CName": "cui_feature_flags_result",
+      "CsName": "NativeFeatureFlagsResult",
+      "Size": 8,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "flag",
+          "CsName": "Flag",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "changed this frame, or -1"
+        },
+        {
+          "CName": "env",
+          "CsName": "Env",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "changed this frame, or -1"
+        }
+      ]
+    },
+    {
+      "CName": "cui_api_param",
+      "CsName": "NativeApiParam",
+      "Size": 40,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "name",
+          "CsName": "Name",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "\"path\", \"query\", \"header\", \"body\""
+        },
+        {
+          "CName": "in",
+          "CsName": "In",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "\"path\", \"query\", \"header\", \"body\""
+        },
+        {
+          "CName": "type",
+          "CsName": "Type",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "required",
+          "CsName": "Required",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "description",
+          "CsName": "Description",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": ""
+        }
+      ]
+    },
+    {
+      "CName": "cui_api_endpoint",
+      "CsName": "NativeApiEndpoint",
+      "Size": 56,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "method",
+          "CsName": "Method",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "\"GET\""
+        },
+        {
+          "CName": "path",
+          "CsName": "Path",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "\"/users/{id}\""
+        },
+        {
+          "CName": "summary",
+          "CsName": "Summary",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "tag",
+          "CsName": "Tag",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "groups the list; NULL groups as \"Other\""
+        },
+        {
+          "CName": "deprecated",
+          "CsName": "Deprecated",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "params",
+          "CsName": "Params",
+          "CsType": "nint",
+          "CType": "const cui_api_param *",
+          "Offset": 40,
+          "Type": {
+            "Spelling": "const cui_api_param *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_api_param",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "param_count",
+          "CsName": "ParamCount",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 48,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        }
+      ]
+    },
+    {
+      "CName": "cui_api_explorer_opts",
+      "CsName": "NativeApiExplorerOpts",
+      "Size": 24,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "NativeSize",
+          "CType": "cui_size",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "height",
+          "CsName": "Height",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 12,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "selected",
+          "CsName": "Selected",
+          "CsType": "nint",
+          "CType": "int *",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "int *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "int",
+              "Kind": "Int"
+            }
+          },
+          "Doc": ""
+        }
+      ]
+    },
+    {
+      "CName": "cui_api_explorer_result",
+      "CsName": "NativeApiExplorerResult",
+      "Size": 8,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "selected",
+          "CsName": "Selected",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "endpoint, or -1"
+        },
+        {
+          "CName": "try_it",
+          "CsName": "TryIt",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "endpoint, or -1"
+        }
+      ]
+    },
+    {
       "CName": "cui_corners",
       "CsName": "NativeCorners",
       "Size": 16,
@@ -21535,6 +25653,135 @@
       ]
     },
     {
+      "CName": "cui_severity",
+      "CsName": "Severity",
+      "Values": [
+        {
+          "CName": "CUI_SEVERITY_ERROR",
+          "CsName": "Error",
+          "Value": "0"
+        },
+        {
+          "CName": "CUI_SEVERITY_WARNING",
+          "CsName": "Warning",
+          "Value": "1"
+        },
+        {
+          "CName": "CUI_SEVERITY_INFO",
+          "CsName": "Info",
+          "Value": "2"
+        },
+        {
+          "CName": "CUI_SEVERITY_HINT",
+          "CsName": "Hint",
+          "Value": "3"
+        }
+      ]
+    },
+    {
+      "CName": "cui_job_status",
+      "CsName": "JobStatus",
+      "Values": [
+        {
+          "CName": "CUI_JOB_PENDING",
+          "CsName": "Pending",
+          "Value": "0"
+        },
+        {
+          "CName": "CUI_JOB_RUNNING",
+          "CsName": "Running",
+          "Value": "1"
+        },
+        {
+          "CName": "CUI_JOB_PASSED",
+          "CsName": "Passed",
+          "Value": "2"
+        },
+        {
+          "CName": "CUI_JOB_FAILED",
+          "CsName": "Failed",
+          "Value": "3"
+        },
+        {
+          "CName": "CUI_JOB_SKIPPED",
+          "CsName": "Skipped",
+          "Value": "4"
+        },
+        {
+          "CName": "CUI_JOB_CANCELED",
+          "CsName": "Canceled",
+          "Value": "5"
+        }
+      ]
+    },
+    {
+      "CName": "cui_query_type",
+      "CsName": "QueryType",
+      "Values": [
+        {
+          "CName": "CUI_QUERY_TEXT",
+          "CsName": "Text",
+          "Value": "0"
+        },
+        {
+          "CName": "CUI_QUERY_NUMBER",
+          "CsName": "Number",
+          "Value": "1"
+        },
+        {
+          "CName": "CUI_QUERY_CHOICE",
+          "CsName": "Choice",
+          "Value": "2"
+        },
+        {
+          "CName": "CUI_QUERY_BOOL",
+          "CsName": "Bool",
+          "Value": "3"
+        }
+      ]
+    },
+    {
+      "CName": "cui_http_method",
+      "CsName": "HttpMethod",
+      "Values": [
+        {
+          "CName": "CUI_HTTP_GET",
+          "CsName": "Get",
+          "Value": "0"
+        },
+        {
+          "CName": "CUI_HTTP_POST",
+          "CsName": "Post",
+          "Value": "1"
+        },
+        {
+          "CName": "CUI_HTTP_PUT",
+          "CsName": "Put",
+          "Value": "2"
+        },
+        {
+          "CName": "CUI_HTTP_PATCH",
+          "CsName": "Patch",
+          "Value": "3"
+        },
+        {
+          "CName": "CUI_HTTP_DELETE",
+          "CsName": "Delete",
+          "Value": "4"
+        },
+        {
+          "CName": "CUI_HTTP_HEAD",
+          "CsName": "Head",
+          "Value": "5"
+        },
+        {
+          "CName": "CUI_HTTP_OPTIONS",
+          "CsName": "Options",
+          "Value": "6"
+        }
+      ]
+    },
+    {
       "CName": "cui_renderer_kind",
       "CsName": "Renderer",
       "Values": [
@@ -23154,6 +27401,77 @@
       "ReturnType": {
         "Spelling": "cui_color",
         "Kind": "Record"
+      },
+      "Module": "Theme",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_set_strings",
+      "CsName": "SetStrings",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "strings",
+          "CsName": "strings",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const cui_strings *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_strings",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "Theme",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_get_strings",
+      "CsName": "GetStrings",
+      "CsReturn": "nint",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "const cui_strings *",
+        "Kind": "Pointer",
+        "Element": {
+          "Spelling": "const cui_strings",
+          "Kind": "Record",
+          "IsConst": true
+        }
       },
       "Module": "Theme",
       "Doc": ""
@@ -31594,7 +35912,7 @@
         "Spelling": "void",
         "Kind": "Void"
       },
-      "Module": "Data grid",
+      "Module": "Tree table and path bar",
       "Doc": ""
     },
     {
@@ -31620,7 +35938,7 @@
         "Spelling": "int",
         "Kind": "Int"
       },
-      "Module": "Data grid",
+      "Module": "Tree table and path bar",
       "Doc": "The next row in view: returns its node, or -1 when done. Then build its cells: cui_tree_table_name first, then cui_data_grid_cell(_text)."
     },
     {
@@ -31674,7 +35992,7 @@
         "Spelling": "void",
         "Kind": "Void"
       },
-      "Module": "Data grid",
+      "Module": "Tree table and path bar",
       "Doc": "The first cell: indentation, guides, the chevron, an icon and the name (cut short with a tooltip of the whole name when it does not fit)."
     },
     {
@@ -31700,7 +36018,7 @@
         "Spelling": "int",
         "Kind": "Int"
       },
-      "Module": "Data grid",
+      "Module": "Tree table and path bar",
       "Doc": ""
     },
     {
@@ -31726,7 +36044,7 @@
         "Spelling": "cui_tree_table_events",
         "Kind": "Record"
       },
-      "Module": "Data grid",
+      "Module": "Tree table and path bar",
       "Doc": ""
     },
     {
@@ -31796,7 +36114,7 @@
         "Spelling": "int",
         "Kind": "Int"
       },
-      "Module": "Data grid",
+      "Module": "Tree table and path bar",
       "Doc": "Sorts every sibling list (stable) by cmp, relinking the nodes. Returns the new first top level node."
     },
     {
@@ -31878,7 +36196,7 @@
         "Spelling": "cui_path_bar_result",
         "Kind": "Record"
       },
-      "Module": "Data grid",
+      "Module": "Tree table and path bar",
       "Doc": ""
     },
     {
@@ -31931,7 +36249,7 @@
         "Spelling": "_Bool",
         "Kind": "Bool"
       },
-      "Module": "Data grid",
+      "Module": "Tree table and path bar",
       "Doc": "True while the menu of separator *segment is showing: build menu items for the children of that segment, then call cui_path_bar_menu_end."
     },
     {
@@ -31957,7 +36275,7 @@
         "Spelling": "void",
         "Kind": "Void"
       },
-      "Module": "Data grid",
+      "Module": "Tree table and path bar",
       "Doc": ""
     },
     {
@@ -32050,7 +36368,7 @@
         "Spelling": "int",
         "Kind": "Int"
       },
-      "Module": "Data grid",
+      "Module": "Tree table and path bar",
       "Doc": ""
     },
     {
@@ -32126,7 +36444,7 @@
         "Spelling": "cui_file_browser_result",
         "Kind": "Record"
       },
-      "Module": "Data grid",
+      "Module": "Tree table and path bar",
       "Doc": "path: the folder shown, yours; the browser writes it as you move around."
     },
     {
@@ -32215,7 +36533,7 @@
         "Spelling": "_Bool",
         "Kind": "Bool"
       },
-      "Module": "Data grid",
+      "Module": "Tree table and path bar",
       "Doc": "True once, with the chosen path in out, when the dialog is confirmed; *open turns false then, or on Cancel and Esc."
     },
     {
@@ -32419,7 +36737,7 @@
         "Spelling": "cui_markdown_result",
         "Kind": "Record"
       },
-      "Module": "Code",
+      "Module": "Markdown view",
       "Doc": ""
     },
     {
@@ -32459,7 +36777,7 @@
         "Spelling": "_Bool",
         "Kind": "Bool"
       },
-      "Module": "Code",
+      "Module": "Markdown view",
       "Doc": "Writes a reported task toggle into text ('x' or ' ' between the brackets). Returns false when nothing was toggled or text no longer has a box there."
     },
     {
@@ -32535,7 +36853,7 @@
         "Spelling": "cui_code_editor_result",
         "Kind": "Record"
       },
-      "Module": "Code",
+      "Module": "Code editor",
       "Doc": "* left to right in any interface: see cui__keep_ltr"
     },
     {
@@ -32593,7 +36911,7 @@
         "Spelling": "void",
         "Kind": "Void"
       },
-      "Module": "Code",
+      "Module": "Code editor",
       "Doc": "On the editor's next frame: put the caret at a line and column (1 based), focus the editor and scroll there. Call from the same id scope."
     },
     {
@@ -32651,7 +36969,7 @@
         "Spelling": "void",
         "Kind": "Void"
       },
-      "Module": "Code",
+      "Module": "Code editor",
       "Doc": "On the next frame: select bytes anchor..cursor, focus and scroll there."
     },
     {
@@ -32705,7 +37023,7 @@
         "Spelling": "void",
         "Kind": "Void"
       },
-      "Module": "Code",
+      "Module": "Code editor",
       "Doc": "Opens the find bar with query and selects the next match (NULL closes)."
     },
     {
@@ -32787,7 +37105,7 @@
         "Spelling": "cui_diff_result",
         "Kind": "Record"
       },
-      "Module": "Code",
+      "Module": "Diff viewer",
       "Doc": "* left to right in any interface: see cui__keep_ltr"
     },
     {
@@ -32858,7 +37176,7 @@
         "Spelling": "int",
         "Kind": "Int"
       },
-      "Module": "Code",
+      "Module": "Diff viewer",
       "Doc": ""
     },
     {
@@ -32961,7 +37279,7 @@
         "Spelling": "int",
         "Kind": "Int"
       },
-      "Module": "Code",
+      "Module": "Diff viewer",
       "Doc": ""
     },
     {
@@ -33081,7 +37399,7 @@
         "Spelling": "_Bool",
         "Kind": "Bool"
       },
-      "Module": "Code",
+      "Module": "Diff viewer",
       "Doc": ""
     },
     {
@@ -39685,7 +44003,7 @@
         "Spelling": "_Bool",
         "Kind": "Bool"
       },
-      "Module": "More inputs",
+      "Module": "Node editor",
       "Doc": ""
     },
     {
@@ -39711,7 +44029,7 @@
         "Spelling": "void",
         "Kind": "Void"
       },
-      "Module": "More inputs",
+      "Module": "Node editor",
       "Doc": ""
     },
     {
@@ -39800,7 +44118,7 @@
         "Spelling": "_Bool",
         "Kind": "Bool"
       },
-      "Module": "More inputs",
+      "Module": "Node editor",
       "Doc": ""
     },
     {
@@ -39826,7 +44144,7 @@
         "Spelling": "void",
         "Kind": "Void"
       },
-      "Module": "More inputs",
+      "Module": "Node editor",
       "Doc": ""
     },
     {
@@ -39889,7 +44207,7 @@
         "Spelling": "_Bool",
         "Kind": "Bool"
       },
-      "Module": "More inputs",
+      "Module": "Node editor",
       "Doc": ""
     },
     {
@@ -39952,7 +44270,7 @@
         "Spelling": "_Bool",
         "Kind": "Bool"
       },
-      "Module": "More inputs",
+      "Module": "Node editor",
       "Doc": ""
     },
     {
@@ -39978,7 +44296,7 @@
         "Spelling": "void",
         "Kind": "Void"
       },
-      "Module": "More inputs",
+      "Module": "Node editor",
       "Doc": "A row for ordinary components. They are laid out at 100% and scaled with the view, so their text is sharpest at 100% zoom and below."
     },
     {
@@ -40004,7 +44322,7 @@
         "Spelling": "void",
         "Kind": "Void"
       },
-      "Module": "More inputs",
+      "Module": "Node editor",
       "Doc": ""
     },
     {
@@ -40057,7 +44375,7 @@
         "Spelling": "_Bool",
         "Kind": "Bool"
       },
-      "Module": "More inputs",
+      "Module": "Node editor",
       "Doc": "A link from an output pin to an input pin. Returns true while it is selected."
     },
     {
@@ -40109,7 +44427,7 @@
         "Spelling": "_Bool",
         "Kind": "Bool"
       },
-      "Module": "More inputs",
+      "Module": "Node editor",
       "Doc": "What the user did this frame, one event per call; call them after cui_node_editor_begin (and up to the end of the frame)."
     },
     {
@@ -40148,7 +44466,7 @@
         "Spelling": "_Bool",
         "Kind": "Bool"
       },
-      "Module": "More inputs",
+      "Module": "Node editor",
       "Doc": "Part of cui_node_link — A link from an output pin to an input pin. Returns true while it is selected."
     },
     {
@@ -40187,7 +44505,7 @@
         "Spelling": "_Bool",
         "Kind": "Bool"
       },
-      "Module": "More inputs",
+      "Module": "Node editor",
       "Doc": ""
     },
     {
@@ -40940,7 +45258,7 @@
         "Spelling": "void",
         "Kind": "Void"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Docking",
       "Doc": ""
     },
     {
@@ -40966,7 +45284,7 @@
         "Spelling": "void",
         "Kind": "Void"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Docking",
       "Doc": ""
     },
     {
@@ -41033,7 +45351,7 @@
         "Spelling": "_Bool",
         "Kind": "Bool"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Docking",
       "Doc": ""
     },
     {
@@ -41059,7 +45377,7 @@
         "Spelling": "void",
         "Kind": "Void"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Docking",
       "Doc": ""
     },
     {
@@ -41121,7 +45439,7 @@
         "Spelling": "size_t",
         "Kind": "ULongLong"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Docking",
       "Doc": "Saved layout: one line, e.g. dock1 h0.22([*Scene tree,Assets],v0.7([*Viewport],[*Log,-Console])) h splits side by side and v stacks, the number is the first child's share, [..] is a leaf's tabs in order, * the selected tab, - a closed panel; a backslash escapes , [ ] ( ) and itself in names. cui_dock_save returns the full length (as snprintf does) and writes what fits, or 0 when there is no layout. cui_dock_load replaces the layout (and sets each panel's *open from it on its next frame); names it does not know yet are kept for when they appear. Malformed text returns false and changes nothing."
     },
     {
@@ -41175,7 +45493,7 @@
         "Spelling": "_Bool",
         "Kind": "Bool"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Docking",
       "Doc": ""
     },
     {
@@ -41229,7 +45547,7 @@
         "Spelling": "_Bool",
         "Kind": "Bool"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Docking",
       "Doc": ""
     },
     {
@@ -41255,7 +45573,7 @@
         "Spelling": "void",
         "Kind": "Void"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Docking",
       "Doc": ""
     },
     {
@@ -41308,7 +45626,7 @@
         "Spelling": "_Bool",
         "Kind": "Bool"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Docking",
       "Doc": "A folding group header. Build its rows only when this returns true (it stays true while the group animates closed). open may be NULL for a plain section that does not fold."
     },
     {
@@ -41375,7 +45693,7 @@
         "Spelling": "_Bool",
         "Kind": "Bool"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Docking",
       "Doc": ""
     },
     {
@@ -41442,7 +45760,7 @@
         "Spelling": "_Bool",
         "Kind": "Bool"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Docking",
       "Doc": ""
     },
     {
@@ -41518,7 +45836,7 @@
         "Spelling": "_Bool",
         "Kind": "Bool"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Docking",
       "Doc": ""
     },
     {
@@ -41585,7 +45903,7 @@
         "Spelling": "_Bool",
         "Kind": "Bool"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Docking",
       "Doc": ""
     },
     {
@@ -41680,7 +45998,7 @@
         "Spelling": "_Bool",
         "Kind": "Bool"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Docking",
       "Doc": ""
     },
     {
@@ -41747,7 +46065,7 @@
         "Spelling": "_Bool",
         "Kind": "Bool"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Docking",
       "Doc": "A swatch and hex value that opens the color picker."
     },
     {
@@ -41823,7 +46141,7 @@
         "Spelling": "_Bool",
         "Kind": "Bool"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Docking",
       "Doc": "Compact X, Y (Z, W) scrub fields side by side; value holds 2, 3 or 4 floats."
     },
     {
@@ -41893,7 +46211,7 @@
         "Spelling": "void",
         "Kind": "Void"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Docking",
       "Doc": ""
     },
     {
@@ -41955,7 +46273,7 @@
         "Spelling": "void",
         "Kind": "Void"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Docking",
       "Doc": ""
     },
     {
@@ -42022,7 +46340,7 @@
         "Spelling": "void",
         "Kind": "Void"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Docking",
       "Doc": "Appends len bytes (-1: up to the terminator) stamped with time."
     },
     {
@@ -42048,7 +46366,7 @@
         "Spelling": "void",
         "Kind": "Void"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Docking",
       "Doc": ""
     },
     {
@@ -42107,7 +46425,7 @@
           "IsConst": true
         }
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Docking",
       "Doc": "Line i (0 = oldest), or NULL when out of range. *text is terminated (and len bytes long)."
     },
     {
@@ -42174,7 +46492,7 @@
         "Spelling": "void",
         "Kind": "Void"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Docking",
       "Doc": "Toolbar: level filters, a search field that filters and highlights, Follow (keeps the newest line in view; scrolling up turns it off, reaching the bottom turns it back on), Copy (selected lines, or all shown) and Clear. Click a line to select it, Shift+click for a range; with the list focused, arrows move, Shift+arrows extend, Ctrl+A selects all, Ctrl+C copies, Esc clears the selection, End follows again."
     },
     {
@@ -42244,7 +46562,7 @@
         "Spelling": "void",
         "Kind": "Void"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Terminal",
       "Doc": ""
     },
     {
@@ -42293,7 +46611,7 @@
         "Spelling": "void",
         "Kind": "Void"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Terminal",
       "Doc": ""
     },
     {
@@ -42319,7 +46637,7 @@
         "Spelling": "void",
         "Kind": "Void"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Terminal",
       "Doc": ""
     },
     {
@@ -42386,7 +46704,7 @@
         "Spelling": "cui_terminal_result",
         "Kind": "Record"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Terminal",
       "Doc": "* left to right in any interface: see cui__keep_ltr"
     },
     {
@@ -42426,7 +46744,7 @@
         "Spelling": "_Bool",
         "Kind": "Bool"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Emoji",
       "Doc": "---- Emoji ---- Color emoji come from an emoji font: the system's (cui_emoji_font_load_system, which the picker calls by itself when nothing is loaded) or one the app ships. Bitmap color fonts (sbix as on macOS, CBDT as on Linux and Android) and layered ones (COLR version 0, as on Windows) are read, as is a plain outline font for one-color emoji. Sequences with skin tones, joined people and flags are looked up through the font's ligatures. Big fonts are read from the file as needed rather than loaded whole. Drawn emoji are kept in one texture and reused."
     },
     {
@@ -42484,7 +46802,7 @@
         "Spelling": "_Bool",
         "Kind": "Bool"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Emoji",
       "Doc": ""
     },
     {
@@ -42510,7 +46828,7 @@
         "Spelling": "_Bool",
         "Kind": "Bool"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Emoji",
       "Doc": ""
     },
     {
@@ -42559,7 +46877,7 @@
         "Spelling": "_Bool",
         "Kind": "Bool"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Emoji",
       "Doc": ""
     },
     {
@@ -42617,7 +46935,7 @@
         "Spelling": "void",
         "Kind": "Void"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Emoji",
       "Doc": ""
     },
     {
@@ -42666,7 +46984,7 @@
         "Spelling": "void",
         "Kind": "Void"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Emoji",
       "Doc": ""
     },
     {
@@ -42725,7 +47043,7 @@
           "IsConst": true
         }
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Emoji",
       "Doc": ""
     },
     {
@@ -42815,7 +47133,7 @@
         "Spelling": "cui_hex_result",
         "Kind": "Record"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Hex viewer",
       "Doc": "sel may be NULL: the view then keeps the selection itself."
     },
     {
@@ -42864,7 +47182,7 @@
         "Spelling": "void",
         "Kind": "Void"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Hex viewer",
       "Doc": "Go to offset: on the view's next frame its cursor moves to offset, that byte becomes the selection and it scrolls into view (to the middle when it was out of sight). Wire a \"Go to\" field to it; it is safe to call every frame."
     },
     {
@@ -42967,7 +47285,7 @@
         "Spelling": "cui_flame_result",
         "Kind": "Record"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Flame graph",
       "Doc": "selected: index into spans, -1 for none (may be NULL)."
     },
     {
@@ -43002,7 +47320,7 @@
         "Spelling": "void",
         "Kind": "Void"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Flame graph",
       "Doc": "Sorts spans into the order the graph needs: by depth, then start (longer first on ties)."
     },
     {
@@ -43051,7 +47369,7 @@
         "Spelling": "cui_rect",
         "Kind": "Record"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Flame graph",
       "Doc": "Where a span was drawn in the latest frame, in points (zero size when out of view). flame is the graph's id: cui_last_id(ui) right after the call."
     },
     {
@@ -43140,7 +47458,7 @@
         "Spelling": "cui_curve_result",
         "Kind": "Record"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Curve and gradient editors",
       "Doc": ""
     },
     {
@@ -43185,7 +47503,7 @@
         "Spelling": "float",
         "Kind": "Float"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Curve and gradient editors",
       "Doc": "The curve's value at x: exactly what the editor draws. keys sorted by x."
     },
     {
@@ -43274,7 +47592,7 @@
         "Spelling": "cui_gradient_result",
         "Kind": "Record"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Curve and gradient editors",
       "Doc": ""
     },
     {
@@ -43319,7 +47637,7 @@
         "Spelling": "cui_color",
         "Kind": "Record"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Curve and gradient editors",
       "Doc": "The color at t: exactly what the ramp shows (each channel, alpha too, interpolated in sRGB between the stops on either side; the end colors continue past the first and last stop)."
     },
     {
@@ -43408,8 +47726,2494 @@
         "Spelling": "cui_timeline_editor_result",
         "Kind": "Record"
       },
-      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Module": "Timeline",
       "Doc": "time: the playhead in seconds (may be NULL)."
+    },
+    {
+      "CName": "cui_kv_editor_ex",
+      "CsName": "KvEditor",
+      "CsReturn": "byte",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "pairs",
+          "CsName": "pairs",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_kv_pair *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_kv_pair",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "count",
+          "CsName": "count",
+          "CsType": "ref int",
+          "Type": {
+            "Spelling": "int *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "int",
+              "Kind": "Int"
+            }
+          }
+        },
+        {
+          "CName": "capacity",
+          "CsName": "capacity",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeKvEditorOpts",
+          "Type": {
+            "Spelling": "const cui_kv_editor_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_kv_editor_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "_Bool",
+        "Kind": "Bool"
+      },
+      "Module": "Key-value editor",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_problems_ex",
+      "CsName": "Problems",
+      "CsReturn": "NativeProblemsResult",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "diags",
+          "CsName": "diags",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const cui_diagnostic *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_diagnostic",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "count",
+          "CsName": "count",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeProblemsOpts",
+          "Type": {
+            "Spelling": "const cui_problems_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_problems_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "cui_problems_result",
+        "Kind": "Record"
+      },
+      "Module": "Problems panel",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_pipeline_ex",
+      "CsName": "Pipeline",
+      "CsReturn": "NativePipelineResult",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "stages",
+          "CsName": "stages",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *const *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char *const",
+              "Kind": "Pointer",
+              "IsConst": true,
+              "Element": {
+                "Spelling": "const char",
+                "Kind": "Char_S",
+                "IsConst": true
+              }
+            }
+          }
+        },
+        {
+          "CName": "stage_count",
+          "CsName": "stageCount",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "jobs",
+          "CsName": "jobs",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const cui_pipeline_job *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_pipeline_job",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "job_count",
+          "CsName": "jobCount",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativePipelineOpts",
+          "Type": {
+            "Spelling": "const cui_pipeline_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_pipeline_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "cui_pipeline_result",
+        "Kind": "Record"
+      },
+      "Module": "Pipeline",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_query_builder_ex",
+      "CsName": "QueryBuilder",
+      "CsReturn": "byte",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "fields",
+          "CsName": "fields",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const cui_query_field *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_query_field",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "field_count",
+          "CsName": "fieldCount",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "nodes",
+          "CsName": "nodes",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_query_node *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_query_node",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "count",
+          "CsName": "count",
+          "CsType": "ref int",
+          "Type": {
+            "Spelling": "int *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "int",
+              "Kind": "Int"
+            }
+          }
+        },
+        {
+          "CName": "capacity",
+          "CsName": "capacity",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeQueryOpts",
+          "Type": {
+            "Spelling": "const cui_query_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_query_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "_Bool",
+        "Kind": "Bool"
+      },
+      "Module": "Query builder",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_query_op_name",
+      "CsName": "QueryOpName",
+      "CsReturn": "nint",
+      "Params": [
+        {
+          "CName": "type",
+          "CsName": "type",
+          "CsType": "QueryType",
+          "Type": {
+            "Spelling": "cui_query_type",
+            "Kind": "Enum"
+          }
+        },
+        {
+          "CName": "op",
+          "CsName": "op",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "const char *",
+        "Kind": "Pointer",
+        "Element": {
+          "Spelling": "const char",
+          "Kind": "Char_S",
+          "IsConst": true
+        }
+      },
+      "Module": "Query builder",
+      "Doc": "the operators of a type: text \"is\", \"is not\", \"contains\", \"does not contain\", \"starts with\", \"ends with\"; number \"=\", \"!=\", \">\", \">=\", \"<\", \"<=\"; choice \"is\", \"is not\"; bool \"is true\", \"is false\". NULL past the last."
+    },
+    {
+      "CName": "cui_query_text",
+      "CsName": "QueryText",
+      "CsReturn": "ulong",
+      "Params": [
+        {
+          "CName": "fields",
+          "CsName": "fields",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const cui_query_field *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_query_field",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "field_count",
+          "CsName": "fieldCount",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "nodes",
+          "CsName": "nodes",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const cui_query_node *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_query_node",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "count",
+          "CsName": "count",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "out",
+          "CsName": "@out",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "char",
+              "Kind": "Char_S"
+            }
+          }
+        },
+        {
+          "CName": "cap",
+          "CsName": "cap",
+          "CsType": "ulong",
+          "Type": {
+            "Spelling": "size_t",
+            "Kind": "ULongLong"
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "size_t",
+        "Kind": "ULongLong"
+      },
+      "Module": "Query builder",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_query_match",
+      "CsName": "QueryMatch",
+      "CsReturn": "byte",
+      "Params": [
+        {
+          "CName": "fields",
+          "CsName": "fields",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const cui_query_field *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_query_field",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "field_count",
+          "CsName": "fieldCount",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "nodes",
+          "CsName": "nodes",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const cui_query_node *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_query_node",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "count",
+          "CsName": "count",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "values",
+          "CsName": "values",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *const *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char *const",
+              "Kind": "Pointer",
+              "IsConst": true,
+              "Element": {
+                "Spelling": "const char",
+                "Kind": "Char_S",
+                "IsConst": true
+              }
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "_Bool",
+        "Kind": "Bool"
+      },
+      "Module": "Query builder",
+      "Doc": "values[i] is the record's value for field i, as text (\"1\", \"true\", \"open\")."
+    },
+    {
+      "CName": "cui_schedule_picker_ex",
+      "CsName": "SchedulePicker",
+      "CsReturn": "NativeScheduleResult",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "cron",
+          "CsName": "cron",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "char",
+              "Kind": "Char_S"
+            }
+          }
+        },
+        {
+          "CName": "cap",
+          "CsName": "cap",
+          "CsType": "ulong",
+          "Type": {
+            "Spelling": "size_t",
+            "Kind": "ULongLong"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeScheduleOpts",
+          "Type": {
+            "Spelling": "const cui_schedule_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_schedule_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "cui_schedule_result",
+        "Kind": "Record"
+      },
+      "Module": "Schedule picker",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_cron_next",
+      "CsName": "CronNext",
+      "CsReturn": "byte",
+      "Params": [
+        {
+          "CName": "cron",
+          "CsName": "cron",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "after",
+          "CsName": "after",
+          "CsType": "long",
+          "Type": {
+            "Spelling": "int64_t",
+            "Kind": "LongLong"
+          }
+        },
+        {
+          "CName": "utc_offset",
+          "CsName": "utcOffset",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "next",
+          "CsName": "next",
+          "CsType": "ref long",
+          "Type": {
+            "Spelling": "int64_t *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "int64_t",
+              "Kind": "LongLong"
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "_Bool",
+        "Kind": "Bool"
+      },
+      "Module": "Schedule picker",
+      "Doc": "The first time after `after` (Unix seconds) the expression matches, in the time zone that is utc_offset minutes east of UTC. Supports *, lists, ranges, steps and the names JAN-DEC and SUN-SAT. False when it is invalid or never runs in the next five years."
+    },
+    {
+      "CName": "cui_cron_describe",
+      "CsName": "CronDescribe",
+      "CsReturn": "nint",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "cron",
+          "CsName": "cron",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "const char *",
+        "Kind": "Pointer",
+        "Element": {
+          "Spelling": "const char",
+          "Kind": "Char_S",
+          "IsConst": true
+        }
+      },
+      "Module": "Schedule picker",
+      "Doc": "\"Every weekday at 09:30\", in frame memory; NULL when invalid."
+    },
+    {
+      "CName": "cui_keymap_ex",
+      "CsName": "Keymap",
+      "CsReturn": "NativeKeymapResult",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "bindings",
+          "CsName": "bindings",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const cui_keymap_binding *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_keymap_binding",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "count",
+          "CsName": "count",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeKeymapOpts",
+          "Type": {
+            "Spelling": "const cui_keymap_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_keymap_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "cui_keymap_result",
+        "Kind": "Record"
+      },
+      "Module": "Keymap",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_commit_graph_ex",
+      "CsName": "CommitGraph",
+      "CsReturn": "NativeCommitGraphResult",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "commits",
+          "CsName": "commits",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const cui_commit *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_commit",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "count",
+          "CsName": "count",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeCommitGraphOpts",
+          "Type": {
+            "Spelling": "const cui_commit_graph_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_commit_graph_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "cui_commit_graph_result",
+        "Kind": "Record"
+      },
+      "Module": "Commit graph",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_graph_view_ex",
+      "CsName": "GraphView",
+      "CsReturn": "NativeGraphResult",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "nodes",
+          "CsName": "nodes",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const cui_graph_node *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_graph_node",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "node_count",
+          "CsName": "nodeCount",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "edges",
+          "CsName": "edges",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const cui_graph_edge *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_graph_edge",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "edge_count",
+          "CsName": "edgeCount",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeGraphOpts",
+          "Type": {
+            "Spelling": "const cui_graph_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_graph_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "cui_graph_result",
+        "Kind": "Record"
+      },
+      "Module": "Dependency graph",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_waterfall_ex",
+      "CsName": "Waterfall",
+      "CsReturn": "NativeWaterfallResult",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "requests",
+          "CsName": "requests",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const cui_net_request *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_net_request",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "count",
+          "CsName": "count",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeWaterfallOpts",
+          "Type": {
+            "Spelling": "const cui_waterfall_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_waterfall_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "cui_waterfall_result",
+        "Kind": "Record"
+      },
+      "Module": "Network waterfall",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_trace_view_ex",
+      "CsName": "TraceView",
+      "CsReturn": "NativeTraceResult",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "tracks",
+          "CsName": "tracks",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_trace_track *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_trace_track",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "track_count",
+          "CsName": "trackCount",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "spans",
+          "CsName": "spans",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const cui_trace_span *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_trace_span",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "span_count",
+          "CsName": "spanCount",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "view",
+          "CsName": "view",
+          "CsType": "ref NativeTraceView",
+          "Type": {
+            "Spelling": "cui_trace_view *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_trace_view",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "selected",
+          "CsName": "selected",
+          "CsType": "ref int",
+          "Type": {
+            "Spelling": "int *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "int",
+              "Kind": "Int"
+            }
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeTraceOpts",
+          "Type": {
+            "Spelling": "const cui_trace_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_trace_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "cui_trace_result",
+        "Kind": "Record"
+      },
+      "Module": "Trace viewer",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_trace_sort",
+      "CsName": "TraceSort",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "spans",
+          "CsName": "spans",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_trace_span *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_trace_span",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "count",
+          "CsName": "count",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "Trace viewer",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_regex_search",
+      "CsName": "RegexSearch",
+      "CsReturn": "int",
+      "Params": [
+        {
+          "CName": "pattern",
+          "CsName": "pattern",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "flags",
+          "CsName": "flags",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "text",
+          "CsName": "text",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "len",
+          "CsName": "len",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "from",
+          "CsName": "from",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "m",
+          "CsName": "m",
+          "CsType": "ref NativeRegexMatch",
+          "Type": {
+            "Spelling": "cui_regex_match *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_regex_match",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "error",
+          "CsName": "error",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char **",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char *",
+              "Kind": "Pointer",
+              "Element": {
+                "Spelling": "const char",
+                "Kind": "Char_S",
+                "IsConst": true
+              }
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "int",
+        "Kind": "Int"
+      },
+      "Module": "Regular expressions and the regex tester",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_regex_tester_ex",
+      "CsName": "RegexTester",
+      "CsReturn": "NativeRegexTesterResult",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "pattern",
+          "CsName": "pattern",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "char",
+              "Kind": "Char_S"
+            }
+          }
+        },
+        {
+          "CName": "pattern_cap",
+          "CsName": "patternCap",
+          "CsType": "ulong",
+          "Type": {
+            "Spelling": "size_t",
+            "Kind": "ULongLong"
+          }
+        },
+        {
+          "CName": "text",
+          "CsName": "text",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "char",
+              "Kind": "Char_S"
+            }
+          }
+        },
+        {
+          "CName": "text_cap",
+          "CsName": "textCap",
+          "CsType": "ulong",
+          "Type": {
+            "Spelling": "size_t",
+            "Kind": "ULongLong"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeRegexTesterOpts",
+          "Type": {
+            "Spelling": "const cui_regex_tester_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_regex_tester_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "cui_regex_tester_result",
+        "Kind": "Record"
+      },
+      "Module": "Regular expressions and the regex tester",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_test_explorer_ex",
+      "CsName": "TestExplorer",
+      "CsReturn": "NativeTestExplorerResult",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "items",
+          "CsName": "items",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const cui_test_item *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_test_item",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "count",
+          "CsName": "count",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeTestExplorerOpts",
+          "Type": {
+            "Spelling": "const cui_test_explorer_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_test_explorer_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "cui_test_explorer_result",
+        "Kind": "Record"
+      },
+      "Module": "Test explorer",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_stack_trace_ex",
+      "CsName": "StackTrace",
+      "CsReturn": "NativeStackTraceResult",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "frames",
+          "CsName": "frames",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const cui_stack_frame *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_stack_frame",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "count",
+          "CsName": "count",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeStackTraceOpts",
+          "Type": {
+            "Spelling": "const cui_stack_trace_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_stack_trace_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "cui_stack_trace_result",
+        "Kind": "Record"
+      },
+      "Module": "Stack trace",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_request_bar_ex",
+      "CsName": "RequestBar",
+      "CsReturn": "NativeRequestBarResult",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "method",
+          "CsName": "method",
+          "CsType": "ref int",
+          "Type": {
+            "Spelling": "int *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "int",
+              "Kind": "Int"
+            }
+          }
+        },
+        {
+          "CName": "url",
+          "CsName": "url",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "char",
+              "Kind": "Char_S"
+            }
+          }
+        },
+        {
+          "CName": "cap",
+          "CsName": "cap",
+          "CsType": "ulong",
+          "Type": {
+            "Spelling": "size_t",
+            "Kind": "ULongLong"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeRequestBarOpts",
+          "Type": {
+            "Spelling": "const cui_request_bar_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_request_bar_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "cui_request_bar_result",
+        "Kind": "Record"
+      },
+      "Module": "HTTP request bar",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_response_status",
+      "CsName": "ResponseStatus",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "status",
+          "CsName": "status",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "seconds",
+          "CsName": "seconds",
+          "CsType": "double",
+          "Type": {
+            "Spelling": "double",
+            "Kind": "Double"
+          }
+        },
+        {
+          "CName": "bytes",
+          "CsName": "bytes",
+          "CsType": "double",
+          "Type": {
+            "Spelling": "double",
+            "Kind": "Double"
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "HTTP request bar",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_http_reason",
+      "CsName": "HttpReason",
+      "CsReturn": "nint",
+      "Params": [
+        {
+          "CName": "status",
+          "CsName": "status",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "const char *",
+        "Kind": "Pointer",
+        "Element": {
+          "Spelling": "const char",
+          "Kind": "Char_S",
+          "IsConst": true
+        }
+      },
+      "Module": "HTTP request bar",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_http_method_name",
+      "CsName": "HttpMethodName",
+      "CsReturn": "nint",
+      "Params": [
+        {
+          "CName": "method",
+          "CsName": "method",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "const char *",
+        "Kind": "Pointer",
+        "Element": {
+          "Spelling": "const char",
+          "Kind": "Char_S",
+          "IsConst": true
+        }
+      },
+      "Module": "HTTP request bar",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_url_params",
+      "CsName": "UrlParams",
+      "CsReturn": "int",
+      "Params": [
+        {
+          "CName": "url",
+          "CsName": "url",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "pairs",
+          "CsName": "pairs",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_kv_pair *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_kv_pair",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "cap",
+          "CsName": "cap",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "int",
+        "Kind": "Int"
+      },
+      "Module": "HTTP request bar",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_url_set_params",
+      "CsName": "UrlSetParams",
+      "CsReturn": "byte",
+      "Params": [
+        {
+          "CName": "url",
+          "CsName": "url",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "char",
+              "Kind": "Char_S"
+            }
+          }
+        },
+        {
+          "CName": "cap",
+          "CsName": "cap",
+          "CsType": "ulong",
+          "Type": {
+            "Spelling": "size_t",
+            "Kind": "ULongLong"
+          }
+        },
+        {
+          "CName": "pairs",
+          "CsName": "pairs",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const cui_kv_pair *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_kv_pair",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "count",
+          "CsName": "count",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "_Bool",
+        "Kind": "Bool"
+      },
+      "Module": "HTTP request bar",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_uptime_ex",
+      "CsName": "Uptime",
+      "CsReturn": "NativeUptimeResult",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "services",
+          "CsName": "services",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const cui_uptime_service *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_uptime_service",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "count",
+          "CsName": "count",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeUptimeOpts",
+          "Type": {
+            "Spelling": "const cui_uptime_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_uptime_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "cui_uptime_result",
+        "Kind": "Record"
+      },
+      "Module": "Uptime bars",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_time_histogram_ex",
+      "CsName": "TimeHistogram",
+      "CsReturn": "NativeTimeHistogramResult",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "start",
+          "CsName": "start",
+          "CsType": "double",
+          "Type": {
+            "Spelling": "double",
+            "Kind": "Double"
+          }
+        },
+        {
+          "CName": "bucket_seconds",
+          "CsName": "bucketSeconds",
+          "CsType": "double",
+          "Type": {
+            "Spelling": "double",
+            "Kind": "Double"
+          }
+        },
+        {
+          "CName": "buckets",
+          "CsName": "buckets",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "series",
+          "CsName": "series",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const cui_histogram_series *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_histogram_series",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "series_count",
+          "CsName": "seriesCount",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "sel_start",
+          "CsName": "selStart",
+          "CsType": "ref double",
+          "Type": {
+            "Spelling": "double *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "double",
+              "Kind": "Double"
+            }
+          }
+        },
+        {
+          "CName": "sel_end",
+          "CsName": "selEnd",
+          "CsType": "ref double",
+          "Type": {
+            "Spelling": "double *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "double",
+              "Kind": "Double"
+            }
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeTimeHistogramOpts",
+          "Type": {
+            "Spelling": "const cui_time_histogram_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_time_histogram_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "cui_time_histogram_result",
+        "Kind": "Record"
+      },
+      "Module": "Time histogram",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_coverage_ex",
+      "CsName": "Coverage",
+      "CsReturn": "NativeCoverageResult",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "files",
+          "CsName": "files",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const cui_coverage_file *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_coverage_file",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "count",
+          "CsName": "count",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeCoverageOpts",
+          "Type": {
+            "Spelling": "const cui_coverage_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_coverage_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "cui_coverage_result",
+        "Kind": "Record"
+      },
+      "Module": "Coverage",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_blame_ex",
+      "CsName": "Blame",
+      "CsReturn": "NativeBlameResult",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "lines",
+          "CsName": "lines",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *const *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char *const",
+              "Kind": "Pointer",
+              "IsConst": true,
+              "Element": {
+                "Spelling": "const char",
+                "Kind": "Char_S",
+                "IsConst": true
+              }
+            }
+          }
+        },
+        {
+          "CName": "line_commit",
+          "CsName": "lineCommit",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const int *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const int",
+              "Kind": "Int",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "line_count",
+          "CsName": "lineCount",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "commits",
+          "CsName": "commits",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const cui_blame_commit *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_blame_commit",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "commit_count",
+          "CsName": "commitCount",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeBlameOpts",
+          "Type": {
+            "Spelling": "const cui_blame_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_blame_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "cui_blame_result",
+        "Kind": "Record"
+      },
+      "Module": "Blame",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_feature_flags_ex",
+      "CsName": "FeatureFlags",
+      "CsReturn": "NativeFeatureFlagsResult",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "flags",
+          "CsName": "flags",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_feature_flag *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_feature_flag",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "count",
+          "CsName": "count",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "envs",
+          "CsName": "envs",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *const *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char *const",
+              "Kind": "Pointer",
+              "IsConst": true,
+              "Element": {
+                "Spelling": "const char",
+                "Kind": "Char_S",
+                "IsConst": true
+              }
+            }
+          }
+        },
+        {
+          "CName": "env_count",
+          "CsName": "envCount",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeFeatureFlagsOpts",
+          "Type": {
+            "Spelling": "const cui_feature_flags_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_feature_flags_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "cui_feature_flags_result",
+        "Kind": "Record"
+      },
+      "Module": "Feature flags",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_api_explorer_ex",
+      "CsName": "ApiExplorer",
+      "CsReturn": "NativeApiExplorerResult",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "endpoints",
+          "CsName": "endpoints",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const cui_api_endpoint *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_api_endpoint",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "count",
+          "CsName": "count",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeApiExplorerOpts",
+          "Type": {
+            "Spelling": "const cui_api_explorer_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_api_explorer_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "cui_api_explorer_result",
+        "Kind": "Record"
+      },
+      "Module": "API explorer",
+      "Doc": ""
     },
     {
       "CName": "cui_draw_rect",
@@ -45165,7 +51969,7 @@
           "Kind": "Record"
         }
       },
-      "Module": "cui_render",
+      "Module": "software renderer",
       "Doc": ""
     },
     {
@@ -45191,7 +51995,7 @@
         "Spelling": "void",
         "Kind": "Void"
       },
-      "Module": "cui_render",
+      "Module": "software renderer",
       "Doc": ""
     },
     {
@@ -45217,7 +52021,7 @@
         "Spelling": "cui_renderer_iface",
         "Kind": "Record"
       },
-      "Module": "cui_render",
+      "Module": "software renderer",
       "Doc": "Texture callbacks to pass to cui_create / cui_set_renderer."
     },
     {
@@ -45306,7 +52110,7 @@
         "Spelling": "void",
         "Kind": "Void"
       },
-      "Module": "cui_render",
+      "Module": "software renderer",
       "Doc": "Renders draw data into a pixel buffer of width x height. stride is in bytes."
     },
     {
@@ -45341,7 +52145,7 @@
         "Spelling": "void",
         "Kind": "Void"
       },
-      "Module": "cui_render",
+      "Module": "software renderer",
       "Doc": "Number of worker threads (1 = single threaded, default: number of cores up to 8)."
     },
     {
@@ -45376,7 +52180,7 @@
         "Spelling": "void",
         "Kind": "Void"
       },
-      "Module": "cui_render",
+      "Module": "software renderer",
       "Doc": "Incremental rendering: when the same buffer is passed again, with what the last call drew still in it, only the parts that changed are drawn again. A frame where only a button's hover changed costs that button. Off by default. cui_sw_last_damage gives the rectangle the last call drew (in pixels), so only that part needs copying to the screen; it returns false when nothing changed."
     },
     {
@@ -45455,7 +52259,7 @@
         "Spelling": "_Bool",
         "Kind": "Bool"
       },
-      "Module": "cui_render",
+      "Module": "software renderer",
       "Doc": ""
     },
     {
@@ -45523,7 +52327,7 @@
         "Spelling": "_Bool",
         "Kind": "Bool"
       },
-      "Module": "cui_render",
+      "Module": "software renderer",
       "Doc": "Writes a PNG file (RGBA pixels). Returns false on failure."
     },
     {
@@ -45553,7 +52357,7 @@
           "Kind": "Record"
         }
       },
-      "Module": "cui_render",
+      "Module": "OpenGL renderer",
       "Doc": "Create after the GL context is current. `loader` resolves GL functions (wglGetProcAddress, glXGetProcAddress, SDL_GL_GetProcAddress, glfwGetProcAddress, ...). Returns NULL if the context lacks GL 3.3 / ES 3."
     },
     {
@@ -45579,7 +52383,7 @@
         "Spelling": "void",
         "Kind": "Void"
       },
-      "Module": "cui_render",
+      "Module": "OpenGL renderer",
       "Doc": ""
     },
     {
@@ -45605,7 +52409,7 @@
         "Spelling": "cui_renderer_iface",
         "Kind": "Record"
       },
-      "Module": "cui_render",
+      "Module": "OpenGL renderer",
       "Doc": ""
     },
     {
@@ -45654,7 +52458,7 @@
         "Spelling": "void",
         "Kind": "Void"
       },
-      "Module": "cui_render",
+      "Module": "OpenGL renderer",
       "Doc": "Renders into the currently bound framebuffer. Set clear to false when drawing the UI on top of your own scene."
     },
     {
@@ -45711,7 +52515,7 @@
         "Spelling": "void",
         "Kind": "Void"
       },
-      "Module": "cui_render",
+      "Module": "OpenGL renderer",
       "Doc": "Reads the bound framebuffer into a top-down RGBA buffer."
     },
     {
@@ -45738,7 +52542,7 @@
         "Spelling": "_Bool",
         "Kind": "Bool"
       },
-      "Module": "cui_render",
+      "Module": "OpenGL renderer",
       "Doc": "True when the OpenGL driver draws on the CPU (Mesa llvmpipe, SwiftShader and the like, as in virtual machines and remote sessions). CUI's own software renderer, which redraws only what changed, is then much cheaper."
     }
   ],
@@ -45861,6 +52665,18 @@
     {
       "CName": "CUI_COMPOSER_MODEL",
       "Value": 16
+    },
+    {
+      "CName": "CUI_REGEX_ICASE",
+      "Value": 1
+    },
+    {
+      "CName": "CUI_REGEX_MULTILINE",
+      "Value": 2
+    },
+    {
+      "CName": "CUI_REGEX_DOTALL",
+      "Value": 4
     },
     {
       "CName": "CUI_SHADE_TEXT"

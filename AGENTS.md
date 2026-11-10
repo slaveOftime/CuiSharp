@@ -11,6 +11,11 @@ CuiSharp binds CUI (C99) to C#. Read these three before changing code, in this o
 `docs/ARCHITECTURE.md` is why things are the way they are; read an entry when you are about to change
 something that looks odd.
 
+Bumping the CUI submodule has its own runbook: [skills/sync-cui/SKILL.md](skills/sync-cui/SKILL.md)
+is the procedure and the error→override table, and `skills/sync-cui/scripts/cui-api-diff.ps1` prints
+what upstream added before you read any C. The `sync-cui` agent skill is registered in
+`.pi/settings.json`, so `pi` offers it as `/skill:sync-cui`.
+
 ## Hard rules
 
 - **Never hand-edit generated files**: `src/CuiSharp/Interop/*.g.cs`, `src/CuiSharp/Ui/*.g.cs`,

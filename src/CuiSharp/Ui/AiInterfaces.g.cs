@@ -118,7 +118,7 @@ public static unsafe class AiInterfacesUiExtensions
         /// <summary>cui_chat_composer_ex</summary>
         public int ChatComposer(UiText id, ref string buf, int cap, ref int removed, ref int model, ComposerOpts o = default)
         {
-            var __bufSlot = ui.RentText(Native.MakeId(ui.Handle, Utf8.Get(id)), ref buf, (int)cap);
+            var __bufSlot = ui.RentText(Native.MakeId(ui.Handle, Utf8.Get(id)) ^ 0xcd43af79u, ref buf, (int)cap);
             int __removed = (int)(removed);
             int __model = (int)(model);
             var __opts = o.ToNative((nint)(&__removed), (nint)(&__model));

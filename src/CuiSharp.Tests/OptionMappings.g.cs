@@ -1412,6 +1412,8 @@ public unsafe class GeneratedOptionMappingTests
             NoLineNumbers = true,
             Autofocus = true,
             Placeholder = "é",
+            Marks = [new TextMark()],
+            MarkCount = (int)1,
         };
         var native = value.ToNative();
         Assert.Equal("é", Marshal.PtrToStringUTF8(native.Lang));
@@ -1425,6 +1427,8 @@ public unsafe class GeneratedOptionMappingTests
         Assert.Equal((byte)1, native.NoLineNumbers);
         Assert.Equal((byte)1, native.Autofocus);
         Assert.Equal("é", Marshal.PtrToStringUTF8(native.Placeholder));
+        Assert.NotEqual((nint)0, native.Marks);
+        Assert.Equal(value.MarkCount, native.MarkCount);
         var zero = default(CodeEditorOpts).ToNative();
         Assert.Equal((nint)0, zero.Lang);
         Assert.Equal((byte)0, zero.UseTabs);
@@ -1432,6 +1436,7 @@ public unsafe class GeneratedOptionMappingTests
         Assert.Equal((byte)0, zero.NoLineNumbers);
         Assert.Equal((byte)0, zero.Autofocus);
         Assert.Equal((nint)0, zero.Placeholder);
+        Assert.Equal((nint)0, zero.Marks);
         }
 
         // cui_diff_opts
@@ -3436,6 +3441,359 @@ public unsafe class GeneratedOptionMappingTests
         var zero = default(TimelineEditorOpts).ToNative((nint)123, (nint)123, (nint)123, (nint)123, (nint)123);
         Assert.Equal((byte)0, zero.Toggles);
         Assert.Equal((byte)0, zero.FreeDrag);
+        }
+
+        // cui_kv_editor_opts
+        {
+        var value = new KvEditorOpts
+        {
+            KeyPlaceholder = "é",
+            ValuePlaceholder = "é",
+            NoToggles = true,
+            NoSecrets = true,
+            ReadOnly = true,
+            Width = Size.Px(24),
+        };
+        var native = value.ToNative();
+        Assert.Equal("é", Marshal.PtrToStringUTF8(native.KeyPlaceholder));
+        Assert.Equal("é", Marshal.PtrToStringUTF8(native.ValuePlaceholder));
+        Assert.Equal((byte)1, native.NoToggles);
+        Assert.Equal((byte)1, native.NoSecrets);
+        Assert.Equal((byte)1, native.ReadOnly);
+        Assert.Equal(SizeKind.Fixed, native.Width.Kind);
+        Assert.Equal(24f, native.Width.Value);
+        var zero = default(KvEditorOpts).ToNative();
+        Assert.Equal((nint)0, zero.KeyPlaceholder);
+        Assert.Equal((nint)0, zero.ValuePlaceholder);
+        Assert.Equal((byte)0, zero.NoToggles);
+        Assert.Equal((byte)0, zero.NoSecrets);
+        Assert.Equal((byte)0, zero.ReadOnly);
+        }
+
+        // cui_problems_opts
+        {
+        var value = new ProblemsOpts
+        {
+            Width = Size.Px(24),
+            Height = 2.5f,
+            NoToolbar = true,
+        };
+        var native = value.ToNative();
+        Assert.Equal(SizeKind.Fixed, native.Width.Kind);
+        Assert.Equal(24f, native.Width.Value);
+        Assert.Equal(value.Height, native.Height);
+        Assert.Equal((byte)1, native.NoToolbar);
+        var zero = default(ProblemsOpts).ToNative();
+        Assert.Equal((byte)0, zero.NoToolbar);
+        }
+
+        // cui_pipeline_opts
+        {
+        var value = new PipelineOpts
+        {
+            Width = Size.Px(24),
+        };
+        var native = value.ToNative((nint)123);
+        Assert.Equal(SizeKind.Fixed, native.Width.Kind);
+        Assert.Equal(24f, native.Width.Value);
+        Assert.Equal((nint)123, native.Selected);
+        var zero = default(PipelineOpts).ToNative((nint)123);
+        }
+
+        // cui_query_opts
+        {
+        var value = new QueryOpts
+        {
+            Width = Size.Px(24),
+            MaxDepth = (int)1,
+            ReadOnly = true,
+        };
+        var native = value.ToNative();
+        Assert.Equal(SizeKind.Fixed, native.Width.Kind);
+        Assert.Equal(24f, native.Width.Value);
+        Assert.Equal(value.MaxDepth, native.MaxDepth);
+        Assert.Equal((byte)1, native.ReadOnly);
+        var zero = default(QueryOpts).ToNative();
+        Assert.Equal((byte)0, zero.ReadOnly);
+        }
+
+        // cui_schedule_opts
+        {
+        var value = new ScheduleOpts
+        {
+            Width = Size.Px(24),
+            Now = (long)1,
+            Utc = true,
+            NextCount = (int)1,
+        };
+        var native = value.ToNative();
+        Assert.Equal(SizeKind.Fixed, native.Width.Kind);
+        Assert.Equal(24f, native.Width.Value);
+        Assert.Equal(value.Now, native.Now);
+        Assert.Equal((byte)1, native.Utc);
+        Assert.Equal(value.NextCount, native.NextCount);
+        var zero = default(ScheduleOpts).ToNative();
+        Assert.Equal((byte)0, zero.Utc);
+        }
+
+        // cui_keymap_opts
+        {
+        var value = new KeymapOpts
+        {
+            Width = Size.Px(24),
+            Categories = ["one", "two"],
+            NoFunctionRow = true,
+        };
+        var native = value.ToNative((nint)123);
+        Assert.Equal(SizeKind.Fixed, native.Width.Kind);
+        Assert.Equal(24f, native.Width.Value);
+        Assert.Equal("one", Marshal.PtrToStringUTF8(((nint*)native.Categories)[0]));
+        Assert.Equal("two", Marshal.PtrToStringUTF8(((nint*)native.Categories)[1]));
+        Assert.Equal((nint)123, native.Mods);
+        Assert.Equal((byte)1, native.NoFunctionRow);
+        var zero = default(KeymapOpts).ToNative((nint)123);
+        Assert.Equal((nint)0, zero.Categories);
+        Assert.Equal((byte)0, zero.NoFunctionRow);
+        }
+
+        // cui_commit_graph_opts
+        {
+        var value = new CommitGraphOpts
+        {
+            Width = Size.Px(24),
+            Height = 2.5f,
+        };
+        var native = value.ToNative((nint)123);
+        Assert.Equal(SizeKind.Fixed, native.Width.Kind);
+        Assert.Equal(24f, native.Width.Value);
+        Assert.Equal(value.Height, native.Height);
+        Assert.Equal((nint)123, native.Selected);
+        var zero = default(CommitGraphOpts).ToNative((nint)123);
+        }
+
+        // cui_graph_opts
+        {
+        var value = new GraphOpts
+        {
+            Width = Size.Px(24),
+            Height = 2.5f,
+            TopDown = true,
+        };
+        var native = value.ToNative((nint)123);
+        Assert.Equal(SizeKind.Fixed, native.Width.Kind);
+        Assert.Equal(24f, native.Width.Value);
+        Assert.Equal(value.Height, native.Height);
+        Assert.Equal((byte)1, native.TopDown);
+        Assert.Equal((nint)123, native.Selected);
+        var zero = default(GraphOpts).ToNative((nint)123);
+        Assert.Equal((byte)0, zero.TopDown);
+        }
+
+        // cui_waterfall_opts
+        {
+        var value = new WaterfallOpts
+        {
+            Width = Size.Px(24),
+            Height = 2.5f,
+            DomLoaded = 2.5,
+            Loaded = 2.5,
+        };
+        var native = value.ToNative((nint)123);
+        Assert.Equal(SizeKind.Fixed, native.Width.Kind);
+        Assert.Equal(24f, native.Width.Value);
+        Assert.Equal(value.Height, native.Height);
+        Assert.Equal((nint)123, native.Selected);
+        Assert.Equal(value.DomLoaded, native.DomLoaded);
+        Assert.Equal(value.Loaded, native.Loaded);
+        var zero = default(WaterfallOpts).ToNative((nint)123);
+        }
+
+        // cui_trace_opts
+        {
+        var value = new TraceOpts
+        {
+            Width = Size.Px(24),
+            Height = 2.5f,
+            RowHeight = 2.5f,
+            Markers = [new TraceMarker()],
+            MarkerCount = (int)1,
+        };
+        var native = value.ToNative();
+        Assert.Equal(SizeKind.Fixed, native.Width.Kind);
+        Assert.Equal(24f, native.Width.Value);
+        Assert.Equal(value.Height, native.Height);
+        Assert.Equal(value.RowHeight, native.RowHeight);
+        Assert.NotEqual((nint)0, native.Markers);
+        Assert.Equal(value.MarkerCount, native.MarkerCount);
+        var zero = default(TraceOpts).ToNative();
+        Assert.Equal((nint)0, zero.Markers);
+        }
+
+        // cui_regex_tester_opts
+        {
+        var value = new RegexTesterOpts
+        {
+            Width = Size.Px(24),
+            Height = 2.5f,
+        };
+        var native = value.ToNative((nint)123);
+        Assert.Equal(SizeKind.Fixed, native.Width.Kind);
+        Assert.Equal(24f, native.Width.Value);
+        Assert.Equal(value.Height, native.Height);
+        Assert.Equal((nint)123, native.Flags);
+        var zero = default(RegexTesterOpts).ToNative((nint)123);
+        }
+
+        // cui_test_explorer_opts
+        {
+        var value = new TestExplorerOpts
+        {
+            Width = Size.Px(24),
+            Height = 2.5f,
+        };
+        var native = value.ToNative();
+        Assert.Equal(SizeKind.Fixed, native.Width.Kind);
+        Assert.Equal(24f, native.Width.Value);
+        Assert.Equal(value.Height, native.Height);
+        var zero = default(TestExplorerOpts).ToNative();
+        }
+
+        // cui_stack_trace_opts
+        {
+        var value = new StackTraceOpts
+        {
+            Width = Size.Px(24),
+            Title = "é",
+            Message = "é",
+            Lang = "é",
+        };
+        var native = value.ToNative();
+        Assert.Equal(SizeKind.Fixed, native.Width.Kind);
+        Assert.Equal(24f, native.Width.Value);
+        Assert.Equal("é", Marshal.PtrToStringUTF8(native.Title));
+        Assert.Equal("é", Marshal.PtrToStringUTF8(native.Message));
+        Assert.Equal("é", Marshal.PtrToStringUTF8(native.Lang));
+        var zero = default(StackTraceOpts).ToNative();
+        Assert.Equal((nint)0, zero.Title);
+        Assert.Equal((nint)0, zero.Message);
+        Assert.Equal((nint)0, zero.Lang);
+        }
+
+        // cui_request_bar_opts
+        {
+        var value = new RequestBarOpts
+        {
+            Width = Size.Px(24),
+            Loading = true,
+            Placeholder = "é",
+        };
+        var native = value.ToNative();
+        Assert.Equal(SizeKind.Fixed, native.Width.Kind);
+        Assert.Equal(24f, native.Width.Value);
+        Assert.Equal((byte)1, native.Loading);
+        Assert.Equal("é", Marshal.PtrToStringUTF8(native.Placeholder));
+        var zero = default(RequestBarOpts).ToNative();
+        Assert.Equal((byte)0, zero.Loading);
+        Assert.Equal((nint)0, zero.Placeholder);
+        }
+
+        // cui_uptime_opts
+        {
+        var value = new UptimeOpts
+        {
+            Width = Size.Px(24),
+            LastDay = new Date(2026, 11, 14),
+        };
+        var native = value.ToNative();
+        Assert.Equal(SizeKind.Fixed, native.Width.Kind);
+        Assert.Equal(24f, native.Width.Value);
+        Assert.Equal(UiMarshal.ToNative(value.LastDay), native.LastDay);
+        var zero = default(UptimeOpts).ToNative();
+        }
+
+        // cui_time_histogram_opts
+        {
+        var value = new TimeHistogramOpts
+        {
+            Width = Size.Px(24),
+            Height = 2.5f,
+            Utc = true,
+        };
+        var native = value.ToNative();
+        Assert.Equal(SizeKind.Fixed, native.Width.Kind);
+        Assert.Equal(24f, native.Width.Value);
+        Assert.Equal(value.Height, native.Height);
+        Assert.Equal((byte)1, native.Utc);
+        var zero = default(TimeHistogramOpts).ToNative();
+        Assert.Equal((byte)0, zero.Utc);
+        }
+
+        // cui_coverage_opts
+        {
+        var value = new CoverageOpts
+        {
+            Width = Size.Px(24),
+            Height = 2.5f,
+            Low = 2.5f,
+            High = 2.5f,
+        };
+        var native = value.ToNative();
+        Assert.Equal(SizeKind.Fixed, native.Width.Kind);
+        Assert.Equal(24f, native.Width.Value);
+        Assert.Equal(value.Height, native.Height);
+        Assert.Equal(value.Low, native.Low);
+        Assert.Equal(value.High, native.High);
+        var zero = default(CoverageOpts).ToNative();
+        }
+
+        // cui_blame_opts
+        {
+        var value = new BlameOpts
+        {
+            Width = Size.Px(24),
+            Height = 2.5f,
+            Lang = "é",
+            Now = (long)1,
+            FirstLine = (int)1,
+        };
+        var native = value.ToNative();
+        Assert.Equal(SizeKind.Fixed, native.Width.Kind);
+        Assert.Equal(24f, native.Width.Value);
+        Assert.Equal(value.Height, native.Height);
+        Assert.Equal("é", Marshal.PtrToStringUTF8(native.Lang));
+        Assert.Equal(value.Now, native.Now);
+        Assert.Equal(value.FirstLine, native.FirstLine);
+        var zero = default(BlameOpts).ToNative();
+        Assert.Equal((nint)0, zero.Lang);
+        }
+
+        // cui_feature_flags_opts
+        {
+        var value = new FeatureFlagsOpts
+        {
+            Width = Size.Px(24),
+            Height = 2.5f,
+        };
+        var native = value.ToNative();
+        Assert.Equal(SizeKind.Fixed, native.Width.Kind);
+        Assert.Equal(24f, native.Width.Value);
+        Assert.Equal(value.Height, native.Height);
+        var zero = default(FeatureFlagsOpts).ToNative();
+        }
+
+        // cui_api_explorer_opts
+        {
+        var value = new ApiExplorerOpts
+        {
+            Width = Size.Px(24),
+            Height = 2.5f,
+        };
+        var native = value.ToNative((nint)123);
+        Assert.Equal(SizeKind.Fixed, native.Width.Kind);
+        Assert.Equal(24f, native.Width.Value);
+        Assert.Equal(value.Height, native.Height);
+        Assert.Equal((nint)123, native.Selected);
+        var zero = default(ApiExplorerOpts).ToNative((nint)123);
         }
 
         // cui_file_dialog_opts

@@ -312,7 +312,11 @@ sealed record InjectedField(string Type, string Why)
     /// <summary>The public record the wrapper exchanges, when the C type is not itself a record.</summary>
     public string? Record { get; init; }
 }
-sealed record StorageOverride(string Storage, string Why);
+/// <summary>
+/// How a parameter crosses the boundary. <c>Enum</c> converts an <c>int</c> the caller holds as a
+/// typed enum, so a wrapper reads <c>ref Mods</c> rather than <c>ref int</c>.
+/// </summary>
+sealed record StorageOverride(string Storage, string Why, string? Type = null);
 
 /// <summary>
 /// An option field that is a pointer to a primitive the widget reads and writes. The
@@ -334,10 +338,11 @@ sealed record ArrayParamOverride(string Why);
 sealed record OptionArrayCheck(string AtLeast, string Why);
 
 /// <summary>
-/// A record array the widget edits in place, with a count it may also change. The
-/// wrapper owns the storage for the call and copies both back.
+/// A record array the widget edits in place. <c>ChangedWhen</c> is the condition the widget reports
+/// an edit by (<c>__result.Changed</c>, <c>__result != 0</c>): the copy back only runs then, because
+/// converting every record every frame allocates the strings and arrays it holds.
 /// </summary>
-sealed record InOutArrayOverride(string Count, string Why);
+sealed record InOutArrayOverride(string Count, string Why, string? ChangedWhen = null);
 
 
 /// <summary>Where an array parameter's length comes from, and what to cast it to.</summary>
@@ -731,7 +736,35 @@ sealed class HeaderReader(string includeDir, string clangInclude, Overrides over
             if (type.kind == CXTypeKind.CXType_ConstantArray)
             {
                 int length = (int)clang.getArraySize(type);
-                string mapped = mapper.Value(clang.getArrayElementType(type));
+                CXType element = clang.getArrayElementType(type);
+
+                // A nested array (char name[CUI_REGEX_GROUPS][24]) has no `fixed` spelling: one
+                // [InlineArray] per dimension, innermost first, so the C run of bytes and the
+                // managed one are the same and the size/offset assertions can prove it.
+                if (Mapper.Strip(element).kind == CXTypeKind.CXType_ConstantArray)
+                {
+                    var dimensions = new List<int>();
+                    CXType leaf = type;
+                    while (Mapper.Strip(leaf).kind == CXTypeKind.CXType_ConstantArray)
+                    {
+                        leaf = Mapper.Strip(leaf);
+                        dimensions.Add((int)clang.getArraySize(leaf));
+                        leaf = clang.getArrayElementType(leaf);
+                    }
+
+                    string nested = mapper.Value(leaf);
+                    for (int i = dimensions.Count - 1; i >= 0; i--)
+                    {
+                        string helperName = $"{csName}{csField}Array{i + 1}";
+                        helpers.Add(new HelperType(helperName, nested, dimensions[i]));
+                        nested = helperName;
+                    }
+
+                    models.Add(new FieldModel(field.Name, csField, nested, ctype, offset, false, length, Describe(type), Doc(field.Handle)));
+                    continue;
+                }
+
+                string mapped = mapper.Value(element);
                 if (IsPrimitive(mapped))
                 {
                     models.Add(new FieldModel(field.Name, csField, mapped, ctype, offset, true, length, Describe(type), Doc(field.Handle)));
@@ -872,13 +905,52 @@ sealed class HeaderReader(string includeDir, string clangInclude, Overrides over
         string path = clang.getFileName(file).ToString();
         string[] lines = File.ReadAllLines(path);
         string module = Path.GetFileNameWithoutExtension(path);
-        for (int i = 1; i < Math.Min((int)line, lines.Length - 1); i++)
+        int limit = Math.Max(0, Math.Min((int)line - 1, lines.Length));
+
+        // CUI titles a section two ways: on its own line between two rules, and inside a single
+        // rule (`/* ---- Keymap ---- */`). Both name the module. Reading a rule as a title is what
+        // put every section after `Developer tools` in "", so a rule is never taken as one.
+        for (int i = 0; i < limit; i++)
         {
-            if (lines[i - 1].StartsWith("/* ---", StringComparison.Ordinal)
-                && lines[i + 1].StartsWith("/* ---", StringComparison.Ordinal))
-                module = lines[i].Replace("/*", "").Replace("*/", "").Trim();
+            if (Titled(lines[i]) is { Length: > 0 } titled)
+            {
+                module = titled;
+                continue;
+            }
+
+            if (i > 0 && i + 1 < lines.Length && IsRule(lines[i - 1]) && IsRule(lines[i + 1])
+                && !IsRule(lines[i]) && Comment(lines[i]) is { Length: > 0 } fenced)
+            {
+                module = fenced;
+            }
         }
+
         return module;
+    }
+
+    /// <summary>The text inside one-line <c>/* ... */</c>, or null when the line is not just that.</summary>
+    private static string? Comment(string line)
+    {
+        string text = line.Trim();
+        if (text.Length < 4 || !text.StartsWith("/*", StringComparison.Ordinal)
+            || !text.EndsWith("*/", StringComparison.Ordinal)) return null;
+        return text[2..^2].Trim();
+    }
+
+    /// <summary>A section rule: a one-line comment whose only content is dashes.</summary>
+    private static bool IsRule(string line) =>
+        Comment(line) is { Length: > 0 } text && text.Trim('-', ' ').Length == 0;
+
+    /// <summary>A section title written on one line: <c>/* ---- Keymap ---- */</c>.</summary>
+    private static string? Titled(string line)
+    {
+        string text = line.Trim();
+        if (!text.StartsWith("/*", StringComparison.Ordinal)) return null;
+        text = text[2..].Trim();
+        if (!text.StartsWith("----", StringComparison.Ordinal)) return null;
+        // The Emoji section opens a block comment on the title line, so it may not close here.
+        if (text.EndsWith("*/", StringComparison.Ordinal)) text = text[..^2];
+        return text.Trim('-', ' ').Trim();
     }
 
     private static bool IsPrimitive(string csType) =>
@@ -1246,7 +1318,7 @@ static class Emit
 // ---------------------------------------------------------------------------
 
 sealed record OptionField(FieldModel Native, string Name, string Type, string Expression,
-    bool Hidden = false, string? InjectedType = null);
+    bool Hidden = false, string? InjectedType = null, string[]? Prepare = null);
 sealed record OptionPlan(StructModel Native, string Name, OptionField[] Fields, ExtraField[] Extra);
 sealed record WidgetParam(string Name, string Type, string Mode, string? Default);
 sealed record WidgetPlan(FunctionModel Native, string Name, string Return, WidgetParam[] Params,
@@ -1289,12 +1361,19 @@ sealed class Idiomatic
     // lifetime tests before another section's manual wrappers are removed.
     private static readonly string[] WidgetModules =
     [
-        "Layout", "Text", "Buttons", "Selection controls", "Navigation",
+        "Layout", "Text", "Buttons", "Selection controls", "Text input", "Navigation",
         "Menus and popovers", "Dialogs, sheets, toasts, alerts", "Feedback and display",
         "Data display", "Select, combobox, date picker", "More components", "Command palette (block)",
         "More actions", "More feedback", "Disclosure", "More inputs", "Pickers", "More charts",
         "Planning", "Code", "Media", "Motion and text effects", "Data grid", "AI interfaces",
         "Conversation", "Capture", "App chrome: menu bar, toolbar, status bar, document tabs",
+        "Docking", "Terminal", "Emoji", "Hex viewer", "Flame graph", "Curve and gradient editors",
+        "Tree table and path bar", "Markdown view", "Code editor", "Diff viewer", "Node editor",
+        "Timeline", "Developer tools", "Key-value editor", "Problems panel", "Pipeline",
+        "Query builder", "Schedule picker", "Keymap", "Commit graph", "Dependency graph",
+        "Network waterfall", "Trace viewer", "Regular expressions and the regex tester",
+        "Test explorer", "Stack trace", "HTTP request bar", "Uptime bars", "Time histogram",
+        "Coverage", "Blame", "Feature flags", "API explorer",
     ];
 
     public Idiomatic(Api api, Overrides overrides)
@@ -1422,7 +1501,11 @@ sealed class Idiomatic
             bool nativeValue = value.Storage == "value" && param is not null
                 && (param.CsType.StartsWith("ref Native", StringComparison.Ordinal)
                     || param.CsType.StartsWith("in Native", StringComparison.Ordinal));
-            if (!primitive && !nativeValue)
+            // An enum the caller holds over a C int*: the parameter must be an int and the
+            // override must name the type, or the wrapper would pass `ref int` to a typed call.
+            bool enumValue = value.Storage == "enum" && value.Type is { Length: > 0 }
+                && param?.CsType.StartsWith("ref int", StringComparison.Ordinal) == true;
+            if (!primitive && !nativeValue && !enumValue)
                 throw new InvalidOperationException($"Unsupported parameter storage override: {key}");
         }
         foreach (var (key, value) in _overrides.RecordNames)
@@ -1674,11 +1757,47 @@ sealed class Idiomatic
             if (f.CName == "_") continue;
             string fieldName = _overrides.OptionFieldNames.TryGetValue(str.CName + "." + f.CName, out var rename)
                 ? rename.Name : f.CsName;
+            if (f.IsFixedBuffer)
+            {
+                fields.Add(FixedArrayField(f, fieldName));
+                continue;
+            }
+
             var (type, expression) = MapValue(f, fieldName);
             fields.Add(new(f, fieldName, type, expression));
         }
-        bool canReadBack = fields.All(f => f.Type is not ("string?" or "string[]?" or "float[]?"));
+        // Read-back needs the value to survive the call: a field backed by a C pointer is
+        // CUI's memory, while a fixed buffer belongs to the record the caller handed over.
+        bool canReadBack = fields.All(f => f.Type switch
+        {
+            "string[]?" or "float[]?" => false,
+            "string?" => f.Native.IsFixedBuffer,
+            _ => true,
+        });
         return new(str, name, [.. fields], canReadBack);
+    }
+
+    /// <summary>
+    /// A fixed buffer inside a record: <c>char[N]</c> is text and a primitive <c>T[N]</c> an
+    /// array of at most N. The record owns that storage, so it is copied in and out rather
+    /// than pointed at, which is why the wrapper needs a statement to fill it.
+    /// </summary>
+    private static OptionField FixedArrayField(FieldModel f, string name)
+    {
+        int capacity = f.ArrayLength;
+        string target = "n." + f.CsName;
+        return f.Type.Element?.Kind switch
+        {
+            "Char_S" or "Char_U" => new(f, name, "string?", "",
+                Prepare: [$"Utf8.WriteFixed({name}, (byte*){target}, {capacity});"]),
+            "Bool" => new(f, name, "bool[]?", "",
+                Prepare: [$"UiMarshal.WriteBooleans({name}, {target}, {capacity});"]),
+            "Int" => new(f, name, "int[]?", "",
+                Prepare: [$"UiMarshal.WriteValues({name}, {target}, {capacity});"]),
+            "Float" => new(f, name, "float[]?", "",
+                Prepare: [$"UiMarshal.WriteValues({name}, {target}, {capacity});"]),
+            _ => throw new NotSupportedException($"{f.CName}: fixed array of {f.CType} needs a mapping"),
+        };
     }
 
     public string Records()
@@ -1701,9 +1820,29 @@ sealed class Idiomatic
                 string assignments = string.Join(" ", record.Fields.Select(f => $"this.{f.Name} = {f.Name};"));
                 sb.AppendLine($"\n    public {record.Name}({parameters}) {{ {assignments} }}");
             }
-            sb.AppendLine($"\n    internal readonly {record.Native.CsName} ToNative() => new()\n    {{");
-            foreach (var f in record.Fields) sb.AppendLine($"        {f.Native.CsName} = {f.Expression},");
-            sb.AppendLine("    };");
+            // A fixed buffer is filled after construction: a `fixed` field cannot appear in an
+            // object initializer, and the copy needs a pointer to the record's own storage.
+            var prepared = record.Fields.Where(f => f.Prepare is not null).ToArray();
+            if (prepared.Length == 0)
+            {
+                // The shape every record had before fixed buffers existed, kept so a new record
+                // does not restyle the other sixty in the same diff.
+                sb.AppendLine($"\n    internal readonly {record.Native.CsName} ToNative() => new()\n    {{");
+                foreach (var f in record.Fields) sb.AppendLine($"        {f.Native.CsName} = {f.Expression},");
+                sb.AppendLine("    };");
+            }
+            else
+            {
+                sb.AppendLine($"\n    internal readonly {record.Native.CsName} ToNative()");
+                sb.AppendLine("    {");
+                sb.AppendLine("        var n = new " + record.Native.CsName);
+                sb.AppendLine("        {");
+                foreach (var f in record.Fields.Where(f => f.Prepare is null)) sb.AppendLine($"            {f.Native.CsName} = {f.Expression},");
+                sb.AppendLine("        };");
+                foreach (string line in prepared.SelectMany(f => f.Prepare!)) sb.AppendLine("        " + line);
+                sb.AppendLine("        return n;");
+                sb.AppendLine("    }");
+            }
             sb.AppendLine($"\n    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>");
             sb.AppendLine($"    internal static nint ToFrameArray({record.Name}[]? items)");
             sb.AppendLine("    {");
@@ -1719,7 +1858,11 @@ sealed class Idiomatic
                 string value = f.Type switch
                 {
                     "bool" => $"n.{f.Native.CsName} != 0",
+                    "string?" when f.Native.IsFixedBuffer => $"Utf8.ReadFixed((byte*)n.{f.Native.CsName}, {f.Native.ArrayLength})",
                     "string?" => $"Marshal.PtrToStringUTF8(n.{f.Native.CsName})",
+                    "bool[]?" => $"UiMarshal.ReadBooleans(n.{f.Native.CsName}, {f.Native.ArrayLength})",
+                    "int[]?" or "float[]?" when f.Native.IsFixedBuffer =>
+                        $"UiMarshal.ReadValues(n.{f.Native.CsName}, {f.Native.ArrayLength})",
                     "string[]?" or "float[]?" => "null",
                     "Size" or "Color" or "Date" or "RectF" => $"UiMarshal.FromNative(n.{f.Native.CsName})",
                     _ => f.Native.Type.Kind != "Pointer" && _records.TryGetValue(Trim(f.Native.Type.Spelling), out var nestedField)
@@ -1739,9 +1882,11 @@ sealed class Idiomatic
     private static bool IsString(CType t) => t.Kind == "Pointer" && t.Element is { Kind: "Char_S" or "Char_U", IsConst: true };
     private static bool IsStringArray(CType t) => t.Kind == "Pointer" && t.Element is not null && IsString(t.Element);
     private static bool IsFloatArray(CType t) => t.Kind == "Pointer" && t.Element is { Kind: "Float", IsConst: true };
+    private static bool IsIntArray(CType t) => t.Kind == "Pointer" && t.Element is { Kind: "Int", IsConst: true };
 
     private bool IsArrayParam(FunctionModel function, int index, ParamModel param) =>
-        IsStringArray(param.Type) || IsFloatArray(param.Type) || IsByteArray(param.Type) || IsVoidBytes(param.Type) || RecordElement(param.Type) is not null
+        IsStringArray(param.Type) || IsFloatArray(param.Type) || IsIntArray(param.Type) || IsByteArray(param.Type)
+            || IsVoidBytes(param.Type) || RecordElement(param.Type) is not null
             ? IsAdjacentCount(function, index) || _overrides.ArrayLengths.ContainsKey(function.CName + "." + param.CName)
             : false;
 
@@ -1946,6 +2091,9 @@ sealed class Idiomatic
         var stringArrays = new List<string>();
         var injectedParams = new List<InjectedParam>();
         var consumedArgs = new HashSet<string>(StringComparer.Ordinal);
+        // Counts an edited array reports back: the parameter is skipped like other consumed
+        // ones, but it has to stay writable so the new length reaches the caller.
+        var rewrittenCounts = new HashSet<string>(StringComparer.Ordinal);
         for (int i = 1; i < function.Params.Length; i++)
         {
             var p = function.Params[i];
@@ -1963,9 +2111,10 @@ sealed class Idiomatic
             if (consumedArgs.Contains(p.CName))
             {
                 // A buffer size the wrapper already used to rent storage still reads
-                // well with a default, so the common call omits it.
+                // well with a default, so the common call omits it. A count an edited
+                // array reports back is `ref`, or the write-back would go nowhere.
                 string? sizeDefault = _overrides.ParameterDefaults.TryGetValue(function.CName + "." + p.CName, out var sd) ? sd.Value : null;
-                parameters.Add(new(p.CsName, "int", "", sizeDefault));
+                parameters.Add(new(p.CsName, "int", rewrittenCounts.Contains(p.CName) ? "ref " : "", sizeDefault));
                 continue;
             }
 
@@ -2003,7 +2152,7 @@ sealed class Idiomatic
                         string key = function.Params.Any(q => q.CName == "id")
                             ? $"Utf8.Get({function.Params.Single(q => q.CName == "id").CsName})"
                             : $"Utf8.Get(\"{function.CName}\")";
-                        prepare.Add($"var {slot} = ui.RentText(Native.MakeId(ui.Handle, {key}), ref {textParam}, {optionText.Capacity});");
+                        prepare.Add($"var {slot} = ui.RentText(Native.MakeId(ui.Handle, {key}) ^ 0x{TextKeySalt(optionFieldKey):x8}u, ref {textParam}, {optionText.Capacity});");
                         nativeArgs.Add($"(nint){slot}.Buffer");
                         nativeArgs.Add($"(nuint){slot}.Capacity");
                         readBack.Add($"if (Ui.TextChanged({slot})) {textParam} = Ui.DecodeText({slot});");
@@ -2012,13 +2161,18 @@ sealed class Idiomatic
                         continue;
                     }
 
-                    if (IsPrimitiveName(field.InjectedType!) || field.InjectedType == "Date")
+                    if (IsPrimitiveName(field.InjectedType!) || field.InjectedType == "Date" || _overrides.OptionPointers.ContainsKey(option.Native.CName + "." + field.Native.CName))
                     {
                         // Named after the option field it fills, so the call reads like the API.
                         string primitiveParam = Names.Escape(Names.Camel(field.Name));
                         string nativeLocal = $"__{primitiveParam}";
                         bool isDate = field.InjectedType == "Date";
-                        string nativeType = isDate ? "NativeDate" : field.Native.Type.Element!.Kind switch
+                        // A field declared in `optionPointers` with a type that is not a primitive
+                        // is an enum: the caller hands over `ref Mods`, and the storage the widget
+                        // writes through is that enum itself, whose layout is the C int.
+                        bool isEnum = !isDate && !IsPrimitiveName(field.InjectedType!);
+                        string nativeType = isEnum ? field.InjectedType!
+                            : isDate ? "NativeDate" : field.Native.Type.Element!.Kind switch
                         {
                             "Bool" => "byte",
                             "Float" => "float",
@@ -2028,11 +2182,15 @@ sealed class Idiomatic
                         bool isFlag = nativeType == "byte";
                         prepare.Add(isDate
                             ? $"{nativeType} {nativeLocal} = UiMarshal.ToNative({primitiveParam});"
-                            : $"{nativeType} {nativeLocal} = ({nativeType})({primitiveParam}{(isFlag ? " ? 1 : 0" : "")});");
+                            : isEnum
+                                ? $"{nativeType} {nativeLocal} = {primitiveParam};"
+                                : $"{nativeType} {nativeLocal} = ({nativeType})({primitiveParam}{(isFlag ? " ? 1 : 0" : "")});");
                         nativeArgs.Add($"(nint)(&{nativeLocal})");
                         readBack.Add(isDate
                             ? $"{primitiveParam} = UiMarshal.FromNative({nativeLocal});"
-                            : $"{primitiveParam} = {nativeLocal}{(isFlag ? " != 0" : "")};");
+                            : isEnum
+                                ? $"{primitiveParam} = {nativeLocal};"
+                                : $"{primitiveParam} = {nativeLocal}{(isFlag ? " != 0" : "")};");
                         injectedParams.Add(new(primitiveParam, prepare[^1], nativeArgs[^1], readBack[^1]));
                         parameters.Add(new(primitiveParam, field.InjectedType!, "ref ", null));
                         continue;
@@ -2074,7 +2232,10 @@ sealed class Idiomatic
                 arguments.Add("in __opts");
                 writeBack.AddRange(readBack);
             }
-            else if (IsArrayParam(function, i, p))
+            // An array the widget edits in place is not an input: the override wins over the
+            // read-only mapping, or a click that toggles a flag would be dropped on the floor.
+            else if (IsArrayParam(function, i, p)
+                && !_overrides.InOutArrays.ContainsKey(function.CName + "." + p.CName))
             {
                 // The length is derived, never supplied: either the adjacent count
                 // parameter (which disappears from the signature) or the expression an
@@ -2099,10 +2260,13 @@ sealed class Idiomatic
                 else
                 {
                     bool bytes = IsByteArray(p.Type) || IsVoidBytes(p.Type);
-                    type = strings ? "ReadOnlySpan<string>" : bytes ? "ReadOnlySpan<byte>" : "ReadOnlySpan<float>";
+                    bool ints = IsIntArray(p.Type);
+                    type = strings ? "ReadOnlySpan<string>" : bytes ? "ReadOnlySpan<byte>"
+                        : ints ? "ReadOnlySpan<int>" : "ReadOnlySpan<float>";
                     if (strings) stringArrays.Add(name);
                     arguments.Add(strings ? $"UiMarshal.Strings({name})"
                         : bytes ? $"UiMarshal.Values<byte>({name})"
+                        : ints ? $"UiMarshal.Values<int>({name})"
                         : $"UiMarshal.Values<float>({name})");
                 }
                 if (adjacentCount)
@@ -2134,7 +2298,7 @@ sealed class Idiomatic
                     ?? (function.Params.Any(q => q.CName == "id") ? "id" : null);
                 string keyText = key is not null ? $"Utf8.Get({key})" : $"Utf8.Get(\"{function.CName}\")";
                 var capacity = function.Params.Single(q => q.CName == textField.Capacity);
-                prepare.Add($"var {slot} = ui.RentText(Native.MakeId(ui.Handle, {keyText}), ref {name}, (int){capacity.CsName});");
+                prepare.Add($"var {slot} = ui.RentText(Native.MakeId(ui.Handle, {keyText}) ^ 0x{TextKeySalt(function.CName + "." + p.CName):x8}u, ref {name}, (int){capacity.CsName});");
                 arguments.Add($"(nint){slot}.Buffer");
                 arguments.Add($"(nuint){slot}.Capacity");
                 consumedArgs.Add(capacity.CName);
@@ -2145,20 +2309,49 @@ sealed class Idiomatic
             }
             else if (_overrides.InOutArrays.TryGetValue(function.CName + "." + p.CName, out var inOut))
             {
-                // The widget edits the array and may change the count: copy in, call,
-                // then copy the first count records back.
+                // The widget edits the array in place: copy in, call, then copy the first
+                // count records back. A count CUI takes as a pointer comes back too, and the
+                // caller sees the new length; a count it takes by value cannot change.
                 var element = _records[Trim(p.Type.Element!.Spelling)];
                 var countParam = function.Params.Single(q => q.CName == inOut.Count);
+                bool countIsRef = countParam.Type.Kind == "Pointer";
                 string block = "__" + name;
                 type = $"Span<{element.Name}>";
                 prepare.Add($"var {block} = Utf8.AllocFrame<{element.Native.CsName}>({name}.Length);");
                 prepare.Add($"for (int i = 0; i < {name}.Length; i++) {block}[i] = {name}[i].ToNative();");
-                prepare.Add($"int __{name}Count = {countParam.CsName};");
+                if (countIsRef) prepare.Add($"int __{name}Count = {countParam.CsName};");
                 arguments.Add($"(nint){block}");
-                arguments.Add($"ref __{name}Count");
-                consumedArgs.Add(countParam.CName);
-                writeBack.Add($"for (int i = 0; i < Math.Min(__{name}Count, {name}.Length); i++) {name}[i] = {element.Name}.FromNative({block}[i]);");
-                writeBack.Add($"{countParam.CsName} = __{name}Count;");
+                // A pointer count is consumed here (it is the address to write the new length
+                // through). A by-value count cannot change, so the wrapper derives it from the
+                // array it just filled and the caller stops passing it at all.
+                if (countIsRef) arguments.Add($"ref __{name}Count");
+                else
+                {
+                    bool adjacent = i + 1 < function.Params.Length && function.Params[i + 1].CName == countParam.CName;
+                    if (!adjacent) throw new NotSupportedException($"{function.CName}: a by-value {countParam.CName} must follow {p.CName}");
+                    arguments.Add($"({countParam.CsType})({name}.Length)");
+                    i++;
+                }
+                // Copying back is not free: converting a record allocates the strings and arrays
+                // it holds, so it happens on the frame the widget says something changed.
+                bool gated = inOut.ChangedWhen is not null;
+                if (gated)
+                {
+                    writeBack.Add($"if ({inOut.ChangedWhen})");
+                    writeBack.Add("{");
+                }
+                string indent = gated ? "    " : "";
+                writeBack.Add(indent + (countIsRef
+                    ? $"for (int i = 0; i < Math.Min(__{name}Count, {name}.Length); i++) {name}[i] = {element.Name}.FromNative({block}[i]);"
+                    : $"for (int i = 0; i < {name}.Length; i++) {name}[i] = {element.Name}.FromNative({block}[i]);"));
+                if (countIsRef)
+                {
+                    consumedArgs.Add(countParam.CName);
+                    rewrittenCounts.Add(countParam.CName);
+                    writeBack.Add(indent + $"{countParam.CsName} = __{name}Count;");
+                }
+
+                if (gated) writeBack.Add("}");
             }
             else if (_overrides.OutParams.ContainsKey(function.CName + "." + p.CName))
             {
@@ -2194,7 +2387,16 @@ sealed class Idiomatic
                 mode = p.CsType[..(p.CsType.IndexOf(' ') + 1)];
                 if (_overrides.ParameterStorage.TryGetValue(function.CName + "." + p.CName, out var storage))
                 {
-                    if (storage.Storage == "value")
+                    if (storage.Storage == "enum" && storage.Type is { } enumType)
+                    {
+                        // CUI takes an int*: the caller holds the enum, the widget writes the int.
+                        type = enumType;
+                        string local = "__" + name.TrimStart('@');
+                        prepare.Add($"int {local} = (int){name};");
+                        arguments.Add($"ref {local}");
+                        writeBack.Add($"{name} = ({enumType}){local};");
+                    }
+                    else if (storage.Storage == "value")
                     {
                         // The value is converted for the call. An `in` value is input
                         // only, so there is nothing to copy back.
@@ -2245,6 +2447,25 @@ sealed class Idiomatic
     /// Widgets without a <c>UiText</c> argument (row and cell builders, drawing primitives) are
     /// not addressable, so they record nothing.
     /// </summary>
+    /// <summary>
+    /// The pooled-buffer key for one editable string: the widget id mixed with the parameter that
+    /// owns the buffer. A widget may edit two strings at once — the regex tester edits a pattern
+    /// and the text it searches — and a key made of the widget id alone hands both the same buffer,
+    /// so the second one overwrites the first and CUI searches the text in itself. FNV-1a over the
+    /// override key, so the salt is fixed at generation time and costs one xor at run time.
+    /// </summary>
+    private static uint TextKeySalt(string overrideKey)
+    {
+        uint hash = 2166136261;
+        foreach (char ch in overrideKey)
+        {
+            hash ^= ch;
+            hash *= 16777619;
+        }
+
+        return hash;
+    }
+
     private string? NoteLine(WidgetPlan widget)
     {
         // A container records itself through the scope it returns, which knows where it ends.

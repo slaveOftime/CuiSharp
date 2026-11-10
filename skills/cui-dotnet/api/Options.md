@@ -28,6 +28,13 @@ C `cui_alert_opts`.
 - `Icon`: string? (default `Utf8.Get(Icon)`)
 - `Dismissible`: bool (default `(byte)(Dismissible ? 1 : 0)`)
 
+## `ApiExplorerOpts`
+
+C `cui_api_explorer_opts`.
+
+- `Width`: Size (default `UiMarshal.ToNative(Width)`)
+- `Height`: float (default `Height`)
+
 ## `AvatarOpts`
 
 C `cui_avatar_opts`.
@@ -65,6 +72,16 @@ C `cui_bar_list_opts`.
 - `MaxRows`: int (default `MaxRows`)
 - `KeepOrder`: bool (default `(byte)(KeepOrder ? 1 : 0)`)
 - `Color`: Color (default `UiMarshal.ToNative(Color)`)
+
+## `BlameOpts`
+
+C `cui_blame_opts`.
+
+- `Width`: Size (default `UiMarshal.ToNative(Width)`)
+- `Height`: float (default `Height`)
+- `Lang`: string? (default `Utf8.Get(Lang)`)
+- `Now`: long (default `Now`)
+- `FirstLine`: int (default `FirstLine`)
 
 ## `Box`
 
@@ -251,6 +268,8 @@ C `cui_code_editor_opts`.
 - `NoLineNumbers`: bool (default `(byte)(NoLineNumbers ? 1 : 0)`)
 - `Autofocus`: bool (default `(byte)(Autofocus ? 1 : 0)`)
 - `Placeholder`: string? (default `Utf8.Get(Placeholder)`)
+- `Marks`: TextMark[]? (default `TextMark.ToFrameArray(Marks)`)
+- `MarkCount`: int (default `MarkCount`)
 
 ## `CodeOpts`
 
@@ -273,6 +292,13 @@ C `cui_comment_opts`.
 - `Depth`: int (default `Depth`)
 - `Edited`: bool (default `(byte)(Edited ? 1 : 0)`)
 - `Badge`: string? (default `Utf8.Get(Badge)`)
+
+## `CommitGraphOpts`
+
+C `cui_commit_graph_opts`.
+
+- `Width`: Size (default `UiMarshal.ToNative(Width)`)
+- `Height`: float (default `Height`)
 
 ## `CompareOpts`
 
@@ -341,6 +367,15 @@ C `cui_counter_opts`.
 - `Font`: Font (default `Font`)
 - `Color`: Color (default `UiMarshal.ToNative(Color)`)
 - `GroupThousands`: bool (default `(byte)(GroupThousands ? 1 : 0)`)
+
+## `CoverageOpts`
+
+C `cui_coverage_opts`.
+
+- `Width`: Size (default `UiMarshal.ToNative(Width)`)
+- `Height`: float (default `Height`)
+- `Low`: float (default `Low`)
+- `High`: float (default `High`)
 
 ## `CropperOpts`
 
@@ -522,6 +557,13 @@ C `cui_fader_opts`.
 - `HideValue`: bool (default `(byte)(HideValue ? 1 : 0)`)
 - `Disabled`: bool (default `(byte)(Disabled ? 1 : 0)`)
 
+## `FeatureFlagsOpts`
+
+C `cui_feature_flags_opts`.
+
+- `Width`: Size (default `UiMarshal.ToNative(Width)`)
+- `Height`: float (default `Height`)
+
 ## `FileBrowserOpts`
 
 C `cui_file_browser_opts`.
@@ -602,6 +644,14 @@ C `cui_gradient_text_opts`.
 - `To`: Color (default `UiMarshal.ToNative(To)`)
 - `Animate`: bool (default `(byte)(Animate ? 1 : 0)`)
 - `Width`: Size (default `UiMarshal.ToNative(Width)`)
+
+## `GraphOpts`
+
+C `cui_graph_opts`.
+
+- `Width`: Size (default `UiMarshal.ToNative(Width)`)
+- `Height`: float (default `Height`)
+- `TopDown`: bool (default `(byte)(TopDown ? 1 : 0)`)
 
 ## `GridOpts`
 
@@ -733,6 +783,14 @@ C `cui_kanban_column_opts`.
 - `Limit`: int (default `Limit`)
 - `Width`: float (default `Width`)
 
+## `KeymapOpts`
+
+C `cui_keymap_opts`.
+
+- `Width`: Size (default `UiMarshal.ToNative(Width)`)
+- `Categories`: string[]? (default `UiMarshal.Strings(Categories)`)
+- `NoFunctionRow`: bool (default `(byte)(NoFunctionRow ? 1 : 0)`)
+
 ## `KnobOpts`
 
 C `cui_knob_opts`.
@@ -748,6 +806,17 @@ C `cui_knob_opts`.
 - `HideValue`: bool (default `(byte)(HideValue ? 1 : 0)`)
 - `Disabled`: bool (default `(byte)(Disabled ? 1 : 0)`)
 - `Color`: Color (default `UiMarshal.ToNative(Color)`)
+
+## `KvEditorOpts`
+
+C `cui_kv_editor_opts`.
+
+- `KeyPlaceholder`: string? (default `Utf8.Get(KeyPlaceholder)`)
+- `ValuePlaceholder`: string? (default `Utf8.Get(ValuePlaceholder)`)
+- `NoToggles`: bool (default `(byte)(NoToggles ? 1 : 0)`)
+- `NoSecrets`: bool (default `(byte)(NoSecrets ? 1 : 0)`)
+- `ReadOnly`: bool (default `(byte)(ReadOnly ? 1 : 0)`)
+- `Width`: Size (default `UiMarshal.ToNative(Width)`)
 
 ## `LevelMeterOpts`
 
@@ -951,6 +1020,12 @@ C `cui_pin_opts`.
 
 - `Type`: int (default `Type`)
 
+## `PipelineOpts`
+
+C `cui_pipeline_opts`.
+
+- `Width`: Size (default `UiMarshal.ToNative(Width)`)
+
 ## `PopoverOpts`
 
 C `cui_popover_opts`.
@@ -959,6 +1034,14 @@ C `cui_popover_opts`.
 - `Width`: float (default `Width`)
 - `Pad`: float (default `Pad`)
 - `Gap`: float (default `Gap`)
+
+## `ProblemsOpts`
+
+C `cui_problems_opts`.
+
+- `Width`: Size (default `UiMarshal.ToNative(Width)`)
+- `Height`: float (default `Height`)
+- `NoToolbar`: bool (default `(byte)(NoToolbar ? 1 : 0)`)
 
 ## `ProgressOpts`
 
@@ -990,6 +1073,14 @@ C `cui_prop_opts`.
 - `Tooltip`: string? (default `Utf8.Get(Tooltip)`)
 - `Disabled`: bool (default `(byte)(Disabled ? 1 : 0)`)
 - `Checkbox`: bool (default `(byte)(Checkbox ? 1 : 0)`)
+
+## `QueryOpts`
+
+C `cui_query_opts`.
+
+- `Width`: Size (default `UiMarshal.ToNative(Width)`)
+- `MaxDepth`: int (default `MaxDepth`)
+- `ReadOnly`: bool (default `(byte)(ReadOnly ? 1 : 0)`)
 
 ## `RadarOpts`
 
@@ -1029,6 +1120,21 @@ C `cui_reasoning_opts`.
 - `Thinking`: bool (default `(byte)(Thinking ? 1 : 0)`)
 - `Seconds`: float (default `Seconds`)
 - `Title`: string? (default `Utf8.Get(Title)`)
+
+## `RegexTesterOpts`
+
+C `cui_regex_tester_opts`.
+
+- `Width`: Size (default `UiMarshal.ToNative(Width)`)
+- `Height`: float (default `Height`)
+
+## `RequestBarOpts`
+
+C `cui_request_bar_opts`.
+
+- `Width`: Size (default `UiMarshal.ToNative(Width)`)
+- `Loading`: bool (default `(byte)(Loading ? 1 : 0)`)
+- `Placeholder`: string? (default `Utf8.Get(Placeholder)`)
 
 ## `ResponseActionsOpts`
 
@@ -1079,6 +1185,15 @@ C `cui_scatter_opts`.
 - `XFormat`: string? (default `Utf8.Get(XFormat)`)
 - `YFormat`: string? (default `Utf8.Get(YFormat)`)
 - `NoLegend`: bool (default `(byte)(NoLegend ? 1 : 0)`)
+
+## `ScheduleOpts`
+
+C `cui_schedule_opts`.
+
+- `Width`: Size (default `UiMarshal.ToNative(Width)`)
+- `Now`: long (default `Now`)
+- `Utc`: bool (default `(byte)(Utc ? 1 : 0)`)
+- `NextCount`: int (default `NextCount`)
 
 ## `ScrollOpts`
 
@@ -1204,6 +1319,15 @@ C `cui_spotlight_opts`.
 - `Color`: Color (default `UiMarshal.ToNative(Color)`)
 - `Beam`: bool (default `(byte)(Beam ? 1 : 0)`)
 
+## `StackTraceOpts`
+
+C `cui_stack_trace_opts`.
+
+- `Width`: Size (default `UiMarshal.ToNative(Width)`)
+- `Title`: string? (default `Utf8.Get(Title)`)
+- `Message`: string? (default `Utf8.Get(Message)`)
+- `Lang`: string? (default `Utf8.Get(Lang)`)
+
 ## `StatusBarOpts`
 
 C `cui_status_bar_opts`.
@@ -1281,6 +1405,13 @@ C `cui_terminal_opts`.
 - `Prompt`: string? (default `Utf8.Get(Prompt)`)
 - `NoInput`: bool (default `(byte)(NoInput ? 1 : 0)`)
 
+## `TestExplorerOpts`
+
+C `cui_test_explorer_opts`.
+
+- `Width`: Size (default `UiMarshal.ToNative(Width)`)
+- `Height`: float (default `Height`)
+
 ## `TextFxOpts`
 
 C `cui_text_fx_opts`.
@@ -1325,6 +1456,14 @@ C `cui_tile_opts`.
 - `Color`: Color (default `UiMarshal.ToNative(Color)`)
 - `Width`: Size (default `UiMarshal.ToNative(Width)`)
 - `Wide`: bool (default `(byte)(Wide ? 1 : 0)`)
+
+## `TimeHistogramOpts`
+
+C `cui_time_histogram_opts`.
+
+- `Width`: Size (default `UiMarshal.ToNative(Width)`)
+- `Height`: float (default `Height`)
+- `Utc`: bool (default `(byte)(Utc ? 1 : 0)`)
 
 ## `TimeOpts`
 
@@ -1417,6 +1556,16 @@ C `cui_tour_opts`.
 - `DoneLabel`: string? (default `Utf8.Get(DoneLabel)`)
 - `CountFormat`: string? (default `Utf8.Get(CountFormat)`)
 
+## `TraceOpts`
+
+C `cui_trace_opts`.
+
+- `Width`: Size (default `UiMarshal.ToNative(Width)`)
+- `Height`: float (default `Height`)
+- `RowHeight`: float (default `RowHeight`)
+- `Markers`: TraceMarker[]? (default `TraceMarker.ToFrameArray(Markers)`)
+- `MarkerCount`: int (default `MarkerCount`)
+
 ## `TreeOpts`
 
 C `cui_tree_opts`.
@@ -1442,6 +1591,13 @@ C `cui_treemap_opts`.
 - `Width`: Size (default `UiMarshal.ToNative(Width)`)
 - `Height`: float (default `Height`)
 - `Format`: string? (default `Utf8.Get(Format)`)
+
+## `UptimeOpts`
+
+C `cui_uptime_opts`.
+
+- `Width`: Size (default `UiMarshal.ToNative(Width)`)
+- `LastDay`: Date (default `UiMarshal.ToNative(LastDay)`)
 
 ## `UserMenuOpts`
 
@@ -1469,6 +1625,15 @@ C `cui_waffle_opts`.
 - `Columns`: int (default `Columns`)
 - `Rows`: int (default `Rows`)
 - `Format`: string? (default `Utf8.Get(Format)`)
+
+## `WaterfallOpts`
+
+C `cui_waterfall_opts`.
+
+- `Width`: Size (default `UiMarshal.ToNative(Width)`)
+- `Height`: float (default `Height`)
+- `DomLoaded`: double (default `DomLoaded`)
+- `Loaded`: double (default `Loaded`)
 
 ## `WaveformOpts`
 

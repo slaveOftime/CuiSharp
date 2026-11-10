@@ -26,13 +26,29 @@ row, which is why an app that only wants a read-only table uses `VirtualList` in
 `ui.Segmented(id, items, value)` returning `int?` so a page keeps one field instead of a mirror. Both
 are `MANUAL` in `overrides.json` and change the public surface, so they need a decision before code.
 
+**A count beside an array in a record.** `QueryField.Choices` and `ChoiceCount`, `ApiEndpoint.Params`
+and `ParamCount`: the count is what native reads, so the two can disagree and a caller has to keep
+them in step. The generator already derives a count for option structs; a record could hide the count
+and fill it from the array's length in `ToNative()`. It is not derived today because a count on an
+*output* record (a result CUI fills in) is information, not a derivation, and the generator cannot
+tell the two roles apart from the declaration alone.
+
 ## 2. Not started
 
 - **`dotnet new cui-script`** — one file, `#:package CuiSharp@*`, `dotnet run app.cs` opens a window.
   The template covers the solution case only. Prove it in `verify-template.ps1`.
-- **The thirteen extended gallery pages** (`examples/gallery_more.c`): the coverage proof nothing
-  else gives, because those pages exercise components the tests do not. One page per commit-sized
-  slice; a missing wrapper is a generator or `overrides.json` fix, never a hand edit.
+- **A `Localization` owner for `cui_set_strings`.** CUI keeps the pointer to its month, weekday and
+  "Today" table and reads it every frame, so the wrapper needs storage that outlives the call — the
+  frame arena cannot provide it, and the two functions stay `EXCLUDED` until it exists. The shape:
+  a `Localization` class holding the managed strings, one unmanaged block rebuilt when they change,
+  and `ui.SetLocalization(table)`; `CuiSurface`/`CuiApp` own the instance the way they own the
+  theme. Twelve month names, their short forms, three weekday forms and `Today`, each entry
+  nullable so a partial table falls back to English.
+- **The gallery pages for the extended components** (`examples/gallery_more.c`'s other fifteen):
+  *Developer tools* and *More developer tools* cover CUI 1.3's twenty, but actions, smart inputs,
+  pickers, capture, disclosure, reader, data grid, code, social and media, planning, more charts,
+  motion, AI, audio and files still draw only in C's own gallery. One page per commit-sized slice;
+  a missing wrapper is a generator or `overrides.json` fix, never a hand edit.
 - **`win-arm64` and `linux-arm64`** native builds, so the RID list stops at three. Every RID is built
   on its own runner; a new one needs the archive, the linker arguments and a leg in `ci.yml`.
 - **Analyzer code fixes** for CUI001–CUI008. The diagnostics and their messages exist and are

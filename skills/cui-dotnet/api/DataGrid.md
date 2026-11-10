@@ -62,22 +62,6 @@ public bool DataGridRow(int row)
 
 cui_data_grid_row
 
-## `FileBrowser`
-
-```csharp
-public FileBrowserResult FileBrowser(UiText id, ref string path, int pathCap = 1024, FileBrowserOpts o = default)
-```
-
-path: the folder shown, yours; the browser writes it as you move around.
-
-## `FilePicker`
-
-```csharp
-public bool FilePicker(UiText id, ref bool open, ref string @out, int outCap = 1024, FilePickerOpts o = default)
-```
-
-True once, with the chosen path in out, when the dialog is confirmed; *open turns false then, or on Cancel and Esc.
-
 ## `FilterBar`
 
 ```csharp
@@ -86,22 +70,6 @@ public bool FilterBar(UiText id, ReadOnlySpan<FilterField> fields, ref uint sele
 
 cui_filter_bar
 
-## `PathBar`
-
-```csharp
-public PathBarResult PathBar(UiText id, ReadOnlySpan<string> segments, PathBarOpts o = default)
-```
-
-cui_path_bar_ex
-
-## `PathBarMenu`
-
-```csharp
-public OpenScope PathBarMenu(UiText id, ref int segment)
-```
-
-True while the menu of separator *segment is showing: build menu items for the children of that segment, then call cui_path_bar_menu_end.
-
 ## `TreeCell`
 
 ```csharp
@@ -109,27 +77,3 @@ public bool TreeCell(UiText label, int depth, bool hasChildren, ref bool open, U
 ```
 
 Tree cell: indentation, a disclosure chevron and a label, for tree tables (use it in a table or grid cell). Returns true when *open toggled.
-
-## `TreeTableDepth`
-
-```csharp
-public int TreeTableDepth()
-```
-
-cui_tree_table_depth
-
-## `TreeTableName`
-
-```csharp
-public void TreeTableName(UiText label, UiText icon)
-```
-
-The first cell: indentation, guides, the chevron, an icon and the name (cut short with a tooltip of the whole name when it does not fit).
-
-## `TreeTableRow`
-
-```csharp
-public int TreeTableRow()
-```
-
-The next row in view: returns its node, or -1 when done. Then build its cells: cui_tree_table_name first, then cui_data_grid_cell(_text).

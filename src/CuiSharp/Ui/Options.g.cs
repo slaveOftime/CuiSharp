@@ -1541,7 +1541,7 @@ public partial struct MarkdownOpts
 /// <summary>cui_code_editor_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct CodeEditorOpts
 {
-    /// <summary>as cui_code_block: &quot;c&quot;, &quot;cpp&quot;, &quot;js&quot;, &quot;ts&quot;, &quot;python&quot;, &quot;rust&quot;, &quot;go&quot;, &quot;json&quot;, &quot;shell&quot;; NULL plain</summary>
+    /// <summary>as cui_code_block: &quot;c&quot;, &quot;cpp&quot;, &quot;js&quot;, &quot;ts&quot;, &quot;python&quot;, &quot;rust&quot;, &quot;go&quot;, &quot;json&quot;, &quot;shell&quot;; &quot;text&quot; for none</summary>
     public string? Lang;
     /// <summary>default fill</summary>
     public Size Width;
@@ -1561,6 +1561,10 @@ public partial struct CodeEditorOpts
     public bool Autofocus;
     /// <summary>shown while the text is empty</summary>
     public string? Placeholder;
+    /// <summary>ranges to highlight (search results, regex matches), sorted by start</summary>
+    public TextMark[]? Marks;
+    /// <summary>int mark_count</summary>
+    public int MarkCount;
 
     internal readonly NativeCodeEditorOpts ToNative() => new()
     {
@@ -1575,6 +1579,8 @@ public partial struct CodeEditorOpts
         NoLineNumbers = (byte)(NoLineNumbers ? 1 : 0),
         Autofocus = (byte)(Autofocus ? 1 : 0),
         Placeholder = Utf8.Get(Placeholder),
+        Marks = TextMark.ToFrameArray(Marks),
+        MarkCount = MarkCount,
     };
 }
 
@@ -3776,6 +3782,403 @@ public partial struct TimelineEditorOpts
         TrackWidth = TrackWidth,
         Toggles = (byte)(Toggles ? 1 : 0),
         FreeDrag = (byte)(FreeDrag ? 1 : 0),
+    };
+}
+
+/// <summary>cui_kv_editor_opts. All fields are optional; zero selects native defaults.</summary>
+public partial struct KvEditorOpts
+{
+    /// <summary>default &quot;Key&quot;</summary>
+    public string? KeyPlaceholder;
+    /// <summary>default &quot;Value&quot;</summary>
+    public string? ValuePlaceholder;
+    /// <summary>no checkboxes: every pair is on</summary>
+    public bool NoToggles;
+    /// <summary>no eye button</summary>
+    public bool NoSecrets;
+    /// <summary>_Bool read_only</summary>
+    public bool ReadOnly;
+    /// <summary>default fill</summary>
+    public Size Width;
+
+    internal readonly NativeKvEditorOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        KeyPlaceholder = Utf8.Get(KeyPlaceholder),
+        ValuePlaceholder = Utf8.Get(ValuePlaceholder),
+        NoToggles = (byte)(NoToggles ? 1 : 0),
+        NoSecrets = (byte)(NoSecrets ? 1 : 0),
+        ReadOnly = (byte)(ReadOnly ? 1 : 0),
+        Width = UiMarshal.ToNative(Width),
+    };
+}
+
+/// <summary>cui_problems_opts. All fields are optional; zero selects native defaults.</summary>
+public partial struct ProblemsOpts
+{
+    /// <summary>cui_size width</summary>
+    public Size Width;
+    /// <summary>float height</summary>
+    public float Height;
+    /// <summary>_Bool no_toolbar</summary>
+    public bool NoToolbar;
+
+    internal readonly NativeProblemsOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Width = UiMarshal.ToNative(Width),
+        Height = Height,
+        NoToolbar = (byte)(NoToolbar ? 1 : 0),
+    };
+}
+
+/// <summary>cui_pipeline_opts. All fields are optional; zero selects native defaults.</summary>
+public partial struct PipelineOpts
+{
+    /// <summary>job shown selected, set on a click</summary>
+    public Size Width;
+
+    internal readonly NativePipelineOpts ToNative(nint selected) => new()
+    {
+        Sentinel = 0,
+        Width = UiMarshal.ToNative(Width),
+        Selected = selected,
+    };
+}
+
+/// <summary>cui_query_opts. All fields are optional; zero selects native defaults.</summary>
+public partial struct QueryOpts
+{
+    /// <summary>default 3</summary>
+    public Size Width;
+    /// <summary>default 3</summary>
+    public int MaxDepth;
+    /// <summary>_Bool read_only</summary>
+    public bool ReadOnly;
+
+    internal readonly NativeQueryOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Width = UiMarshal.ToNative(Width),
+        MaxDepth = MaxDepth,
+        ReadOnly = (byte)(ReadOnly ? 1 : 0),
+    };
+}
+
+/// <summary>cui_schedule_opts. All fields are optional; zero selects native defaults.</summary>
+public partial struct ScheduleOpts
+{
+    /// <summary>cui_size width</summary>
+    public Size Width;
+    /// <summary>the next runs are counted from here, Unix seconds; 0: the clock</summary>
+    public long Now;
+    /// <summary>times in UTC instead of local time</summary>
+    public bool Utc;
+    /// <summary>runs listed, default 3, 0 hides them</summary>
+    public int NextCount;
+
+    internal readonly NativeScheduleOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Width = UiMarshal.ToNative(Width),
+        Now = Now,
+        Utc = (byte)(Utc ? 1 : 0),
+        NextCount = NextCount,
+    };
+}
+
+/// <summary>cui_keymap_opts. All fields are optional; zero selects native defaults.</summary>
+public partial struct KeymapOpts
+{
+    /// <summary>cui_size width</summary>
+    public Size Width;
+    /// <summary>names for the legend</summary>
+    public string[]? Categories;
+    /// <summary>_Bool no_function_row</summary>
+    public bool NoFunctionRow;
+
+    internal readonly NativeKeymapOpts ToNative(nint mods) => new()
+    {
+        Sentinel = 0,
+        Width = UiMarshal.ToNative(Width),
+        Categories = UiMarshal.Strings(Categories),
+        CategoryCount = Categories?.Length ?? 0,
+        Mods = mods,
+        NoFunctionRow = (byte)(NoFunctionRow ? 1 : 0),
+    };
+}
+
+/// <summary>cui_commit_graph_opts. All fields are optional; zero selects native defaults.</summary>
+public partial struct CommitGraphOpts
+{
+    /// <summary>cui_size width</summary>
+    public Size Width;
+    /// <summary>float height</summary>
+    public float Height;
+
+    internal readonly NativeCommitGraphOpts ToNative(nint selected) => new()
+    {
+        Sentinel = 0,
+        Width = UiMarshal.ToNative(Width),
+        Height = Height,
+        Selected = selected,
+    };
+}
+
+/// <summary>cui_graph_opts. All fields are optional; zero selects native defaults.</summary>
+public partial struct GraphOpts
+{
+    /// <summary>cui_size width</summary>
+    public Size Width;
+    /// <summary>float height</summary>
+    public float Height;
+    /// <summary>_Bool top_down</summary>
+    public bool TopDown;
+
+    internal readonly NativeGraphOpts ToNative(nint selected) => new()
+    {
+        Sentinel = 0,
+        Width = UiMarshal.ToNative(Width),
+        Height = Height,
+        TopDown = (byte)(TopDown ? 1 : 0),
+        Selected = selected,
+    };
+}
+
+/// <summary>cui_waterfall_opts. All fields are optional; zero selects native defaults.</summary>
+public partial struct WaterfallOpts
+{
+    /// <summary>seconds; 0: no line</summary>
+    public Size Width;
+    /// <summary>seconds; 0: no line</summary>
+    public float Height;
+    /// <summary>seconds; 0: no line</summary>
+    public double DomLoaded;
+    /// <summary>seconds; 0: no line</summary>
+    public double Loaded;
+
+    internal readonly NativeWaterfallOpts ToNative(nint selected) => new()
+    {
+        Sentinel = 0,
+        Width = UiMarshal.ToNative(Width),
+        Height = Height,
+        Selected = selected,
+        DomLoaded = DomLoaded,
+        Loaded = Loaded,
+    };
+}
+
+/// <summary>cui_trace_opts. All fields are optional; zero selects native defaults.</summary>
+public partial struct TraceOpts
+{
+    /// <summary>cui_size width</summary>
+    public Size Width;
+    /// <summary>default 320</summary>
+    public float Height;
+    /// <summary>default 20</summary>
+    public float RowHeight;
+    /// <summary>const cui_trace_marker * markers</summary>
+    public TraceMarker[]? Markers;
+    /// <summary>int marker_count</summary>
+    public int MarkerCount;
+
+    internal readonly NativeTraceOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Width = UiMarshal.ToNative(Width),
+        Height = Height,
+        RowHeight = RowHeight,
+        Markers = TraceMarker.ToFrameArray(Markers),
+        MarkerCount = MarkerCount,
+    };
+}
+
+/// <summary>cui_regex_tester_opts. All fields are optional; zero selects native defaults.</summary>
+public partial struct RegexTesterOpts
+{
+    /// <summary>cui_size width</summary>
+    public Size Width;
+    /// <summary>of the test text, default 180</summary>
+    public float Height;
+
+    internal readonly NativeRegexTesterOpts ToNative(nint flags) => new()
+    {
+        Sentinel = 0,
+        Width = UiMarshal.ToNative(Width),
+        Height = Height,
+        Flags = flags,
+    };
+}
+
+/// <summary>cui_test_explorer_opts. All fields are optional; zero selects native defaults.</summary>
+public partial struct TestExplorerOpts
+{
+    /// <summary>default 320</summary>
+    public Size Width;
+    /// <summary>default 320</summary>
+    public float Height;
+
+    internal readonly NativeTestExplorerOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Width = UiMarshal.ToNative(Width),
+        Height = Height,
+    };
+}
+
+/// <summary>cui_stack_trace_opts. All fields are optional; zero selects native defaults.</summary>
+public partial struct StackTraceOpts
+{
+    /// <summary>cui_size width</summary>
+    public Size Width;
+    /// <summary>&quot;TypeError&quot;</summary>
+    public string? Title;
+    /// <summary>&quot;Cannot read properties of undefined&quot;</summary>
+    public string? Message;
+    /// <summary>highlights the source, as the code block</summary>
+    public string? Lang;
+
+    internal readonly NativeStackTraceOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Width = UiMarshal.ToNative(Width),
+        Title = Utf8.Get(Title),
+        Message = Utf8.Get(Message),
+        Lang = Utf8.Get(Lang),
+    };
+}
+
+/// <summary>cui_request_bar_opts. All fields are optional; zero selects native defaults.</summary>
+public partial struct RequestBarOpts
+{
+    /// <summary>cui_size width</summary>
+    public Size Width;
+    /// <summary>_Bool loading</summary>
+    public bool Loading;
+    /// <summary>const char * placeholder</summary>
+    public string? Placeholder;
+
+    internal readonly NativeRequestBarOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Width = UiMarshal.ToNative(Width),
+        Loading = (byte)(Loading ? 1 : 0),
+        Placeholder = Utf8.Get(Placeholder),
+    };
+}
+
+/// <summary>cui_uptime_opts. All fields are optional; zero selects native defaults.</summary>
+public partial struct UptimeOpts
+{
+    /// <summary>the date of the last value, for the tooltips</summary>
+    public Size Width;
+    /// <summary>the date of the last value, for the tooltips</summary>
+    public Date LastDay;
+
+    internal readonly NativeUptimeOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Width = UiMarshal.ToNative(Width),
+        LastDay = UiMarshal.ToNative(LastDay),
+    };
+}
+
+/// <summary>cui_time_histogram_opts. All fields are optional; zero selects native defaults.</summary>
+public partial struct TimeHistogramOpts
+{
+    /// <summary>default 140</summary>
+    public Size Width;
+    /// <summary>default 140</summary>
+    public float Height;
+    /// <summary>_Bool utc</summary>
+    public bool Utc;
+
+    internal readonly NativeTimeHistogramOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Width = UiMarshal.ToNative(Width),
+        Height = Height,
+        Utc = (byte)(Utc ? 1 : 0),
+    };
+}
+
+/// <summary>cui_coverage_opts. All fields are optional; zero selects native defaults.</summary>
+public partial struct CoverageOpts
+{
+    /// <summary>percent; default 50 and 80</summary>
+    public Size Width;
+    /// <summary>percent; default 50 and 80</summary>
+    public float Height;
+    /// <summary>percent; default 50 and 80</summary>
+    public float Low;
+    /// <summary>percent; default 50 and 80</summary>
+    public float High;
+
+    internal readonly NativeCoverageOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Width = UiMarshal.ToNative(Width),
+        Height = Height,
+        Low = Low,
+        High = High,
+    };
+}
+
+/// <summary>cui_blame_opts. All fields are optional; zero selects native defaults.</summary>
+public partial struct BlameOpts
+{
+    /// <summary>cui_size width</summary>
+    public Size Width;
+    /// <summary>default 360</summary>
+    public float Height;
+    /// <summary>highlights the code, as the code block</summary>
+    public string? Lang;
+    /// <summary>ages are counted to here; 0: the clock</summary>
+    public long Now;
+    /// <summary>number of the first line, default 1</summary>
+    public int FirstLine;
+
+    internal readonly NativeBlameOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Width = UiMarshal.ToNative(Width),
+        Height = Height,
+        Lang = Utf8.Get(Lang),
+        Now = Now,
+        FirstLine = FirstLine,
+    };
+}
+
+/// <summary>cui_feature_flags_opts. All fields are optional; zero selects native defaults.</summary>
+public partial struct FeatureFlagsOpts
+{
+    /// <summary>default fits the flags</summary>
+    public Size Width;
+    /// <summary>default fits the flags</summary>
+    public float Height;
+
+    internal readonly NativeFeatureFlagsOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Width = UiMarshal.ToNative(Width),
+        Height = Height,
+    };
+}
+
+/// <summary>cui_api_explorer_opts. All fields are optional; zero selects native defaults.</summary>
+public partial struct ApiExplorerOpts
+{
+    /// <summary>cui_size width</summary>
+    public Size Width;
+    /// <summary>float height</summary>
+    public float Height;
+
+    internal readonly NativeApiExplorerOpts ToNative(nint selected) => new()
+    {
+        Sentinel = 0,
+        Width = UiMarshal.ToNative(Width),
+        Height = Height,
+        Selected = selected,
     };
 }
 

@@ -22,46 +22,6 @@ public void CodeBlock(UiText id, UiText code, CodeOpts o = default)
 
 * left to right in any interface: see cui__keep_ltr
 
-## `CodeEditor`
-
-```csharp
-public CodeEditorResult CodeEditor(UiText id, ref string buf, int cap, CodeEditorOpts o = default)
-```
-
-* left to right in any interface: see cui__keep_ltr
-
-## `CodeEditorFind`
-
-```csharp
-public void CodeEditorFind(UiText id, UiText query)
-```
-
-Opens the find bar with query and selects the next match (NULL closes).
-
-## `CodeEditorGoto`
-
-```csharp
-public void CodeEditorGoto(UiText id, int line, int column)
-```
-
-On the editor's next frame: put the caret at a line and column (1 based), focus the editor and scroll there. Call from the same id scope.
-
-## `CodeEditorSelect`
-
-```csharp
-public void CodeEditorSelect(UiText id, int anchor, int cursor)
-```
-
-On the next frame: select bytes anchor..cursor, focus and scroll there.
-
-## `DiffView`
-
-```csharp
-public DiffResult DiffView(UiText id, UiText oldText, UiText newText, ref int current, DiffOpts o = default)
-```
-
-* left to right in any interface: see cui__keep_ltr
-
 ## `JsonView`
 
 ```csharp
@@ -69,11 +29,3 @@ public bool JsonView(UiText id, UiText json, JsonOpts o = default)
 ```
 
 * left to right in any interface: see cui__keep_ltr
-
-## `Markdown`
-
-```csharp
-public MarkdownResult Markdown(UiText id, UiText text, MarkdownOpts o = default)
-```
-
-cui_markdown_ex

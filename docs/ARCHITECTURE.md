@@ -39,7 +39,7 @@ src/CuiSharp.Tools/           dotnet cui: build, run headless, relay one command
 src/CuiSharp.Templates/       dotnet new cui-app
 src/CuiSharp.Tests/           ABI, enums, marshalling, frame behaviour, hosting, tools, docs drift
 src/CuiSharp.Benchmarks/      BenchmarkDotNet suites + --fps and --scale harnesses
-samples/CuiSharp.Gallery/     eleven pages of every component, one file per page
+samples/CuiSharp.Gallery/     thirteen pages of every component, one file per page
 native/                       submodule + the two build scripts
 tools/                        bindgen.cs, regen.ps1, verify-template.ps1, api-surface.ps1, snapshots.ps1
 bindings/                     api.json (generated IR), overrides.json (inputs), coverage.txt (report)

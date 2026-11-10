@@ -4,7 +4,7 @@ Screenshots are dropped: their 215 files and 28 MB stay in the CUI submodule, an
 
 # More components
 
-The second half of the library: richer actions and inputs, pickers, disclosure, data views, more charts, motion and AI interface pieces. Everything follows the same rules as the [core components](widgets.md): named options, keyboard support, light and dark, reduced motion. Each family has a page in the gallery (`./build/examples/gallery`, section *Extended*).
+The second half of the library: richer actions and inputs, pickers, disclosure, data views, more charts, motion, AI interface pieces and developer tools. Everything follows the same rules as the [core components](widgets.md): named options, keyboard support, light and dark, reduced motion. Each family has a page in the gallery (`./build/examples/gallery`, section *Extended*).
 
 ## Actions
 
@@ -33,6 +33,8 @@ cui_toggle_group(ui, "format", labels, 4, format, .icons = icons, .icon_only = t
 
 Each item flips its own `bool`. With `.exclusive = true` exactly one stays on, like a radio group. With `icon_only` the labels become tooltips. Arrow keys move between items.
 
+Keyboard: Tab, or Left and Right, move between the toggles, and Enter or Space flips the focused one.
+
 ### Confirm button
 
 ```c
@@ -51,6 +53,8 @@ if (cui_status_button(ui, "Save changes", status, .success_label = "Saved")) { s
 
 Shows the life of the work it started: idle, a spinner while busy, a check or an error. The width springs between states and the content cross-fades. Clicks only count while idle.
 
+Keyboard: Tab focuses the button, and Enter or Space presses it.
+
 ### Reactions
 
 ```c
@@ -59,6 +63,8 @@ int changed = cui_reactions(ui, "reactions", re, 2);   /* index that toggled, or
 ```
 
 Clicking toggles `active` and adjusts `count`; the number rolls up or down and the icon pops.
+
+Keyboard: Tab moves through the reactions, and Enter or Space toggles the focused one.
 
 ### Speed dial
 
@@ -79,6 +85,8 @@ cui_theme_toggle(ui);                       /* one icon button: sun and moon mor
 
 Light and dark are applied for you. For "system" (mode 2), read the OS setting (for example with `cui_app_desc.follow_system_theme`) and call `cui_set_theme`.
 
+Keyboard: in the switcher, Tab, or Left and Right, move between the choices. The toggle takes Enter or Space.
+
 ### User menu
 
 ```c
@@ -89,6 +97,8 @@ cui_user_menu(ui, "Maya Okafor", .detail = "maya@fieldwork.studio", .status = "o
 ```
 
 An avatar, a name and a detail line that open an account menu with a header. Full width for sidebars; `.compact = true` shows just the avatar for headers. Options: `detail`, `status`, `avatar` (a texture), `compact`, `placement`, `width`.
+
+Keyboard: Enter or Space on the avatar opens the menu. Up and Down move through its items, Enter chooses one, and Esc closes it.
 
 ### Swipe actions
 
@@ -101,6 +111,8 @@ int action = cui_swipe_item_end(ui);   /* 0 = left action 0, 100 + i = right act
 ```
 
 Drag a row sideways, or swipe with two fingers on a trackpad. Past half the reveal width it snaps open; past 60% of the row it fires the first action on that side. Click the row or anywhere else to close it.
+
+Keyboard: none. Swiping is a pointer, touch and trackpad gesture, so give the same actions another route, such as a context menu or buttons.
 
 ## Inputs
 
@@ -132,6 +144,8 @@ cui_money_input(ui, "salary", &salary, .symbol = "\xe2\x82\xac", .code = "EUR", 
 
 Shows grouped digits at rest and plain digits while you type, keeps at most `decimals` places (2; -1 for none) and ignores anything that is not a number. Options: `label`, `symbol` ("$"), `code`, `decimals`, `width`, `hint`.
 
+Keyboard: it edits like a text field. Left, Right, Home and End move the caret, and Backspace and Delete remove digits.
+
 ### Prefix and suffix
 
 Every text field takes muted text before and after the value:
@@ -140,6 +154,8 @@ Every text field takes muted text before and after the value:
 cui_input(ui, "site", site, sizeof site, .prefix = "https://");
 cui_input(ui, "weight", weight, sizeof weight, .suffix = "kg");
 ```
+
+Keyboard: the field edits like any text field, with Left, Right, Home and End moving the caret.
 
 ### Shortcut recorder
 
@@ -173,6 +189,8 @@ cui_range_calendar(ui, "inline", &trip, 2);   /* the calendar on its own, one or
 
 Click a start and an end (in either order); while you choose the end, the band follows the pointer. Presets (today, last 7 days, this month...) sit on the left unless `.no_presets = true`. `cui_date_to_days` and `cui_date_from_days` convert dates to day numbers for arithmetic.
 
+Keyboard: Enter or Space on the field opens the two months and Esc closes them. Inside, Tab moves through the presets and the days, and Enter picks the focused day: first the start, then the end.
+
 ### Time picker
 
 ```c
@@ -182,6 +200,8 @@ cui_time_picker(ui, "end", &hour2, &minute2, .twelve_hour = true, .minute_step =
 ```
 
 Hour and minute columns (and AM / PM) that open scrolled to the current value. `hour` is always 0 to 23.
+
+Keyboard: Enter or Space on the field opens the list of times and Esc closes it. Inside, Tab moves through the times, and Enter or Space picks the focused one.
 
 ### Wheel picker and time dial
 
@@ -202,6 +222,8 @@ cui_histogram_slider(ui, "Price", bins, 24, &lo, &hi, 0, 240, .format = "$%.0f")
 ```
 
 The ruler is a tape that slides under a fixed marker; throw it and it glides, then snaps to `step`. Options: `step`, `major_every` (labelled ticks), `spacing` (points per step), `format`, `unit`, `width`. The histogram slider is a range slider with the distribution it filters drawn above it; bars inside the range light up.
+
+Keyboard: the ruler takes Tab, and Left, Right, Up and Down move the value a step. The histogram slider's two handles are dragged with the pointer; they have no keys yet.
 
 ### Knob, fader and level meter
 
@@ -261,6 +283,8 @@ Files dragged from the desktop or a file manager highlight the zone ("Release to
 
 If you use your own window layer, feed drops with `cui_input_file_drop(ui, paths, count, x, y)` and hovering with `cui_input_file_hover(ui, true, x, y)`. Files dropped outside any dropzone are available to the app through `cui_dropped_file_count` and `cui_dropped_file` for that frame.
 
+Keyboard: Tab focuses the zone, and Enter or Space acts as a click (a negative count), which is where you open your file dialog.
+
 ### Avatar upload
 
 ```c
@@ -269,6 +293,8 @@ if (cui_avatar_upload(ui, "photo", "Maya Okafor", &photo, 88) < 0) browse_for_ph
 ```
 
 Drop an image on the avatar to replace it (the previous texture is destroyed). Hover shows a camera; the pencil badge marks it as editable.
+
+Keyboard: Tab focuses the avatar, and Enter or Space acts as a click (a negative value), which is where you open your file dialog.
 
 ### Signature pad
 
@@ -279,6 +305,8 @@ int n = cui_signature_points(ui, "signature", &pts, &ends, &strokes);   /* point
 ```
 
 Stroke width follows speed, so signatures look inked rather than drawn with a fixed pen. A Clear button appears once something is drawn; `cui_signature_clear` does the same from code.
+
+Keyboard: signing needs a pointer, a pen or a finger. The Clear button takes Tab, and Enter or Space presses it.
 
 ## Disclosure
 
@@ -293,6 +321,8 @@ cui_hover_card(ui, "grace", .width = 300) {
 ```
 
 Attaches to the previous component. It opens after the pointer rests there for `delay` seconds (0.45) and stays open while the pointer is over the anchor or the card, with a short grace period to cross the gap. Options: `placement`, `width`, `delay`.
+
+Keyboard: the card opens on hover and takes no focus, so do not put anything in it that cannot be reached another way.
 
 ### Confirm popover
 
@@ -317,6 +347,8 @@ cui_expandable_card(ui, "Billing", &billing_open, .description = "Pro plan", .ic
 ```
 
 Expandable text clamps to `lines` with a fade (into `fade_to`, the background by default) and a Show more / Show less link; the height springs. The card's body opens with a height spring and its chevron turns; content inside is disabled while it closes.
+
+Keyboard: Tab focuses the "Show more" link or the card's header, and Enter or Space expands or collapses it.
 
 ### Guided tour
 
@@ -353,6 +385,8 @@ cui_row(ui) {
 
 The rail fills as you read, and a marker glides to the section in view. Clicking an entry scrolls there smoothly. `level` indents entries.
 
+Keyboard: Tab moves through the entries, and Enter or Space jumps to the focused section.
+
 ## Feedback
 
 ### Banner and countdown
@@ -365,6 +399,8 @@ cui_countdown(ui, "sale", sale_end - now, .compact = true, .hide_days = true);
 ```
 
 The banner spans its container, tinted with its `tone` (the accent by default), and collapses smoothly when dismissed. The countdown shows days, hours, minutes and seconds as tiles whose digits roll; it schedules its own redraw each second.
+
+Keyboard: the banner's action and dismiss buttons take Tab, and Enter or Space presses the focused one. The countdown only displays.
 
 ### Onboarding checklist
 
@@ -379,6 +415,8 @@ if (act >= 0) run_step(act);
 
 A card with a progress ring and steps; the first unfinished step opens to show its description and action button. Clicking a circle toggles `done`.
 
+Keyboard: Tab moves through the steps and their buttons, and Enter or Space opens the focused step or presses its button.
+
 ### Undo toast
 
 ```c
@@ -386,6 +424,8 @@ cui_toast(ui, "3 conversations archived", .action = "Undo", .show_timer = true);
 ```
 
 `show_timer` adds a draining line along the bottom of the toast, so people can see how long Undo stays (6 seconds by default; hovering the stack pauses it).
+
+Keyboard: the Undo button takes Tab, and Enter or Space presses it.
 
 ## Data
 
@@ -490,6 +530,8 @@ cui_code_block(ui, "counter", source, .lang = "c", .title = "counter.c", .line_n
 
 Highlighting for C, C++, JavaScript, TypeScript, Python, Rust, Go, JSON and shell, in colors that follow the theme. Long lines scroll sideways, `max_height` makes the block scroll vertically, and the copy button morphs into a check after copying.
 
+Keyboard: the copy button takes Tab, and Enter or Space presses it. The code itself takes no focus.
+
 ### JSON viewer
 
 ```c
@@ -497,6 +539,8 @@ if (!cui_json_view(ui, "response", body, .expand_depth = 1)) { /* not valid JSON
 ```
 
 A collapsible tree with typed colors. Collapsed objects and arrays show their size; click a chevron to fold or unfold.
+
+Keyboard: none yet. Folding and unfolding is done with the pointer.
 
 ### Markdown view
 
@@ -762,6 +806,275 @@ The wheel zooms time around the pointer, as in the flame graph and the node edit
 
 With the editor focused, Left and Right step the playhead by a frame (Shift: ten frames), Alt+Left and Alt+Right move the selected keys by a frame (Shift: ten), Up and Down jump to the previous and next key on the visible tracks, Home and End go to the start and end, Space reports a play request (`play_toggled`; you advance the time), Delete or Backspace removes the selected keys and clips, Ctrl+A selects every key on the visible tracks, Esc clears the selection, + and - zoom around the playhead and F fits the whole sequence. Fitting animates and snaps with reduced motion.
 
+## Developer tools
+
+Panels for the tools developers build: an HTTP client, an IDE, a CI dashboard, a profiler, a network inspector, a status page. The table-like ones (problems, commit graph, waterfall, test explorer, coverage, blame) build only the rows in view; the timelines and graphs (trace viewer, dependency graph) draw only what is in view. A panel whose content is drawn on a time or graph axis (the keymap, the dependency graph, the trace viewer, the waterfall's bars) keeps its left-to-right geometry in a right-to-left interface, while the labels, columns and controls around it mirror.
+
+### Key-value editor
+
+```c
+static cui_kv_pair headers[16] = { { "Accept", "application/json", true } };
+static int count = 1;
+
+if (cui_kv_editor(ui, "headers", headers, &count, 16))
+    rebuild_request();
+```
+
+Rows of key and value fields for HTTP headers, query parameters or environment variables. You own the array, and it is edited in place. The checkbox turns a pair on or off, typing in the empty row at the end adds a pair, and the x removes one. The lock marks a value as secret: it shows as dots, and the field's eye reveals it. A key used twice by enabled pairs, or one with a space in it, is marked under its field. Below 480 points each key sits above its value. Options: `key_placeholder`, `value_placeholder`, `no_toggles`, `no_secrets`, `read_only`, `width`.
+
+Keyboard: Tab moves through each row's checkbox, key, value, lock and remove button. The fields edit like any text field, and Enter or Space presses the focused checkbox or button.
+
+### Problems panel
+
+```c
+cui_problems_result r = cui_problems(ui, "problems", diags, diag_count, .height = 300);
+if (r.activated >= 0)
+    open_file_at(diags[r.activated].file, diags[r.activated].line, diags[r.activated].column);
+```
+
+Compiler and linter output grouped by file, with each file's count. Toggles above it filter by severity and show the count of each, and the field filters by text in the message, file, source or code. A file's header folds its group. Up and Down move the selection, Left and Right fold and unfold (swapped in a right-to-left interface), and Enter or a double click reports `activated`. A hover shows the whole message and its position. Below 520 points the source and code are left out. Twenty thousand diagnostics take about a millisecond a frame.
+
+### Pipeline
+
+```c
+static const char *stages[] = { "Build", "Test", "Deploy" };
+static int selected = -1;
+cui_pipeline_result r = cui_pipeline(ui, "run", stages, 3, jobs, job_count, .selected = &selected);
+if (r.clicked >= 0) show_log(&jobs[r.clicked]);
+```
+
+A CI or CD run: each stage is a column of its jobs with their status and duration, and connectors run between the stages. A stage's header sums up its jobs: failed beats running, then pending; a failure with `allow_failure` shows a warning and does not fail the stage. Running jobs show a spinner. Below 560 points the stages stack top to bottom.
+
+Keyboard: Tab moves through the jobs, and Enter or Space clicks the focused one.
+
+### Query builder
+
+```c
+static cui_query_node nodes[32];   /* node 0, the outer group, is made for you */
+static int count;
+if (cui_query_builder(ui, "filter", fields, field_count, nodes, &count, 32)) {
+    for (int i = 0; i < issue_count; i++)
+        issues[i].shown = cui_query_match(fields, field_count, nodes, count, issue_values(i));
+}
+```
+
+Conditions joined by all or any, in groups you can nest (three deep by default, `max_depth`). The nodes are a flat array in order, each with its depth, so they are easy to save. A rule picks a field, an operator that fits the field's type, and a value: a text field, a number, a choice from the field's list, or nothing for a yes or no field. `cui_query_text` writes the query as a sentence, and `cui_query_match` tests a record whose values you pass as text. On a phone each rule's value moves to its own line.
+
+Keyboard: Tab moves through the controls of each rule. Left and Right switch between All and Any, Up and Down change a focused select, Space opens it, and the remove buttons take Enter or Space.
+
+### Schedule picker
+
+```c
+static char cron[64] = "30 9 * * 1-5";
+cui_schedule_result r = cui_schedule_picker(ui, "backup", cron, sizeof cron);
+if (r.changed && r.valid) save_schedule(cron);
+```
+
+A cron expression edited the friendly way: every N minutes, hourly at a minute, daily at a time, weekly on chosen days, monthly on a day, or a custom expression typed in. It reads the expression you give it, picks the mode it is written in, and writes it back only when you change something. Below the controls it says what the schedule means, shows the expression, and lists the next runs (`next_count`, three by default) in local time or in UTC (`utc`). Weekday and month names come from `cui_set_strings`.
+
+The same parser is public. `cui_cron_next(cron, after, utc_offset, &next)` finds the next run after a time, in a time zone given in minutes east of UTC. It supports lists, ranges, steps, the names JAN to DEC and SUN to SAT, and 0 or 7 for Sunday. When both the day of the month and the weekday are restricted, either one matches, as in cron. It returns false for an invalid expression, or one that never runs within five years (February 31). `cui_cron_describe` returns the sentence ("Every weekday at 09:30").
+
+Keyboard: Tab moves through the controls. Left and Right change the mode, Up and Down change a focused number or select, and Enter or Space toggles a focused weekday.
+
+### Keymap
+
+```c
+static int mods = CUI_MOD_PRIMARY;
+cui_keymap_result r = cui_keymap(ui, "keys", bindings, binding_count,
+                                 .categories = categories, .category_count = 4, .mods = &mods);
+if (r.clicked) start_rebinding(r.clicked, mods);
+```
+
+A keyboard with the shortcuts on it. Each bound key shows its action, and a bar in its category's color. Tabs above it pick the modifiers, and each tab shows how many shortcuts use them. A key bound twice is outlined in red, and the count of conflicts is shown and returned. A hover lists every binding on the key, and a click returns it. Labels shrink to fit a key and then are cut short. The navigation cluster drops out below 600 points, and the keyboard scales to the width it gets. `no_function_row` leaves out the function keys.
+
+Keyboard: Tab focuses the modifier tabs, and Left and Right move between them. The keys of the drawn keyboard are clicked with the pointer.
+
+### Commit graph
+
+```c
+/* newest first; each commit names its parents by row */
+static const cui_commit log[] = {
+    { "a91f3c2", "Merge branch 'feature'", "Maya", "2 hours ago", "main, origin/main", { 1, 2 } },
+    { "7be04d1", "Docs", "Maya", "3 hours ago", NULL, { 3, -1 } },
+    ...
+};
+cui_commit_graph(ui, "history", log, count, .selected = &selected, .height = 320);
+```
+
+Version history with its branch lanes. Each commit's dot sits in its lane, curves join branches and merges, and a merge commit is drawn as a ring. Refs show as badges: local branches green, remote branches gray, and tags violet. The lanes are worked out once when the history changes, so fifty thousand commits take a few milliseconds to lay out and then cost nothing more. Up and Down move the selection, and Enter or a double click reports `activated`. Below 560 points the author and date are left out.
+
+### Dependency graph
+
+```c
+static const cui_graph_node nodes[] = { { "app", "executable", CUI_TONE_VIOLET }, { "ui", "libcui.a" }, { "zlib" } };
+static const cui_graph_edge edges[] = { { 0, 1 }, { 1, 2 } };
+cui_graph_view(ui, "deps", nodes, 3, edges, 2, .selected = &selected, .height = 340);
+```
+
+Nodes and directed edges laid out in layers, for build targets, packages, services or call graphs. Each edge points into a later layer. A cycle is broken for the layout but still drawn. An edge that skips layers is routed between the nodes, not through them, and the order within each layer is chosen to cross fewer edges. Hovering or selecting a node lights up what it depends on and what depends on it, and dims the rest. The wheel zooms around the pointer, dragging pans, a click selects, and a double click activates. With the graph focused, the arrows move along edges or to the neighbour in the same layer, + and - zoom, F fits, and Esc clears. `top_down` stacks the layers instead of placing them side by side. The layout runs once when the graph changes: 400 nodes with 900 edges take about 20 ms.
+
+### Network waterfall
+
+```c
+cui_waterfall_result r = cui_waterfall(ui, "network", requests, request_count,
+                                       .selected = &selected, .dom_loaded = 0.395, .loaded = 0.68);
+```
+
+HTTP requests as a table with a timing bar each. The bar shows its phases in order: a thin line while queued, then DNS, connect, TLS, waiting for the first byte, and download, all on one time scale. Lines mark DOMContentLoaded and load. The name column shows the last part of the path, and failed responses are shown in red. A hover on a bar breaks its time down, and a summary with a legend sits under the table. Up, Down, Home and End move the selection, Enter reports `activated`, and Esc clears. Below 600 points the method, type and size columns are left out. Thirty thousand requests take under two milliseconds a frame.
+
+### Trace viewer
+
+```c
+static cui_trace_track tracks[] = { { "Main thread" }, { "Render" }, { "Worker 1" } };
+static cui_trace_view view;   /* zeroed: fits everything */
+static int selected = -1;
+cui_trace_sort(spans, span_count);   /* once: by track, depth, then start */
+cui_trace_view(ui, "trace", tracks, 3, spans, span_count, &view, &selected,
+               .markers = markers, .marker_count = marker_count);
+```
+
+A tracing timeline in the manner of a performance panel. Each thread, process or service has a lane of nested spans, drawn like the flame graph and sharing its colors and ruler. Markers (vsync, a GC pause, a deploy) run across every lane, with their names in a strip under the ruler. The wheel zooms around the pointer, Shift+wheel pans, and over the lane names the wheel scrolls the lanes. Dragging pans, a click selects, and a double click zooms to a span. Shift+drag measures a range, which `view.mark_start` and `mark_end` hold and the ruler labels with its length. A click on a lane's name folds it to its top row, and `collapsed` keeps that in your track array. With the viewer focused, Left and Right step along the row, Up goes to the parent and Down to the first child. + and - zoom, Enter zooms to the selection, F fits, and Esc clears the measurement and then the selection. Only the rows and spans in view are visited, and spans thinner than a point merge into runs, so 200,000 spans take under a millisecond a frame. Below 560 points the lane names get a narrower column.
+
+### Regex tester
+
+```c
+static char pattern[128] = "(?<user>[\\w.]+)@(?<host>[\\w-]+)\\.com";
+static char text[4096] = "Write to maya@example.com or help@example.com";
+cui_regex_tester_result r = cui_regex_tester(ui, "rx", pattern, sizeof pattern, text, sizeof text);
+```
+
+A pattern field with the flags i (ignore case), m (multi-line ^ and $) and s (dot matches newline) above a test text. Every match is highlighted in the text, and each group in its own color. Under the text, the count is shown, then each match with its range and its groups, named or numbered. An invalid pattern shows the reason under the field. A pattern that would backtrack for too long stops and says so instead of freezing the frame. The matches are worked out again only when the pattern, the flags or the text change. `.flags` keeps the flags in your variable.
+
+The engine is public. `cui_regex_search(pattern, flags, text, len, from, &match, &error)` finds the first match at or after a byte offset, with up to nine groups and their names. It supports the common syntax: classes and ranges, `\d \w \s` and their negations, `\b`, anchors, groups `( )`, `(?: )` and `(?<name> )`, alternation, and greedy or lazy `* + ? {n,m}`. It does not support lookaround or backreferences. It returns 1 for a match, 0 for none, -1 for an invalid pattern and -2 when the step budget runs out.
+
+The text field is the code editor, which gains `marks`: ranges of bytes to highlight, in the accent or a series color. The highlighter gains `"text"`, a language that highlights nothing.
+
+Keyboard: Tab moves from the pattern to the flags and the text. Left and Right move between the flags, Enter or Space flips the focused one, and the text edits like the code editor.
+
+### Test explorer
+
+```c
+static const cui_test_item tests[] = {
+    { "layout", 0 },   /* a suite: the items after it with a greater depth are its tests */
+    { "wraps to the next line", 1, CUI_JOB_PASSED, 0.006f },
+    { "mirrors under right to left", 1, CUI_JOB_FAILED, 0.012f, "expected x = 412, got 388" },
+};
+cui_test_explorer_result r = cui_test_explorer(ui, "tests", tests, 3);
+if (r.run >= 0) run_tests_under(r.run);
+if (r.run_all) run_everything();
+```
+
+Test results as a tree in tree order, each item with its depth. A suite shows a status summed from its tests (failed, then running, then pending), how many passed, and their total time. A test shows its own status and time, and a time over a second is shown in amber. A failure's first message line shows under it, and the whole message on hover. The toolbar has a Run all button, toggles that filter passed, failed and skipped tests and show their counts, and a field that filters by name. The run button shows on the hovered and the selected row. Up and Down move the selection. Left folds a suite or goes to the parent, Right unfolds, and Enter or a double click reports `activated`. The statuses are the pipeline's `cui_job_status`. Only the rows in view are built.
+
+### Stack trace
+
+```c
+static const char *const src[] = { "function total(cart) {", "  let sum = 0;", "  for (const item of cart.items) {" };
+static const cui_stack_frame frames[] = {
+    { "total", "src/cart.js", 3, 29, false, src, 3, 1 },          /* source lines 1 to 3 */
+    { "handle", "node_modules/express/lib/router/layer.js", 95, 5, true },
+};
+cui_stack_trace(ui, "error", frames, 2, .title = "TypeError", .message = "Cannot read properties of undefined", .lang = "js");
+```
+
+An exception with its call stack. The header shows the error's type and message, with a button that copies the whole trace as text. Each frame shows its function and its file, line and column. A run of library frames (`external`) folds into one row that unfolds on a click. A frame with `source` opens to show those lines, highlighted, with the frame's line marked. The first frame of your own code starts open. Frames are focusable, and Enter or Space opens one. On a phone only the file's name is shown.
+
+### HTTP request bar
+
+```c
+static int method = CUI_HTTP_GET;
+static char url[512] = "https://api.example.com/v1/orders?status=open";
+static cui_kv_pair params[16];
+static int nparams = -1;
+if (nparams < 0) nparams = cui_url_params(url, params, 16);
+
+cui_request_bar_result r = cui_request_bar(ui, "request", &method, url, sizeof url, .loading = in_flight);
+if (r.changed) nparams = cui_url_params(url, params, 16);                  /* the URL changed: reread its query */
+if (cui_kv_editor(ui, "params", params, &nparams, 16)) cui_url_set_params(url, sizeof url, params, nparams);
+if (r.send) start_request(method, url);
+if (r.cancel) cancel_request();
+cui_response_status(ui, status, seconds, bytes);
+```
+
+The method, the URL and Send, as in an API client. Enter in the URL sends, and while `loading` the button cancels. On a phone the button keeps only its icon. `cui_response_status` shows a status badge (green 2xx, blue 3xx, amber 4xx, red 5xx, with the reason phrase), the time and the size. `cui_url_params` decodes a URL's query into key-value pairs. `cui_url_set_params` writes the enabled pairs back, percent-encoded, keeping the fragment, and leaves the URL alone when the result would not fit. Together they keep a parameters table in step with the URL. `cui_http_reason` and `cui_http_method_name` give the names.
+
+### Uptime bars
+
+```c
+static float api_days[90];   /* the fraction of each day the API was up, oldest first; negative: no data */
+const cui_uptime_service services[] = { { "API", api_days, 90 }, { "Website", web_days, 90 } };
+cui_uptime(ui, "status", services, 2, .last_day = today);
+```
+
+A status page. Each service shows its state from its last day (operational, degraded or outage) and its uptime over the days with data. Below it is one bar per day, colored by availability: green from 99.9%, olive from 99%, amber from 95%, red below that, and gray without data. A hover lifts the bar and shows its date and uptime, and the result names the service and day under the pointer. On a narrow panel only the most recent days that fit are shown, newest on the right.
+
+### Time histogram
+
+```c
+const cui_histogram_series levels[] = { { "Info", info, CUI_TONE_INFO }, { "Warning", warn, CUI_TONE_WARNING }, { "Error", err, CUI_TONE_DANGER } };
+static double from, to;   /* the selected range, Unix seconds; equal: none */
+if (cui_time_histogram(ui, "volume", start, 900, 96, levels, 3, &from, &to).selection_changed)
+    filter_logs(from, to);
+```
+
+Event counts over time, stacked by series, as above a log search, with a legend that shows each series' total. Dragging across it selects a range of whole buckets, and a click clears it. A hover shows the bucket's times and its count in each series. The time labels pick their step from seconds to weeks to suit the width, and show dates once the span passes a day. Times are local, or UTC with `utc`.
+
+Keyboard: none yet. The range is selected by dragging with the pointer.
+
+### Coverage
+
+```c
+static const cui_coverage_file files[] = {
+    { "src/core/layout.c", 1840, 1702, 620, 541, 88, 86 },   /* lines, hit; branches, hit; functions, hit */
+    { "src/render/gl.c", 1300, 410, 260, 60, 70, 22 },
+};
+cui_coverage_result r = cui_coverage(ui, "coverage", files, 2);
+if (r.activated >= 0) open_file(files[r.activated].path);
+```
+
+Test coverage as a tree built from the files' paths. Each folder sums up what it holds, and a row for all files sits on top. Lines show as a bar and a percentage, with branches and functions beside them. They are colored red below `low` (50%), amber below `high` (80%) and green above. A click on a column's title sorts by it, and a second click reverses the order; folders stay above files. A click on a folder folds it. Up and Down move the selection, Left and Right fold and unfold a folder, and Enter folds a folder or, on a file, reports `activated`, as a double click does. A hover shows the counts behind the percentages. On a phone only the lines column is shown.
+
+### Blame
+
+```c
+/* line_commit[i]: which commit last changed line i */
+cui_blame_result r = cui_blame(ui, "blame", lines, line_commit, line_count, commits, commit_count, .lang = "c");
+if (r.clicked >= 0) show_commit(&commits[r.clicked]);
+```
+
+Source with who last changed each line. Consecutive lines from one commit share a gutter entry with the author, the age ("6 weeks ago") and the short hash. A bar at the edge shades newer changes stronger. A hover on the gutter marks every line of that commit and shows its summary, and a click reports the commit. The code is highlighted with `lang`, and block comments that started further up are tracked. Only the lines in view are built: 100,000 lines take a tenth of a millisecond a frame after the first. On a phone the gutter keeps the shade and the author's initials.
+
+Keyboard: none yet. The list scrolls with the wheel, and a commit is clicked with the pointer.
+
+### Feature flags
+
+```c
+static cui_feature_flag flags[] = {
+    { "new-checkout", "Single-page checkout", { true, true, false }, { 0, 25, 0 } },   /* on in two; a quarter of staging */
+};
+static const char *envs[] = { "Development", "Staging", "Production" };
+cui_feature_flags_result r = cui_feature_flags(ui, "flags", flags, 1, envs, 3);
+if (r.flag >= 0) save_flag(&flags[r.flag], r.env);
+```
+
+Flags against environments, edited in place. Each environment has a switch, and while a flag is on it also shows the share of users it reaches. A click on the share opens a slider with presets, and a share under 100% shows in amber. A field filters by key or description. On a phone, or when the columns do not fit, one environment shows at a time, picked above the list. The result names the flag and the environment that changed this frame. With `height` the list scrolls.
+
+Keyboard: Tab moves through the switches and the share buttons, and Enter or Space flips the focused switch or opens the share popover, which Esc closes.
+
+### API explorer
+
+```c
+static const cui_api_param user_params[] = { { "id", "path", "string", true, "The user's id" } };
+static const cui_api_endpoint endpoints[] = {
+    { "GET", "/users", "List users", "Users" },
+    { "GET", "/users/{id}", "Get a user", "Users", false, user_params, 1 },
+};
+cui_api_explorer_result r = cui_api_explorer(ui, "api", endpoints, 2);
+if (r.try_it >= 0) open_request(&endpoints[r.try_it]);
+```
+
+Endpoints grouped by tag, in the order the tags first appear; a tag's header folds its group. Each endpoint shows its method in its color (GET blue, POST green, PUT amber, PATCH teal, DELETE red), its path with the `{parameters}` marked, and its summary. A deprecated endpoint is struck through and badged. A click opens an endpoint's parameters (name, required mark, type, where it goes, description) and a Try it button. A field filters by path or summary. Up and Down move, and Enter or Space opens. With `height` the list scrolls and keeps the selection in view.
+
 ## Conversation
 
 ### Chat
@@ -786,6 +1099,8 @@ cui_comment(ui, "c2", "Priya Nair", "Agreed, one more run.", .time = "1h", .dept
 ```
 
 `depth` indents replies under a thread line. The like button toggles `liked` and keeps `likes` in step.
+
+Keyboard: Tab moves through each comment's actions (like, reply and the rest), and Enter or Space presses the focused one.
 
 ### Presence, counter and ticker
 
@@ -1062,6 +1377,8 @@ cui_number_roll(ui, "revenue", rev, .font = CUI_FONT_DISPLAY, .size = 28);
 
 When the text changes, only the characters that differ roll: up into place when the value rises, down when it falls, each a beat after the one to its left. A prefix and suffix such as `$` or ` ms` stay put, digits are tabular so the figure keeps its width, and the width eases when the number grows or shrinks. With reduced motion the new value simply appears.
 
+Keyboard: the numbers only display. The buttons that change them in your app take Tab, Enter and Space as usual.
+
 ### Gradient text and spotlight cards
 
 ```c
@@ -1073,6 +1390,8 @@ cui_spotlight(ui, "gl", .width = CUI_PX(270)) {
 ```
 
 Gradient text blends across its width, by default between two tones of the accent; pass `from` and `to` for other colors, and `animate` to let the blend drift. Keep it for a single brand moment: headings and numbers read better in one solid color. A spotlight card catches a soft light under the pointer, and the stretch of its border nearest the pointer lights up. With `beam`, a light also travels around the edge. Use it for the one card that is live, such as a running deploy, never for a whole row.
+
+Keyboard: these are surfaces and text. What you put inside a spotlight card takes Tab, Enter and Space as usual.
 
 ### Loaders
 
@@ -1139,6 +1458,8 @@ cui_tool_call(ui, "read", "read_file", .detail = "quarterly-report.pdf", .status
 
 While `thinking`, the reasoning header shimmers and counts up; when it ends, the block folds to "Thought for 8s". Clicking the header opens or closes it, and from then on your choice sticks. A tool call shows its status as a ring, a spinner, a check or a cross, with the time. Clicking it opens the input and output, which are highlighted as JSON when they look like JSON.
 
+Keyboard: Tab focuses a reasoning block's header or a tool call, and Enter or Space folds or unfolds it.
+
 ### Agent plan and status
 
 ```c
@@ -1153,6 +1474,8 @@ cui_agent_status(ui, "Reading quarterly-report.pdf", .status = CUI_TASK_RUNNING,
 
 The rail fills up to the step in progress, the running step shimmers, and the header counts finished steps with a progress bar. The status pill shows loader dots while running and a check or a cross when done.
 
+Keyboard: none yet. A step is clicked with the pointer; the status pill only displays.
+
 ### Sources and citations
 
 ```c
@@ -1162,6 +1485,8 @@ int open = cui_source_list(ui, "sources", sources, n);              /* cards tha
 ```
 
 Citations show the source's domain and open a card with the title and snippet when hovered. Source cards get a colored initial (always the same for a domain), the title and the source's number.
+
+Keyboard: Tab moves through the sources and the citation marks, and Enter or Space opens the focused one.
 
 ### Composer and model picker
 
@@ -1189,6 +1514,8 @@ cui_context_meter(ui, "ctx", used_tokens, 200000, .parts = parts, .part_count = 
 
 The response actions copy (the icon turns into a check), regenerate, vote and share. The context meter's ring turns amber past 80% and red past 95%; hovering it shows a split of what fills the context.
 
+Keyboard: Tab moves through the suggestions and the response actions, and Enter or Space presses the focused one.
+
 ### Voice orb
 
 ```c
@@ -1196,6 +1523,8 @@ if (cui_voice_orb(ui, "voice", listening ? CUI_VOICE_LISTENING : CUI_VOICE_IDLE,
 ```
 
 A living shape for voice modes. It breathes when idle, ripples with the level while listening, sends a ring of dots around while thinking and swells with the voice while speaking. It moves between states smoothly.
+
+Keyboard: Tab focuses the orb, and Enter or Space clicks it.
 
 ## App chrome
 
@@ -1304,4 +1633,6 @@ dock1 h0.22([*Scene tree,Assets],h0.6(v0.62([*Viewport],[*Log,-Console]),[*Inspe
 
 after the `dock1` version word comes one node: `h` (side by side) or `v` (stacked) is a split, followed by the first child's share from 0 to 1 and the two children in parentheses; `[...]` is a leaf, its panel names in tab order, `*` marking the selected tab and `-` a closed panel. A backslash escapes `,` `[` `]` `(` `)`, a backslash, and a leading `*` or `-` in a name. Loading also sets each panel's `*open` from the text the next time the panel is submitted. Names the app has not submitted (yet) are kept in their place, so a layout saved with a plugin's panel survives a run without the plugin. Malformed text (bad syntax, a share outside 0 to 1, more than six decimals, a duplicate name, more than 48 panels or nesting deeper than 40) is refused: `cui_dock_load` returns false and the layout stays as it was. `cui_dock_save` returns the full length, like `snprintf`, and writes what fits. The dockspace's id is global: it does not depend on `cui_push_id`, so saving and loading work from anywhere.
 
-Keyboard: the selected tab of each strip is in the Tab order; Left and Right select along the strip, Home and End jump, Shift+Left and Shift+Right move the tab, and Delete closes it. With `.shortcuts = true`, Ctrl+Tab and Ctrl+Shift+Tab (or Ctrl+PageDown and PageUp) cycle the panels of the focused leaf, the one holding the keyboard focus or the last click, and Ctrl+W (Cmd+W on macOS) closes its selected panel. Esc cancels a drag. The layout uses the previous frame's size, so a panel that appears or reopens shows from the next frame (the dockspace asks for one). After `cui_dock_panel_begin`, `cui_last_rect` is the panel's tab, for a tooltip or a tour.
+Keyboard: the selected tab of each strip is in the Tab order; Left and Right select along the strip, Home and End jump, Shift+Left and Shift+Right move the tab, and Delete closes it. With `.shortcuts = true`, Ctrl+Tab and Ctrl+Shift+Tab (or Ctrl+PageDown and PageUp) cycle the panels of the focused leaf, the one holding the keyboard focus or the last click, and Ctrl+W (Cmd+W on macOS) closes its selected panel. Esc cancels a drag.
+
+The layout uses the previous frame's size, so a panel that appears or reopens shows from the next frame (the dockspace asks for one). After `cui_dock_panel_begin`, `cui_last_rect` is the panel's tab, for a tooltip or a tour.

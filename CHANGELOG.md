@@ -4,6 +4,81 @@ Every user-visible change, newest first. Pre-1.0 the minor number carries new su
 carries fixes. The section for a tag is what the GitHub release publishes, so the two cannot say
 different things.
 
+## [0.3.0] — 2026-11-10
+
+CUI 1.3: the developer tools it added are wrapped, and nothing is left `PENDING`.
+
+### Added
+
+- **The twenty developer tools CUI 1.3 ships**, generated from the header: `TraceView`,
+  `Waterfall`, `GraphView`, `CommitGraph`, `Pipeline`, `Problems`, `KvEditor`, `QueryBuilder`,
+  `SchedulePicker`, `Keymap`, `TestExplorer`, `StackTrace`, `Blame`, `Coverage`, `RegexTester`,
+  `RequestBar` with `ResponseStatus`, `ApiExplorer`, `FeatureFlags`, `Uptime` and
+  `TimeHistogram`. Each returns a typed record (`ProblemsResult`, `PipelineResult`, …) instead of a
+  flags integer, and each is a gallery page: *Developer tools* and *More developer tools*.
+- **The pure helpers behind them**, usable with no `Ui` and no frame: `CuiRegex.TrySearch` returns
+  the match with its named groups; `CuiCron.TryNext` the next run as a `DateTimeOffset`;
+  `CuiHttp.ParseQuery`/`SetQuery`/`Reason`/`MethodName` keep a URL's query in step with a table;
+  `CuiQuery.Text`/`Match`/`OperatorName` read and test a filter; `CuiFiles.SortTraceSpans` orders
+  spans for the trace viewer.
+- `ui.CronDescribe(cron)` and the `KeyValue`, `QueryField`, `QueryNode`, `FeatureFlag`, `Commit`,
+  `ProblemItem`, `ApiEndpoint` and the rest of the new records: a field CUI keeps in a fixed buffer
+  (`char value[64]`, `bool on[8]`) is text or an array to the caller, copied in and out.
+- The month, weekday and "Today" names CUI 1.2 put in one place are reachable only through the raw
+  layer for now: `cui_set_strings` keeps the pointer it is given and reads it every frame, so the
+  wrapper needs storage that outlives the call. `cui_set_strings`/`cui_get_strings` are `EXCLUDED`
+  with that reason, and the planned `Localization` owner is in [PLAN](docs/PLAN.md).
+
+### Changed
+
+- **`CurveEditor`, `GradientEditor`, `KvEditor` and `QueryBuilder` take their count by `ref`.** They
+  copy the array back after the widget runs (the widget adds, removes and toggles entries), and the
+  count is part of that: passing it by value silently dropped the new length.
+- **`FeatureFlags` no longer takes a count.** `cui_feature_flags_ex` reads one, and it can only be
+  the length of the array the wrapper just filled, so `ui.FeatureFlags(id, flags, envs)` derives it.
+  The same applies to every array a widget edits: a by-value count is the array's length.
+- **`Keymap`, `RegexTester` and `RequestBar` take your enums, not an `int`.** `ref Mods mods`,
+  `ref RegexFlags flags` and `ref HttpMethod method` replace the `ref int` parameters CUI's header
+  describes, so a page stops casting at the call site.
+- `SchedulePicker` and `RequestBar` default their buffer size (`cap = 128` and `2048`), as
+  `FileBrowser` and `FilePicker` already did.
+- **Extension classes follow the header's own sections.** CUI marks its sections twice — a rule
+  above and below a title, and a title inside a single rule — and the generator read the second
+  form as a bare rule, so a whole run of sections landed in `""` and, earlier, several were merged
+  into one class (`AppChromeMenuBarToolbarStatusBarDocumentTabs`). Every member is still reachable
+  through `using CuiSharp;`; only the class a member hangs off changed, and the new classes are
+  named for the section they came from (`DockingUiExtensions`, `TerminalUiExtensions`, …).
+- The wrapper count is now **278 generated + 167 hand-written, 0 pending** across 492 C functions,
+  with 166 option structs and 100 records ([coverage](bindings/coverage.txt)).
+- **The native library is bigger**: the twenty components are ~5 000 lines of new C, so the gallery's
+  NativeAOT executable goes from 2 141 184 B to 2 577 920 B and the written ceiling with it
+  ([PERFORMANCE](docs/PERFORMANCE.md)). Frame time is unchanged at 0.82 ms and 0 B per frame.
+
+### Fixed
+
+- **The regex tester searched its text in itself.** A wrapper keyed its editable text by the
+  widget's id, and the tester edits two strings at once (the pattern and the text), so both were
+  handed the same pooled buffer: the second overwrote the first and CUI matched the pattern against
+  the pattern. The key is the widget id mixed with the parameter, and the pooled buffer grows when a
+  caller asks for more room than it has.
+- **The gallery's time histogram allocated on every frame** (three `float[24]` and the series array)
+  and kept its selection in a local, so a drag was undone on the next frame. Both are page state now.
+- **A helper that borrows the frame arena gives the bytes back.** `CuiRegex`, `CuiCron`, `CuiHttp`,
+  `CuiQuery` and `CuiFiles` are documented as usable without a frame, and nothing resets the arena
+  outside one: a page that parsed a URL on every click grew it by the click. Each now restores the
+  arena it found, and `DeveloperToolTests` holds them to 0 B over a hundred calls.
+- **`CuiRegex.Slice` no longer re-encodes the whole text per call**, and takes a `RegexGroup`
+  directly, so marking every group of a match costs one substring each. Text that is not ASCII is
+  mapped through the runes instead of a throwaway `byte[]`.
+- **An edited array is copied back only on the frame the widget reports an edit.** Converting a
+  record costs an allocation per string and per fixed array it holds, and the wrappers were
+  converting every record on every frame: `FeatureFlags` cost 160 B and `KvEditor` 128 B for a
+  steady frame that changed nothing. Both are 0 B now, and `DeveloperToolTests` holds all twenty
+  tools to it.
+- A record field CUI keeps in a fixed C array is copied both ways: a `FeatureFlag`'s switches, a
+  `Commit`'s parents and a `KeyValue`'s key and value need no hand-written wrapper, and the nested
+  form (`char group_name[10][24]`, in the regex matcher) no longer stops the generator.
+
 ## [0.2.0] — 2026-11-10
 
 ### Fixed

@@ -146,4 +146,42 @@ public class Utf8Tests
         using var buffer = new TextBuffer(16);
         Assert.Equal(string.Empty, buffer.Value);
     }
+
+    [Fact]
+    public unsafe void FixedBufferTakesWhatFitsAndTruncatesTheRest()
+    {
+        var buffer = new byte[8];
+        fixed (byte* target = buffer)
+        {
+            // Seven bytes plus the terminator: what a `char key[8]` in a record can hold.
+            Utf8.WriteFixed("0123456789", target, buffer.Length);
+            Assert.Equal("0123456", Utf8.ReadFixed(target, buffer.Length));
+            Assert.Equal(0, target[7]);
+
+            Utf8.WriteFixed(null, target, buffer.Length);
+            Assert.Null(Utf8.ReadFixed(target, buffer.Length));
+        }
+    }
+
+    [Fact]
+    public unsafe void FixedBufferNeverCutsACharacterInHalf()
+    {
+        var buffer = new byte[6];
+        fixed (byte* target = buffer)
+        {
+            // Four ASCII bytes fit; the two three-byte characters after them do not, and half a
+            // character would decode as U+FFFD. The buffer keeps "abcd" and nothing else.
+            Utf8.WriteFixed("abcd€€", target, buffer.Length);
+            Assert.Equal("abcd", Utf8.ReadFixed(target, buffer.Length));
+
+            // A two-byte character that fits whole is kept: three ASCII bytes and the euro sign
+            // are six bytes, so the buffer has to be seven with its terminator.
+            var wider = new byte[7];
+            fixed (byte* roomy = wider)
+            {
+                Utf8.WriteFixed("abc€", roomy, wider.Length);
+                Assert.Equal("abc€", Utf8.ReadFixed(roomy, wider.Length));
+            }
+        }
+    }
 }
