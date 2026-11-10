@@ -211,8 +211,8 @@ dotnet publish -c Release -r win-x64      # one executable, ~2 MB, nothing besid
 NativeAOT does not cross-compile between operating systems: publish on the platform you target
 (`libx11-dev` is needed at build time on Linux, not at run time).
 
-The package ships `win-x64`, `linux-x64` and `osx-arm64`. The Linux archive needs **glibc 2.35 or
-newer** (Ubuntu 22.04, Debian 12, RHEL 9); an older image fails at load with
+The package ships `win-x64`, `linux-x64` and `osx-arm64`. The Linux archive needs **glibc 2.31 or
+newer** (Debian 11, Ubuntu 20.04, RHEL 8); an older image fails at load with
 `version 'GLIBC_x.y' not found`, which `CuiSharpNativeException` restates with the packaged RIDs
 and the floor. `runtimes/native-provenance.txt` in the package records the revision, compiler and
 per-file hashes behind it; [native-abi.md](skills/cui-dotnet/native-abi.md) is the promise itself.

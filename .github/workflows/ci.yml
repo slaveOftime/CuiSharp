@@ -34,6 +34,9 @@ env:
   DOTNET_NOLOGO: true
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
+  # The glibc the Linux native library is built against, and the image that has it.
+  # Part of the native cache key: a new baseline is a new library.
+  CUI_GLIBC_BASELINE: '2.31'
 
 jobs:
   # The suite draws real frames through the native library, so it needs CUI built
@@ -81,16 +84,15 @@ jobs:
             native/libcui.so
             native/libcui.a
             native/libcui.dylib
-          key: cui-native-${{ runner.os }}-${{ steps.cui.outputs.sha }}
+          key: cui-native-${{ runner.os }}-glibc${{ env.CUI_GLIBC_BASELINE }}-${{ steps.cui.outputs.sha }}
 
       - name: Build CUI (native library)
         if: steps.native-cache.outputs.cache-hit != 'true'
         shell: pwsh
-        env:
-          CUI_GLIBC_BASELINE: '2.35'
         run: |
           if ($IsWindows) { ./native/build-native.ps1 }
-          else { bash native/build-native.sh }
+          elseif ($IsMacOS) { bash native/build-native.sh }
+          else { bash native/build-native-container.sh debian:11 }
 
       - name: Restore
         run: dotnet restore CuiSharp.slnx
@@ -156,7 +158,8 @@ jobs:
         shell: pwsh
         run: |
           if ($IsWindows) { ./native/build-native.ps1 }
-          else { bash native/build-native.sh }
+          elseif ($IsMacOS) { bash native/build-native.sh }
+          else { bash native/build-native-container.sh debian:11 }
 
       - name: Pack the library and the template
         run: |
@@ -231,16 +234,15 @@ jobs:
             native/libcui.so
             native/libcui.a
             native/libcui.dylib
-          key: cui-native-${{ runner.os }}-${{ steps.cui.outputs.sha }}
+          key: cui-native-${{ runner.os }}-glibc${{ env.CUI_GLIBC_BASELINE }}-${{ steps.cui.outputs.sha }}
 
       - name: Build CUI (native library)
         if: steps.native-cache.outputs.cache-hit != 'true'
         shell: pwsh
-        env:
-          CUI_GLIBC_BASELINE: '2.35'
         run: |
           if ($IsWindows) { ./native/build-native.ps1 }
-          else { bash native/build-native.sh }
+          elseif ($IsMacOS) { bash native/build-native.sh }
+          else { bash native/build-native-container.sh debian:11 }
 
       - name: Publish
         run: dotnet publish samples/CuiSharp.Gallery -c Release -r ${{ matrix.rid }} -o artifacts/publish
@@ -344,7 +346,7 @@ jobs:
           path: |
             native/cui.dll
             native/cui.lib
-          key: cui-native-${{ runner.os }}-${{ steps.cui.outputs.sha }}
+          key: cui-native-${{ runner.os }}-glibc${{ env.CUI_GLIBC_BASELINE }}-${{ steps.cui.outputs.sha }}
 
       - name: Build CUI (native library)
         if: steps.native-cache.outputs.cache-hit != 'true'
@@ -364,9 +366,9 @@ jobs:
           path: benchmark.txt
 
   # The package is what users get, so one job meets it the way they do: pack, scaffold from
-  # the package, build, test, publish a NativeAOT single file and drive it. run on the oldest
-  # image the package promises (glibc 2.35) as well as Windows, so an ABI that a newer runner
-  # would hide fails here.
+  # the package, build, test, publish a NativeAOT single file and drive it. The Linux leg links
+  # and runs on an image of the promised generation, and the library it links was built inside
+  # debian:11, so an ABI that a newer runner would hide fails here.
   packaged-consumer:
     name: Packaged consumer (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -405,16 +407,15 @@ jobs:
             native/libcui.so
             native/libcui.a
             native/libcui.dylib
-          key: cui-native-${{ runner.os }}-${{ steps.cui.outputs.sha }}
+          key: cui-native-${{ runner.os }}-glibc${{ env.CUI_GLIBC_BASELINE }}-${{ steps.cui.outputs.sha }}
 
       - name: Build CUI (native library)
         if: steps.native-cache.outputs.cache-hit != 'true'
         shell: pwsh
-        env:
-          CUI_GLIBC_BASELINE: '2.35'
         run: |
           if ($IsWindows) { ./native/build-native.ps1 }
-          else { bash native/build-native.sh }
+          elseif ($IsMacOS) { bash native/build-native.sh }
+          else { bash native/build-native-container.sh debian:11 }
 
       # Packs into a private cache, scaffolds from the package, tests (JIT frames through
       # the software renderer), publishes AOT, checks the executable is alone in its
@@ -486,7 +487,8 @@ jobs:
         shell: pwsh
         run: |
           if ($IsWindows) { ./native/build-native.ps1 }
-          else { bash native/build-native.sh }
+          elseif ($IsMacOS) { bash native/build-native.sh }
+          else { bash native/build-native-container.sh debian:11 }
 
       # No --job: the suites carry [SimpleJob], and a CLI --job is *added* to those,
       # so every case ran twice. The iteration counts trim that one job instead:

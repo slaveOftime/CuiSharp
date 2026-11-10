@@ -86,7 +86,7 @@ done
 # The ABI a Linux package promises, checked rather than inherited from whichever image
 # happened to build it: a .so linked against a newer glibc loads on nothing older, and
 # that failure surfaces in a consumer's environment, not here.
-baseline="${CUI_GLIBC_BASELINE:-2.35}"
+baseline="${CUI_GLIBC_BASELINE:-2.31}"
 provenance="$here/native-provenance.txt"
 {
   echo "cui-rev=$cui_rev"

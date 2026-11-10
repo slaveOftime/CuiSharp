@@ -58,7 +58,7 @@ internal static class CuiNative
     internal static readonly string[] RidList = ["win-x64", "linux-x64", "osx-arm64"];
 
     /// <summary>The glibc floor the Linux archive is built against.</summary>
-    internal const string LinuxFloor = "2.35";
+    internal const string LinuxFloor = "2.31";
 
     /// <summary>The RIDs as one readable string.</summary>
     internal static string Rids => string.Join(", ", RidList);

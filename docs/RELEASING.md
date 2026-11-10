@@ -29,7 +29,7 @@ dotnet run -c Release --project src/CuiSharp.Benchmarks -- --fps 900
 
 What each one protects:
 
-The Linux native build must run on the declared ABI baseline (`ubuntu-22.04`, glibc 2.35), which is
+The Linux native build must run inside the declared ABI baseline (`debian:11`, glibc 2.31), which is
 what `release.yml` and `ci.yml` pin; `build-native.sh` fails if the produced `libcui.so` needs more.
 
 | Gate | Fails when |

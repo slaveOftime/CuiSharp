@@ -9,17 +9,21 @@ against is a promise, not an accident of the build machine.
 | RID | Native files | Built with | Minimum runtime |
 |---|---|---|---|
 | `win-x64` | `cui.dll`, `cui.lib` | MSVC v143 (VS 2022), `/MT` static CRT | Windows 10 x64, no VC++ redistributable |
-| `linux-x64` | `libcui.so`, `libcui.a` | `ubuntu-22.04`, glibc **2.35** | glibc 2.35 (Ubuntu 22.04, Debian 12), Xlib 1.6 for the x11 backend |
+| `linux-x64` | `libcui.so`, `libcui.a` | `debian:11`, glibc **2.31** | glibc 2.31 (Debian 11, Ubuntu 20.04), Xlib 1.6 for the x11 backend |
 | `osx-arm64` | `libcui.dylib`, `libcui.a` | `macos-latest`, `CMAKE_OSX_DEPLOYMENT_TARGET=12.0` | macOS 12 (Monterey) on Apple silicon |
 
 A glibc-built `.so` records the *newest* versioned symbol it uses, and a loader older than that
 refuses the whole library: `version 'GLIBC_2.38' not found`. Building the Linux binaries on a newer
 image therefore narrows the promise without anyone choosing it. `native/build-native.sh` refuses to
-emit a `libcui.so` that needs a newer glibc than `CUI_GLIBC_BASELINE` (default `2.35`), and writes
+emit a `libcui.so` that needs a newer glibc than `CUI_GLIBC_BASELINE` (default `2.31`), and writes
 what it measured into `native/native-provenance.txt`.
 
-Raising the baseline is a deliberate act: change the default in the script, the table above and the
-CI image together, and say why in the release notes.
+The Linux binaries are built by `native/build-native-container.sh` inside the image named above, not
+on the runner: glibc merges and moves symbols between releases (libpthread's are in libc from 2.34),
+so a library linked on a newer image refuses to load on an older one. Raising the baseline is a
+deliberate act: change the default in the script, the image in the workflows, the table above and
+`CuiNative.LinuxFloor` together — a test fails when the last two disagree — and say why in the
+release notes.
 
 ## What the package records
 
@@ -32,10 +36,10 @@ win-x64 cui.lib FEB51ECF…1C03
 repository https://github.com/yappologistic/CuiSharp @ b27a909…
 cui-rev=<CUI submodule revision>
 os=Linux-x86_64
-built-on=Ubuntu 22.04.4 LTS
-cc=gcc (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0
-requires-glibc=2.35
-baseline-glibc=2.35
+built-on=Debian GNU/Linux 11 (bullseye)
+cc=gcc (Debian 10.2.1-6) 10.2.1 20210110
+requires-glibc=2.31
+baseline-glibc=2.31
 file=libcui.so sha256=…
 ```
 
