@@ -4,7 +4,7 @@ Every user-visible change, newest first. Pre-1.0 the minor number carries new su
 carries fixes. The section for a tag is what the GitHub release publishes, so the two cannot say
 different things.
 
-## [0.3.1] — unreleased
+## [0.3.1] — 2026-11-10
 
 The date components speak another language, and the data grid owns its state.
 
@@ -13,10 +13,14 @@ The date components speak another language, and the data grid owns its state.
 - **Manual benchmark controls** keep BenchmarkDotNet suites and the frame-time measurement off
   push/PR checks; select `benchmarks` or `budget` when dispatching CI. Linux dependency setup skips
   already-installed packages and bounds apt/network waits without removing consumer verification.
-- **IDE quick fixes for CUI002, CUI003 and CUI005** add `using`, guard conditional container
-  bodies, and remove an awaited BCL `ConfigureAwait(bool)`. Scope fixes refuse rewrites that
-  introduce compiler errors or unsafe overloads; overlapping scope fix-all and fixes for the other
-  rules remain open. `CUI002` also catches a discarded scope in a value-less expression body.
+- **IDE quick fixes for CUI002–CUI005** add `using`, guard conditional container bodies, key
+  repeated widgets, and remove an awaited BCL `ConfigureAwait(bool)`. The CUI004 fix scopes the
+  widget's actual receiver, preserves a using declaration's children, and only offers a foreach
+  item or an unambiguous changing integer counter; nested loops and while/do loops need explicit
+  keys. Rewrites that introduce compiler errors are refused. Overlapping scope fix-all and fixes
+  for the other rules remain open. `CUI002` also catches a discarded scope in a value-less
+  expression body. `CUI004` recognizes C# 14 extension members and ordinary Ui members, without
+  treating plain display text or calls targeting existing ids as row-state collisions.
 - **Windows/Linux ARM64 builds** select each RID's own native toolchain, archive, linker inputs and
   provenance, and reject an archive whose build stamp names another CPU. Verified on hosted
   `windows-11-arm` and `ubuntu-24.04-arm` runners: native build, full suite, NativeAOT render and
