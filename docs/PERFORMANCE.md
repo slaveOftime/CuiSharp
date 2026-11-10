@@ -35,7 +35,7 @@ machine the budget came from.
 | Gallery frame, 1240x820, software raster | **0.82 ms** mean (p50 0.69, p95 1.13, p99 1.33) | budget 0.90 ms, `--fps 900` |
 | Build only (a GPU would rasterize) | 0.02 ms | same run |
 | Managed allocation per frame | **0 B** | `FrameLifecycleTests`, `NewComponentTests` |
-| Gallery AOT executable, win-x64 | 2 580 992 B | budget 2.7 MB |
+| Gallery AOT executable, win-x64 | 2 294 784 B | budget 2.4 MB |
 | A million virtual list rows | ~12 µs | `--scale` |
 | A million chart points, undecimated | 45.9 ms | why decimation exists |
 | A million chart points, decimated to 800 | 0.018 ms | same |
@@ -44,10 +44,15 @@ machine the budget came from.
 The executable grew from 2 141 184 B to 2 579 456 B with CUI 1.3, and the growth is upstream's: the
 twenty components it added are about 5 000 lines of new C (`cui_devtools.c`, `cui_devpanels.c`,
 `cui_devviews.c`, `cui_graph.c`, `cui_regex.c`) compiled into the same library. The frame time did not
-move, because a page still draws only the widgets on it. The ceiling moved with the binary rather
-than the other way round, and it is a round number above the measurement, so the next regression still
-fails the gate. `Localization` added 1 536 B on top of that, and no measurable frame time: it costs
-one null test per frame, and a published table is compared slot by slot only when one is attached.
+move, because a page still draws only the widgets on it. `Localization` added 1 536 B on top of that,
+and no measurable frame time: it costs one null test per frame, and a published table is compared
+slot by slot only when one is attached. So the growth was not in the widgets an app does not use —
+`/OPT:REF` drops those — it was in what every app carries: 0.4.0's size profile takes 286 720 B of it
+back by compiling the headless channel and the framework diagnostics a shipped app never reads out of
+a self-contained publish. The ceiling moved with the binary rather than the other way round, and it is
+a round number above the measurement, so the next regression still fails the gate.
+
+What is inside the executable, and what each widget family costs: [SIZE.md](SIZE.md).
 
 ## Scale: a million of something
 

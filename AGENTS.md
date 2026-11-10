@@ -43,7 +43,7 @@ dotnet test  CuiSharp.slnx -c Release
 dotnet format CuiSharp.slnx --verify-no-changes
 pwsh tools/regen.ps1 -NoNative -NoDiff      # generated output is fresh, 13 generator self-checks
 pwsh tools/verify-template.ps1              # dotnet new -> build -> test -> AOT -> dotnet cui
-pwsh tools/budget-check.ps1 -Benchmark b.txt -AotBytes 2134016   # frame time + size, against PERFORMANCE.md
+pwsh tools/budget-check.ps1 -Benchmark b.txt -AotBytes 2294784   # frame time + size, against PERFORMANCE.md
 ```
 
 Performance-relevant work also needs:

@@ -287,8 +287,14 @@ internal sealed class HeadlessClient : IDisposable
 
     private ToolException Timeout(Waiting waiting) => waiting switch
     {
+        // The most likely cause of a missing banner is a binary the headless channel was never
+        // built into: the package trims it out of a self-contained AOT publish (docs/SIZE.md), so
+        // a published app has to ask for it back before this tool can say anything about it.
         Waiting.Ready => new ToolException(
-            $"The app was not ready after {ReadyTimeout.TotalSeconds:0}s: it never printed CUI-READY.{Tail()}"),
+            $"The app was not ready after {ReadyTimeout.TotalSeconds:0}s: it never printed CUI-READY.{Tail()}" +
+            Environment.NewLine +
+            "A published app carries the headless channel only when it was published for it: " +
+            "add -p:CuiSharpHeadless=true to the publish. `dotnet cui` passes it for the builds it runs itself."),
         _ => new ToolException(
             $"The app did not answer within {AnswerTimeout.TotalSeconds:0}s.{Tail()}"),
     };

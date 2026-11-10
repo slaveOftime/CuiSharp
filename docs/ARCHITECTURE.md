@@ -20,6 +20,7 @@ Settled. Reopening one is a design change, not a refactor.
 | D7 | No runtime reflection, no assembly scanning, no interceptors. Every call path is statically visible so NativeAOT can trim it. |
 | D8 | **A packaged native library declares the ABI it was built against.** Windows x64/ARM64 is `/MT` MSVC, Linux x64/ARM64 is glibc 2.31 built inside `debian:11`, `osx-arm64` targets macOS 12. `native/build-native.sh` fails rather than emit a `libcui.so` that needs more, and the Linux build runs inside that image so it cannot inherit a newer floor; the package records the revision, compiler and hashes it shipped (`runtimes/native-provenance.txt`), and `build/CuiSharp.targets` matches the RID exactly and errors when the archive for it is missing. See [native-abi.md](../skills/cui-dotnet/native-abi.md). |
 | D9 | **Window behaviour the framework needs is a hook over CUI's own window procedure, not a native patch.** A drag on Windows makes Win32 send `WM_SIZE` per mouse sample and then a `WM_PAINT` that invalidates the whole client area, and CUI draws in both, inside the modal loop, with vsync on: one mouse step cost two frames and two display waits. `Hosting/LiveResize` subclasses the window procedure (the one place Windows lets a framework intervene), lets the coalesced paint draw once, and stops waiting for the display for the length of the drag — driving CUI's own live-frame path rather than replacing it. The same hook is where the window handle is recovered for `CuiWindow`, because the app loop keeps its `cui_app*` private and the window's user data holds it. A fix that needed `native/CUI/` would be upstream's, per D2. |
+| D10 | **A published binary is a product, and the package decides what goes in it.** `build/CuiSharp.Size.targets` applies the switches that decide size (`CuiSharpSizeProfile`, `CuiSharpHeadless`, `CuiSharpVerboseErrors`) to a self-contained AOT publish and to nothing else, because that is the only build whose size matters: `dotnet run` keeps the headless channel and the framework's exception messages. `PublishAot` alone is not the signal — the file-based app shape sets it for `dotnet run` too. Measured in [SIZE.md](SIZE.md), which is what a size decision has to cite. |
 
 ## Layout
 
@@ -230,8 +231,11 @@ would need a stateful daemon belongs in the testing driver, not here.
 
 An app opts in by running headless (`CUISHARP_HEADLESS=1` or `--headless`). `CuiApp.Run` is the only
 place that decides, and a hosted app reaches it with its host's draw callback, so a tool drives the
-same frame a window would. The feature is a `[FeatureSwitchDefinition]`, so a binary that does not
-want the channel can trim it out with `CuiSharp.Headless=false`.
+same frame a window would. The feature is a `[FeatureSwitchDefinition]`, and the package compiles it
+out of a self-contained AOT publish (`CuiSharpHeadless=false`, see [SIZE.md](SIZE.md)) because the
+channel and the IO stack behind it are a fifth of a small binary. `dotnet cui` passes
+`-p:CuiSharpHeadless=true` to the builds it runs, so the tool works on an app that never thought
+about it; a published app that a tool should inspect is published with the same property.
 
 Both ends are bounded, because a protocol is a trust boundary: a command line over 64 KiB is
 answered as an error instead of read, an answer over 16 MiB is refused with its size, the client

@@ -109,6 +109,32 @@ public sealed class NativePackagingTests
         Assert.Empty(Directory.GetFiles(fixture.Root, "*.nupkg"));
     }
 
+    [Theory]
+    [InlineData("win-x64", "false", "true")]
+    [InlineData(null, "true", "")]
+    public async Task TheSizeProfileAppliesToASelfContainedPublishAndToNothingElse(
+        string? rid, string headless, string profile)
+    {
+        using var fixture = new NativeFixture();
+        var arguments = new List<string> { "msbuild", fixture.Consumer(), "-p:PublishAot=true" };
+        if (rid is not null) arguments.Add($"-p:RuntimeIdentifier={rid}");
+        arguments.AddRange(["-getProperty:CuiSharpHeadless", "-getProperty:CuiSharpSizeProfile",
+            "-getItem:RuntimeHostConfigurationOption"]);
+        var result = await RunAsync([.. arguments]);
+        Assert.Equal(0, result.Exit);
+        using var json = JsonDocument.Parse(result.Output);
+        var properties = json.RootElement.GetProperty("Properties");
+        Assert.Equal(headless, properties.GetProperty("CuiSharpHeadless").GetString());
+        Assert.Equal(profile, properties.GetProperty("CuiSharpSizeProfile").GetString());
+
+        // The property is only worth anything if it reaches the trimmer as a feature switch: a
+        // build that set it and then never wrote the switch would look identical from here.
+        var switchItem = Assert.Single(json.RootElement.GetProperty("Items")
+            .GetProperty("RuntimeHostConfigurationOption").EnumerateArray());
+        Assert.Equal("CuiSharp.Headless", switchItem.GetProperty("Identity").GetString());
+        Assert.Equal(headless, switchItem.GetProperty("Value").GetString());
+    }
+
     [Fact]
     public async Task AReleasePackageKeepsFiveDifferentArchivesInTheirOwnRids()
     {
@@ -215,7 +241,10 @@ public sealed class NativePackagingTests
         {
             string build = Path.Combine(Root, "build");
             Directory.CreateDirectory(build);
-            File.Copy(Path.Combine(TestPaths.RepositoryRoot, "src", "CuiSharp", "build", "CuiSharp.targets"), Path.Combine(build, "CuiSharp.targets"));
+            // The whole folder, not one file: the package's build targets import each other, and a
+            // fixture that copied only the entry point would test a package nobody can use.
+            foreach (string file in Directory.GetFiles(Path.Combine(TestPaths.RepositoryRoot, "src", "CuiSharp", "build")))
+                File.Copy(file, Path.Combine(build, Path.GetFileName(file)));
             foreach (string rid in CuiNative.RidList)
             {
                 string native = Path.Combine(Root, "runtimes", rid, "native");

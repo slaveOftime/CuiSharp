@@ -22,8 +22,8 @@ a UI that needs an accessibility tree (CUI publishes none).
 4. [Pitfalls](#pitfalls) · [Async work](#async-work) · [Renderer](#where-it-renders) · [Keyboard](#keyboard) ·
    [Theming](#theming) · [Translation](#translating-the-date-names) · [Design rules](#design-rules)
 5. [How to work on a UI](#how-to-work-on-a-ui) · [Testing](#testing-without-a-window) ·
-   [Driving a real app](#driving-a-running-app) · [Widget behaviour](#widget-behaviour) ·
-   [Files](#files)
+   [Driving a real app](#driving-a-running-app) · [Publishing for size](#publishing-for-size) ·
+   [Widget behaviour](#widget-behaviour) · [Files](#files)
 
 ## The one rule
 
@@ -538,9 +538,29 @@ behind, so anything that should be checked twice belongs in a test instead.
 - Text in a script the bundled Latin faces do not cover draws nothing at all, with no box and no
   warning. `ui.UseSystemFontFallback("中文")` finds the face this machine has for it and registers it
   as a fallback; call it once at startup, and check the language you ship.
-- The app serves this itself (`CUISHARP_HEADLESS=1`), so any app works.
-  `<RuntimeHostConfigurationOption Include="CuiSharp.Headless" Value="false" Trim="true" />` removes
-  it from a binary that wants the bytes back.
+- The app serves this itself (`CUISHARP_HEADLESS=1`), so any app works — `dotnet cui` passes
+  `-p:CuiSharpHeadless=true` to the builds it runs. A **published** app carries the channel only when
+  it was published for it, because the package compiles it out of a self-contained AOT publish to
+  save about 180 KB (`docs/SIZE.md`): publish with `-p:CuiSharpHeadless=true` before pointing
+  `--app` at it.
+
+## Publishing for size
+
+`dotnet publish -c Release -r win-x64` links CUI into one executable. The package already trims it:
+a self-contained publish compiles the headless channel and the framework diagnostics a shipped app
+never reads out of the binary, which is about 20% of a small app. Three properties are the whole
+vocabulary, and the defaults are right for most apps:
+
+| Property | Default on a publish | Set it when |
+|---|---|---|
+| `CuiSharpSizeProfile` | `true` | `false` keeps telemetry, hot-reload metadata and HTTP tracing |
+| `CuiSharpHeadless` | `false` | `true` keeps the channel a tool drives the published exe with |
+| `CuiSharpVerboseErrors` | `false` | `true` keeps framework exception messages and stack traces |
+
+`OptimizationPreference=Size` and `InvariantGlobalization=true` are the app's call, not the
+package's: the first slows your own arithmetic, the second changes how a culture formats. Both
+templates set them, and a file-based app sets them with `#:property`. What each switch is worth,
+and what a widget costs: `docs/SIZE.md` in the CuiSharp repository.
 
 ## Widget behaviour
 

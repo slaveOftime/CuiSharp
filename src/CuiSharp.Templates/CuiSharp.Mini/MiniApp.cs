@@ -1,5 +1,12 @@
 #:package CuiSharp@__CUISHARP_VERSION__
 
+// A published single file is the whole product here, so the two switches that decide its size are
+// set where a file-based app can set them: smaller native code, and no ICU tables for a demo that
+// formats numbers the invariant way. The app template ('dotnet new cui-app') does the same in its
+// project file, with the same reasoning.
+#:property OptimizationPreference=Size
+#:property InvariantGlobalization=true
+
 using CuiSharp;
 
 int clicks = 0;

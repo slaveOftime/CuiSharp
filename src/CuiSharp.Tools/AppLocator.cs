@@ -170,6 +170,11 @@ internal static class AppLocator
         if (request.Framework is not null) arguments.AddRange(["-f", request.Framework]);
         if (request.BaseOutputPath is not null) arguments.Add($"-p:BaseOutputPath={request.BaseOutputPath}");
 
+        // The package compiles the headless channel out of anything it publishes (docs/SIZE.md).
+        // This build is the one place that must have it, and saying so here means the tool keeps
+        // working whatever the package's default becomes.
+        arguments.Add("-p:CuiSharpHeadless=true");
+
         // Both outputs are drained at the same time: reading one to the end before the other
         // deadlocks a child that fills the pipe it is not being read from, which is exactly what a
         // failing build does.

@@ -28,14 +28,6 @@
     <ProjectReference Include="..\..\src\CuiSharp\CuiSharp.csproj" />
   </ItemGroup>
 
-  <!--
-    The headless channel is a feature switch, so it is either compiled in or not. Trimming it
-    out is worth more than every other knob here put together (see docs/SIZE.md), which is why
-    the matrix measures it as a separate width rather than folding it into "tuned".
-  -->
-  <ItemGroup Condition="'$(CuiNoHeadless)' == 'true'">
-    <RuntimeHostConfigurationOption Include="CuiSharp.Headless" Value="false" Trim="true" />
-  </ItemGroup>
 
   <!-- The same publish profile the template and the gallery use. -->
   <PropertyGroup Condition="'$(RuntimeIdentifier)' != ''">
@@ -50,18 +42,6 @@
     <IlcGenerateStackTraceData>false</IlcGenerateStackTraceData>
     <IlcDisableReflection>true</IlcDisableReflection>
     <AllowedReferenceRelatedFileExtensions>.none</AllowedReferenceRelatedFileExtensions>
-  </PropertyGroup>
-
-  <!-- -p:CuiSizeTuned=true adds the switches docs/SIZE.md counts as the "tuned" profile. -->
-  <PropertyGroup Condition="'$(CuiSizeTuned)' == 'true'">
-    <UseSystemResourceKeys>true</UseSystemResourceKeys>
-    <EventSourceSupport>false</EventSourceSupport>
-    <MetadataUpdaterSupport>false</MetadataUpdaterSupport>
-    <StackTraceSupport>false</StackTraceSupport>
-    <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
-    <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
-    <XmlResolverIsNetworkingEnabledByDefault>false</XmlResolverIsNetworkingEnabledByDefault>
-    <UseNativeHttpHandler>true</UseNativeHttpHandler>
   </PropertyGroup>
 
   <!-- CUI is linked from the static archive, exactly as the package does for a consumer. -->
@@ -79,5 +59,15 @@
     <LinkerArg Include="/OPT:REF" />
     <LinkerArg Include="/OPT:ICF" />
   </ItemGroup>
+
+  <!--
+    The size profile is imported, not restated: a tool that measured a copy of the switches would
+    keep passing after the package changed them. -p:CuiSharpSizeProfile=false
+    -p:CuiSharpHeadless=true is the width that shows what the profile is worth.
+
+    Last in the file, where NuGet puts the package's own build targets: the profile decides from
+    PublishAot and RuntimeIdentifier, so it has to see them set.
+  -->
+  <Import Project="..\..\src\CuiSharp\build\CuiSharp.Size.targets" />
 
 </Project>

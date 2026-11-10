@@ -100,6 +100,9 @@
 
   <ItemGroup>
     <None Include="build\CuiSharp.targets" Pack="true" PackagePath="build/" />
+    <!-- Imported by CuiSharp.targets; packed beside it because NuGet only auto-imports the
+         file named after the package. -->
+    <None Include="build\CuiSharp.Size.targets" Pack="true" PackagePath="build/" />
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />
     <!--
       The skill folder is the whole of what an app needs, and it ships at the path it has in the

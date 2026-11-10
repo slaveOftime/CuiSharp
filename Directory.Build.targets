@@ -18,6 +18,16 @@
   </PropertyGroup>
 
   <!--
+    The size profile is part of what the package does, so the projects that behave like a
+    consumer import the packaged file itself rather than a copy of it: the template and the
+    gallery publish the way an app publishes, and a switch that only reached package users
+    would be a switch nobody measured. Tests and benchmarks are left out on purpose — they
+    want the exception messages and the headless channel a Debug run has.
+  -->
+  <Import Project="$(MSBuildThisFileDirectory)src/CuiSharp/build/CuiSharp.Size.targets"
+          Condition="'$(MSBuildProjectName)' == 'CuiSharp.App' or '$(MSBuildProjectName)' == 'CuiSharp.Gallery'" />
+
+  <!--
     A package delivers the analyzers in analyzers/dotnet/cs, which a ProjectReference does
     not carry. Inside the repository the projects that demonstrate the API (the gallery, the
     template, the tests) reference the analyzer project directly, so a violation in sample

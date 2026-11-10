@@ -4,6 +4,28 @@ Every user-visible change, newest first. Pre-1.0 the minor number carries new su
 carries fixes. The section for a tag is what the GitHub release publishes, so the two cannot say
 different things.
 
+## [0.4.0] — unreleased
+
+A published binary carries only what it uses, and the package decides that for you.
+
+### Changed
+
+- **A size profile in the package.** `build/CuiSharp.Size.targets` compiles the headless channel and
+  the framework diagnostics a shipped app never reads out of a **self-contained AOT publish**: the
+  smallest app goes from 1 498 112 B to 1 189 376 B (−20.6%) and the gallery from 2 581 504 B to
+  2 294 784 B (−11.1%). Migration: nothing to do, unless a published exe is driven by a tool —
+  publish it with `-p:CuiSharpHeadless=true`, which is what `dotnet cui` now passes to the builds it
+  runs itself. `dotnet run` is untouched: a build that is not a self-contained publish keeps the
+  channel and the framework's exception messages.
+- **`CuiSharpSizeProfile=false`** turns the whole set off; **`CuiSharpVerboseErrors=true`** keeps
+  exception messages and stack traces while leaving the rest on. Both are properties, not API, and
+  the measured values are in [docs/SIZE.md](docs/SIZE.md).
+- **`dotnet new cui-mini`** sets `OptimizationPreference=Size` and `InvariantGlobalization=true` in
+  the generated file with `#:property`, the two switches a file-based app cannot inherit from a
+  project file. Its published single file is 1 159 680 B.
+- **`dotnet cui` says what to do** when a published app never prints its banner, instead of only
+  reporting that it waited.
+
 ## [0.3.1] — 2026-11-10
 
 The date components speak another language, and the data grid owns its state.
