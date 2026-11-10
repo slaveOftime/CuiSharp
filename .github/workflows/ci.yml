@@ -210,6 +210,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
 
+      - name: Install Xvfb (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y xvfb
+
       - name: Checkout submodules (CUI)
         run: git submodule update --init --recursive
 
@@ -297,6 +301,12 @@ jobs:
             if ($IsWindows) {
               $app = Start-Process -FilePath ./CuiGallery.exe -ArgumentList '--page=0' -Wait -PassThru
               $exit = $app.ExitCode
+            } elseif ($IsLinux) {
+              # A Linux runner has no display, and normal mode really opens an X11
+              # window (the tests avoid this by driving the software renderer
+              # headlessly). Xvfb is that window's server, virtualised.
+              xvfb-run -a ./CuiGallery --page=0
+              $exit = $LASTEXITCODE
             } else {
               ./CuiGallery --page=0
               $exit = $LASTEXITCODE

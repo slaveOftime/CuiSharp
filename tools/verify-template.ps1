@@ -139,7 +139,11 @@ internal static class AnalyzerProbe
     # `dotnet cui` has to work on the app a person just generated, with no code added: the
     # framework serves the headless protocol, so the tool drives the app itself.
     Step 'driving the generated app with dotnet cui'
-    $cui = Join-Path $PSScriptRoot '../src/CuiSharp.Tools/bin/Release/net10.0/CuiSharp.Tools.exe'
+    # .exe only on Windows: the apphost on Linux and macOS carries no extension,
+    # and a path that does not exist would send the launch after a rebuild that
+    # cannot produce it.
+    $toolName = if ($IsWindows) { 'CuiSharp.Tools.exe' } else { 'CuiSharp.Tools' }
+    $cui = Join-Path $PSScriptRoot ("../src/CuiSharp.Tools/bin/Release/net10.0/$toolName")
     if (-not (Test-Path $cui)) { & dotnet build (Join-Path $PSScriptRoot '../src/CuiSharp.Tools/CuiSharp.Tools.csproj') -c Release | Out-Null }
     # Read the tool's stdout as UTF-8, explicitly: a native command's output is otherwise decoded
     # with this console's code page, and the check below is about the tool's bytes, not about pwsh.
