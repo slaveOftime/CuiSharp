@@ -36,23 +36,12 @@ dotnet run -c Release --project src/CuiSharp.Benchmarks -- --fps 900
 6. Close a running app before rebuilding on Windows: `cui.dll` is locked while loaded.
 7. If this plan turns out to be wrong, stop, write the finding down where the work happened, and ask.
 
-## 1. `dotnet cui mcp` — the agent bridge (next)
+## 1. `dotnet cui mcp` — decided against, unless evidence appears
 
-The loop, the client and the tree exist; this exposes them over MCP so an agent can drive a real
-app without a shell.
-
-- `dotnet cui mcp` speaks newline-delimited JSON-RPC on stdio: `initialize`, `tools/list`,
-  `tools/call`. Tools: `tree`, `find`, `click`, `type`, `key`, `move`, `frame`, `faults`, `png`,
-  `restart`.
-- One long-lived app process per server, restarted on demand, so a session is one build+startup.
-- `png` answers with an image content block, not a path, so a model can look at the frame it is
-  being asked about.
-- Reuse `HeadlessClient`; do not add an MCP dependency. The protocol is small and having no
-  package keeps the tool's AOT-friendly shape.
-
-Checkpoint: `claude`/`codex` (or a JSON-RPC script) lists the tools, clicks a control in the
-gallery, and receives the frame tree and a PNG; a command that cannot be obeyed returns an error
-result, not a crash.
+An MCP server would expose `tree`/`click`/`png` over JSON-RPC so an agent needs no shell. Dropped by
+decision (`docs/AI-ITERATION-STATUS.md`): every coding agent already has a shell, `CuiSharp.Testing`
+is the fast repeatable loop, and a stateful server is a second implementation of the relay to keep
+correct. What would reopen this: an agent surface with no process execution at all.
 
 ## 2. `cui-script`: the single-file story
 

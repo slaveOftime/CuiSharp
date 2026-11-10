@@ -179,8 +179,8 @@ Frame
 ```
 
 The app serves this itself (`CUISHARP_HEADLESS=1`), so what a tool sees is what a user sees — no
-debug mode, no mock, no second code path. `dotnet cui mcp` will expose the same over MCP
-([remaining work](docs/PLAN.md)).
+debug mode, no mock, no second code path. For a check that has to hold, prefer
+`CuiSharp.Testing`: frames on demand, milliseconds, and the reproduction stays in the suite.
 
 **Analyzers ship in the package** and turn the six mistakes that cost the most into build errors or
 warnings: a blocking call in a frame (`CUI001`), a container scope without `using` (`CUI002`), a
