@@ -6,6 +6,7 @@ CuiSharp binds CUI (C99) to C#. Read these three before changing code, in this o
 |---|---|
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | the settled decisions and the rules that must not break |
 | [skills/cui-dotnet/SKILL.md](skills/cui-dotnet/SKILL.md) | how the API is meant to be used, pitfalls included |
+| [docs/PLAN.md](docs/PLAN.md) | what is left to do |
 
 `docs/ARCHITECTURE.md` is why things are the way they are; read an entry when you are about to change
 something that looks odd.
@@ -37,6 +38,7 @@ dotnet test  CuiSharp.slnx -c Release
 dotnet format CuiSharp.slnx --verify-no-changes
 pwsh tools/regen.ps1 -NoNative -NoDiff      # generated output is fresh, 13 generator self-checks
 pwsh tools/verify-template.ps1              # dotnet new -> build -> test -> AOT -> dotnet cui
+pwsh tools/budget-check.ps1 -Benchmark b.txt -AotBytes 2134016   # frame time + size, against PERFORMANCE.md
 ```
 
 Performance-relevant work also needs:

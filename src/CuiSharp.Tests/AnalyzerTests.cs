@@ -132,6 +132,46 @@ public class AnalyzerTests
         Assert.DoesNotContain(found, f => f.StartsWith("CUI001", StringComparison.Ordinal));
     }
 
+    // ---- CUI008 -------------------------------------------------------------
+
+    [Fact]
+    public async Task ReflectionSerializationIsReported()
+    {
+        string[] found = await AnalyzeAsync(Prologue + """
+            public sealed class Page : Component
+            {
+                public override void Draw(Ui ui)
+                {
+                    _ = System.Text.Json.JsonSerializer.Serialize(42);
+                    ui.Label("done");
+                }
+            }
+            """);
+
+        string[] reported = [.. found.Where(f => f.StartsWith("CUI008", StringComparison.Ordinal))];
+        Assert.Single(reported);
+        Assert.Contains("JsonSerializerContext", reported[0], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SerializingThroughAGeneratedContextIsFine()
+    {
+        // The overload that takes a JsonTypeInfo carries the metadata the trimmer needs.
+        string[] found = await AnalyzeAsync(Prologue + """
+            public sealed class Page : Component
+            {
+                public override void Draw(Ui ui)
+                {
+                    var info = new System.Text.Json.Serialization.Metadata.JsonTypeInfo<int>(null!, null);
+                    _ = System.Text.Json.JsonSerializer.Serialize(42, info);
+                    ui.Label("done");
+                }
+            }
+            """);
+
+        Assert.DoesNotContain(found, f => f.StartsWith("CUI008", StringComparison.Ordinal));
+    }
+
     // ---- CUI002 -------------------------------------------------------------
 
     [Fact]

@@ -62,7 +62,10 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'installing the template failed' }
     $templateInstalled = $true
 
-    & dotnet new cui-app -n TodoApp -o $app | Out-Null
+    # Scaffolded at this build's version rather than the released default the template pins: every
+    # later command, including `dotnet cui`, then restores the package this run just packed. That the
+    # default tracks the release is TemplateVersionTests' job, not this gate's.
+    & dotnet new cui-app -n TodoApp -o $app --CuiSharpVersion $version | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'generating the app failed' }
 
     # A generated app has no NuGet.config; give it one that can see the local packages.
@@ -77,8 +80,6 @@ try {
 </configuration>
 "@ | Set-Content (Join-Path $app 'NuGet.config')
 
-    # Passed explicitly, because the default is the released version, not this build's.
-    # (That the default tracks the package is checked by TemplateVersionTests.)
     $solution = Join-Path $app 'TodoApp.slnx'
     $versionArg = "-p:CuiSharpVersion=$version"
 

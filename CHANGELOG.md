@@ -4,7 +4,7 @@ Every user-visible change, newest first. Pre-1.0 the minor number carries new su
 carries fixes. The section for a tag is what the GitHub release publishes, so the two cannot say
 different things.
 
-## [Unreleased]
+## [0.2.0] — 2026-11-10
 
 ### Fixed
 
@@ -30,6 +30,16 @@ different things.
   faces do not cover, and registers it. Call it once at startup.
 - The package ships `skills/cui-dotnet/` — the guide, the reference, the API pages, CUI's component
   documentation, the hosting guide and the ABI promise — at the path it has in the repository.
+- `CuiWindow.PickFile` and `CuiWindow.OpenUrl`: the OS file/folder/save dialog, which had no managed
+  API at all, returning `FilePickResult` (`Picked`, `Cancelled`, `Error`) instead of a bool and an
+  empty string. `IFileDialogProvider` replaces it in a test, so a picker flow runs with no display.
+- `CuiDiagnostics.Report()`: platform, backend, renderer, display, dialog helper, ABI floor. The
+  template prints it on `--check`.
+- `GoldenPng.Compare(app, path, tolerance)`: a checked-in image with a tolerance instead of an
+  exact match; `CUI_UPDATE_GOLDENS=1` accepts a deliberate change.
+- `CUI008`: warns on reflection-based `JsonSerializer` calls, which Native AOT trims away.
+- `tools/budget-check.ps1` reads the frame-time and binary-size ceilings out of
+  `docs/PERFORMANCE.md`; CI runs the size check on every pull request and the frame check on demand.
 
 ## [0.1.0] — 2026-11-09
 

@@ -543,6 +543,7 @@ class CuiSharp.CuiAppOptions
   property Boolean FollowSystemTheme { get; set; }
   property Boolean Hidden { get; set; }
   property Boolean NoVsync { get; set; }
+  property IFileDialogProvider FileDialog { get; set; }
   property Int32 Height { get; set; }
   property Int32 MinHeight { get; set; }
   property Int32 MinWidth { get; set; }
@@ -550,6 +551,22 @@ class CuiSharp.CuiAppOptions
   property Renderer Renderer { get; set; }
   property String Title { get; set; }
   property Theme Theme { get; set; }
+class CuiSharp.CuiDiagnostics
+  Boolean Equals(CuiDiagnostics)
+  Boolean Equals(Object)
+  CuiDiagnostics <Clone>$()
+  Int32 GetHashCode()
+  String Report()
+  String ToString()
+  ctor()
+  property Boolean SoftwareRenderer { get; set; }
+  property String Backend { get; set; }
+  property String DialogHelper { get; set; }
+  property String Display { get; set; }
+  property String GlibcFloor { get; set; }
+  property String Platform { get; set; }
+  property String Version { get; set; }
+  static CuiDiagnostics Report(CuiWindow)
 class CuiSharp.CuiFiles
   static FileEntry[] ListDirectory(String, Boolean, Int32)
   static Void SortFlameSpans(Span<FlameSpan>)
@@ -601,15 +618,18 @@ class CuiSharp.CuiSurface
 class CuiSharp.CuiTree
   static Int32 Sort(TreeNode[], Int32, Comparison<Int32>, String)
 class CuiSharp.CuiWindow
+  FilePickResult PickFile(FileDialogOpts)
   Void Minimize()
   Void RequestClose()
   Void SetTitle(String)
   Void ToggleMaximize()
   property Boolean IsMaximized { get; }
   property Boolean IsSoftwareRenderer { get; }
+  property IFileDialogProvider FileDialog { get; set; }
   property IntPtr NativeWindow { get; }
   property String Backend { get; }
   property ValueTuple<Int32, Int32> PixelSize { get; }
+  static Boolean OpenUrl(String)
 enum CuiSharp.Cursor
   Arrow
   Count
@@ -1016,6 +1036,19 @@ struct CuiSharp.FileEntry
   field Int64 Modified
   field String Name
   field UInt64 Size
+class CuiSharp.FilePickResult
+  Boolean Equals(FilePickResult)
+  Boolean Equals(Object)
+  FilePickResult <Clone>$()
+  Int32 GetHashCode()
+  String ToString()
+  property Boolean Cancelled { get; }
+  property Boolean Picked { get; }
+  property FilePickResult CancelledResult { get; }
+  property String Error { get; }
+  property String Path { get; }
+  static FilePickResult Chosen(String)
+  static FilePickResult Failed(String)
 struct CuiSharp.FilePickerOpts
   field Boolean Folders
   field Boolean Save
@@ -1291,6 +1324,8 @@ struct CuiSharp.HoverCardOpts
   field Placement Placement
   field Single Delay
   field Single Width
+interface CuiSharp.IFileDialogProvider
+  FilePickResult Pick(CuiWindow, FileDialogOpts)
 class CuiSharp.Icons
   field String Activity
   field String AlignLeft
@@ -4107,6 +4142,10 @@ struct CuiSharp.MultiSelectOpts
   field String Label
   field String Placeholder
   field String[] Icons
+class CuiSharp.NativeFileDialogProvider
+  FilePickResult Pick(CuiWindow, FileDialogOpts)
+  ctor()
+  property NativeFileDialogProvider Instance { get; }
 struct CuiSharp.NavOpts
   field Boolean Selected
   field String Badge

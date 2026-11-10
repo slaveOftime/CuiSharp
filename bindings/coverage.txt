@@ -509,8 +509,8 @@ MANUAL cui_app_size: `CuiApp` reports the size through `Ui.ViewportSize()`.
 MANUAL cui_app_is_software: `CuiApp.IsSoftwareRenderer` (CuiApp.cs).
 MANUAL cui_app_native_window: `CuiApp.NativeWindow` (CuiApp.cs).
 MANUAL cui_app_backend: `CuiApp.Backend` (CuiApp.cs).
-MANUAL cui_app_file_dialog: `CuiApp.FileDialog` (CuiApp.cs) returns the chosen path or null.
-MANUAL cui_app_open_url: `CuiApp.OpenUrl` (CuiApp.cs).
+MANUAL cui_app_file_dialog: `CuiWindow.PickFile` (CuiWindow.cs) returns a FilePickResult: picked, cancelled or failed, with the path.
+MANUAL cui_app_open_url: `CuiWindow.OpenUrl` (CuiWindow.cs).
 MANUAL cui_app_screenshot: `CuiApp.Screenshot` (CuiApp.cs).
 MANUAL cui_sw_create: `CuiSurface.Create` creates the software renderer (CuiSurface.cs).
 MANUAL cui_sw_destroy: `CuiSurface.Dispose` (CuiSurface.cs).

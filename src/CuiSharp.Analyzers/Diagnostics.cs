@@ -82,6 +82,19 @@ internal static class Diagnostics
         defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true,
         description: "The frame loop runs sixty times a second; anything allocated in it becomes garbage at that rate. Reported as info because a one-off allocation at startup is fine.");
+
+    /// <summary>
+    /// Reflection-based serialization under Native AOT: the types it needs are trimmed away, so the
+    /// app publishes cleanly and fails at run time on the machine that cannot run a debugger.
+    /// </summary>
+    internal static readonly DiagnosticDescriptor ReflectionUnderAot = new(
+        id: "CUI008",
+        title: "Reflection cannot see trimmed metadata",
+        messageFormat: "'{0}' reflects over types at run time, which Native AOT trims away: use the source-generated JsonSerializerContext, a JsonTypeInfo, or read the value directly",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "CuiSharp is built for NativeAOT: an app that serializes with reflection publishes with IL2026/IL3050 warnings at best, and fails at run time when the metadata is gone.");
 }
 
 /// <summary>Facts about the CuiSharp types the rules match on, resolved once per compilation.</summary>

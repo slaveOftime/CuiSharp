@@ -87,6 +87,35 @@ public sealed class CuiWindow
         else Native.AppQuit(_app);
     }
 
+    /// <summary>
+    /// What <see cref="PickFile"/> uses. Null means the OS's own dialog through CUI; a test sets a
+    /// provider here (or on <see cref="CuiAppOptions.FileDialog"/>) and the picker flow runs with no
+    /// display and no dialog in the way.
+    /// </summary>
+    public IFileDialogProvider? FileDialog { get; set; }
+
+    /// <summary>
+    /// Shows the OS's file, folder or save dialog and reports what the user did. Modal and
+    /// blocking, so call it from a click, not from work that has to keep drawing.
+    /// </summary>
+    /// <example><code>
+    /// var pick = window.PickFile(new FileDialogOpts { Kind = FileDialogKind.Open, Filter = "eth;csv", FilterName = "Data" });
+    /// if (pick.Picked) Load(pick.Path);
+    /// else if (pick.Error is { } why) Console.Error.WriteLine(why);
+    /// </code></example>
+    public FilePickResult PickFile(FileDialogOpts options) =>
+        (FileDialog ?? NativeFileDialogProvider.Instance).Pick(this, options);
+
+    /// <summary>Opens an https: URL in the user's browser. False when the OS refused it.</summary>
+    public static bool OpenUrl(string url)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(url);
+        return Native.AppOpenUrl(Utf8.Get(url)) != 0;
+    }
+
+    /// <summary>The <c>cui_app*</c> the native calls need.</summary>
+    internal nint App => _app;
+
     /// <summary>Stops handing the window out; the loop that owns it is ending.</summary>
     internal void Release() => _app = 0;
 }

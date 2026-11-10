@@ -524,10 +524,10 @@
       "why": "`CuiApp.Backend` (CuiApp.cs)."
     },
     "cui_app_file_dialog": {
-      "why": "`CuiApp.FileDialog` (CuiApp.cs) returns the chosen path or null."
+      "why": "`CuiWindow.PickFile` (CuiWindow.cs) returns a FilePickResult: picked, cancelled or failed, with the path."
     },
     "cui_app_open_url": {
-      "why": "`CuiApp.OpenUrl` (CuiApp.cs)."
+      "why": "`CuiWindow.OpenUrl` (CuiWindow.cs)."
     },
     "cui_app_screenshot": {
       "why": "`CuiApp.Screenshot` (CuiApp.cs)."

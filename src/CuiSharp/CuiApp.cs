@@ -48,6 +48,12 @@ public sealed record CuiAppOptions
     public bool FollowSystemTheme { get; set; }
 
     /// <summary>
+    /// What <see cref="CuiWindow.PickFile"/> uses. Null asks the OS through CUI; a test supplies one
+    /// so a picker flow runs with no display.
+    /// </summary>
+    public IFileDialogProvider? FileDialog { get; set; }
+
+    /// <summary>
     /// Called once the window exists and before the first frame is drawn — the first moment there
     /// is a handle to brand, log or query. <see cref="Hosting.Component.OnInitialized"/> is earlier
     /// than this on purpose: it runs before there is a window, so anything that needs one belongs
@@ -133,6 +139,7 @@ public sealed unsafe class CuiApp : IDisposable
         if (handle == 0) return null;
 
         var app = new CuiApp(handle, options);
+        app.Window.FileDialog = options.FileDialog;
         LiveResize.Install(handle == 0 ? 0 : app.NativeWindow, options.NoVsync);
         options.WindowCreated?.Invoke(app.Window);
         return app;
@@ -298,7 +305,7 @@ public sealed unsafe class CuiApp : IDisposable
             if (app == 0) return;
 
             WindowHandle = Native.AppNativeWindow(app);
-            Window = new CuiWindow(app);
+            Window = new CuiWindow(app) { FileDialog = Options.FileDialog };
             LiveResize.Install(WindowHandle, Options.NoVsync);
             Options.WindowCreated?.Invoke(Window);
         }

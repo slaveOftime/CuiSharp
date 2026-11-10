@@ -28,5 +28,18 @@ builder.Window.MinHeight = 480;
 builder.Window.Accent = Accent.Violet;
 builder.Window.Theme = Theme.Light;
 
+// `--check` prints what this machine is actually running — renderer, backend, display, the native
+// library's ABI floor — and exits without opening a window. It is the first thing to ask for when a
+// station behaves differently from the machine the app was written on.
+if (args.Contains("--check"))
+{
+    Console.WriteLine(CuiDiagnostics.Report());
+    return 0;
+}
+
 using var app = builder.Build();
+
+// Once the window exists, report the renderer it really got: `Auto` may have fallen back.
+builder.Window.WindowCreated = window => Console.WriteLine(CuiDiagnostics.Report(window));
+
 return app.Run<App>();

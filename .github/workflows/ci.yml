@@ -65,7 +65,26 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libx11-dev
 
+      - name: Submodule revision
+        id: cui
+        shell: pwsh
+        run: echo "sha=$(git rev-parse HEAD:native/CUI)" >> $env:GITHUB_OUTPUT
+
+      - name: Cache the native build
+        id: native-cache
+        uses: actions/cache@v4
+        with:
+          # Keyed on the submodule commit: a new CUI means a new native build, and nothing else does.
+          path: |
+            native/cui.dll
+            native/cui.lib
+            native/libcui.so
+            native/libcui.a
+            native/libcui.dylib
+          key: cui-native-${{ runner.os }}-${{ steps.cui.outputs.sha }}
+
       - name: Build CUI (native library)
+        if: steps.native-cache.outputs.cache-hit != 'true'
         shell: pwsh
         env:
           CUI_GLIBC_BASELINE: '2.35'
@@ -87,6 +106,24 @@ jobs:
       - name: Format
         if: runner.os == 'Windows'
         run: dotnet format CuiSharp.slnx --verify-no-changes
+
+      # The public surface is the approval file, so a pull request that changes it prints the diff
+      # where the reviewer already is. `PublicSurfaceTests` fails when the file is stale; this shows
+      # what changed.
+      - name: Public surface diff
+        if: runner.os == 'Windows' && github.event_name == 'pull_request'
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          git fetch --depth=1 origin ${{ github.base_ref }} 2>$null
+          $diff = git diff origin/${{ github.base_ref }} -- docs/API-SURFACE.txt
+          if (-not $diff) { Write-Host 'the public surface did not change'; exit 0 }
+
+          '## The public surface changed' | Out-File $env:GITHUB_STEP_SUMMARY -Append
+          'Reviewed in `docs/API-SURFACE.txt`; 1.0 makes it a promise.' | Out-File $env:GITHUB_STEP_SUMMARY -Append
+          '```diff' | Out-File $env:GITHUB_STEP_SUMMARY -Append
+          $diff | Out-File $env:GITHUB_STEP_SUMMARY -Append
+          '```' | Out-File $env:GITHUB_STEP_SUMMARY -Append
 
   # The template content is not in the solution, so nothing else compiles it.
   # Scaffold it under a name that is not CuiSharp.* — a namespace-only difference
@@ -178,7 +215,26 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      - name: Submodule revision
+        id: cui
+        shell: pwsh
+        run: echo "sha=$(git rev-parse HEAD:native/CUI)" >> $env:GITHUB_OUTPUT
+
+      - name: Cache the native build
+        id: native-cache
+        uses: actions/cache@v4
+        with:
+          # Keyed on the submodule commit: a new CUI means a new native build, and nothing else does.
+          path: |
+            native/cui.dll
+            native/cui.lib
+            native/libcui.so
+            native/libcui.a
+            native/libcui.dylib
+          key: cui-native-${{ runner.os }}-${{ steps.cui.outputs.sha }}
+
       - name: Build CUI (native library)
+        if: steps.native-cache.outputs.cache-hit != 'true'
         shell: pwsh
         env:
           CUI_GLIBC_BASELINE: '2.35'
@@ -188,6 +244,12 @@ jobs:
 
       - name: Publish
         run: dotnet publish samples/CuiSharp.Gallery -c Release -r ${{ matrix.rid }} -o artifacts/publish
+
+      # The size ceiling is a row in docs/PERFORMANCE.md: cheap to check, and deterministic.
+      - name: Size budget
+        if: matrix.rid == 'win-x64'
+        shell: pwsh
+        run: pwsh tools/budget-check.ps1 -AotBytes (Get-Item 'artifacts/publish/${{ matrix.exe }}').Length
 
       - name: Assert the exe is self-contained
         shell: pwsh
@@ -252,6 +314,55 @@ jobs:
             artifacts/publish/${{ matrix.exe }}
             artifacts/publish/smoke.png
 
+  # Frame time on demand. The harness is stable enough to compare two runs on one machine and not
+  # stable enough to fail a pull request from a shared runner, so it runs when a person asks for it:
+  # Actions -> CI -> Run workflow. Both ceilings come from docs/PERFORMANCE.md.
+  budget:
+    name: Frame budget (on demand)
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Checkout submodules (CUI)
+        run: git submodule update --init --recursive
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6.1.0
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Submodule revision
+        id: cui
+        shell: pwsh
+        run: echo "sha=$(git rev-parse HEAD:native/CUI)" >> $env:GITHUB_OUTPUT
+
+      - name: Cache the native build
+        id: native-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            native/cui.dll
+            native/cui.lib
+          key: cui-native-${{ runner.os }}-${{ steps.cui.outputs.sha }}
+
+      - name: Build CUI (native library)
+        if: steps.native-cache.outputs.cache-hit != 'true'
+        run: ./native/build-native.ps1
+
+      - name: Measure and compare
+        shell: pwsh
+        run: |
+          dotnet run -c Release --project src/CuiSharp.Benchmarks -- --fps 900 |
+            Tee-Object -FilePath benchmark.txt
+          pwsh tools/budget-check.ps1 -Benchmark benchmark.txt
+
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: benchmark
+          path: benchmark.txt
+
   # The package is what users get, so one job meets it the way they do: pack, scaffold from
   # the package, build, test, publish a NativeAOT single file and drive it. run on the oldest
   # image the package promises (glibc 2.35) as well as Windows, so an ABI that a newer runner
@@ -278,7 +389,26 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libx11-dev
 
+      - name: Submodule revision
+        id: cui
+        shell: pwsh
+        run: echo "sha=$(git rev-parse HEAD:native/CUI)" >> $env:GITHUB_OUTPUT
+
+      - name: Cache the native build
+        id: native-cache
+        uses: actions/cache@v4
+        with:
+          # Keyed on the submodule commit: a new CUI means a new native build, and nothing else does.
+          path: |
+            native/cui.dll
+            native/cui.lib
+            native/libcui.so
+            native/libcui.a
+            native/libcui.dylib
+          key: cui-native-${{ runner.os }}-${{ steps.cui.outputs.sha }}
+
       - name: Build CUI (native library)
+        if: steps.native-cache.outputs.cache-hit != 'true'
         shell: pwsh
         env:
           CUI_GLIBC_BASELINE: '2.35'
