@@ -19,9 +19,13 @@ public unsafe ref partial struct Ui
     /// CUI keeps the pointer and reads it every frame, so the published table has to outlive the
     /// call: from here on the surface owns it, the way it owns the theme (<see cref="CuiSurface"/>
     /// and <see cref="CuiApp"/> both keep one), and its unmanaged block is rebuilt only when a name
-    /// changes. One call is enough — every later frame reads the same table — and the language
-    /// picker that calls it every frame pays one reference comparison. A name left null falls back
-    /// to English, so a partial table is fine.
+    /// changes. One call is enough — a name changed later reaches the next frame by itself, and
+    /// every frame reads the same table until then. A name left null falls back to English, so a
+    /// partial table is fine.
+    /// <para>
+    /// A table belongs to one surface: publishing it to a second one throws, because only the
+    /// owner is told when a name changes and a block is replaced.
+    /// </para>
     /// </remarks>
     /// <example><code>
     /// ui.SetLocalization(_language);   // a Localization, or null for English
@@ -29,9 +33,22 @@ public unsafe ref partial struct Ui
     /// </code></example>
     public void SetLocalization(Localization? table)
     {
-        nint block = table is null ? 0 : table.Publish();
-        if (block == _frame.LocalizationBlock && ReferenceEquals(table, _frame.Localization)) return;
+        if (table is null)
+        {
+            if (_frame.Localization is null) return;
 
+            _frame.Localization.Detach(_frame);
+            _frame.Localization = null;
+            _frame.LocalizationBlock = 0;
+            Native.SetStrings(Handle, 0);
+            return;
+        }
+
+        // Attaching first is what refuses a second surface, and what gives a replaced block a home.
+        nint block = table.Attach(_frame);
+        if (ReferenceEquals(_frame.Localization, table) && block == _frame.LocalizationBlock) return;
+
+        _frame.Localization?.Detach(_frame);
         _frame.Localization = table;
         _frame.LocalizationBlock = block;
         Native.SetStrings(Handle, block);

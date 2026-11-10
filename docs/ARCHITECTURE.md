@@ -108,11 +108,12 @@ recorded in `bindings/overrides.json` as `MANUAL` with the member and the file, 
 - `[assembly: DisableRuntimeMarshalling]`, `IsAotCompatible`, `IsTrimmable`.
 - `[SuppressGCTransition]` only on the reviewed allowlist in `overrides.json` — leaf functions that
   cannot call managed code and cannot block.
-- A `Localization` table is the one managed object CUI keeps a pointer into across frames: the
-  surface that published it owns it, a replaced block is freed at the next frame boundary (the one
-  that could still have been reading it has painted by then), and a table belongs to one surface —
-  two contexts reading one table breaks the moment its names change, because only the publishing
-  context is told about the new block.
+- A `Localization` table is the one managed object CUI keeps a pointer into across frames. Three
+  rules follow from that and are enforced, not documented and hoped for: the surface that published
+  it owns it and a second surface is refused (only the owner republishes a block a name change
+  replaces); a replaced or orphaned block is freed at the next frame boundary, never inside the frame
+  that dropped it, because the frame still drawing reads it; and a name edited after the call is
+  published by the surface at its boundary, which is what makes one `ui.SetLocalization` enough.
 
 ## Frame model
 

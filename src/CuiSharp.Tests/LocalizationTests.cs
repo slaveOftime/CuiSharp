@@ -6,12 +6,28 @@ namespace CuiSharp.Tests;
 /// <summary>
 /// The month, weekday and "Today" names an app translates. CUI keeps the pointer it is given and
 /// reads it every frame, so these pin the three things a wrong shape hides: the slot each name has
-/// to land in, that a published table survives the frame that published it, and that an entry the
-/// table leaves out really falls back to the English name it did not cover.
+/// to land in, that a published table survives the frames that read it — including a name edited
+/// after the call and a table disposed while published — and that an entry the table leaves out
+/// really falls back to the English name it did not cover.
 /// </summary>
 public class LocalizationTests
 {
-    private static bool NeedsNative => OperatingSystem.IsWindows();
+    /// <summary>The frame tests need the native library, which a checkout may not have built yet.</summary>
+    private static readonly bool NativeReady = CanLoadNative();
+
+    private static bool CanLoadNative()
+    {
+        try
+        {
+            // The call a frame makes, not a search-path guess: if this resolves, so does the rest.
+            _ = Native.KeyName(Key.A);
+            return true;
+        }
+        catch (Exception error) when (error is DllNotFoundException or BadImageFormatException or EntryPointNotFoundException)
+        {
+            return false;
+        }
+    }
 
     private static readonly string[] SpanishMonths =
         ["enero", "febrero", "marzo", "abril", "mayo", "junio",
@@ -102,7 +118,7 @@ public class LocalizationTests
     [Fact]
     public void TheCalendarDrawsThePublishedNames()
     {
-        if (!NeedsNative) return;
+        if (!NativeReady) return;
         using var surface = CuiSurface.Create(700, 420);
         using var spanish = Spanish();
 
@@ -115,7 +131,7 @@ public class LocalizationTests
     [Fact]
     public void PublishingNullRestoresTheEnglishFrame()
     {
-        if (!NeedsNative) return;
+        if (!NativeReady) return;
         using var surface = CuiSurface.Create(700, 420);
         using var spanish = Spanish();
 
@@ -134,7 +150,7 @@ public class LocalizationTests
     [Fact]
     public void AnEntryTheTableLeavesOutKeepsItsEnglishName()
     {
-        if (!NeedsNative) return;
+        if (!NativeReady) return;
         using var surface = CuiSurface.Create(700, 420);
         using var march = new Localization { Months = MonthsWith(2, "marzo") };
         using var january = new Localization { Months = MonthsWith(0, "enero") };
@@ -148,6 +164,51 @@ public class LocalizationTests
     }
 
     /// <summary>
+    /// "One call is enough" is the promise, so a name changed after it has to reach the next frame
+    /// without publishing again — including a name swapped in the array the app already handed over.
+    /// </summary>
+    [Fact]
+    public void AChangedNameReachesTheNextFrameWithoutPublishingAgain()
+    {
+        if (!NativeReady) return;
+        using var surface = CuiSurface.Create(700, 420);
+        var months = MonthsWith(2, "marzo");
+        using var table = new Localization { Months = months };
+
+        byte[] march = Draw(surface, table);
+
+        months[2] = "MARZO";
+        byte[] shouted = Frame(surface);            // no SetLocalization call at all
+
+        Assert.NotEqual(march, shouted);
+    }
+
+    /// <summary>
+    /// A language picker can replace the table in the middle of a frame. The frame still paints
+    /// with what it drew, the block it began with is freed only at the boundary after it, and the
+    /// next frame draws the new table.
+    /// </summary>
+    [Fact]
+    public void PublishingANewTableMidFrameDrawsItAndRetiresTheOldBlock()
+    {
+        if (!NativeReady) return;
+        using var surface = CuiSurface.Create(700, 420);
+        using var first = new Localization { Months = MonthsWith(2, "marzo") };
+        using var second = new Localization { Months = MonthsWith(2, "MARZO") };
+
+        byte[] before = Draw(surface, first);
+
+        surface.BeginFrame();
+        var ui = surface.Ui;
+        ui.SetLocalization(second);                 // the block the frame began with is now retired
+        Calendar(ui);
+        surface.EndFrame();
+
+        Assert.Same(second, surface.Ui.Localization);
+        Assert.NotEqual(before, Frame(surface));    // and the frame after paints in the new names
+    }
+
+    /// <summary>
     /// CUI holds the pointer, so the table has to outlive the call with no owner of its own: the
     /// surface is what keeps it alive, and a table nobody else mentions still answers the next
     /// frame after a full collection.
@@ -155,7 +216,7 @@ public class LocalizationTests
     [Fact]
     public void TheSurfaceKeepsThePublishedTableAlive()
     {
-        if (!NeedsNative) return;
+        if (!NativeReady) return;
         using var surface = CuiSurface.Create(700, 420);
 
         WeakReference<Localization> published = Publish(surface);
@@ -170,14 +231,82 @@ public class LocalizationTests
         Assert.Null(surface.Ui.Localization);
     }
 
+    /// <summary>
+    /// Disposing a published table cannot free the block: CUI still points at it while this frame
+    /// draws and paints. The surface takes it, clears the pointer at the next boundary and frees it
+    /// there, which is why the frame after that is English again rather than freed memory.
+    /// </summary>
+    [Fact]
+    public void DisposingAPublishedTableIsDeferredToTheNextFrameBoundary()
+    {
+        if (!NativeReady) return;
+        using var surface = CuiSurface.Create(700, 420);
+
+        byte[] english = Draw(surface, null);
+
+        var table = Spanish();
+        surface.BeginFrame();
+        var ui = surface.Ui;
+        ui.SetLocalization(table);
+        Calendar(ui);
+        table.Dispose();                 // still published, and this frame has not painted yet
+        surface.EndFrame();
+
+        Assert.Null(surface.Ui.Localization);
+        Assert.Throws<ObjectDisposedException>(() => table.Publish());
+        Assert.Equal(english, Frame(surface));
+
+        // The surface let go of it, so the app can publish another table.
+        using var another = Spanish();
+        Assert.NotEqual(english, Draw(surface, another));
+    }
+
+    /// <summary>
+    /// One table belongs to one surface: only the owner is told when a name changes, so a second
+    /// reader would keep the block that was replaced under it.
+    /// </summary>
+    [Fact]
+    public void PublishingToASecondSurfaceIsRefused()
+    {
+        if (!NativeReady) return;
+        using var first = CuiSurface.Create(700, 420);
+        using var second = CuiSurface.Create(700, 420);
+        using var table = Spanish();
+
+        byte[] english = Draw(first, null);
+        Assert.NotEqual(english, Draw(first, table));
+
+        var error = Assert.Throws<InvalidOperationException>(() => second.Ui.SetLocalization(table));
+        Assert.Contains("another surface", error.Message, StringComparison.Ordinal);
+        Assert.Null(second.Ui.Localization);
+        Assert.Same(table, first.Ui.Localization);
+        Assert.NotEqual(english, Frame(first));     // the owner still draws it
+    }
+
+    [Fact]
+    public void ATableCanBePublishedAgainAfterTheFirstSurfaceLetsGo()
+    {
+        if (!NativeReady) return;
+        using var first = CuiSurface.Create(700, 420);
+        using var second = CuiSurface.Create(700, 420);
+        using var table = Spanish();
+
+        first.Ui.SetLocalization(table);
+        first.Ui.SetLocalization(null);
+
+        byte[] english = Draw(second, null);
+        Assert.NotEqual(english, Draw(second, table));
+        Assert.Same(table, second.Ui.Localization);
+    }
+
     [Fact]
     public void PublishingTheSameTableEveryFrameAllocatesNothing()
     {
-        if (!NeedsNative) return;
+        if (!NativeReady) return;
         using var surface = CuiSurface.Create(700, 420);
         using var spanish = Spanish();
 
-        void Frame()
+        void FrameOnce()
         {
             surface.BeginFrame();
             var ui = surface.Ui;
@@ -186,13 +315,13 @@ public class LocalizationTests
             surface.EndFrame();
         }
 
-        for (int i = 0; i < 10; i++) Frame();   // JIT, arena growth, font atlas
+        for (int i = 0; i < 10; i++) FrameOnce();   // JIT, arena growth, font atlas
 
         var perFrame = new long[5];
         for (int batch = 0; batch < perFrame.Length; batch++)
         {
             long before = GC.GetAllocatedBytesForCurrentThread();
-            for (int i = 0; i < 20; i++) Frame();
+            for (int i = 0; i < 20; i++) FrameOnce();
             perFrame[batch] = (GC.GetAllocatedBytesForCurrentThread() - before) / 20;
         }
 
@@ -233,6 +362,17 @@ public class LocalizationTests
         var ui = surface.Ui;
         ui.SetLocalization(table);
         Calendar(ui);
+        surface.EndFrame();
+        surface.Render(pixels);
+        return pixels;
+    }
+
+    /// <summary>One frame of the same component, publishing nothing: what the surface does by itself.</summary>
+    private static byte[] Frame(CuiSurface surface)
+    {
+        var pixels = new byte[surface.PixelWidth * surface.PixelHeight * 4];
+        surface.BeginFrame();
+        Calendar(surface.Ui);
         surface.EndFrame();
         surface.Render(pixels);
         return pixels;

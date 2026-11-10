@@ -82,22 +82,35 @@ public class ReleaseNotesTests
         var info = new System.Diagnostics.ProcessStartInfo
         {
             FileName = "pwsh",
-            ArgumentList = { "-NoProfile", "-File", script },
             RedirectStandardOutput = true,
             RedirectStandardError = true,
         };
+        info.ArgumentList.Add("-NoProfile");
+        info.ArgumentList.Add("-File");
+        info.ArgumentList.Add(script);
         foreach (string argument in arguments) info.ArgumentList.Add(argument);
 
         using var process = System.Diagnostics.Process.Start(info)!;
-        string output = process.StandardOutput.ReadToEnd() + process.StandardError.ReadToEnd();
-        process.WaitForExit();
-        return (process.ExitCode, output);
+
+        // Both pipes are drained at once: reading them in turn deadlocks as soon as the script
+        // fills the one nobody is reading, which a pwsh error record does on its own.
+        Task<string> stdout = process.StandardOutput.ReadToEndAsync();
+        Task<string> stderr = process.StandardError.ReadToEndAsync();
+
+        // A test that waits forever hides the failure it was written to find.
+        if (!process.WaitForExit(60_000))
+        {
+            process.Kill(entireProcessTree: true);
+            Assert.Fail($"{Path.GetFileName(script)} did not exit within 60 s");
+        }
+
+        return (process.ExitCode, stdout.GetAwaiter().GetResult() + stderr.GetAwaiter().GetResult());
     }
 
     [Fact]
     public void TheReleasePageIsTheChangelogSection()
     {
-        string workflow = File.ReadAllText(Path.Combine(TestPaths.RepositoryRoot, ".github", "workflows", "release.yml"));
+        string workflow = Workflow();
 
         // The body comes from the changelog, through the one script that reads it…
         Assert.Contains("tools/release-notes.ps1", workflow, StringComparison.Ordinal);
@@ -107,6 +120,34 @@ public class ReleaseNotesTests
         Assert.DoesNotContain(".github/release-notes.md", workflow, StringComparison.Ordinal);
         Assert.False(File.Exists(Path.Combine(TestPaths.RepositoryRoot, ".github", "release-notes.md")));
     }
+
+    /// <summary>
+    /// A tag whose changelog section is still marked unreleased must fail before the packages reach
+    /// nuget.org, not after: pushing is one-way, and the notes check used to be the last job. The
+    /// pack job runs before the push job and has no condition, so both a tag and a manual dispatch
+    /// are covered.
+    /// </summary>
+    [Fact]
+    public void TheReleaseChecksItsNotesBeforeItPushes()
+    {
+        string workflow = Workflow();
+
+        int pack = workflow.IndexOf("\n  pack:", StringComparison.Ordinal);
+        int push = workflow.IndexOf("\n  publish:", StringComparison.Ordinal);
+
+        Assert.True(pack >= 0, "release.yml has no pack job");
+        Assert.True(push > pack, "the push job must run after the pack job");
+
+        string before = workflow[pack..push];
+        Assert.Contains("tools/release-notes.ps1", before, StringComparison.Ordinal);
+
+        // The push job must stay the one that needs pack: a notes check in a job that runs later
+        // would still be after the push.
+        Assert.Contains("name: Pack and verify", before, StringComparison.Ordinal);
+    }
+
+    private static string Workflow() => File.ReadAllText(
+        Path.Combine(TestPaths.RepositoryRoot, ".github", "workflows", "release.yml")).ReplaceLineEndings("\n");
 
     private static string Version()
     {

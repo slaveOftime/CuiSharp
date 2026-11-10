@@ -17,8 +17,10 @@ The date components speak another language.
   forms and `Today`, each entry nullable so a partial table falls back to English) and owns one
   unmanaged block, rebuilt only when a name changes; the surface keeps the object alive the way it
   keeps the theme, and `ui.Localization` reads back what is published. `null` restores English, and
-  a table with nothing in it costs no block at all. Publishing the same table every frame — what a
-  language picker's frame does — allocates 0 B.
+  a table with nothing in it costs no block at all. One call is enough — a name changed afterwards
+  reaches the next frame by itself — publishing the same table every frame allocates 0 B, and a
+  table disposed while it is still published is freed at the frame boundary that follows, never
+  under the frame reading it. A table belongs to one surface: publishing it to a second one throws.
 
 ## [0.3.0] — 2026-11-10
 

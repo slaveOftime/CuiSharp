@@ -351,14 +351,19 @@ using var spanish = new Localization
     Today = "Hoy",
 };
 
-ui.SetLocalization(spanish);   // once; CUI reads the same table every frame
+ui.SetLocalization(spanish);   // once; CUI reads the same table, and a name edited later, every frame
 ```
 
 CUI keeps the pointer it is given and reads it every frame, so the table cannot live in the frame
 arena: `Localization` owns one unmanaged block, rebuilt only when a name changes, and the surface
-keeps the object alive after the call — disposing it while frames are still drawing is the one way
-to break this. Weeks start on Monday, as in every CUI calendar. A component's own option (such as
-the month calendar's `MonthNames`) wins over the table.
+keeps the object alive after the call. One call is enough — change a name on the table and the next
+frame shows it. The surface publishes a replaced block at its frame boundary and frees the one it
+replaced after the frame that was drawing it, so disposing the table while it is published stays
+safe. Weeks start on Monday, as in every CUI calendar. A component's own option (such as the month
+calendar's `MonthNames`) wins over the table.
+
+A table belongs to one surface: publishing the same one to a second app throws, because only the
+owner is told when a block is replaced. Give each window its own table.
 
 ## Design rules
 

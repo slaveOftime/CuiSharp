@@ -10,14 +10,14 @@ namespace CuiSharp;
 /// <para>
 /// CUI keeps the pointer it is given and reads it every frame, so this table cannot live in the
 /// frame arena. This class owns one unmanaged block, rebuilt only when a name changes, and the
-/// surface that published it keeps this object alive. Every entry is optional: a null falls back
-/// to the English name, so a partial table is a complete one.
+/// surface that published it keeps this object alive and frees a replaced block at a frame
+/// boundary. Every entry is optional: a null falls back to the English name, so a partial table
+/// is a complete one.
 /// </para>
 /// <para>
 /// Weeks start on Monday, as in every CUI calendar, so <see cref="Weekdays"/> starts at Monday.
-/// A table belongs to one app: publish it to one <see cref="CuiSurface"/> or <see cref="CuiApp"/>.
-/// Two contexts reading one table breaks the moment its names change, because only the publishing
-/// context is told about the rebuilt block.
+/// A table belongs to one surface: publishing it to a second one throws, because only the surface
+/// that owns it is told when a name changes and a block is replaced.
 /// </para>
 /// </summary>
 /// <example><code>
@@ -31,7 +31,7 @@ namespace CuiSharp;
 ///
 /// CuiApp.Run(new CuiAppOptions { Title = "Agenda" }, ui =>
 /// {
-///     ui.SetLocalization(es);   // once is enough: CUI reads the same table every frame
+///     ui.SetLocalization(es);   // once: a name changed later reaches the next frame by itself
 ///     ui.MonthCalendar("month", ref month, events, ref selected);
 /// });
 /// </code></example>
@@ -55,7 +55,10 @@ public sealed unsafe class Localization : IDisposable
     private readonly string?[] _published = new string?[Slots];
 
     private NativeStrings* _block;
-    private List<nint>? _retired;
+
+    // The one surface this table is published to. It is what tells a name change where to go, and
+    // what makes a second surface a mistake instead of a table two contexts disagree about.
+    private UiFrameState? _host;
     private bool _disposed;
 
     /// <summary>Twelve month names, index 0 = January. Null entries fall back to English.</summary>
@@ -101,8 +104,32 @@ public sealed unsafe class Localization : IDisposable
     }
 
     /// <summary>
-    /// The pointer CUI reads this frame, rebuilt only when a name changed. Zero means every entry
-    /// is null, which is what English is: CUI then uses its own table.
+    /// Publishes this table to <paramref name="host"/>, which owns it from here, and answers the
+    /// pointer CUI reads. A second surface is a mistake: only the owner republishes when a name
+    /// changes, so the other context would keep reading the replaced block.
+    /// </summary>
+    internal nint Attach(UiFrameState host)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (_host is { } current && !ReferenceEquals(current, host))
+            throw new InvalidOperationException(
+                "this Localization is published to another surface. One table belongs to one app: " +
+                "give each surface its own, or call ui.SetLocalization(null) on the first one.");
+
+        _host = host;
+        return Publish();
+    }
+
+    /// <summary>Lets the surface go, so the table can be published elsewhere or disposed.</summary>
+    internal void Detach(UiFrameState host)
+    {
+        if (ReferenceEquals(_host, host)) _host = null;
+    }
+
+    /// <summary>
+    /// The pointer CUI reads, rebuilt only when a name changed. Zero means every entry is null,
+    /// which is what English is: CUI then uses its own table.
     /// </summary>
     internal nint Publish()
     {
@@ -110,40 +137,43 @@ public sealed unsafe class Localization : IDisposable
 
         if (_block != null && !Changed()) return (nint)_block;
 
-        Retire();
+        // Build first, let go afterwards: a name that cannot be encoded must not leave CUI
+        // pointing at a block this class no longer owns.
+        NativeStrings* built = Build();
+        Retire(_block);
+        _block = built;
         for (int slot = 0; slot < Slots; slot++) _published[slot] = At(slot);
-        _block = Build();
         return (nint)_block;
     }
 
     /// <summary>
-    /// Frees the blocks a previous table used, at a frame boundary: CUI holds the pointer it was
-    /// given and reads it while that frame draws and paints, so the free waits until no frame can
-    /// be reading the old one. Called by the surface at the top of a frame.
+    /// Frees the table now, or — while a surface still reads it — hands the block to that surface,
+    /// which frees it at the next frame boundary. Either way the frames after that one draw English.
     /// </summary>
-    internal void ReleaseRetired()
-    {
-        if (_retired is null) return;
-        foreach (nint block in _retired) NativeMemory.Free((void*)block);
-        _retired.Clear();
-    }
-
-    /// <inheritdoc />
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
-        Free();
+
+        if (_host is { } host)
+        {
+            host.Orphan(this, (nint)_block);
+            _host = null;
+        }
+        else if (_block != null)
+        {
+            NativeMemory.Free(_block);
+        }
+
+        _block = null;
         GC.SuppressFinalize(this);
     }
 
-    ~Localization() => Free();
-
-    private void Free()
+    // A table a surface still holds cannot be collected, so this only runs for one nobody published
+    // or one that was detached again; there is no frame to wait for.
+    ~Localization()
     {
         if (_block != null) NativeMemory.Free(_block);
-        _block = null;
-        ReleaseRetired();
     }
 
     /// <summary>One slot of the table as the managed arrays currently have it.</summary>
@@ -168,15 +198,23 @@ public sealed unsafe class Localization : IDisposable
         return false;
     }
 
+    /// <summary>A replaced block goes to the surface that may still be reading it, or is freed here.</summary>
+    private void Retire(NativeStrings* block)
+    {
+        if (block == null) return;
+        if (_host is { } host) host.Retire((nint)block);
+        else NativeMemory.Free(block);
+    }
+
     /// <summary>The pointer table, then every name, NUL-terminated: one block, one free.</summary>
     private NativeStrings* Build()
     {
         int bytes = 0;
         for (int slot = 0; slot < Slots; slot++)
-            if (_published[slot] is { } name) bytes += Encoding.UTF8.GetByteCount(name) + 1;
+            if (At(slot) is { } name) bytes = checked(bytes + Encoding.UTF8.GetByteCount(name) + 1);
         if (bytes == 0) return null;   // nothing translated: a NULL table is English
 
-        var block = (NativeStrings*)NativeMemory.AllocZeroed((nuint)(sizeof(NativeStrings) + bytes));
+        var block = (NativeStrings*)NativeMemory.AllocZeroed(checked((nuint)sizeof(NativeStrings) + (nuint)bytes));
 
         // cui_strings is six pointer arrays in a row with nothing between them (the ABI test pins
         // their offsets), so the slot index is the pointer index, and the names follow the table.
@@ -184,7 +222,7 @@ public sealed unsafe class Localization : IDisposable
         byte* text = (byte*)block + sizeof(NativeStrings);
         for (int slot = 0; slot < Slots; slot++)
         {
-            if (_published[slot] is not { } name) continue;
+            if (At(slot) is not { } name) continue;
 
             int length = Encoding.UTF8.GetBytes(name, new Span<byte>(text, bytes));
             text[length] = 0;
@@ -194,13 +232,6 @@ public sealed unsafe class Localization : IDisposable
         }
 
         return block;
-    }
-
-    private void Retire()
-    {
-        if (_block == null) return;
-        (_retired ??= []).Add((nint)_block);
-        _block = null;
     }
 
     private static void Check(string?[]? names, int count)
