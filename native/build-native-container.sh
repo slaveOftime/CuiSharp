@@ -32,6 +32,13 @@ docker run --rm \
   bash -c '
     set -e
     export DEBIAN_FRONTEND=noninteractive
+    # Bullseye left LTS: deb.debian.org still serves its security index but has
+    # dropped the .debs it names, so installing anything with a security update
+    # 404s. archive.debian.org keeps the last point release of every package, and
+    # it is never refreshed again — hence Check-Valid-Until, or apt would call
+    # the Release file expired and only warn on its way to the same failure.
+    sed -i 's|deb.debian.org/debian-security|archive.debian.org/debian-security|' /etc/apt/sources.list
+    echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99-archive
     apt-get update -qq
     # X11 headers because CUI'"'"'s only hard Linux dependency is Xlib.
     apt-get install -y -qq --no-install-recommends \
