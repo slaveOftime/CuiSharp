@@ -106,13 +106,34 @@ app and **−2 048 B** on the gallery: an app that draws everything was paying f
 
 ## Still open
 
-- **A size budget per shape.** `tools/budget-check.ps1` gates the gallery executable; the shapes
-  above are only printed. A ceiling per row is what turns "upstream was busy" into a failing check
-  instead of a release note.
 - **The fonts.** 94 KB, 8% of a minimal app, is the one large unconditional blob in the archive.
   `CUI_DEFAULT_FONTS=OFF` removes it and the Inter/Geist/Lucide glyphs with it; CUI has no
   system-font fallback, so an app that takes that deal ships or loads its own faces. That is an
   app's decision (branding, licensing), not a tier.
+
+## Budgets
+
+`tools/budget-check.ps1 -SizeCsv` reads these ceilings, so the gate and the table cannot disagree.
+Each one is a round number about 3% above the measurement, which leaves room for a compiler or
+linker patch and none for a new component quietly arriving in every app.
+
+| Shape | Ceiling | What it is |
+|---|---|---|
+| `hello` | budget 900 000 B | the .NET AOT floor with no CuiSharp reference at all |
+| `MIN` | budget 1 200 000 B | a column, a heading, a button, a line of text |
+| `TABLE` | budget 1 210 000 B | MIN plus a table with eight rows |
+| `CHART` | budget 1 235 000 B | MIN plus a line chart of 200 points |
+| `FORM` | budget 1 240 000 B | MIN plus an inline edit, a checkbox and a slider |
+| `RICH` | budget 1 265 000 B | MIN plus Markdown and a code block |
+
+Every pull request measures the floor and the gallery (`hello`, `MIN`, and the gallery's own row in
+[PERFORMANCE.md](PERFORMANCE.md)); every shape, with `-RequireAll` so a shape that stopped being
+measured fails instead of passing quietly, is the on-demand `budget` job.
+
+```sh
+pwsh tools/size-report.ps1 -All -Widths shipped -Csv artifacts/size.csv
+pwsh tools/budget-check.ps1 -SizeCsv artifacts/size.csv -RequireAll
+```
 
 ## Reproducing the numbers
 

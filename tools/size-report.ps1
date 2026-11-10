@@ -19,7 +19,8 @@
     pwsh tools/size-report.ps1                       # MIN on both widths, plus the floor
     pwsh tools/size-report.ps1 -All                  # every shape
     pwsh tools/size-report.ps1 -All -Csv .tmp/size.csv
-    pwsh tools/size-report.ps1 -Before               # the pre-profile width only
+    pwsh tools/size-report.ps1 -Widths shipped       # the product only: 1 publish + the floor
+    pwsh tools/size-report.ps1 -All -Widths shipped -Csv artifacts/size.csv   # what CI measures
 
 .NOTES
     Needs native/cui.lib for the target RID: run native/build-native.ps1 first.
@@ -33,8 +34,10 @@ param(
     # Measure every shape instead of the named ones.
     [switch] $All,
 
-    # Only the width the package shipped before its size profile: the comparison, not the product.
-    [switch] $Before,
+    # Which widths to measure. "shipped" is the product; "before" is what the repository did
+    # before the size profile existed, and it is only there to show what the profile is worth.
+    [ValidateSet('before', 'shipped')]
+    [string[]] $Widths = @('before', 'shipped'),
 
     # Where to also write the measurements as CSV. Empty prints the table only.
     [string] $Csv = '',
@@ -61,7 +64,7 @@ if ($shapes -notcontains 'MIN') { $shapes = @('MIN') + $shapes }
 
 # The width the package ships is the default properties; "before" is the two switches back on.
 $beforeWidth = @{ CuiSharpSizeProfile = 'false'; CuiSharpHeadless = 'true' }
-$widths = if ($Before) { @('before') } else { @('before', 'shipped') }
+$widths = @($Widths)
 
 function Publish-Shape([string] $name, [string] $width) {
     $publish = Join-Path $matrix 'bin/Release/net10.0'

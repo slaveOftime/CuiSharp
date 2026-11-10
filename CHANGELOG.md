@@ -31,6 +31,11 @@ A published binary carries only what it uses, and the package decides that for y
   project file. Its published single file is 1 159 680 B.
 - **`dotnet cui` says what to do** when a published app never prints its banner, instead of only
   reporting that it waited.
+- **A size budget per app shape.** `tools/size-report.ps1` measures five shapes (a table, a chart,
+  form controls, Markdown and code) and `tools/budget-check.ps1 -SizeCsv` compares them with the
+  ceilings in [docs/SIZE.md](docs/SIZE.md), so the next CUI release that grows the floor fails a
+  check instead of arriving in a release note. Every pull request measures the floor and the
+  gallery; the on-demand `budget` job measures every shape with `-RequireAll`.
 
 ## [0.3.1] — 2026-11-10
 
