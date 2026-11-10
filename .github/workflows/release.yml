@@ -166,12 +166,18 @@ jobs:
       # the gallery and the benchmark suite were being built only to be ignored,
       # and their restores were the slowest third of this step. The pack step
       # builds whatever packing itself needs.
+      #
+      # blame-hang turns a silent wedge into a failure that names the test: one
+      # release run lost seventeen minutes to a leg that printed nothing, and the
+      # dump it leaves behind is the evidence a rerun would just burn again.
       - name: Test
+        timeout-minutes: 15
         shell: pwsh
         run: |
-          dotnet test src/CuiSharp.Tests/CuiSharp.Tests.csproj -c Release
+          $blame = @('--blame-hang-timeout', '6m', '--blame-hang-dump', 'full')
+          dotnet test src/CuiSharp.Tests/CuiSharp.Tests.csproj -c Release @blame
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          dotnet test src/CuiSharp.Templates/CuiSharp.App/CuiSharp.App.Tests/CuiSharp.App.Tests.csproj -c Release
+          dotnet test src/CuiSharp.Templates/CuiSharp.App/CuiSharp.App.Tests/CuiSharp.App.Tests.csproj -c Release @blame
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
 
       # The release page is the changelog section for this version, so it has to exist and be dated
