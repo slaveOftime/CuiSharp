@@ -179,6 +179,36 @@ if (result.Changed) Save(_name);      // also .Submitted, .Focused, .Blurred, .A
 
 `TextArea`, `Search`, `TagInput` and `OtpInput` work the same way.
 
+## Grid state and value selection
+
+Keep one `GridState` per grid, sized to the model. Its selection array must have at least one
+entry per row; replace or resize it when the model changes, outside `Draw`.
+
+```csharp
+private readonly GridState _grid = new(100);
+
+// Inside Draw: build only the visible range.
+using var grid = ui.DataGrid("people", Columns, 100, _grid, new GridOpts { Height = 320 });
+if (grid)
+    for (int row = _grid.First; row < _grid.Last; row++)
+    {
+        ui.DataGridRow(row);
+        ui.DataGridCellText(people[row].Name);
+    }
+```
+
+`First`, `Last`, `Sort` and keyboard/header updates to `Selected`, `Cursor` and `Anchor` are
+available as soon as the grid opens; row clicks are written back when the scope closes. The
+callback form `ui.DataGrid(id, columns, count, state, DrawRows, options)` closes before it returns,
+even if the body throws. Hoist the callback rather than making a closure per frame. The six-`ref`
+grid API has been removed because its native storage did not survive rows.
+
+A segmented control can also take a value: `if (ui.Segmented("mode", Modes, _mode) is { } next)
+_mode = next;`. It returns `null` when nothing changed; the `ref int` form remains available.
+Input record arrays (`QueryField.Choices`, `ApiEndpoint.Params`, `UptimeService.Days`,
+`StackFrame.Source`, `FilterField.Options`) need no companion count: their native counts always
+follow the current array length (null and empty mean zero). Counts on output records remain data.
+
 ## Containers that may be closed
 
 Menus, popovers, dialogs, sheets, tables, trees and accordions return `OpenScope`. Guard the body

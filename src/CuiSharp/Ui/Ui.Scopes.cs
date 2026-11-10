@@ -23,11 +23,12 @@ public ref struct LayoutScope : IDisposable
     /// <param name="kind">Which native container to close again.</param>
     /// <param name="name">The wrapper that opened it, for a recorded tree.</param>
     /// <param name="id">The markup id the app gave it: the name a test finds it by.</param>
-    internal LayoutScope(nint ui, ScopeKind kind, string name, UiText id)
+    /// <param name="nativeId">Explicit id for a container that sets last_id only when it closes.</param>
+    internal LayoutScope(nint ui, ScopeKind kind, string name, UiText id, uint? nativeId = null)
     {
         _ui = ui;
         _kind = kind;
-        WidgetRecorder.Push(ui, name, id);
+        WidgetRecorder.Push(ui, name, id, nativeId);
     }
 
     /// <summary>Closes this container. Disposing the same instance again does nothing.</summary>
@@ -52,10 +53,10 @@ public ref struct OpenScope : IDisposable
         _scope = open ? new LayoutScope(ui, kind, name, id) : default;
     }
 
-    internal OpenScope(nint ui, ScopeKind kind, string name, UiText id, bool open)
+    internal OpenScope(nint ui, ScopeKind kind, string name, UiText id, bool open, uint? nativeId = null)
     {
         Open = open;
-        _scope = open ? new LayoutScope(ui, kind, name, id) : default;
+        _scope = open ? new LayoutScope(ui, kind, name, id, nativeId) : default;
     }
 
     /// <summary>Whether the native container opened and its body should be drawn.</summary>

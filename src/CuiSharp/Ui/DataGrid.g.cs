@@ -13,32 +13,6 @@ public static unsafe class DataGridUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_data_grid_begin_ex</summary>
-        public OpenScope DataGrid(UiText id, ReadOnlySpan<GridColumn> columns, int rowCount, ref int first, ref int last, ref bool selected, ref TableSort tablesort, ref int cursor, ref int anchor, GridOpts o = default)
-        {
-            var __columns = Utf8.AllocFrame<NativeGridColumn>(columns.Length);
-            for (int i = 0; i < columns.Length; i++) __columns[i] = columns[i].ToNative();
-            byte __selected = (byte)(selected ? 1 : 0);
-            var __tablesort = tablesort.ToNative();
-            int __cursor = (int)(cursor);
-            int __anchor = (int)(anchor);
-            var __opts = o.ToNative((nint)(&__selected), (nint)(&__tablesort), (nint)(&__cursor), (nint)(&__anchor));
-            var __result = Native.DataGridBegin(ui.Handle, Utf8.Get(id), (nint)__columns, (int)(columns.Length), rowCount, ref first, ref last, in __opts);
-            selected = __selected != 0;
-            tablesort = TableSort.FromNative(__tablesort);
-            cursor = __cursor;
-            anchor = __anchor;
-            return new OpenScope(ui.Handle, ScopeKind.DataGrid, "DataGrid", id, __result != 0);
-        }
-
-        /// <summary>Draws the body only when the container opens, and closes it on exceptions.</summary>
-        public void DataGrid(UiText id, ReadOnlySpan<GridColumn> columns, int rowCount, ref int first, ref int last, ref bool selected, ref TableSort tablesort, ref int cursor, ref int anchor, DrawFn body, GridOpts o = default)
-        {
-            ArgumentNullException.ThrowIfNull(body);
-            using var scope = ui.DataGrid(id, columns, rowCount, ref first, ref last, ref selected, ref tablesort, ref cursor, ref anchor, o);
-            if (scope) body(ui);
-        }
-
         /// <summary>cui_data_grid_row</summary>
         public bool DataGridRow(int row)
         {

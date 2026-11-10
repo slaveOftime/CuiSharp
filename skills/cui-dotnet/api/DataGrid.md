@@ -7,20 +7,12 @@ Call these inside a frame, on a `Ui` value:
 ```csharp
 protected override void Draw(Ui ui)
 {
-    using (ui.DataGrid(/* options */))
+    using (ui.DataGridRow(/* options */))
     {
         // ...
     }
 }
 ```
-
-## `DataGrid`
-
-```csharp
-public OpenScope DataGrid(UiText id, ReadOnlySpan<GridColumn> columns, int rowCount, ref int first, ref int last, ref bool selected, ref TableSort tablesort, ref int cursor, ref int anchor, GridOpts o = default)
-```
-
-cui_data_grid_begin_ex
 
 ## `DataGridCell`
 

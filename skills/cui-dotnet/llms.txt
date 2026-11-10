@@ -123,7 +123,6 @@
 - `ui.Tree(UiText label, ref bool open, TreeOpts o = default)` → `OpenScope`  ([Data display](api/DataDisplay.md))
 - `ui.TreeClicked()` → `bool`  ([Data display](api/DataDisplay.md))
 - `ui.VirtualList(UiText id, int count, float rowHeight, Size height, out int first, out int last)` → `LayoutScope` — Virtual list: only the visible rows are built, so lists with a million rows stay fast. Fills first/last with the visible range.  ([Data display](api/DataDisplay.md))
-- `ui.DataGrid(UiText id, ReadOnlySpan<GridColumn> columns, int rowCount, ref int first, ref int last, ref bool selected, ref TableSort tablesort, ref int cursor, ref int anchor, GridOpts o = default)` → `OpenScope`  ([Data grid](api/DataGrid.md))
 - `ui.DataGridCell()` → `void`  ([Data grid](api/DataGrid.md))
 - `ui.DataGridCellEdit(ref string buf, int cap)` → `bool` — Editable text cell: double click (or Enter on the cursor row) to edit, Enter or clicking away commits, Esc reverts. True when committed.  ([Data grid](api/DataGrid.md))
 - `ui.DataGridCellText(UiText text)` → `void`  ([Data grid](api/DataGrid.md))
@@ -356,10 +355,11 @@ Hand-written, because the wrapper needs state a C call cannot carry; they are pa
 - `ui.Canvas(...)` — hand-written in `Ui/Ui.Draw.cs`
 - `ui.Clip(...)` — hand-written in `Ui/Ui.Draw.cs`
 - `ui.ColorOf(...)` — hand-written in `Ui/Ui.Frame.cs`
+- `ui.DataGrid(...)` — hand-written in `Ui/Ui.DataGrid.cs`
 - `ui.DateToday(...)` — hand-written in `Ui/Ui.Overlays.cs`
 - `ui.DiffRows(...)` — hand-written in `Ui/Ui.Diff.cs`
 - `ui.Disabled(...)` — hand-written in `Ui/Ui.Frame.cs`
-- `ui.Dispose(...)` — hand-written in `Ui/Ui.Draw.cs`
+- `ui.Dispose(...)` — hand-written in `Ui/Ui.DataGrid.cs`
 - `ui.DrawArc(...)` — hand-written in `Ui/Ui.Draw.cs`
 - `ui.DrawCircle(...)` — hand-written in `Ui/Ui.Draw.cs`
 - `ui.DrawIcon(...)` — hand-written in `Ui/Ui.Draw.cs`
@@ -394,6 +394,7 @@ Hand-written, because the wrapper needs state a C call cannot carry; they are pa
 - `ui.ReorderEnd(...)` — hand-written in `Ui/Ui.Overlays.cs`
 - `ui.ReorderItem(...)` — hand-written in `Ui/Ui.Overlays.cs`
 - `ui.RequestWakeup(...)` — hand-written in `Ui/Ui.Terminal.cs`
+- `ui.Segmented(...)` — hand-written in `Ui/Ui.Segmented.cs`
 - `ui.SetFont(...)` — hand-written in `Ui/Ui.Fonts.cs`
 - `ui.SetReducedMotion(...)` — hand-written in `Ui/Ui.Frame.cs`
 - `ui.Shortcut(...)` — hand-written in `Ui/Ui.Overlays.cs`

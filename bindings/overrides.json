@@ -70,7 +70,7 @@
     "cui_grid_opts.sort": {
       "type": "nint",
       "record": "TableSort",
-      "why": "The grid sorts by a table sort the wrapper owns for the call and writes back through ref TableSort."
+      "why": "The grid sorts by a table sort the wrapper keeps in the frame arena and writes back to GridState."
     }
   },
   "optionalInjectedParams": {
@@ -225,6 +225,12 @@
     }
   },
   "manualWidgets": {
+    "cui_data_grid_begin_ex": {
+      "why": "Ui.DataGrid in Ui.DataGrid.cs owns selection and cursor storage through GridScope.Dispose; native retains these pointers while rows draw."
+    },
+    "cui_data_grid_end": {
+      "why": "GridScope.Dispose in Ui.DataGrid.cs closes the grid and writes GridState back after the rows."
+    },
     "cui_icon": {
       "why": "Drawing primitive with a theme-aware default color; retained with the manual drawing partial."
     },
@@ -768,6 +774,28 @@
     },
     "Theme": {
       "why": "Theme control belongs to CuiApp (SetTheme/SetAccent); Ui keeps request-redraw only."
+    }
+  },
+  "recordFieldCounts": {
+    "cui_query_field.choices": {
+      "count": "choice_count",
+      "why": "QueryField is input-only picker metadata; native reads exactly the choices copied into the arena."
+    },
+    "cui_api_endpoint.params": {
+      "count": "param_count",
+      "why": "ApiEndpoint is input-only explorer metadata; native reads exactly the parameters copied into the arena."
+    },
+    "cui_uptime_service.days": {
+      "count": "day_count",
+      "why": "UptimeService is input-only bar data; native reads exactly the days copied into the arena."
+    },
+    "cui_stack_frame.source": {
+      "count": "source_count",
+      "why": "StackFrame is input-only frame data; native reads exactly the source lines copied into the arena."
+    },
+    "cui_filter_field.options": {
+      "count": "option_count",
+      "why": "FilterField is input-only filter metadata; native reads exactly the options copied into the arena."
     }
   },
   "recordNames": {
@@ -1429,7 +1457,7 @@
   "optionPointers": {
     "cui_grid_opts.selected": {
       "type": "bool",
-      "why": "The selected row: the grid moves it, so the wrapper takes a ref bool and writes it back."
+      "why": "One selection flag per row: the wrapper keeps the array in the frame arena through GridScope.Dispose and writes it back to GridState."
     },
     "cui_diff_opts.current": {
       "type": "int",

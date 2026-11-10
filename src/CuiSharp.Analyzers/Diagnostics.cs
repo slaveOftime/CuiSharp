@@ -106,6 +106,7 @@ internal sealed class KnownTypes
         Component = compilation.GetTypeByMetadataName("CuiSharp.Hosting.Component");
         LayoutScope = compilation.GetTypeByMetadataName("CuiSharp.LayoutScope");
         OpenScope = compilation.GetTypeByMetadataName("CuiSharp.OpenScope");
+        GridScope = compilation.GetTypeByMetadataName("CuiSharp.GridScope");
         IdScope = compilation.GetTypeByMetadataName("CuiSharp.IdScope");
         UiText = compilation.GetTypeByMetadataName("CuiSharp.UiText");
         KeyedScopeDefinition = compilation.GetTypeByMetadataName("CuiSharp.KeyedScope`1");
@@ -115,18 +116,19 @@ internal sealed class KnownTypes
     internal INamedTypeSymbol? Component { get; }
     internal INamedTypeSymbol? LayoutScope { get; }
     internal INamedTypeSymbol? OpenScope { get; }
+    internal INamedTypeSymbol? GridScope { get; }
     internal INamedTypeSymbol? IdScope { get; }
     internal INamedTypeSymbol? UiText { get; }
     internal INamedTypeSymbol? KeyedScopeDefinition { get; }
 
     /// <summary>True when the type is one the caller has to dispose: a scope the frame stack owns.</summary>
     internal bool IsScope(ITypeSymbol? type) => type is not null && (
-        SymbolEquals(type, LayoutScope) || SymbolEquals(type, OpenScope) || SymbolEquals(type, IdScope) ||
+        SymbolEquals(type, LayoutScope) || SymbolEquals(type, OpenScope) || SymbolEquals(type, GridScope) || SymbolEquals(type, IdScope) ||
         (KeyedScopeDefinition is not null && type is INamedTypeSymbol { IsGenericType: true } named &&
          SymbolEquals(named.ConstructedFrom, KeyedScopeDefinition)));
 
     /// <summary>True for the scope kinds whose body only makes sense when they opened.</summary>
-    internal bool IsConditionalScope(ITypeSymbol? type) => SymbolEquals(type, OpenScope);
+    internal bool IsConditionalScope(ITypeSymbol? type) => SymbolEquals(type, OpenScope) || SymbolEquals(type, GridScope);
 
     internal bool IsUiMethod(IMethodSymbol method) =>
         method.ContainingType is not null && SymbolEquals(method.ContainingType, Ui) && method.IsExtensionMethod;

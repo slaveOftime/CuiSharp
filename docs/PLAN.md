@@ -4,23 +4,7 @@ Only open work. What shipped is in [CHANGELOG.md](../CHANGELOG.md); how to build
 in [AGENTS.md](../AGENTS.md) and [RELEASING.md](RELEASING.md); the decisions that must not break are
 in [ARCHITECTURE.md](ARCHITECTURE.md). Every item here passes the same gates as any other change.
 
-## 1. Decisions waiting on a person
-
-**`DataGrid` and `Segmented` ceremony.** `DataGrid` takes six `ref` parameters plus a `bool[]` per
-row, which is why an app that only wants a read-only table uses `VirtualList` instead. Proposal: a
-`GridState` class holding `First`, `Last`, `Selected`, `Sort`, `Cursor`, `Anchor` and a
-`ui.DataGrid(id, columns, rows, state, body)` overload that forwards the fields as `ref`, plus
-`ui.Segmented(id, items, value)` returning `int?` so a page keeps one field instead of a mirror. Both
-are `MANUAL` in `overrides.json` and change the public surface, so they need a decision before code.
-
-**A count beside an array in a record.** `QueryField.Choices` and `ChoiceCount`, `ApiEndpoint.Params`
-and `ParamCount`: the count is what native reads, so the two can disagree and a caller has to keep
-them in step. The generator already derives a count for option structs; a record could hide the count
-and fill it from the array's length in `ToNative()`. It is not derived today because a count on an
-*output* record (a result CUI fills in) is information, not a derivation, and the generator cannot
-tell the two roles apart from the declaration alone.
-
-## 2. Not started
+## 1. Not started
 
 - **`dotnet new cui-script`** — one file, `#:package CuiSharp@*`, `dotnet run app.cs` opens a window.
   The template covers the solution case only. Prove it in `verify-template.ps1`.
@@ -41,7 +25,7 @@ tell the two roles apart from the declaration alone.
 - **Analyzer code fixes** for CUI001–CUI008. The diagnostics and their messages exist and are
   enforced; none of them can rewrite the code yet.
 
-## 3. Where upstream has to move first
+## 2. Where upstream has to move first
 
 `native/CUI` is pristine (D2). These are its work, not ours:
 
@@ -53,7 +37,7 @@ tell the two roles apart from the declaration alone.
   name, because the header has no comment the generator can read, so `ui.TableRow` says
   `cui_table_row_ex` and nothing more.
 
-## 4. Tracked gaps, not planned
+## 3. Tracked gaps, not planned
 
 - **Accessibility.** CUI publishes no accessibility tree, so there is no UIA, AT-SPI or
   NSAccessibility. The semantic tree is the foundation to build on, not a substitute.

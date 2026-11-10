@@ -155,7 +155,7 @@ public class DeveloperToolTests
     private static readonly QueryField[] QueryFields =
     [
         new("Status", QueryType.Number),
-        new("State", QueryType.Choice, Choices: ["open", "closed"], ChoiceCount: 2),
+        new("State", QueryType.Choice, Choices: ["open", "closed"]),
     ];
 
     [Fact]
@@ -192,7 +192,7 @@ public class DeveloperToolTests
 
             ui.StackTrace("stack",
             [
-                new StackFrame("main", "src/main.c", 3, 5, false, ["int main(void) {", "    return 0;", "}"], 3, 1),
+                new StackFrame("main", "src/main.c", 3, 5, false, ["int main(void) {", "    return 0;", "}"], 1),
                 new StackFrame("memcpy", null, 0, 0, true),
             ], new StackTraceOpts { Title = "Segmentation fault", Message = "SIGSEGV", Lang = "c" });
 
@@ -240,7 +240,7 @@ public class DeveloperToolTests
 
             ui.Uptime("uptime",
             [
-                new UptimeService("api", [1f, 0.99f, 0f, 1f], 4),
+                new UptimeService("api", [1f, 0.99f, 0f, 1f]),
             ], new UptimeOpts { LastDay = new Date(2026, 11, 14) });
 
             ui.TimeHistogram("histogram", 0, 60, 12,
@@ -298,7 +298,7 @@ public class DeveloperToolTests
         var endpoints = new ApiEndpoint[] { new("GET", "/v1", "List", "Tag", false) };
         var twoEnvs = new[] { "Dev", "Prod" };
         var flags = new FeatureFlag[] { new("flag", "A flag", [true, false], [100, 0]) };
-        var uptimeServices = new UptimeService[] { new("api", [1f, 0.5f, 0f], 3) };
+        var uptimeServices = new UptimeService[] { new("api", [1f, 0.5f, 0f]) };
         var histogram = new HistogramSeries[] { new("info", [1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f, 1f, 2f, 3f], Tone.Info) };
         double selStart = 0, selEnd = 0;
 
@@ -474,7 +474,7 @@ public class DeveloperToolTests
         var fields = new QueryField[]
         {
             new("Status", QueryType.Number),
-            new("State", QueryType.Choice, Choices: ["open", "closed"], ChoiceCount: 2),
+            new("State", QueryType.Choice, Choices: ["open", "closed"]),
         };
         var nodes = new QueryNode[]
         {

@@ -57,7 +57,7 @@ internal sealed partial class GalleryApp
 
     private static readonly StackFrame[] Frames =
     [
-        new("Layout.Arrange", "src/layout.c", 412, 9, false, SourceLines, SourceLines.Length, 409),
+        new("Layout.Arrange", "src/layout.c", 412, 9, false, SourceLines, 409),
         new("Draw.Paint", "src/draw.c", 288, 5, false),
         new("memcpy", null, 0, 0, true),
         new("memcpy", null, 0, 0, true),
@@ -105,8 +105,8 @@ internal sealed partial class GalleryApp
 
     private static readonly ApiEndpoint[] Endpoints =
     [
-        new("GET", "/v1/frames", "List frames, newest first", "Frames", false, EndpointParams[..2], 2),
-        new("GET", "/v1/frames/{id}", "One frame with its spans", "Frames", false, EndpointParams, 3),
+        new("GET", "/v1/frames", "List frames, newest first", "Frames", false, EndpointParams[..2]),
+        new("GET", "/v1/frames/{id}", "One frame with its spans", "Frames", false, EndpointParams),
         new("POST", "/v1/frames", "Record a frame", "Frames", false),
         new("DELETE", "/v0/frames/{id}", "Remove a frame", "Frames", true),
         new("GET", "/v1/orgs", "List organisations", "Orgs", false),
@@ -114,9 +114,9 @@ internal sealed partial class GalleryApp
 
     private static readonly UptimeService[] Services =
     [
-        new("api", Days(0.999f, 1.0f, 0.998f, 0.0f, 1.0f, 0.941f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f), 12),
-        new("web", Days(1.0f, 1.0f, 1.0f, 1.0f, 0.999f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f), 12),
-        new("worker", Days(0.98f, 0.99f, 1.0f, 1.0f, 1.0f, 0.87f, 0.95f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f), 12),
+        new("api", Days(0.999f, 1.0f, 0.998f, 0.0f, 1.0f, 0.941f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f)),
+        new("web", Days(1.0f, 1.0f, 1.0f, 1.0f, 0.999f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f)),
+        new("worker", Days(0.98f, 0.99f, 1.0f, 1.0f, 1.0f, 0.87f, 0.95f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f)),
     ];
 
     private void PageMoreDeveloperTools(Ui ui)

@@ -109,7 +109,7 @@ GENERATED cui_hex_result -> HexResult (+ write-back)
 
 WIDGETS
 Wrapper emission is being migrated by header section (Phase 2, Step 2). Not a completed coverage gate.
-Generated wrappers: 278; raw functions covered including scope ends: 319/492
+Generated wrappers: 277; raw functions covered including scope ends: 317/492
 MANUAL cui_create: `CuiSurface.Create` owns context creation (CuiSurface.cs).
 MANUAL cui_destroy: `CuiSurface.Dispose` (CuiSurface.cs).
 MANUAL cui_set_renderer: `CuiSurface.Create` installs the software renderer; CuiApp lets CUI pick (CuiSurface.cs).
@@ -313,13 +313,13 @@ GENERATED cui_user_menu_begin
 GENERATED cui_user_menu_end
 GENERATED cui_swipe_item_begin
 GENERATED cui_swipe_item_end
-GENERATED cui_data_grid_begin_ex
+MANUAL cui_data_grid_begin_ex: Ui.DataGrid in Ui.DataGrid.cs owns selection and cursor storage through GridScope.Dispose; native retains these pointers while rows draw.
 GENERATED cui_data_grid_row
 GENERATED cui_data_grid_cell
 GENERATED cui_data_grid_cell_text
 GENERATED cui_data_grid_cell_edit
 GENERATED cui_data_grid_edit
-GENERATED cui_data_grid_end
+MANUAL cui_data_grid_end: the scope closes with cui_data_grid_begin_ex (Ui.DataGrid in Ui.DataGrid.cs owns selection and cursor storage through GridScope.Dispose; native retains these pointers while rows draw.)
 GENERATED cui_tree_cell
 GENERATED cui_filter_bar
 MANUAL cui_tree_table_begin_ex: `ui.TreeTable(id, columns, nodes, row, …)` (Ui/Ui.TreeTable.cs) pins the caller's `TreeNode[]` so the table's open/selected/loading writes land in it, and rents the label delegate through the frame-callback bridge.

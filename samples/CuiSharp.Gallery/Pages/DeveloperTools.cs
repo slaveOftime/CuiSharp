@@ -41,8 +41,8 @@ internal sealed partial class GalleryApp
     private static readonly QueryField[] QueryFields =
     [
         new("Status code", QueryType.Number),
-        new("State", QueryType.Choice, Choices: ["open", "closed", "merged"], ChoiceCount: 3),
-        new("Service", QueryType.Choice, Choices: ["api", "web", "worker"], ChoiceCount: 3),
+        new("State", QueryType.Choice, Choices: ["open", "closed", "merged"]),
+        new("Service", QueryType.Choice, Choices: ["api", "web", "worker"]),
     ];
 
     private static readonly TraceTrack[] Tracks =

@@ -12,7 +12,6 @@ Value types for the widgets that take an array of items.
 - `Tag`: string?
 - `Deprecated`: bool
 - `Params`: ApiParam[]?
-- `ParamCount`: int
 
 ## `ApiExplorerResult`
 
@@ -214,7 +213,6 @@ Value types for the widgets that take an array of items.
 - `Name`: string?
 - `Icon`: string?
 - `Options`: string[]?
-- `OptionCount`: int
 
 ## `FlameResult`
 
@@ -480,7 +478,6 @@ Value types for the widgets that take an array of items.
 - `Name`: string?
 - `Type`: QueryType
 - `Choices`: string[]?
-- `ChoiceCount`: int
 
 ## `QueryNode`
 
@@ -555,7 +552,6 @@ Value types for the widgets that take an array of items.
 - `Column`: int
 - `External`: bool
 - `Source`: string[]?
-- `SourceCount`: int
 - `SourceFirst`: int
 
 ## `StackTraceResult`
@@ -711,7 +707,6 @@ Value types for the widgets that take an array of items.
 
 - `Name`: string?
 - `Days`: float[]?
-- `DayCount`: int
 
 ## `Vec2`
 

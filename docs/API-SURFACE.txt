@@ -55,10 +55,9 @@ enum CuiSharp.Align
   Start
   Stretch
 struct CuiSharp.ApiEndpoint
-  ctor(String, String, String, String, Boolean, ApiParam[], Int32)
+  ctor(String, String, String, String, Boolean, ApiParam[])
   field ApiParam[] Params
   field Boolean Deprecated
-  field Int32 ParamCount
   field String Method
   field String Path
   field String Summary
@@ -786,8 +785,6 @@ class CuiSharp.DataGridUiExtensions
   static Boolean DataGridRow(Ui, Int32)
   static Boolean FilterBar(Ui, UiText, ReadOnlySpan<FilterField>, ref UInt32, ref String, Int32)
   static Boolean TreeCell(Ui, UiText, Int32, Boolean, ref Boolean, UiText)
-  static OpenScope DataGrid(Ui, UiText, ReadOnlySpan<GridColumn>, Int32, ref Int32, ref Int32, ref Boolean, ref TableSort, ref Int32, ref Int32, GridOpts)
-  static Void DataGrid(Ui, UiText, ReadOnlySpan<GridColumn>, Int32, ref Int32, ref Int32, ref Boolean, ref TableSort, ref Int32, ref Int32, DrawFn, GridOpts)
   static Void DataGridCell(Ui)
   static Void DataGridCellText(Ui, UiText)
 class CuiSharp.DataGridUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
@@ -796,8 +793,6 @@ class CuiSharp.DataGridUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
   Boolean DataGridRow(Int32)
   Boolean FilterBar(UiText, ReadOnlySpan<FilterField>, ref UInt32, ref String, Int32)
   Boolean TreeCell(UiText, Int32, Boolean, ref Boolean, UiText)
-  OpenScope DataGrid(UiText, ReadOnlySpan<GridColumn>, Int32, ref Int32, ref Int32, ref Boolean, ref TableSort, ref Int32, ref Int32, GridOpts)
-  Void DataGrid(UiText, ReadOnlySpan<GridColumn>, Int32, ref Int32, ref Int32, ref Boolean, ref TableSort, ref Int32, ref Int32, DrawFn, GridOpts)
   Void DataGridCell()
   Void DataGridCellText(UiText)
 class CuiSharp.DataGridUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4+<M>$D152016828D0F2CB0A8B78500F4F70D3
@@ -1185,8 +1180,7 @@ struct CuiSharp.FilePickerOpts
   field String Start
   field String Title
 struct CuiSharp.FilterField
-  ctor(String, String, String[], Int32)
-  field Int32 OptionCount
+  ctor(String, String, String[])
   field String Icon
   field String Name
   field String[] Options
@@ -1316,6 +1310,17 @@ struct CuiSharp.GridOpts
   field Single RowHeight
   field Size Height
   field Size Width
+struct CuiSharp.GridScope
+  Void Dispose()
+  property Boolean Open { get; }
+class CuiSharp.GridState
+  ctor(Int32)
+  field Boolean[] Selected
+  field Int32 Anchor
+  field Int32 Cursor
+  field Int32 First
+  field Int32 Last
+  field TableSort Sort
 struct CuiSharp.HeatmapOpts
   field Color Color
   field Single Cell
@@ -4999,8 +5004,7 @@ class CuiSharp.QueryBuilderUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
   Boolean QueryBuilder(UiText, ReadOnlySpan<QueryField>, Span<QueryNode>, ref Int32, Int32, QueryOpts)
 class CuiSharp.QueryBuilderUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4+<M>$D152016828D0F2CB0A8B78500F4F70D3
 struct CuiSharp.QueryField
-  ctor(String, QueryType, String[], Int32)
-  field Int32 ChoiceCount
+  ctor(String, QueryType, String[])
   field QueryType Type
   field String Name
   field String[] Choices
@@ -5185,6 +5189,11 @@ struct CuiSharp.SegmentedOpts
   field Boolean FullWidth
   field ControlSize Size
   field String[] Icons
+class CuiSharp.SegmentedValueUiExtensions
+  static Nullable<Int32> Segmented(Ui, UiText, ReadOnlySpan<String>, Int32, SegmentedOpts)
+class CuiSharp.SegmentedValueUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
+  Nullable<Int32> Segmented(UiText, ReadOnlySpan<String>, Int32, SegmentedOpts)
+class CuiSharp.SegmentedValueUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4+<M>$D152016828D0F2CB0A8B78500F4F70D3
 class CuiSharp.SelectComboboxDatePickerUiExtensions
   static Boolean Calendar(Ui, UiText, ref Date)
   static Boolean ColorPicker(Ui, UiText, ref Color)
@@ -5334,11 +5343,10 @@ struct CuiSharp.SpotlightOpts
   field Size Height
   field Size Width
 struct CuiSharp.StackFrame
-  ctor(String, String, Int32, Int32, Boolean, String[], Int32, Int32)
+  ctor(String, String, Int32, Int32, Boolean, String[], Int32)
   field Boolean External
   field Int32 Column
   field Int32 Line
-  field Int32 SourceCount
   field Int32 SourceFirst
   field String File
   field String Function
@@ -5356,6 +5364,13 @@ class CuiSharp.StackTraceUiExtensions
 class CuiSharp.StackTraceUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
   StackTraceResult StackTrace(UiText, ReadOnlySpan<StackFrame>, StackTraceOpts)
 class CuiSharp.StackTraceUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4+<M>$D152016828D0F2CB0A8B78500F4F70D3
+class CuiSharp.StatefulDataGridUiExtensions
+  static GridScope DataGrid(Ui, UiText, ReadOnlySpan<GridColumn>, Int32, GridState, GridOpts)
+  static Void DataGrid(Ui, UiText, ReadOnlySpan<GridColumn>, Int32, GridState, DrawFn, GridOpts)
+class CuiSharp.StatefulDataGridUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
+  GridScope DataGrid(UiText, ReadOnlySpan<GridColumn>, Int32, GridState, GridOpts)
+  Void DataGrid(UiText, ReadOnlySpan<GridColumn>, Int32, GridState, DrawFn, GridOpts)
+class CuiSharp.StatefulDataGridUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4+<M>$D152016828D0F2CB0A8B78500F4F70D3
 enum CuiSharp.Status
   Busy
   Error
@@ -5934,8 +5949,7 @@ struct CuiSharp.UptimeResult
   field Int32 Day
   field Int32 Service
 struct CuiSharp.UptimeService
-  ctor(String, Single[], Int32)
-  field Int32 DayCount
+  ctor(String, Single[])
   field Single[] Days
   field String Name
 struct CuiSharp.UserMenuOpts

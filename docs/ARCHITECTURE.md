@@ -88,12 +88,20 @@ Adding a wrapper to the hand-written layer instead of the generator is allowed, 
 recorded in `bindings/overrides.json` as `MANUAL` with the member and the file, because
 `coverage.txt` claims that nothing wraps it otherwise.
 
+Record array counts derive only through explicit `recordFieldCounts` overrides identifying
+input-only metadata (`QueryField.Choices`, `ApiEndpoint.Params`, `UptimeService.Days`,
+`StackFrame.Source`, `FilterField.Options`). An output count is information, so declaration shape
+alone never hides it. `GridState` owns managed grid state; `GridScope` owns stable frame-arena
+copies of the pointers CUI retains through its rows and writes them back on open and on close.
+Forwarding managed fields or stack locals at begin would leave native with dangling pointers.
+
 ## Core rules
 
 - `public ref struct Ui` wraps the native context. One `Ui` per frame, passed by value; the only
   things stored between frames are the app's own fields plus per-frame arenas and pools.
 - `LayoutScope` (always open) and `OpenScope` (conditional) are `ref struct` + `IDisposable`, so
-  `using` balances them even when the body throws. Every `OpenScope` also has a callback overload
+  `using` balances them even when the body throws. `GridScope` is the conditional scope with
+  end-of-body write-back; the scope analyzers treat it like `OpenScope`. Every `OpenScope` also has a callback overload
   that runs the body only when it is open.
 - `UiText` accepts `string`, `ReadOnlySpan<byte>` and interpolated strings; the handler formats
   with `IUtf8SpanFormattable` straight into the frame arena, grows on demand, never truncates, and

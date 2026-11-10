@@ -444,6 +444,9 @@ sealed class Overrides
     /// <summary>Native record structs used as const array items, e.g. cui_choice to Choice.</summary>
     public Dictionary<string, NameOverride> RecordNames { get; set; } = new();
 
+    /// <summary>Explicit input-only record arrays whose counts derive from their length.</summary>
+    public Dictionary<string, CountFieldOverride> RecordFieldCounts { get; set; } = new();
+
     /// <summary>Parameters the header documents as filled, e.g. virtual_list first/last.</summary>
     public Dictionary<string, ReasonOverride> OutParams { get; set; } = new();
 
@@ -1513,6 +1516,17 @@ sealed class Idiomatic
             RequireReason(key, value.Why);
             if (!_api.Structs.Any(s => s.CName == key)) throw new InvalidOperationException($"Unknown record: {key}");
         }
+        foreach (var (key, value) in _overrides.RecordFieldCounts)
+        {
+            RequireReason(key, value.Why);
+            RequireField(key);
+            string structName = key[..key.IndexOf('.')];
+            var str = _api.Structs.Single(s => s.CName == structName);
+            var array = str.Fields.Single(f => structName + "." + f.CName == key);
+            if (!_overrides.RecordNames.ContainsKey(structName) || array.Type.Kind != "Pointer"
+                || !str.Fields.Any(f => f.CName == value.Count && f.Type.Kind == "Int"))
+                throw new InvalidOperationException($"Unsupported input record count: {key} -> {value.Count}");
+        }
         foreach (var (key, value) in _overrides.OutParams)
         {
             RequireReason(key, value.Why);
@@ -1757,6 +1771,15 @@ sealed class Idiomatic
             if (f.CName == "_") continue;
             string fieldName = _overrides.OptionFieldNames.TryGetValue(str.CName + "." + f.CName, out var rename)
                 ? rename.Name : f.CsName;
+            var countedArray = _overrides.RecordFieldCounts.FirstOrDefault(e =>
+                e.Key.StartsWith(str.CName + ".", StringComparison.Ordinal) && e.Value.Count == f.CName);
+            if (countedArray.Key is not null)
+            {
+                var array = str.Fields.Single(a => str.CName + "." + a.CName == countedArray.Key);
+                string arrayName = _overrides.OptionFieldNames.TryGetValue(countedArray.Key, out var ar) ? ar.Name : array.CsName;
+                fields.Add(new(f, fieldName, "int", $"{arrayName}?.Length ?? 0", Hidden: true));
+                continue;
+            }
             if (f.IsFixedBuffer)
             {
                 fields.Add(FixedArrayField(f, fieldName));
@@ -1808,16 +1831,16 @@ sealed class Idiomatic
         {
             Summary(sb, record.Native.CName + ". Elements are copied into the frame arena by the wrapper.");
             sb.AppendLine($"public unsafe partial struct {record.Name}\n{{");
-            foreach (var f in record.Fields)
+            foreach (var f in record.Fields.Where(f => !f.Hidden))
             {
                 Summary(sb, f.Native.Doc.Length > 0 ? f.Native.Doc : f.Native.CType + " " + f.Native.CName, "    ");
                 sb.AppendLine($"    public {f.Type} {f.Name};");
             }
             if (record.NeedsConstructor)
             {
-                string parameters = string.Join(", ", record.Fields.Select((f, i) =>
+                string parameters = string.Join(", ", record.Fields.Where(f => !f.Hidden).Select((f, i) =>
                     $"{f.Type} {f.Name}" + (i == 0 ? "" : f.Type == "string?" ? " = null" : " = default")));
-                string assignments = string.Join(" ", record.Fields.Select(f => $"this.{f.Name} = {f.Name};"));
+                string assignments = string.Join(" ", record.Fields.Where(f => !f.Hidden).Select(f => $"this.{f.Name} = {f.Name};"));
                 sb.AppendLine($"\n    public {record.Name}({parameters}) {{ {assignments} }}");
             }
             // A fixed buffer is filled after construction: a `fixed` field cannot appear in an
@@ -1853,7 +1876,7 @@ sealed class Idiomatic
             // Always emitted: a widget that returns one of these by value converts it,
             // including the strings, which are CUI frame memory and therefore copied.
             sb.AppendLine($"\n    internal static {record.Name} FromNative({record.Native.CsName} n) => new()\n    {{");
-            foreach (var f in record.Fields)
+            foreach (var f in record.Fields.Where(f => !f.Hidden))
             {
                 string value = f.Type switch
                 {
@@ -2997,7 +3020,17 @@ static class BindgenChecks
             && modules["MenusAndPopovers"].Contains("if (scope) body(ui)", StringComparison.Ordinal));
         Check("counts derive from arrays", first.Options().Contains("LabelCount = Labels?.Length ?? 0", StringComparison.Ordinal)
             && !first.Options().Contains("public int LabelCount;", StringComparison.Ordinal)
-            && modules["Buttons"].Contains("(int)(items.Length), ref index", StringComparison.Ordinal));
+            && modules["Buttons"].Contains("(int)(items.Length), ref index", StringComparison.Ordinal)
+            && first.Records().Contains("ChoiceCount = Choices?.Length ?? 0", StringComparison.Ordinal)
+            && first.Records().Contains("ParamCount = Params?.Length ?? 0", StringComparison.Ordinal)
+            && first.Records().Contains("DayCount = Days?.Length ?? 0", StringComparison.Ordinal)
+            && first.Records().Contains("SourceCount = Source?.Length ?? 0", StringComparison.Ordinal)
+            && first.Records().Contains("OptionCount = Options?.Length ?? 0", StringComparison.Ordinal)
+            && !first.Records().Contains("public int ChoiceCount;", StringComparison.Ordinal)
+            && !first.Records().Contains("public int ParamCount;", StringComparison.Ordinal)
+            && !first.Records().Contains("public int DayCount;", StringComparison.Ordinal)
+            && !first.Records().Contains("public int SourceCount;", StringComparison.Ordinal)
+            && !first.Records().Contains("public int OptionCount;", StringComparison.Ordinal));
         Check("C typedef, qualifiers and comments survive the IR", box.Fields.Any(f => f.Doc.Contains("identity", StringComparison.Ordinal))
             && api.Structs.Single(s => s.CName == "cui_text_opts").Fields.Single(f => f.CName == "font").CsType == "Font"
             && api.Functions.Single(f => f.CName == "cui_box_begin").Params.Single(p => p.CName == "opts").Type.Element!.IsConst);

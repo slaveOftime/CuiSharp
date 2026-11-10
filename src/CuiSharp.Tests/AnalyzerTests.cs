@@ -65,6 +65,42 @@ public class AnalyzerTests
 
         """;
 
+    [Fact]
+    public async Task AGridScopeMustBeDisposedAndItsBodyGuarded()
+    {
+        string[] dropped = await AnalyzeAsync(Prologue + """
+            public class Page
+            {
+                public void Draw(Ui ui) { ui.DataGrid("rows", [], 0, new GridState()); }
+            }
+            """);
+        Assert.Contains(dropped, d => d.StartsWith("CUI002", StringComparison.Ordinal));
+
+        string[] unguarded = await AnalyzeAsync(Prologue + """
+            public class Page
+            {
+                public void Draw(Ui ui)
+                {
+                    using var grid = ui.DataGrid("rows", [], 0, new GridState());
+                    ui.Text("outside");
+                }
+            }
+            """);
+        Assert.Contains(unguarded, d => d.StartsWith("CUI003", StringComparison.Ordinal));
+
+        string[] guarded = await AnalyzeAsync(Prologue + """
+            public class Page
+            {
+                public void Draw(Ui ui)
+                {
+                    using var grid = ui.DataGrid("rows", [], 0, new GridState());
+                    if (grid) ui.Text("inside");
+                }
+            }
+            """);
+        Assert.DoesNotContain(guarded, d => d.StartsWith("CUI002", StringComparison.Ordinal) || d.StartsWith("CUI003", StringComparison.Ordinal));
+    }
+
     // ---- CUI001 -------------------------------------------------------------
 
     [Fact]

@@ -4,6 +4,26 @@ Every user-visible change, newest first. Pre-1.0 the minor number carries new su
 carries fixes. The section for a tag is what the GitHub release publishes, so the two cannot say
 different things.
 
+## Unreleased
+
+### Added
+
+- `GridState` and `ui.DataGrid(id, columns, rowCount, state[, body], options)`: persistent selection,
+  visible range, sorting and keyboard state, with a `GridScope` that writes interactions back when
+  it closes, including on exceptions. CUI002/CUI003 enforce disposing and checking this scope.
+- `ui.Segmented(id, items, value)` returns the new index on a change, otherwise `null`. The `ref`
+  form remains available.
+
+### Changed
+
+- **Breaking:** DataGrid's six-`ref` form is replaced by `GridState`. The old wrapper supplied one
+  selection byte for all rows and retained stack pointers beyond the begin call. The new wrapper
+  owns one byte per row and keeps all native state in the frame arena until the scope closes.
+- **Breaking:** `QueryField.ChoiceCount`, `ApiEndpoint.ParamCount`, `UptimeService.DayCount`,
+  `StackFrame.SourceCount` and `FilterField.OptionCount` (including constructor arguments) are
+  removed. Their native counts derive from their companion arrays; explicit `recordFieldCounts`
+  overrides identify these input-only records, leaving result counts intact.
+
 ## [0.3.0] — 2026-11-10
 
 CUI 1.3: the developer tools it added are wrapped, and nothing is left `PENDING`.

@@ -820,10 +820,8 @@ public unsafe partial struct ApiEndpoint
     public bool Deprecated;
     /// <summary>const cui_api_param * params</summary>
     public ApiParam[]? Params;
-    /// <summary>int param_count</summary>
-    public int ParamCount;
 
-    public ApiEndpoint(string? Method, string? Path = null, string? Summary = null, string? Tag = null, bool Deprecated = default, ApiParam[]? Params = default, int ParamCount = default) { this.Method = Method; this.Path = Path; this.Summary = Summary; this.Tag = Tag; this.Deprecated = Deprecated; this.Params = Params; this.ParamCount = ParamCount; }
+    public ApiEndpoint(string? Method, string? Path = null, string? Summary = null, string? Tag = null, bool Deprecated = default, ApiParam[]? Params = default) { this.Method = Method; this.Path = Path; this.Summary = Summary; this.Tag = Tag; this.Deprecated = Deprecated; this.Params = Params; }
 
     internal readonly NativeApiEndpoint ToNative() => new()
     {
@@ -833,7 +831,7 @@ public unsafe partial struct ApiEndpoint
         Tag = Utf8.Get(Tag),
         Deprecated = (byte)(Deprecated ? 1 : 0),
         Params = ApiParam.ToFrameArray(Params),
-        ParamCount = ParamCount,
+        ParamCount = Params?.Length ?? 0,
     };
 
     /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
@@ -853,7 +851,6 @@ public unsafe partial struct ApiEndpoint
         Tag = Marshal.PtrToStringUTF8(n.Tag),
         Deprecated = n.Deprecated != 0,
         Params = null,
-        ParamCount = n.ParamCount,
     };
 }
 
@@ -1036,16 +1033,14 @@ public unsafe partial struct UptimeService
     public string? Name;
     /// <summary>oldest first: the fraction of the day it was up, 0..1; negative: no data</summary>
     public float[]? Days;
-    /// <summary>int day_count</summary>
-    public int DayCount;
 
-    public UptimeService(string? Name, float[]? Days = default, int DayCount = default) { this.Name = Name; this.Days = Days; this.DayCount = DayCount; }
+    public UptimeService(string? Name, float[]? Days = default) { this.Name = Name; this.Days = Days; }
 
     internal readonly NativeUptimeService ToNative() => new()
     {
         Name = Utf8.Get(Name),
         Days = UiMarshal.Values<float>(Days),
-        DayCount = DayCount,
+        DayCount = Days?.Length ?? 0,
     };
 
     /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
@@ -1061,7 +1056,6 @@ public unsafe partial struct UptimeService
     {
         Name = Marshal.PtrToStringUTF8(n.Name),
         Days = null,
-        DayCount = n.DayCount,
     };
 }
 
@@ -1080,12 +1074,10 @@ public unsafe partial struct StackFrame
     public bool External;
     /// <summary>lines around the frame, may be NULL</summary>
     public string[]? Source;
-    /// <summary>int source_count</summary>
-    public int SourceCount;
     /// <summary>line number of source[0]</summary>
     public int SourceFirst;
 
-    public StackFrame(string? Function, string? File = null, int Line = default, int Column = default, bool External = default, string[]? Source = default, int SourceCount = default, int SourceFirst = default) { this.Function = Function; this.File = File; this.Line = Line; this.Column = Column; this.External = External; this.Source = Source; this.SourceCount = SourceCount; this.SourceFirst = SourceFirst; }
+    public StackFrame(string? Function, string? File = null, int Line = default, int Column = default, bool External = default, string[]? Source = default, int SourceFirst = default) { this.Function = Function; this.File = File; this.Line = Line; this.Column = Column; this.External = External; this.Source = Source; this.SourceFirst = SourceFirst; }
 
     internal readonly NativeStackFrame ToNative() => new()
     {
@@ -1095,7 +1087,7 @@ public unsafe partial struct StackFrame
         Column = Column,
         External = (byte)(External ? 1 : 0),
         Source = UiMarshal.Strings(Source),
-        SourceCount = SourceCount,
+        SourceCount = Source?.Length ?? 0,
         SourceFirst = SourceFirst,
     };
 
@@ -1116,7 +1108,6 @@ public unsafe partial struct StackFrame
         Column = n.Column,
         External = n.External != 0,
         Source = null,
-        SourceCount = n.SourceCount,
         SourceFirst = n.SourceFirst,
     };
 }
@@ -1518,17 +1509,15 @@ public unsafe partial struct QueryField
     public QueryType Type;
     /// <summary>CUI_QUERY_CHOICE: the values to pick from</summary>
     public string[]? Choices;
-    /// <summary>int choice_count</summary>
-    public int ChoiceCount;
 
-    public QueryField(string? Name, QueryType Type = default, string[]? Choices = default, int ChoiceCount = default) { this.Name = Name; this.Type = Type; this.Choices = Choices; this.ChoiceCount = ChoiceCount; }
+    public QueryField(string? Name, QueryType Type = default, string[]? Choices = default) { this.Name = Name; this.Type = Type; this.Choices = Choices; }
 
     internal readonly NativeQueryField ToNative() => new()
     {
         Name = Utf8.Get(Name),
         Type = Type,
         Choices = UiMarshal.Strings(Choices),
-        ChoiceCount = ChoiceCount,
+        ChoiceCount = Choices?.Length ?? 0,
     };
 
     /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
@@ -1545,7 +1534,6 @@ public unsafe partial struct QueryField
         Name = Marshal.PtrToStringUTF8(n.Name),
         Type = n.Type,
         Choices = null,
-        ChoiceCount = n.ChoiceCount,
     };
 }
 
@@ -2526,17 +2514,15 @@ public unsafe partial struct FilterField
     public string? Icon;
     /// <summary>const char *const * options</summary>
     public string[]? Options;
-    /// <summary>int option_count</summary>
-    public int OptionCount;
 
-    public FilterField(string? Name, string? Icon = null, string[]? Options = default, int OptionCount = default) { this.Name = Name; this.Icon = Icon; this.Options = Options; this.OptionCount = OptionCount; }
+    public FilterField(string? Name, string? Icon = null, string[]? Options = default) { this.Name = Name; this.Icon = Icon; this.Options = Options; }
 
     internal readonly NativeFilterField ToNative() => new()
     {
         Name = Utf8.Get(Name),
         Icon = Utf8.Get(Icon),
         Options = UiMarshal.Strings(Options),
-        OptionCount = OptionCount,
+        OptionCount = Options?.Length ?? 0,
     };
 
     /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
@@ -2553,7 +2539,6 @@ public unsafe partial struct FilterField
         Name = Marshal.PtrToStringUTF8(n.Name),
         Icon = Marshal.PtrToStringUTF8(n.Icon),
         Options = null,
-        OptionCount = n.OptionCount,
     };
 }
 
