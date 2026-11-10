@@ -20,7 +20,7 @@ re-measure before quoting them.
 | Gallery frame, 1240×820, software raster | **0.85 ms** mean (p50 0.71, p95 1.20, p99 1.52) | `--fps 900` budget: baseline + 10 % |
 | Build only (a GPU would rasterize) | 0.02 ms | same run |
 | Managed allocation per frame | **0 B** | `FrameLifecycleTests`, `NewComponentTests` |
-| Gallery AOT executable, win-x64 | 2 073 088 B | [PLAN](PLAN.md) budget: ≤ 2.1 MB |
+| Gallery AOT executable, win-x64 | 2 134 016 B | budget: ≤ 2.1 MB |
 | A million virtual list rows | ~12 µs | `--scale` |
 | A million chart points, undecimated | 45.9 ms | why decimation exists |
 | A million chart points, decimated to 800 | 0.018 ms | same |

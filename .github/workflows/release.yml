@@ -265,11 +265,15 @@ jobs:
           name: nuget-packages
           path: packages
 
+      # The release page is the changelog section for this tag, not a second file that can drift
+      # from it: a version with no section, or one still under [Unreleased], fails here.
+      - name: Release notes
+        shell: pwsh
+        run: pwsh tools/release-notes.ps1 -Version '${{ github.ref_name }}' -OutFile release-notes.md
+
       - uses: softprops/action-gh-release@v3.0.4
         with:
-          # Curated rather than generated: a first release is read by people deciding
-          # whether to install it, and this file is edited per release.
-          body_path: .github/release-notes.md
+          body_path: release-notes.md
           generate_release_notes: false
           files: |
             packages/*.nupkg

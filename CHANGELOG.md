@@ -1,9 +1,37 @@
 # Changelog
 
-Every user-visible change, newest first. Detail — what was measured, what broke, what it cost —
-lives in [docs/PLAN.md](docs/PLAN.md). Pre-1.0, the minor number carries new surface.
+Every user-visible change, newest first. Pre-1.0 the minor number carries new surface and the patch
+carries fixes. The section for a tag is what the GitHub release publishes, so the two cannot say
+different things.
 
-## [0.1.0] — unreleased
+## [Unreleased]
+
+### Fixed
+
+- **Window resize keeps up with the mouse.** A drag asked for two full frames and two display waits
+  per mouse step, inside the OS modal loop, so the window fell behind the cursor. Now one frame per
+  coalesced paint, with the display wait dropped for the length of the drag.
+- `OnInitialized` runs on the first frame that draws the component, as documented — it used to run
+  before the window existed under `CuiApplication`, so branding set there did nothing.
+- A missing or mismatched native library says which RIDs were packaged, the glibc floor and the fix,
+  instead of a bare loader message.
+- A click no longer leaves its tooltip in `SavePng`; the pointer is parked first.
+- `CUI001` also reports `File.*`, `Directory.*` and `Task.Run` inside a frame.
+
+### Added
+
+- `CuiWindow` — the native handle, backend, renderer, size, title, minimize, maximize and close —
+  on `CuiApp.Window`, `CuiApplication.Window` and `CuiAppOptions.WindowCreated`.
+- `HeadlessApp.Advance(TimeSpan, frames)`, `Settle()`, `Animating` and `ParkPointer()`: animations
+  settle without a sleep loop, and a snapshot no longer needs the pointer moved by hand.
+- `FindById(id)` and `FindItem(id, index)` on the test harness, `id:` in a query, and `Id` on
+  `SemanticWidget`/`SemanticNode` — narrow enough to survive translation.
+- `ui.UseSystemFontFallback("中文")`: finds the face this machine has for a script the bundled Latin
+  faces do not cover, and registers it. Call it once at startup.
+- The package ships `skills/cui-dotnet/` — the guide, the reference, the API pages, CUI's component
+  documentation, the hosting guide and the ABI promise — at the path it has in the repository.
+
+## [0.1.0] — 2026-11-09
 
 First release: the binding, the runtime, hosting, analyzers, a template, and a way to drive a real
 app from a shell.

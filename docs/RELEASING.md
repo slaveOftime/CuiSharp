@@ -6,8 +6,8 @@ number comes from a gate that can fail.
 ## 1. Decide the version
 
 `Directory.Build.props` holds the single `<Version>` that every package inherits. Pre-1.0 the minor
-number carries new surface and the patch carries fixes. While [PLAN.md](PLAN.md) still has open
-items in §1–§4 the version stays `0.x`; 1.0 is the release where the public surface becomes a
+number carries new surface and the patch carries fixes; the version stays `0.x` until the public
+surface is reviewed as a whole. 1.0 is the release where the public surface becomes a
 promise.
 
 ```xml
@@ -41,7 +41,7 @@ what `release.yml` and `ci.yml` pin; `build-native.sh` fails if the produced `li
 | `api-surface.ps1` | the public surface changed — read the diff, that is the review |
 | `verify-template.ps1` | what a user gets from `dotnet new` no longer builds, tests, publishes, or is drivable |
 | AOT publish | an IL2xxx/IL3xxx warning appeared |
-| `--fps 900` | the mean frame time is more than 10 % over [PLAN.md](PLAN.md)'s budget, or allocation is not 0 B |
+| `--fps 900` | the mean frame time is more than 10 % over the budget in [PERFORMANCE.md](PERFORMANCE.md), or allocation is not 0 B |
 
 ## 3. Regenerate the face of the release
 
@@ -55,9 +55,12 @@ their own machine, so they are taken from the app — never edited.
 
 ## 4. Update the record
 
-- `CHANGELOG.md`: a new `## [x.y.z] — date` section, user-facing facts only (new API, behaviour
-  changes, fixes), each with the migration if there is one. Detail stays in the pull request.
-- `docs/PLAN.md`: move finished steps out; the file is only ever "what is left".
+- `CHANGELOG.md`: move `## [Unreleased]` to `## [x.y.z] — date` and leave a fresh empty one above
+  it. User-facing facts only (new API, behaviour changes, fixes), each with the migration if there
+  is one; detail stays in the pull request. This section *is* the release page: `release.yml` runs
+  `tools/release-notes.ps1` and publishes it verbatim, so a version with no section — or one still
+  under `[Unreleased]` — fails the release instead of shipping without notes. Check it locally with
+  `pwsh tools/release-notes.ps1 -Version x.y.z`.
 - `skills/cui-dotnet/{llms.txt,api/*.md}` are generated from the headers; check them in the `regen`
   diff rather than editing them by hand. `SKILL.md` beside them is hand-written.
 

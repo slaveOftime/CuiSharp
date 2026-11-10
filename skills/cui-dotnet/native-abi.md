@@ -55,7 +55,7 @@ running the same CUI has an answer that does not depend on a file listing.
 
 ## Clean-consumer check
 
-The gates in `docs/PLAN.md` ask for the package to be proven in a consumer that does not rebuild it:
+The release gates ask for the package to be proven in a consumer that does not rebuild it:
 
 ```sh
 dotnet pack src/CuiSharp/CuiSharp.csproj -c Release -o artifacts/packages

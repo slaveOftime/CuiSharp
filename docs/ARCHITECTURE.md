@@ -3,7 +3,7 @@
 How CuiSharp is put together and which rules must not be broken. Read this before changing the
 binding, the runtime or anything that ships in a package.
 
-Remaining work: [PLAN.md](PLAN.md). Measured cost per frame: [PERFORMANCE.md](PERFORMANCE.md).
+Measured cost per frame: [PERFORMANCE.md](PERFORMANCE.md). Release notes: [../CHANGELOG.md](../CHANGELOG.md).
 
 ## Decisions
 

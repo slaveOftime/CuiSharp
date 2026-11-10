@@ -275,8 +275,9 @@ headers. Never edit them: change `tools/bindgen.cs` or `bindings/overrides.json`
 Syncing a CUI release is checking out the new tag, running `regen.ps1`, and reviewing the `api.json`
 diff. `skills/cui-dotnet/SKILL.md` is the one page written by hand.
 
-Rules and decisions: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Remaining work:
-[docs/PLAN.md](docs/PLAN.md). Authoring guide: [skills/cui-dotnet/SKILL.md](skills/cui-dotnet/SKILL.md).
+Rules and decisions: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Authoring guide:
+[skills/cui-dotnet/SKILL.md](skills/cui-dotnet/SKILL.md). What changed, per version:
+[CHANGELOG.md](CHANGELOG.md).
 
 ## Status
 

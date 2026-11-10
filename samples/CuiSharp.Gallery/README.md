@@ -54,7 +54,7 @@ Overlays, Feedback, Data display, Charts — plus two pages written for this bin
 (gauges, knobs, faders, meters) and **Tools** (terminal, log view, hex view, diff).
 
 The thirteen extended pages of `examples/gallery_more.c` are **not** ported yet; it is the first
-item in [remaining work](../../docs/PLAN.md).
+item in its [changelog](../../CHANGELOG.md).
 
 ## A page
 

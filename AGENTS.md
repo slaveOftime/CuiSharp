@@ -5,7 +5,6 @@ CuiSharp binds CUI (C99) to C#. Read these three before changing code, in this o
 | File | Answers |
 |---|---|
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | the settled decisions and the rules that must not break |
-| [docs/PLAN.md](docs/PLAN.md) | what is left to do, and the gates a step must pass |
 | [skills/cui-dotnet/SKILL.md](skills/cui-dotnet/SKILL.md) | how the API is meant to be used, pitfalls included |
 
 `docs/ARCHITECTURE.md` is why things are the way they are; read an entry when you are about to change
