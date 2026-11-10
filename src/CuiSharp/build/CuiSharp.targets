@@ -22,19 +22,21 @@
   <PropertyGroup>
     <_CuiSharpNativeWin>$(MSBuildThisFileDirectory)../runtimes/win-x64/native/</_CuiSharpNativeWin>
     <_CuiSharpNativeLinux>$(MSBuildThisFileDirectory)../runtimes/linux-x64/native/</_CuiSharpNativeLinux>
+    <_CuiSharpNativeWinArm64>$(MSBuildThisFileDirectory)../runtimes/win-arm64/native/</_CuiSharpNativeWinArm64>
+    <_CuiSharpNativeLinuxArm64>$(MSBuildThisFileDirectory)../runtimes/linux-arm64/native/</_CuiSharpNativeLinuxArm64>
     <_CuiSharpNativeOsx>$(MSBuildThisFileDirectory)../runtimes/osx-arm64/native/</_CuiSharpNativeOsx>
 
     <!-- The RIDs this package carries a static archive for, and nothing else. -->
-    <_CuiSharpSupportedRids>win-x64;linux-x64;osx-arm64</_CuiSharpSupportedRids>
+    <_CuiSharpSupportedRids>win-x64;win-arm64;linux-x64;linux-arm64;osx-arm64</_CuiSharpSupportedRids>
 
     <!-- RID wins; a publish without one asks the host, which is what "no -r" means. -->
     <_CuiSharpRid Condition="'$(RuntimeIdentifier)' != ''">$(RuntimeIdentifier)</_CuiSharpRid>
-    <_CuiSharpRid Condition="'$(_CuiSharpRid)' == '' And $([MSBuild]::IsOSPlatform('Windows'))">win-x64</_CuiSharpRid>
-    <_CuiSharpRid Condition="'$(_CuiSharpRid)' == '' And $([MSBuild]::IsOSPlatform('Linux'))">linux-x64</_CuiSharpRid>
-    <_CuiSharpRid Condition="'$(_CuiSharpRid)' == '' And $([MSBuild]::IsOSPlatform('OSX'))">osx-arm64</_CuiSharpRid>
+    <_CuiSharpRid Condition="'$(_CuiSharpRid)' == ''">$(NETCoreSdkRuntimeIdentifier)</_CuiSharpRid>
 
     <_CuiSharpArchive Condition="'$(_CuiSharpRid)' == 'win-x64'">$(_CuiSharpNativeWin)cui.lib</_CuiSharpArchive>
     <_CuiSharpArchive Condition="'$(_CuiSharpRid)' == 'linux-x64'">$(_CuiSharpNativeLinux)libcui.a</_CuiSharpArchive>
+    <_CuiSharpArchive Condition="'$(_CuiSharpRid)' == 'win-arm64'">$(_CuiSharpNativeWinArm64)cui.lib</_CuiSharpArchive>
+    <_CuiSharpArchive Condition="'$(_CuiSharpRid)' == 'linux-arm64'">$(_CuiSharpNativeLinuxArm64)libcui.a</_CuiSharpArchive>
     <_CuiSharpArchive Condition="'$(_CuiSharpRid)' == 'osx-arm64'">$(_CuiSharpNativeOsx)libcui.a</_CuiSharpArchive>
 
     <_CuiSharpLinksStatically Condition="'$(PublishAot)' == 'true' And '$(_CuiSharpArchive)' != '' And Exists('$(_CuiSharpArchive)')">true</_CuiSharpLinksStatically>
@@ -85,7 +87,7 @@
   <Target Name="CuiSharpRequireStaticArchive"
           BeforeTargets="PrepareForPublish"
           Condition="'$(PublishAot)' == 'true'">
-    <Error Condition="'$(_CuiSharpRid)' != '' And !$(_CuiSharpSupportedRids.Contains($(_CuiSharpRid)))"
+    <Error Condition="'$(_CuiSharpRid)' != '' And '$(_CuiSharpArchive)' == ''"
            Text="CuiSharp carries no native library for RID &quot;$(_CuiSharpRid)&quot;; it has $(_CuiSharpSupportedRids). Publish for one of those, or add the RID to the package's native artifacts." />
     <Error Condition="'$(_CuiSharpRid)' == ''"
            Text="CuiSharp could not tell which RID this NativeAOT publish is for. Pass -r, e.g. -r win-x64. Supported: $(_CuiSharpSupportedRids)." />

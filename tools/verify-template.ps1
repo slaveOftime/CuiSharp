@@ -37,6 +37,7 @@ $packages = Join-Path $work 'packages'
 $app = Join-Path $work 'TodoApp'
 $miniApp = Join-Path $work 'mini'
 $templateInstalled = $false
+$elapsed = [System.Diagnostics.Stopwatch]::StartNew()
 
 function Step([string] $text) { Write-Host "==> $text" -ForegroundColor Cyan }
 
@@ -98,7 +99,11 @@ try {
         # The host's own RID, so this gate says something on Linux and macOS too: the
         # package's archive for that RID is what links, and a Windows-only run cannot
         # see an x11 or a Cocoa linker argument going wrong.
-        $rid = if ($IsWindows) { 'win-x64' } elseif ($IsMacOS) { 'osx-arm64' } else { 'linux-x64' }
+        # PowerShell may be emulated on ARM64; the SDK's RID is what NuGet and our targets use.
+        $rid = (& dotnet msbuild src/CuiSharp/CuiSharp.csproj -nologo -getProperty:NETCoreSdkRuntimeIdentifier | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0 -or $rid -notmatch '^(win|linux|osx)-(x64|arm64)$') {
+            throw "could not determine the .NET SDK's native RID: $rid"
+        }
         $exeName = if ($IsWindows) { 'TodoApp.exe' } else { 'TodoApp' }
 
         Step "publishing a NativeAOT single file ($rid)"
@@ -126,17 +131,22 @@ try {
     Step 'checking that the package delivers the analyzers'
     $page = Join-Path $app 'TodoApp/TodoPageBridge.cs'
     Set-Content -Path $page -Encoding utf8 -Value @'
+using CuiSharp;
+
 namespace TodoApp;
 
 internal static class AnalyzerProbe
 {
-    public static void Draw(CuiSharp.Ui ui) => ui.Card(new CuiSharp.Card());
+    public static void Draw(Ui ui)
+    {
+        ui.Card(new Card());
+    }
 }
 '@
-    & dotnet build $solution -c $Configuration $versionArg 2>&1 | Out-Null
-    $analyzed = $LASTEXITCODE -ne 0
+    $analysisOutput = (& dotnet build $solution -c $Configuration $versionArg 2>&1 | Out-String)
+    $analyzed = $LASTEXITCODE -ne 0 -and $analysisOutput -match '\bCUI002\b'
     Remove-Item $page -Force
-    if (-not $analyzed) { throw 'the generated app built a discarded scope, so the package is not delivering CUI002' }
+    if (-not $analyzed) { throw "the package did not diagnose the discarded scope with CUI002: $analysisOutput" }
     Write-Host '    CUI002 fired inside the generated app' -ForegroundColor Green
 
     # `dotnet cui` has to work on the app a person just generated, with no code added: the
@@ -151,17 +161,28 @@ internal static class AnalyzerProbe
     # Read the tool's stdout as UTF-8, explicitly: a native command's output is otherwise decoded
     # with this console's code page, and the check below is about the tool's bytes, not about pwsh.
     $psi = [System.Diagnostics.ProcessStartInfo]::new($cui)
-    foreach ($argument in @('tree', '--project', (Join-Path $app 'TodoApp'), '--frames', '2')) { $psi.ArgumentList.Add($argument) }
+    # The successful JIT build above is still present after the intentionally failing probe;
+    # do not restore/rebuild it a third time just to read its already-tested frame.
+    foreach ($argument in @('tree', '--project', (Join-Path $app 'TodoApp'), '--no-build', '--frames', '2')) { $psi.ArgumentList.Add($argument) }
     $psi.RedirectStandardOutput = $true
     $psi.RedirectStandardError = $true
     $psi.UseShellExecute = $false
     # strict: a byte that is not UTF-8 raises instead of becoming a replacement character
     $psi.StandardOutputEncoding = [System.Text.UTF8Encoding]::new($false, $true)
     $tool = [System.Diagnostics.Process]::Start($psi)
-    try { $tree = $tool.StandardOutput.ReadToEnd() }
-    catch { throw "dotnet cui did not write UTF-8 to a redirected stdout: $($_.Exception.Message)" }
-    $tool.WaitForExit()
-    if ($tool.ExitCode -ne 0) { throw "dotnet cui tree failed: $($tool.StandardError.ReadToEnd())" }
+    try {
+        # Drain stderr concurrently too; a failed restore/launch must not fill its pipe and hang.
+        $stdout = $tool.StandardOutput.ReadToEndAsync()
+        $stderr = $tool.StandardError.ReadToEndAsync()
+        if (-not $tool.WaitForExit(60000)) { throw 'dotnet cui tree timed out after 60 seconds' }
+        $tree = $stdout.GetAwaiter().GetResult()
+        $errors = $stderr.GetAwaiter().GetResult()
+        if ($tool.ExitCode -ne 0) { throw "dotnet cui tree failed: $errors" }
+    }
+    finally {
+        if (-not $tool.HasExited) { $tool.Kill($true); $tool.WaitForExit() }
+        $tool.Dispose()
+    }
     if ($tree -notmatch 'Frame') { throw "dotnet cui tree printed no tree: $tree" }
 
     # The footer's label has a middle dot in it, and a tool that wrote its own code page would lose
@@ -273,7 +294,7 @@ public static class CuiMiniWindowProbe
     }
     else { Write-Host '    native window smoke skipped (no portable desktop assumed); headless interaction passed' }
 
-    Write-Host 'templates verified' -ForegroundColor Green
+    Write-Host ('templates verified in {0:N1} seconds' -f $elapsed.Elapsed.TotalSeconds) -ForegroundColor Green
 }
 finally {
     if ($templateInstalled) { & dotnet new uninstall CuiSharp.Templates | Out-Null }

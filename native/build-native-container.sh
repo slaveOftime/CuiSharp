@@ -39,16 +39,18 @@ docker run --rm \
     # the Release file expired and only warn on its way to the same failure.
     sed -i "s|deb.debian.org/debian-security|archive.debian.org/debian-security|" /etc/apt/sources.list
     echo "Acquire::Check-Valid-Until \"false\";" > /etc/apt/apt.conf.d/99-archive
-    apt-get -o Acquire::Retries=5 update -qq
+    apt_options=(-o Acquire::Retries=2 -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15
+                 -o APT::Update::Error-Mode=any)
+    timeout --kill-after=10s 120s apt-get "${apt_options[@]}" update -qq
     # X11 headers because CUI'"'"'s only hard Linux dependency is Xlib.
-    apt-get install -y -qq -o Acquire::Retries=5 --no-install-recommends \
+    timeout --kill-after=10s 180s apt-get "${apt_options[@]}" install -y -qq --no-install-recommends \
       build-essential cmake pkg-config libx11-dev binutils git ca-certificates python3-pip >/dev/null
     # Bullseye ships cmake 3.18, and the CUI 1.3 CMakeLists uses $<CONFIG:Rel,Min>
     # with several configurations — an expression that needs 3.19. The submodule
     # is pinned and not ours to patch, so build with a current cmake instead; the
     # compiler and glibc stay the image version, which is what the baseline
     # promise rests on.
-    pip3 install -q "cmake>=3.28"
+    timeout --kill-after=10s 120s pip3 install -q --timeout 20 --retries 2 "cmake>=3.28"
     echo "    cmake:  $(cmake --version | head -1 | awk "{print \$3}")"
     . /etc/os-release
     echo "    image:  $PRETTY_NAME"

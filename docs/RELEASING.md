@@ -83,13 +83,16 @@ unzip -l artifacts/packages/CuiSharp.Templates.*.nupkg | head -20
 
 | Package | Must contain |
 |---|---|
-| `CuiSharp` | `lib/net10.0/CuiSharp.dll`, each RID's `runtimes/<rid>/native/` files, `runtimes/native-provenance.txt` (revision, compiler, ABI, hashes — see [native-abi.md](../skills/cui-dotnet/native-abi.md)), `analyzers/dotnet/cs/CuiSharp.Analyzers.dll`, `build/CuiSharp.targets`, `README.md` |
+| `CuiSharp` | `lib/net10.0/CuiSharp.dll`, each RID's `runtimes/<rid>/native/` files, `runtimes/native-provenance.txt` (revision, compiler, ABI, hashes — see [native-abi.md](../skills/cui-dotnet/native-abi.md)), `analyzers/dotnet/cs/CuiSharp.Analyzers.dll`, `analyzers/dotnet/cs/CuiSharp.CodeFixes.dll`, `build/CuiSharp.targets`, `README.md` |
 | `CuiSharp.Testing` | `lib/net10.0/CuiSharp.Testing.dll` and a dependency on `CuiSharp` |
 | `CuiSharp.Tools` | a `DotnetToolSettings.xml` with `CommandName=cui` |
 | `CuiSharp.Templates` | `content/CuiSharp.App/…` including the app, its tests and `AGENTS.md` |
 
-`dotnet pack` warns when `native/cui.dll` is missing, because a managed-only package installs
-cleanly and then fails at the first frame.
+`dotnet pack` warns when no native artifacts are found, because a managed-only package installs
+cleanly and then fails at the first frame. Release packing must assemble all five RIDs from their
+own runners, including the new Windows/Linux ARM64 legs; do not release until their native, AOT
+and packaged-consumer gates pass. Separate RID directories prevent same-named archives from
+replacing each other.
 
 ## 6. Smoke-test the packages the way a user gets them
 

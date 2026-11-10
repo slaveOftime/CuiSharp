@@ -11,6 +11,7 @@
   </Folder>
   <Project Path="src/CuiSharp.Analyzers/CuiSharp.Analyzers.csproj" />
   <Project Path="src/CuiSharp.Benchmarks/CuiSharp.Benchmarks.csproj" />
+  <Project Path="src/CuiSharp.CodeFixes/CuiSharp.CodeFixes.csproj" />
   <Project Path="src/CuiSharp.Testing/CuiSharp.Testing.csproj" />
   <Project Path="src/CuiSharp.Tools/CuiSharp.Tools.csproj" />
   <Project Path="src/CuiSharp.Tests/CuiSharp.Tests.csproj" />

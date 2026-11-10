@@ -307,6 +307,11 @@ million-sample feed holds 144 fps with 0 B of managed allocation per frame.
 | Frame rate sags | allocation per frame: LINQ, `new`, string concat | interpolate into a widget; hoist arrays with `static readonly` (CUI007) |
 | An async handler deadlocks or the app crashes at shutdown | `ConfigureAwait(false)` or `async void` in a component | await normally in `Mutation`/`Run` (CUI005, CUI006) |
 
+IDE quick fixes are available for scope disposal (`CUI002`), conditional-body guards (`CUI003`)
+and an awaited BCL `ConfigureAwait` (`CUI005`). Scope fixes are individual, not fix-all, and are
+not offered if the added guard would introduce a compiler error. The remaining rules still need
+a manual rewrite.
+
 Verifying:
 - **Abandoned array literals cost arena space, not correctness.** Every array handed to CUI is copied
   into the frame arena, so `new[] { "a", "b" }` inside a frame is safe, just bytes copied per frame.

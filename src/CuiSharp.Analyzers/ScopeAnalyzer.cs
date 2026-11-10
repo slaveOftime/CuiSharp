@@ -31,6 +31,7 @@ public sealed class ScopeAnalyzer : DiagnosticAnalyzer
         {
             var types = new KnownTypes(start.Compilation);
             start.RegisterSyntaxNodeAction(ctx => CheckScopeDiscarded(ctx, types), SyntaxKind.ExpressionStatement);
+            start.RegisterSyntaxNodeAction(ctx => CheckArrowBodyScope(ctx, types), SyntaxKind.ArrowExpressionClause);
             start.RegisterSyntaxNodeAction(ctx => CheckLocalScope(ctx, types),
                 SyntaxKind.LocalDeclarationStatement, SyntaxKind.UsingStatement);
         });
@@ -48,6 +49,28 @@ public sealed class ScopeAnalyzer : DiagnosticAnalyzer
         if (method is null || !types.IsScope(method.ReturnType)) return;
 
         context.ReportDiagnostic(Diagnostic.Create(Diagnostics.ScopeNotDisposed, statement.GetLocation(), method.Name));
+    }
+
+    /// <summary>
+    /// The same leak written as an expression body: <c>void Draw(Ui ui) =&gt; ui.Card(...);</c>.
+    /// A body that returns the scope hands it to its caller and is not a leak, so only a
+    /// value-less function (a void method or local function) is reported.
+    /// </summary>
+    private static void CheckArrowBodyScope(SyntaxNodeAnalysisContext context, KnownTypes types)
+    {
+        var clause = (ArrowExpressionClauseSyntax)context.Node;
+        bool valueLess = clause.Parent switch
+        {
+            MethodDeclarationSyntax enclosing => enclosing.ReturnType is PredefinedTypeSyntax { Keyword.RawKind: (int)SyntaxKind.VoidKeyword },
+            LocalFunctionStatementSyntax local => local.ReturnType is PredefinedTypeSyntax { Keyword.RawKind: (int)SyntaxKind.VoidKeyword },
+            _ => false,
+        };
+        if (!valueLess || clause.Expression is not InvocationExpressionSyntax invocation) return;
+
+        IMethodSymbol? method = context.SemanticModel.GetSymbolInfo(invocation, context.CancellationToken).Symbol as IMethodSymbol;
+        if (method is null || !types.IsScope(method.ReturnType)) return;
+
+        context.ReportDiagnostic(Diagnostic.Create(Diagnostics.ScopeNotDisposed, invocation.GetLocation(), method.Name));
     }
 
     // ---- CUI002 and CUI003 on a local ---------------------------------------

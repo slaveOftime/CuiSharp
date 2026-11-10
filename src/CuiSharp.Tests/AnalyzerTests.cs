@@ -13,7 +13,7 @@ namespace CuiSharp.Tests;
 /// </summary>
 public class AnalyzerTests
 {
-    private static readonly MetadataReference[] References = BuildReferences();
+    internal static readonly MetadataReference[] References = BuildReferences();
 
     private static MetadataReference[] BuildReferences()
     {
@@ -227,6 +227,34 @@ public class AnalyzerTests
         Assert.Equal(2, found.Count(f => f.StartsWith("CUI002", StringComparison.Ordinal)));
         Assert.All(found.Where(f => f.StartsWith("CUI002", StringComparison.Ordinal)),
             f => Assert.Contains("using", f, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task ADiscardedScopeInAnExpressionBodyIsReported()
+    {
+        string[] found = await AnalyzeAsync(Prologue + """
+            public static class Page
+            {
+                public static void Draw(Ui ui) => ui.Card(new Card());
+                public static void Keep(Ui ui) => ui.Text("not a scope");
+            }
+            """);
+
+        Assert.Equal("CUI002", Assert.Single(found).Split(':')[0]);
+        Assert.Contains("Card", found[0], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AnExpressionBodyThatReturnsItsScopeIsNotReported()
+    {
+        string[] found = await AnalyzeAsync(Prologue + """
+            public static class Page
+            {
+                public static LayoutScope Card(Ui ui) => ui.Card(new Card());
+            }
+            """);
+
+        Assert.DoesNotContain(found, f => f.StartsWith("CUI002", StringComparison.Ordinal));
     }
 
     [Fact]

@@ -19,13 +19,15 @@
     Release (default) or Debug.
 
 .NOTES
-    The submodule is never modified: it is staged into artifacts/native-src and
-    native/patches/*.patch is applied there in order (docs/PLAN.md section 4.3).
+    The submodule is never modified: it is staged into artifacts/native-src.
+    The architecture defaults to the host OS (x64 or ARM64). CI builds each on its own runner.
 #>
 [CmdletBinding()]
 param(
     [string] $CuiSource = (Join-Path $PSScriptRoot 'CUI'),
-    [string] $Configuration = 'Release'
+    [string] $Configuration = 'Release',
+    [ValidateSet('x64', 'arm64')]
+    [string] $Architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant()
 )
 
 $ErrorActionPreference = 'Stop'
@@ -47,7 +49,7 @@ function Find-CMake {
 }
 
 $cmake = Find-CMake
-. (Join-Path $here 'msvc-env.ps1')
+. (Join-Path $here 'msvc-env.ps1') -Architecture $Architecture
 
 function Invoke-NativePatches {
     # The pinned submodule stays untouched, so the build runs against a patched
@@ -121,11 +123,17 @@ Get-ChildItem $here -Filter 'cui.*' | Where-Object { $_.Extension -in '.dll', '.
 
 # Recorded with the artifacts, not reconstructed later: a package that cannot say which
 # CUI revision and compiler produced its library is a package nobody can audit.
+$machine = if ($Architecture -eq 'arm64') { 'AA64' } else { '8664' }
+$headers = & dumpbin /headers (Join-Path $here 'cui.dll')
+if ($LASTEXITCODE -ne 0 -or -not ($headers -match "\b$machine machine")) {
+    throw "cui.dll was not built for $Architecture"
+}
 $cl = (cl 2>&1 | Select-Object -First 1)
 $provenance = Join-Path $here 'native-provenance.txt'
 @(
     "cui-rev=$cuiRev"
     "os=Windows-$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)"
+    "rid=win-$Architecture"
     "cc=$cl"
     "config=$Configuration"
 ) | Set-Content -Path $provenance -Encoding utf8

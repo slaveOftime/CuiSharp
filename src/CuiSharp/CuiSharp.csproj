@@ -38,6 +38,7 @@
   -->
   <PropertyGroup>
     <CuiNativeDir>$(MSBuildThisFileDirectory)..\..\native\</CuiNativeDir>
+    <CuiNativeRid Condition="'$(CuiNativeRid)' == ''">$(NETCoreSdkRuntimeIdentifier)</CuiNativeRid>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -47,9 +48,14 @@
     <_CuiNativeWin Condition="'$(CuiNativeWinDir)' != ''">$(CuiNativeWinDir)</_CuiNativeWin>
     <_CuiNativeLinux Condition="'$(CuiNativeLinuxDir)' != ''">$(CuiNativeLinuxDir)</_CuiNativeLinux>
     <_CuiNativeOsx Condition="'$(CuiNativeOsxDir)' != ''">$(CuiNativeOsxDir)</_CuiNativeOsx>
-    <_CuiNativeWin Condition="'$(_CuiNativeWin)' == '' And Exists('$(CuiNativeDir)cui.dll')">$(CuiNativeDir)</_CuiNativeWin>
-    <_CuiNativeLinux Condition="'$(_CuiNativeLinux)' == '' And Exists('$(CuiNativeDir)libcui.so')">$(CuiNativeDir)</_CuiNativeLinux>
-    <_CuiNativeOsx Condition="'$(_CuiNativeOsx)' == '' And Exists('$(CuiNativeDir)libcui.dylib')">$(CuiNativeDir)</_CuiNativeOsx>
+    <_CuiNativeWinArm64 Condition="'$(CuiNativeWinArm64Dir)' != ''">$(CuiNativeWinArm64Dir)</_CuiNativeWinArm64>
+    <_CuiNativeLinuxArm64 Condition="'$(CuiNativeLinuxArm64Dir)' != ''">$(CuiNativeLinuxArm64Dir)</_CuiNativeLinuxArm64>
+    <!-- File names identify the OS, not the CPU. Never label a host ARM64 archive as x64. -->
+    <_CuiNativeWin Condition="'$(_CuiNativeWin)' == '' And '$(CuiNativeRid)' == 'win-x64' And Exists('$(CuiNativeDir)cui.dll')">$(CuiNativeDir)</_CuiNativeWin>
+    <_CuiNativeLinux Condition="'$(_CuiNativeLinux)' == '' And '$(CuiNativeRid)' == 'linux-x64' And Exists('$(CuiNativeDir)libcui.so')">$(CuiNativeDir)</_CuiNativeLinux>
+    <_CuiNativeOsx Condition="'$(_CuiNativeOsx)' == '' And '$(CuiNativeRid)' == 'osx-arm64' And Exists('$(CuiNativeDir)libcui.dylib')">$(CuiNativeDir)</_CuiNativeOsx>
+    <_CuiNativeWinArm64 Condition="'$(_CuiNativeWinArm64)' == '' And '$(CuiNativeRid)' == 'win-arm64' And Exists('$(CuiNativeDir)cui.dll')">$(CuiNativeDir)</_CuiNativeWinArm64>
+    <_CuiNativeLinuxArm64 Condition="'$(_CuiNativeLinuxArm64)' == '' And '$(CuiNativeRid)' == 'linux-arm64' And Exists('$(CuiNativeDir)libcui.so')">$(CuiNativeDir)</_CuiNativeLinuxArm64>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(_CuiNativeWin)' != '' And Exists('$(_CuiNativeWin)cui.lib')">
@@ -66,6 +72,16 @@
   <ItemGroup Condition="'$(_CuiNativeOsx)' != '' And Exists('$(_CuiNativeOsx)libcui.a')">
     <None Include="$(_CuiNativeOsx)libcui.dylib" Pack="true" PackagePath="runtimes/osx-arm64/native/" Visible="false" />
     <None Include="$(_CuiNativeOsx)libcui.a" Pack="true" PackagePath="runtimes/osx-arm64/native/" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(_CuiNativeWinArm64)' != '' And Exists('$(_CuiNativeWinArm64)cui.lib')">
+    <None Include="$(_CuiNativeWinArm64)cui.dll" Pack="true" PackagePath="runtimes/win-arm64/native/" Visible="false" />
+    <None Include="$(_CuiNativeWinArm64)cui.lib" Pack="true" PackagePath="runtimes/win-arm64/native/" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(_CuiNativeLinuxArm64)' != '' And Exists('$(_CuiNativeLinuxArm64)libcui.a')">
+    <None Include="$(_CuiNativeLinuxArm64)libcui.so" Pack="true" PackagePath="runtimes/linux-arm64/native/" Visible="false" />
+    <None Include="$(_CuiNativeLinuxArm64)libcui.a" Pack="true" PackagePath="runtimes/linux-arm64/native/" Visible="false" />
   </ItemGroup>
 
   <!--
@@ -98,8 +114,13 @@
     <ProjectReference Include="$(MSBuildThisFileDirectory)../CuiSharp.Analyzers/CuiSharp.Analyzers.csproj"
                       ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
     <None Include="$(MSBuildThisFileDirectory)../CuiSharp.Analyzers/bin/$(Configuration)/netstandard2.0/CuiSharp.Analyzers.dll"
-          Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"
-          Condition="Exists('$(MSBuildThisFileDirectory)../CuiSharp.Analyzers/bin/$(Configuration)/netstandard2.0/CuiSharp.Analyzers.dll')" />
+          Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../CuiSharp.CodeFixes/CuiSharp.CodeFixes.csproj" ReferenceOutputAssembly="false" />
+    <None Include="../CuiSharp.CodeFixes/bin/$(Configuration)/netstandard2.0/CuiSharp.CodeFixes.dll"
+          Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
   </ItemGroup>
 
   <!--
@@ -118,6 +139,10 @@
       <_CuiPackagedNative Include="$(_CuiNativeWin)cui.lib" Condition="'$(_CuiNativeWin)' != '' And Exists('$(_CuiNativeWin)cui.lib')" Rid="win-x64" />
       <_CuiPackagedNative Include="$(_CuiNativeLinux)libcui.so" Condition="'$(_CuiNativeLinux)' != '' And Exists('$(_CuiNativeLinux)libcui.so')" Rid="linux-x64" />
       <_CuiPackagedNative Include="$(_CuiNativeLinux)libcui.a" Condition="'$(_CuiNativeLinux)' != '' And Exists('$(_CuiNativeLinux)libcui.a')" Rid="linux-x64" />
+      <_CuiPackagedNative Include="$(_CuiNativeWinArm64)cui.dll" Condition="'$(_CuiNativeWinArm64)' != '' And Exists('$(_CuiNativeWinArm64)cui.dll')" Rid="win-arm64" />
+      <_CuiPackagedNative Include="$(_CuiNativeWinArm64)cui.lib" Condition="'$(_CuiNativeWinArm64)' != '' And Exists('$(_CuiNativeWinArm64)cui.lib')" Rid="win-arm64" />
+      <_CuiPackagedNative Include="$(_CuiNativeLinuxArm64)libcui.so" Condition="'$(_CuiNativeLinuxArm64)' != '' And Exists('$(_CuiNativeLinuxArm64)libcui.so')" Rid="linux-arm64" />
+      <_CuiPackagedNative Include="$(_CuiNativeLinuxArm64)libcui.a" Condition="'$(_CuiNativeLinuxArm64)' != '' And Exists('$(_CuiNativeLinuxArm64)libcui.a')" Rid="linux-arm64" />
       <_CuiPackagedNative Include="$(_CuiNativeOsx)libcui.dylib" Condition="'$(_CuiNativeOsx)' != '' And Exists('$(_CuiNativeOsx)libcui.dylib')" Rid="osx-arm64" />
       <_CuiPackagedNative Include="$(_CuiNativeOsx)libcui.a" Condition="'$(_CuiNativeOsx)' != '' And Exists('$(_CuiNativeOsx)libcui.a')" Rid="osx-arm64" />
     </ItemGroup>
@@ -134,9 +159,38 @@
 
     <!-- ReadAllLines is not a property function MSBuild will run, so the native build's own
          revision and compiler lines arrive through a task, appended after the header above. -->
-    <ReadLinesFromFile File="$(CuiNativeDir)native-provenance.txt" Condition="Exists('$(CuiNativeDir)native-provenance.txt')">
-      <Output TaskParameter="Lines" ItemName="_CuiProvenanceLine" />
+    <ReadLinesFromFile File="$(_CuiNativeWin)native-provenance.txt" Condition="'$(_CuiNativeWin)' != '' And Exists('$(_CuiNativeWin)native-provenance.txt')">
+      <Output TaskParameter="Lines" ItemName="_CuiWinProvenance" />
     </ReadLinesFromFile>
+    <ReadLinesFromFile File="$(_CuiNativeWinArm64)native-provenance.txt" Condition="'$(_CuiNativeWinArm64)' != '' And Exists('$(_CuiNativeWinArm64)native-provenance.txt')">
+      <Output TaskParameter="Lines" ItemName="_CuiWinArmProvenance" />
+    </ReadLinesFromFile>
+    <ReadLinesFromFile File="$(_CuiNativeLinux)native-provenance.txt" Condition="'$(_CuiNativeLinux)' != '' And Exists('$(_CuiNativeLinux)native-provenance.txt')">
+      <Output TaskParameter="Lines" ItemName="_CuiLinuxProvenance" />
+    </ReadLinesFromFile>
+    <ReadLinesFromFile File="$(_CuiNativeLinuxArm64)native-provenance.txt" Condition="'$(_CuiNativeLinuxArm64)' != '' And Exists('$(_CuiNativeLinuxArm64)native-provenance.txt')">
+      <Output TaskParameter="Lines" ItemName="_CuiLinuxArmProvenance" />
+    </ReadLinesFromFile>
+    <ReadLinesFromFile File="$(_CuiNativeOsx)native-provenance.txt" Condition="'$(_CuiNativeOsx)' != '' And Exists('$(_CuiNativeOsx)native-provenance.txt')">
+      <Output TaskParameter="Lines" ItemName="_CuiOsxProvenance" />
+    </ReadLinesFromFile>
+    <ItemGroup>
+      <!-- Retain the build's RID stamp: unlike the file name it identifies the CPU, including
+           a cross-built archive or an emulated SDK. Refuse to relabel it while packing. -->
+      <_CuiBuiltRid Include="@(_CuiWinProvenance)" ExpectedRid="win-x64" Condition="$([System.String]::Copy('%(_CuiWinProvenance.Identity)').StartsWith('rid='))" />
+      <_CuiBuiltRid Include="@(_CuiWinArmProvenance)" ExpectedRid="win-arm64" Condition="$([System.String]::Copy('%(_CuiWinArmProvenance.Identity)').StartsWith('rid='))" />
+      <_CuiBuiltRid Include="@(_CuiLinuxProvenance)" ExpectedRid="linux-x64" Condition="$([System.String]::Copy('%(_CuiLinuxProvenance.Identity)').StartsWith('rid='))" />
+      <_CuiBuiltRid Include="@(_CuiLinuxArmProvenance)" ExpectedRid="linux-arm64" Condition="$([System.String]::Copy('%(_CuiLinuxArmProvenance.Identity)').StartsWith('rid='))" />
+      <_CuiBuiltRid Include="@(_CuiOsxProvenance)" ExpectedRid="osx-arm64" Condition="$([System.String]::Copy('%(_CuiOsxProvenance.Identity)').StartsWith('rid='))" />
+      <_CuiProvenanceLine Include="@(_CuiWinProvenance->'win-x64 %(Identity)')" />
+      <_CuiProvenanceLine Include="@(_CuiWinArmProvenance->'win-arm64 %(Identity)')" />
+      <_CuiProvenanceLine Include="@(_CuiLinuxProvenance->'linux-x64 %(Identity)')" />
+      <_CuiProvenanceLine Include="@(_CuiLinuxArmProvenance->'linux-arm64 %(Identity)')" />
+      <_CuiProvenanceLine Include="@(_CuiOsxProvenance->'osx-arm64 %(Identity)')" />
+    </ItemGroup>
+
+    <Error Condition="'@(_CuiBuiltRid)' != '' And '%(_CuiBuiltRid.Identity)' != 'rid=%(_CuiBuiltRid.ExpectedRid)'"
+           Text="Native build declares %(_CuiBuiltRid.Identity), but would be packaged as %(_CuiBuiltRid.ExpectedRid). Use the matching CuiNative*Dir or CuiNativeRid; do not relabel an archive from another CPU." />
 
     <WriteLinesToFile File="$(IntermediateOutputPath)native-provenance.txt"
                       Lines="@(_CuiProvenanceLine)"
@@ -150,8 +204,8 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="CuiSharpWarnMissingNative" BeforeTargets="Pack" Condition="!Exists('$(CuiNativeDir)cui.dll')">
-    <Warning Text="native/cui.dll not found - the package will contain managed code only. Run native/build-native.ps1 first." />
+  <Target Name="CuiSharpWarnMissingNative" BeforeTargets="Pack" Condition="'$(_CuiNativeWin)$(_CuiNativeWinArm64)$(_CuiNativeLinux)$(_CuiNativeLinuxArm64)$(_CuiNativeOsx)' == ''">
+    <Warning Text="No native artifacts found - the package will contain managed code only. Run the host's native/build-native script first." />
   </Target>
 
 </Project>

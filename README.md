@@ -195,11 +195,13 @@ The app serves this itself (`CUISHARP_HEADLESS=1`), so what a tool sees is what 
 debug mode, no mock, no second code path. For a check that has to hold, prefer
 `CuiSharp.Testing`: frames on demand, milliseconds, and the reproduction stays in the suite.
 
-**Analyzers ship in the package** and turn the six mistakes that cost the most into build errors or
+**Analyzers ship in the package** and turn common frame and AOT mistakes into build errors or
 warnings: a blocking call in a frame (`CUI001`), a container scope without `using` (`CUI002`), a
 popover body that never checks `Open` (`CUI003`), a constant id in a loop (`CUI004`),
 `ConfigureAwait(false)` or `async void` in a component (`CUI005`, `CUI006`), and an allocation in a
-frame (`CUI007`). Each message says what to do instead.
+frame (`CUI007`), plus reflection-based JSON serialization under AOT (`CUI008`). Each message says
+what to do instead. IDE quick fixes add scope disposal/conditional guards (`CUI002`, `CUI003`) and
+remove an awaited BCL `ConfigureAwait` (`CUI005`). The other rules still require a manual rewrite.
 
 ## Install and publish
 
@@ -224,7 +226,9 @@ dotnet publish -c Release -r win-x64      # one executable, ~2 MB, nothing besid
 NativeAOT does not cross-compile between operating systems: publish on the platform you target
 (`libx11-dev` is needed at build time on Linux, not at run time).
 
-The package ships `win-x64`, `linux-x64` and `osx-arm64`. The Linux archive needs **glibc 2.31 or
+The native build/release matrix targets `win-x64`, `win-arm64`, `linux-x64`, `linux-arm64` and
+`osx-arm64`; the new ARM64 Windows/Linux legs still need runner verification before release.
+The Linux archive needs **glibc 2.31 or
 newer** (Debian 11, Ubuntu 20.04, RHEL 8); an older image fails at load with
 `version 'GLIBC_x.y' not found`, which `CuiSharpNativeException` restates with the packaged RIDs
 and the floor. `runtimes/native-provenance.txt` in the package records the revision, compiler and
@@ -240,7 +244,8 @@ dotnet run --project samples/CuiSharp.Gallery
 
 ```
 src/CuiSharp/            the library: Interop (generated), Ui, Runtime, Semantics, Hosting, Charting
-src/CuiSharp.Analyzers/  CUI001-CUI007, packed into CuiSharp
+src/CuiSharp.Analyzers/  CUI001-CUI008, packed into CuiSharp
+src/CuiSharp.CodeFixes/  IDE quick fixes, packed beside the analyzers
 src/CuiSharp.Testing/    TestApp: drive a component without a window
 src/CuiSharp.Tools/      dotnet cui
 src/CuiSharp.Templates/  dotnet new cui-app / cui-mini

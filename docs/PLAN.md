@@ -4,17 +4,21 @@ Only open work. What shipped is in [CHANGELOG.md](../CHANGELOG.md); how to build
 in [AGENTS.md](../AGENTS.md) and [RELEASING.md](RELEASING.md); the decisions that must not break are
 in [ARCHITECTURE.md](ARCHITECTURE.md). Every item here passes the same gates as any other change.
 
-## 1. Not started
+## 1. Open work
 
 - **The gallery pages for the extended components** (`examples/gallery_more.c`'s other fifteen):
   *Developer tools* and *More developer tools* cover CUI 1.3's twenty, but actions, smart inputs,
   pickers, capture, disclosure, reader, data grid, code, social and media, planning, more charts,
   motion, AI, audio and files still draw only in C's own gallery. One page per commit-sized slice;
   a missing wrapper is a generator or `overrides.json` fix, never a hand edit.
-- **`win-arm64` and `linux-arm64`** native builds, so the RID list stops at three. Every RID is built
-  on its own runner; a new one needs the archive, the linker arguments and a leg in `ci.yml`.
-- **Analyzer code fixes** for CUI001–CUI008. The diagnostics and their messages exist and are
-  enforced; none of them can rewrite the code yet.
+- **`win-arm64` and `linux-arm64` runner verification** — build scripts, exact-RID packaging,
+  native provenance, AOT linker selection and CI/release legs are wired. Local tests prove artifact
+  isolation and ARM64 archive selection, not ARM64 execution. Keep this open until `windows-11-arm`
+  and `ubuntu-24.04-arm` pass native builds, the full suite, AOT rendering and packaged consumers.
+- **Remaining analyzer code fixes** for CUI001, CUI004, CUI006–CUI008. CUI002/CUI003 now rewrite
+  scope disposal and guards; CUI005 removes an awaited BCL `ConfigureAwait`. IDE-only fixes ship in
+  a separate assembly so command-line analyzers do not depend on Workspaces. Still needed: safe
+  rewrites for the remaining rules and sequential fix-all for overlapping scope bodies.
 
 ## 2. Where upstream has to move first
 

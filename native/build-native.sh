@@ -92,6 +92,12 @@ provenance="$here/native-provenance.txt"
 {
   echo "cui-rev=$cui_rev"
   echo "os=$(uname -s)-$(uname -m)"
+  case "$(uname -s)-$(uname -m)" in
+    Linux-x86_64) echo "rid=linux-x64" ;;
+    Linux-aarch64) echo "rid=linux-arm64" ;;
+    Darwin-arm64) echo "rid=osx-arm64" ;;
+    *) echo "ERROR: unsupported native build host" >&2; exit 1 ;;
+  esac
   echo "built-on=$( . /etc/os-release 2>/dev/null && echo "${PRETTY_NAME:-unknown}" || echo unknown)"
   echo "cc=$("${CC:-cc}" --version 2>/dev/null | head -1)"
 } > "$provenance"

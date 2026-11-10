@@ -9,8 +9,18 @@ against is a promise, not an accident of the build machine.
 | RID | Native files | Built with | Minimum runtime |
 |---|---|---|---|
 | `win-x64` | `cui.dll`, `cui.lib` | MSVC v143 (VS 2022), `/MT` static CRT | Windows 10 x64, no VC++ redistributable |
+| `win-arm64` | `cui.dll`, `cui.lib` | native `windows-11-arm` runner, MSVC ARM64, `/MT` | Windows 11 ARM64, no VC++ redistributable |
 | `linux-x64` | `libcui.so`, `libcui.a` | `debian:11`, glibc **2.31** | glibc 2.31 (Debian 11, Ubuntu 20.04), Xlib 1.6 for the x11 backend |
+| `linux-arm64` | `libcui.so`, `libcui.a` | native `ubuntu-24.04-arm` runner, `debian:11` ARM64, glibc **2.31** | glibc 2.31 on ARM64, Xlib for the x11 backend |
 | `osx-arm64` | `libcui.dylib`, `libcui.a` | `macos-latest`, `CMAKE_OSX_DEPLOYMENT_TARGET=12.0` | macOS 12 (Monterey) on Apple silicon |
+
+The new Windows/Linux ARM64 legs are wired but still await runner verification before release.
+Each RID is compiled on its own CPU/OS runner, never populated by copying an x64 archive. A local
+pack labels the flat native build using the SDK's RID (override with `CuiNativeRid` when needed).
+Release packing supplies separate `CuiNativeWinDir`, `CuiNativeWinArm64Dir`, `CuiNativeLinuxDir`,
+`CuiNativeLinuxArm64Dir` and `CuiNativeOsxDir`; the package records each RID's own compiler metadata
+and hashes. The build's `rid=` stamp is validated against the package path, so a cross-built
+archive or an emulated SDK cannot silently label ARM64 bytes as x64.
 
 A glibc-built `.so` records the *newest* versioned symbol it uses, and a loader older than that
 refuses the whole library: `version 'GLIBC_2.38' not found`. Building the Linux binaries on a newer
@@ -50,7 +60,7 @@ running the same CUI has an answer that does not depend on a file listing.
 
 `build/CuiSharp.targets` matches the RID exactly and fails a NativeAOT publish that cannot be one:
 
-- a RID the package has no archive for (`linux-arm64`, `linux-musl-x64`) is an error naming the
+- a RID the package has no archive for (`linux-musl-arm64`, `linux-musl-x64`) is an error naming the
   supported set, instead of linking the wrong architecture's archive;
 - a missing archive for a supported RID is an error, instead of a publish that silently depends on
   the shared library and then deletes it;
@@ -70,4 +80,5 @@ dotnet publish -c Release -r <rid>            # AOT: links the archive, one exec
 ```
 
 CI runs exactly that in `ci.yml`'s `packaged-consumer` job, on the oldest supported Linux image
-(`ubuntu-22.04`) as well as Windows, with the native library coming only from the package.
+(`ubuntu-22.04`) as well as Windows. ARM64 legs use native Windows/Linux ARM64 runners, with the
+native library coming only from the package; those new legs still await a green CI run.

@@ -38,8 +38,8 @@ public sealed class CuiSharpNativeException : InvalidOperationException
             or WSL image fails at load with "version `GLIBC_x.y' not found".
 
             To build the native library for this machine, run native/build-native.sh (or .ps1) in the
-            CuiSharp repository, then point the build at it with -p:CuiNativeLinuxDir, -p:CuiNativeWinDir
-            or -p:CuiNativeOsxDir. See skills/cui-dotnet/native-abi.md.
+            CuiSharp repository, then point the build at it with the RID's -p:CuiNative*Dir
+            (WinDir, WinArm64Dir, LinuxDir, LinuxArm64Dir or OsxDir). See skills/cui-dotnet/native-abi.md.
 
             Loader message: {error.Message}
             """,
@@ -55,7 +55,7 @@ public sealed class CuiSharpNativeException : InvalidOperationException
 internal static class CuiNative
 {
     /// <summary>The RIDs the package carries a native library for.</summary>
-    internal static readonly string[] RidList = ["win-x64", "linux-x64", "osx-arm64"];
+    internal static readonly string[] RidList = ["win-x64", "win-arm64", "linux-x64", "linux-arm64", "osx-arm64"];
 
     /// <summary>The glibc floor the Linux archive is built against.</summary>
     internal const string LinuxFloor = "2.31";

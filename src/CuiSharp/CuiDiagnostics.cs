@@ -14,7 +14,7 @@ namespace CuiSharp;
 /// </summary>
 public sealed record CuiDiagnostics
 {
-    /// <summary>The OS and runtime: <c>win-x64</c>, <c>linux-x64</c>, <c>osx-arm64</c>.</summary>
+    /// <summary>The OS and runtime: <c>win-x64</c>, <c>win-arm64</c>, <c>linux-x64</c>, <c>linux-arm64</c>, <c>osx-arm64</c>.</summary>
     public required string Platform { get; init; }
 
     /// <summary>The CUI backend that created the window: <c>win32</c>, <c>x11</c>, <c>cocoa</c>.</summary>
