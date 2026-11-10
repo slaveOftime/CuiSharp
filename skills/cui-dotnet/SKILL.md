@@ -20,7 +20,7 @@ a UI that needs an accessibility tree (CUI publishes none).
 3. [State in `ref`](#state-goes-in-ref) · [Conditional containers](#containers-that-may-be-closed) ·
    [Custom controls](#custom-controls) · [Long series](#long-series-and-live-data)
 4. [Pitfalls](#pitfalls) · [Async work](#async-work) · [Renderer](#where-it-renders) · [Keyboard](#keyboard) ·
-   [Theming](#theming) · [Design rules](#design-rules)
+   [Theming](#theming) · [Translation](#translating-the-date-names) · [Design rules](#design-rules)
 5. [How to work on a UI](#how-to-work-on-a-ui) · [Testing](#testing-without-a-window) ·
    [Driving a real app](#driving-a-running-app) · [Widget behaviour](#widget-behaviour) ·
    [Files](#files)
@@ -334,6 +334,31 @@ ui.Theme = Theme.Dark;                // from any frame; CUI animates the change
 ui.Accent = Accent.Blue;
 ui.ToggleTheme();                     // what a Ctrl+J dark-mode command is
 ```
+
+## Translating the date names
+
+The date picker, the calendars, the gantt and the file browser read their month, weekday and
+"Today" text from one table. Fill in only what you translate; every entry left null falls back
+to English, and `null` itself restores English:
+
+```csharp
+using var spanish = new Localization
+{
+    Months = ["enero", "febrero", "marzo", "abril", "mayo", "junio",
+              "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"],
+    MonthsShort = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"],
+    Weekdays = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"],
+    Today = "Hoy",
+};
+
+ui.SetLocalization(spanish);   // once; CUI reads the same table every frame
+```
+
+CUI keeps the pointer it is given and reads it every frame, so the table cannot live in the frame
+arena: `Localization` owns one unmanaged block, rebuilt only when a name changes, and the surface
+keeps the object alive after the call — disposing it while frames are still drawing is the one way
+to break this. Weeks start on Monday, as in every CUI calendar. A component's own option (such as
+the month calendar's `MonthNames`) wins over the table.
 
 ## Design rules
 

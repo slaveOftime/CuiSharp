@@ -24,12 +24,24 @@ internal sealed class UiFrameState
     /// <summary>Per-id UTF-8 buffers for the pooled <c>ref string</c> text inputs.</summary>
     internal readonly TextFieldPool Text = new();
 
+    /// <summary>
+    /// The name table this surface published. Kept for two reasons: it is what keeps the table's
+    /// unmanaged block alive while CUI holds the pointer, and it is the one a new table replaces.
+    /// </summary>
+    internal Localization? Localization;
+
+    /// <summary>The block native was last handed, so publishing the same table again is a no-op.</summary>
+    internal nint LocalizationBlock;
+
     internal void Reset()
     {
         Painters.Clear();
         ReorderOrder = null;
         unsafe { ReorderStorage = null; }
         Text.BeginFrame();
+
+        // The frame that could still have been reading a replaced table has painted by now.
+        Localization?.ReleaseRetired();
     }
     internal PaintScope EnterPaint() => new(this);
 

@@ -108,6 +108,11 @@ recorded in `bindings/overrides.json` as `MANUAL` with the member and the file, 
 - `[assembly: DisableRuntimeMarshalling]`, `IsAotCompatible`, `IsTrimmable`.
 - `[SuppressGCTransition]` only on the reviewed allowlist in `overrides.json` — leaf functions that
   cannot call managed code and cannot block.
+- A `Localization` table is the one managed object CUI keeps a pointer into across frames: the
+  surface that published it owns it, a replaced block is freed at the next frame boundary (the one
+  that could still have been reading it has painted by then), and a table belongs to one surface —
+  two contexts reading one table breaks the moment its names change, because only the publishing
+  context is told about the new block.
 
 ## Frame model
 
