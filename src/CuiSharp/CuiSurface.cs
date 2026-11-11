@@ -100,10 +100,17 @@ public sealed unsafe partial class CuiSurface : IDisposable
     public RendererKind Kind { get; }
 
     /// <summary>Framebuffer width in pixels.</summary>
-    public int PixelWidth => (int)(_width * _scale);
+    /// <remarks>
+    /// Rounded, not truncated, because that is how CUI computes <c>cui_draw_data.width_px</c>
+    /// (<c>cui_core.c</c>: <c>vw * scale + 0.5f</c>). A renderer that sizes its target by
+    /// truncating disagrees by a pixel on fractional display scales such as 1.5, and a scaler
+    /// comparing the two would refuse every frame.
+    /// </remarks>
+    public int PixelWidth => (int)(_width * _scale + 0.5f);
 
     /// <summary>Framebuffer height in pixels.</summary>
-    public int PixelHeight => (int)(_height * _scale);
+    /// <remarks>Rounded like <see cref="PixelWidth"/>.</remarks>
+    public int PixelHeight => (int)(_height * _scale + 0.5f);
 
     /// <summary>
     /// What the last frame this surface drew cost: the same numbers as <see cref="FrameStats"/>, but
@@ -181,7 +188,8 @@ public sealed unsafe partial class CuiSurface : IDisposable
         ArgumentOutOfRangeException.ThrowIfLessThan(height, 1);
         if (textures.TextureCreate == 0 || textures.TextureUpdate == 0 || textures.TextureDestroy == 0)
         {
-            throw new ArgumentException("a GPU surface needs texture create, update and destroy callbacks");
+            throw new ArgumentException(
+                "a GPU surface needs texture create, update and destroy callbacks", nameof(textures));
         }
 
         var desc = new NativeCtxDesc
@@ -197,6 +205,8 @@ public sealed unsafe partial class CuiSurface : IDisposable
         Native.SetViewport(ctx, width, height, scale);
         return new CuiSurface(0, ctx, width, height, scale, RendererKind.Gpu);
     }
+
+    /// <summary>Starts a frame. Call <see cref="EndFrame"/> when the UI is built.</summary>
     /// <remarks>
     /// <see cref="EndFrame"/> runs layout and paint, so by the time the next
     /// frame starts the previous one's deferred canvas callbacks and arena
@@ -296,8 +306,9 @@ public sealed unsafe partial class CuiSurface : IDisposable
         get => _incremental;
         set
         {
-            if (_ctx == 0 || _incremental == value) return;
+            if (_ctx == 0) return;
             if (_sw == 0) throw new InvalidOperationException("incremental rendering is a software-renderer feature.");
+            if (_incremental == value) return;
             _incremental = value;
             Native.SwSetIncremental(_sw, (byte)(value ? 1 : 0));
         }
@@ -370,7 +381,13 @@ public sealed unsafe partial class CuiSurface : IDisposable
     /// A GPU renderer reads vertices, indices, commands and the font atlas id straight out of
     /// this structure — the same <c>cui_draw_data</c> the built-in renderers consume.
     /// </remarks>
-    public nint GetDrawData() => Native.GetDrawData(_ctx);
+    public nint GetDrawData()
+    {
+        // cui_get_draw_data returns &ui->draw_data: on a destroyed context that is not null,
+        // it is the offset of the field inside a freed struct.
+        ObjectDisposedException.ThrowIf(_ctx == 0, this);
+        return Native.GetDrawData(_ctx);
+    }
 
     /// <inheritdoc />
     public void Dispose()

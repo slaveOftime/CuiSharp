@@ -3,6 +3,16 @@ name: GitHub Pages
 on:
   push:
     branches: [main]
+  pull_request:
+    # The Pages tree is built by a separate pipeline from the solution; a browser regression
+    # should be caught before merge, and the deploy jobs below are gated to main.
+    paths:
+      - 'samples/CuiSharp.Gallery.Browser/**'
+      - 'src/CuiSharp/**'
+      - 'native/**'
+      - 'tools/build-cui-wasm.ps1'
+      - 'tools/test-browser-smoke.py'
+      - '.github/workflows/pages.yml'
   workflow_dispatch:
 
 permissions:
@@ -59,12 +69,16 @@ jobs:
           $bytes = (Get-ChildItem $site -Recurse -File | Measure-Object Length -Sum).Sum
           Write-Host "Pages payload after removing redundant sidecars: $bytes bytes"
 
-      - name: Smoke-test the exact Pages tree in headless Chrome
-        run: python tools/test-browser-smoke.py artifacts/pages/wwwroot
+      - name: Smoke-test the exact Pages tree in headless Chrome (both renderers)
+        run: |
+          python tools/test-browser-smoke.py artifacts/pages/wwwroot --renderer webgl2
+          python tools/test-browser-smoke.py artifacts/pages/wwwroot --renderer 2d
 
       - uses: actions/configure-pages@v5
+        if: github.ref == 'refs/heads/main'
 
       - uses: actions/upload-pages-artifact@v4
+        if: github.ref == 'refs/heads/main'
         with:
           path: artifacts/pages/wwwroot
 

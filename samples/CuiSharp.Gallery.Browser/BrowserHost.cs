@@ -109,12 +109,9 @@ public static unsafe partial class BrowserHost
             if (_gpu)
             {
                 // GPU mode: present the draw data pointer to JS, which draws it with WebGL2.
-                // No CPU rasterization, no pixel buffer copy.
-                nint dd = surface.GetDrawData();
-                if (dd != 0)
-                {
-                    PresentGpu(dd, surface.PixelWidth, surface.PixelHeight);
-                }
+                // No CPU rasterization, no pixel buffer copy. The viewport is inside the draw
+                // data, so JS needs nothing but the pointer.
+                PresentGpu(surface.GetDrawData());
             }
             else
             {
@@ -239,7 +236,7 @@ public static unsafe partial class BrowserHost
     private static partial void Present(int pixelAddress, int width, int height, int x, int y, int dirtyWidth, int dirtyHeight);
 
     [JSImport("canvas.presentGpu", "main.js")]
-    private static partial void PresentGpu(nint drawData, int width, int height);
+    private static partial void PresentGpu(nint drawData);
 
     private static Key MapKey(string code)
     {

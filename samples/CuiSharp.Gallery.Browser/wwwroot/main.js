@@ -64,10 +64,10 @@ const VERTEX_SIZE = 64;   // sizeof(cui_vertex)
 const CMD_SIZE = 28;      // sizeof(cui_draw_cmd) on wasm32: 4-byte pointers
 
 class GLRenderer {
-  constructor(canvas, smoke) {
+  constructor(canvas, keepDrawingBuffer) {
     const gl = canvas.getContext('webgl2', {
       alpha: false, antialias: false, depth: false, stencil: false,
-      premultipliedAlpha: true, preserveDrawingBuffer: keepBuffer,
+      premultipliedAlpha: true, preserveDrawingBuffer: keepDrawingBuffer,
     });
     if (!gl) throw new Error('WebGL2 is not available');
     this.gl = gl;
@@ -80,11 +80,14 @@ class GLRenderer {
       return s;
     };
     const p = gl.createProgram();
-    gl.attachShader(p, sh(gl.VERTEX_SHADER, VS));
-    gl.attachShader(p, sh(gl.FRAGMENT_SHADER, FS));
+    const vs = sh(gl.VERTEX_SHADER, VS), fs = sh(gl.FRAGMENT_SHADER, FS);
+    gl.attachShader(p, vs);
+    gl.attachShader(p, fs);
     ['a_pos', 'a_uv', 'a_local', 'a_half', 'a_radii', 'a_params', 'a_color', 'a_bcolor'].forEach((n, i) => gl.bindAttribLocation(p, i, n));
     gl.linkProgram(p);
     if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error('CUI program: ' + gl.getProgramInfoLog(p));
+    gl.deleteShader(vs);
+    gl.deleteShader(fs);
     this.program = p;
     this.uViewport = gl.getUniformLocation(p, 'u_viewport');
     this.uTex = gl.getUniformLocation(p, 'u_tex');
@@ -116,8 +119,11 @@ class GLRenderer {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
     gl.pixelStorei(gl.UNPACK_ROW_LENGTH, 0);
-    if (fmt === 1) gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, w, h, 0, gl.RED, gl.UNSIGNED_BYTE, heapBytes(px, w * h));
-    else gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, heapBytes(px, w * h * 4));
+    // CUI creates empty textures with a null pixel pointer and fills them in through
+    // texture_update later (a fresh emoji atlas does exactly that), so null has to stay
+    // null: a view starting at wasm address 0 would upload the heap's first bytes as pixels.
+    if (fmt === 1) gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, w, h, 0, gl.RED, gl.UNSIGNED_BYTE, px ? heapBytes(px, w * h) : null);
+    else gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, px ? heapBytes(px, w * h * 4) : null);
     const id = this.nextTex++;
     this.textures.set(id, { t, fmt });
     return id;
@@ -128,8 +134,12 @@ class GLRenderer {
     gl.bindTexture(gl.TEXTURE_2D, e.t);
     gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
     gl.pixelStorei(gl.UNPACK_ROW_LENGTH, stride / e.fmt);
+    // px addresses the first pixel of the damaged rect, not the start of a full row of it,
+    // so the span ends at the last pixel of the last row. stride * h would read up to
+    // x * fmt bytes past the end of the source for a rect that is not flush left - and
+    // throw outright when the source ends near the top of the wasm heap.
     gl.texSubImage2D(gl.TEXTURE_2D, 0, x, y, w, h, e.fmt === 1 ? gl.RED : gl.RGBA, gl.UNSIGNED_BYTE,
-      heapBytes(px, stride * h));
+      heapBytes(px, (h - 1) * stride + w * e.fmt));
     gl.pixelStorei(gl.UNPACK_ROW_LENGTH, 0);
   }
   destroyTexture(id) {
@@ -138,7 +148,7 @@ class GLRenderer {
   }
 
   // draws the cui_draw_data at `dd` (a wasm heap pointer)
-  draw(dd) {
+  draw(dd, canvas) {
     const gl = this.gl, buf = heapBuffer();
     const i32 = new Int32Array(buf), u32 = new Uint32Array(buf), f32 = new Float32Array(buf);
     const verts = u32[dd >> 2], vcount = i32[(dd + 4) >> 2];
@@ -147,7 +157,11 @@ class GLRenderer {
     const W = i32[(dd + 24) >> 2], H = i32[(dd + 28) >> 2];
     const cc = u32[(dd + 32) >> 2];       // r | g<<8 | b<<16, straight from cui_color
     const atlas = u32[(dd + 36) >> 2];
-    if (W !== canvas.width || H !== canvas.height) throw new Error(`draw data ${W}x${H} != canvas ${canvas.width}x${canvas.height}`);
+    // The drawing buffer has to match the frame CUI laid out or the viewport clips it. Follow
+    // the draw data instead of trusting the resize path to agree on how a fractional display
+    // scale rounds: a backing store resized here is valid at once, and the alternative -
+    // refusing the frame - loses the whole canvas over a one-pixel disagreement.
+    if (canvas.width !== W || canvas.height !== H) { canvas.width = W; canvas.height = H; }
     gl.viewport(0, 0, W, H);
     gl.clearColor((cc & 255) / 255, ((cc >> 8) & 255) / 255, ((cc >> 16) & 255) / 255, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
@@ -245,8 +259,10 @@ function resize() {
   const width = Math.max(1, Math.floor(rect.width));
   const height = Math.max(1, Math.floor(rect.height));
   const scale = Math.max(1, window.devicePixelRatio || 1);
-  const pixelWidth = Math.max(1, Math.floor(width * scale));
-  const pixelHeight = Math.max(1, Math.floor(height * scale));
+  // Rounded, matching CUI's own width_px = vw * scale + 0.5f, so the canvas and the frame
+  // CUI lays out agree at fractional display scales such as 1.5.
+  const pixelWidth = Math.max(1, Math.round(width * scale));
+  const pixelHeight = Math.max(1, Math.round(height * scale));
   if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
     canvas.width = pixelWidth;
     canvas.height = pixelHeight;
@@ -273,10 +289,10 @@ function present(pointer, width, height, x, y, dirtyWidth, dirtyHeight) {
   context.putImageData(imageData, 0, 0, x, y, dirtyWidth, dirtyHeight);
 }
 
-function presentGpu(dd, width, height) {
+function presentGpu(dd) {
   if (!gpu) return;
   if (query.has('debug')) window.__cuiDD = dd;
-  gpu.draw(dd);
+  gpu.draw(dd, canvas);
 }
 
 function animationFrame(timestamp) {
@@ -290,7 +306,6 @@ function animationFrame(timestamp) {
     smokeState = 5;
   } else if (smoke && smokeState === 6) {
     const typedNameHash = hashNameField();
-    smokeState = 5;
     status.style.display = 'grid';
     const passed = typedNameHash !== selectedNameHash;
     smokeState = 7;
@@ -392,22 +407,19 @@ async function start() {
     const exports = await dotnetRuntime.getAssemblyExports(dotnetRuntime.getConfig().mainAssemblyName);
     host = exports.CuiSharp.Gallery.Browser.BrowserHost;
 
-    // Renderer choice: WebGL2 by default, software with ?renderer=software or
-    // where WebGL2 is missing. The surface has to exist before the first frame.
-    // Under --disable-gpu (CI) the first webgl2 request can race the GPU
-    // process coming up and return null; a short retry covers that, and the
-    // later attempt does succeed.
-    let supported = false;
-    if (wantGpu) supported = !!document.createElement('canvas').getContext('webgl2');
-    if (supported) {
-      for (let attempt = 0; attempt < 12 && !gpu; attempt++) {
-        try {
-          gpu = new GLRenderer(canvas, smoke);
-        } catch (error) {
-          gpu = null;
-          if (attempt === 11) console.error('WebGL2 renderer failed to initialize:', error);
-          else await new Promise(resolve => setTimeout(resolve, 250));
-        }
+    // Renderer choice: WebGL2 by default, software with ?renderer=software or where WebGL2
+    // is unavailable. The surface has to exist before the first frame, so the choice is made
+    // here. Under --disable-gpu the first webgl2 request can race the GPU process coming up
+    // and return null; the retry covers that and the later attempt succeeds. Ask the real
+    // canvas directly - probing a scratch one would spend the one attempt the retry exists
+    // to repeat, and a failed request leaves the canvas free to take a 2d context.
+    for (let attempt = 0; wantGpu && !gpu && attempt < 12; attempt++) {
+      try {
+        gpu = new GLRenderer(canvas, keepBuffer);
+      } catch (error) {
+        gpu = null;
+        if (attempt === 11) console.error('WebGL2 renderer failed to initialize:', error);
+        else await new Promise(resolve => setTimeout(resolve, 250));
       }
     }
     await host.Initialize(!!gpu);
