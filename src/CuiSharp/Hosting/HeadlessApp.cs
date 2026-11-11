@@ -480,6 +480,12 @@ public class HeadlessApp : IDisposable
     /// <summary>The last frame's tree as text, which is also what <see cref="ToString"/> gives.</summary>
     public string Print(bool rects = false) => Tree.Print(rects);
 
+    /// <summary>
+    /// The <see cref="LayoutFormatter"/> view of the last frame: verified rectangles, observed
+    /// bounds labelled as the lower bounds they are, and unknown extents named as unknowns.
+    /// </summary>
+    public string PrintLayout() => LayoutFormatter.Print(Tree);
+
     /// <inheritdoc />
     public override string ToString() => Print();
 

@@ -257,6 +257,69 @@ public class SemanticTreeTests
         Assert.Contains(app.Tree.Descendants(), n => n.Text == "dark");
     }
 
+    /// <summary>
+    /// A named box, row, column or scroll area must be recorded under the id CUI laid it out
+    /// under. A begin that reports no last_id used to leave the container borrowing the previous
+    /// widget's id, which made it claim someone else's rectangle.
+    /// </summary>
+    private sealed class NamedBoxes : Component
+    {
+        protected override void Draw(Ui ui)
+        {
+            ui.Button("Before");
+            using (ui.Column(new() { Id = "panel", Width = Size.Fill, Pad = 10, Gap = 6 }))
+            {
+                ui.Button("Inside");
+            }
+
+            using (ui.Scroll(new() { Id = "area", Height = Size.Px(60) }))
+            {
+                ui.Button("Scrolled");
+            }
+        }
+    }
+
+    [Fact]
+    public void ANamedBoxReportsItsOwnRectNotTheLastWidgets()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        using var app = TestApp.Start(new NamedBoxes(), 400, 300);
+
+        SemanticNode before = app.Tree.Find("Before");
+        SemanticNode panel = app.Tree.Find("panel");
+        SemanticNode inside = panel.Find("Inside");
+        SemanticNode area = app.Tree.Find("area");
+
+        // Before the identity fix these two pairs were the same rectangle.
+        Assert.NotEqual(before.Rect, panel.Rect);
+        Assert.NotEqual(before.Rect, area.Rect);
+        Assert.True(panel.Rect.W > 0 && panel.Rect.H > 0);
+        Assert.True(area.Rect.W > 0 && area.Rect.H > 0);
+
+        // And the rect is the box the app drew: the child sits inside it, the scroll area follows.
+        Assert.InRange(inside.Rect.Y, panel.Rect.Y, panel.Rect.Y + panel.Rect.H);
+        Assert.True(area.Rect.Y >= panel.Rect.Y + panel.Rect.H);
+    }
+
+    [Fact]
+    public void ANamedBoxFirstInTheFrameHasARealRectToo()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        using var app = TestApp.Start(ui =>
+        {
+            using (ui.Box(new() { Id = "first", Width = Size.Fill, Height = Size.Px(50), Pad = 8 }))
+                ui.Button("Only");
+        }, 300, 160);
+
+        // Nothing has reported an id before this box, so a borrowed last_id was 0 and the box
+        // had no rect at all; the id CUI returned for the box itself has one.
+        SemanticNode first = app.Tree.Find("first");
+        Assert.NotEqual(0u, first.Id);
+        Assert.True(first.Rect.W > 0 && first.Rect.H > 0);
+    }
+
     [Fact]
     public void RecordingAFrameCostsTheDrawNothing()
     {

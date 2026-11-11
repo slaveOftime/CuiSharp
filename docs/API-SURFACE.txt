@@ -1456,6 +1456,7 @@ class CuiSharp.Hosting.HeadlessApp
   HeadlessApp Type(String)
   Int32 Settle(Int32, Nullable<TimeSpan>)
   String Print(Boolean)
+  String PrintLayout()
   String SavePng(String, Boolean)
   String ToString()
   Void Dispose()
@@ -4388,6 +4389,9 @@ struct CuiSharp.KvEditorOpts
   field Size Width
   field String KeyPlaceholder
   field String ValuePlaceholder
+class CuiSharp.LayoutFormatter
+  field String Header
+  static String Print(SemanticNode)
 struct CuiSharp.LayoutScope
   Void Dispose()
 class CuiSharp.LayoutUiExtensions

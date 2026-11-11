@@ -48,7 +48,7 @@ public static class HeadlessLoop
 
     private static readonly string[] Commands =
     [
-        "tree", "print", "find", "click", "type", "key", "focus", "move", "wheel", "frame", "pulse", "faults", "png", "quit",
+        "tree", "print", "layout", "find", "click", "type", "key", "focus", "move", "wheel", "frame", "pulse", "faults", "png", "quit",
     ];
 
     /// <summary>True when this process was asked to run without a window.</summary>
@@ -184,6 +184,7 @@ public static class HeadlessLoop
     private static string Execute(HeadlessApp app, string command, string argument) => command switch
     {
         "tree" or "print" => app.Print(),
+        "layout" => app.PrintLayout(),
         "find" => Find(app, argument),
         "click" => Click(app, argument),
         "type" => app.Type(argument).Print(),
