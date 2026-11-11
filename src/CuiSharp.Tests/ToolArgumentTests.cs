@@ -219,9 +219,11 @@ public class ToolArgumentTests
 
             // The order proof: against a probe that never marks ready, the same command must
             // not run — a tool that screenshotted first would exit 0 and lie about the frame.
+            // The probe was just built above, so --no-build keeps this check on the readiness
+            // gate rather than re-entering MSBuild on the shared project reference.
             var missError = new StringWriter();
             int miss = Cli.Run(
-                ["--project", project, "--wait", "ready", "--wait-timeout", "1", "png", late, "--", "--ready-after", "0"],
+                ["--project", project, "--no-build", "--wait", "ready", "--wait-timeout", "1", "png", late, "--", "--ready-after", "0"],
                 new StringWriter(),
                 missError);
 
@@ -234,7 +236,7 @@ public class ToolArgumentTests
             // the miss still exits 1 with the reason.
             var directError = new StringWriter();
             int direct = Cli.Run(
-                ["--project", project, "wait", "0.1", "--", "--ready-after", "0"],
+                ["--project", project, "--no-build", "wait", "0.1", "--", "--ready-after", "0"],
                 new StringWriter(),
                 directError);
             Assert.Equal(1, direct);
@@ -413,7 +415,7 @@ public class ToolArgumentTests
             string late = Path.Combine(scratch, "late.png");
             (int miss, _, string missErrors) = RunFrom(
                 scratch, tool,
-                ["--project", project, "--wait", "ready", "--wait-timeout", "1", "png", late, "--", "--ready-after", "0"]);
+                ["--project", project, "--no-build", "--wait", "ready", "--wait-timeout", "1", "png", late, "--", "--ready-after", "0"]);
             Assert.Equal(1, miss);
             Assert.Contains("ready", missErrors, StringComparison.Ordinal);
             Assert.False(File.Exists(late), "an unsatisfied gate must still stop the command from a foreign cwd");

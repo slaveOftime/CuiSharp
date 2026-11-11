@@ -9,22 +9,28 @@ using CuiSharp.Tools;
 // are disposed on exit so nothing buffered is lost.
 try
 {
+    Console.InputEncoding = Encoding.UTF8;
     Console.OutputEncoding = Encoding.UTF8;
 }
 catch (IOException)
 {
-    // Not a console handle: the redirected writers below carry the encoding instead.
+    // Not a console handle: the redirected readers and writers below carry the encoding instead.
 }
 
+TextReader input = Console.In;
 TextWriter output = Console.Out;
 TextWriter error = Console.Error;
+using StreamReader? redirectedIn = Console.IsInputRedirected
+    ? new StreamReader(Console.OpenStandardInput(), Encoding.UTF8)
+    : null;
 using StreamWriter? redirectedOut = Console.IsOutputRedirected
     ? new StreamWriter(Console.OpenStandardOutput(), new UTF8Encoding(false)) { AutoFlush = true }
     : null;
 using StreamWriter? redirectedErr = Console.IsErrorRedirected
     ? new StreamWriter(Console.OpenStandardError(), new UTF8Encoding(false)) { AutoFlush = true }
     : null;
+if (redirectedIn is not null) input = redirectedIn;
 if (redirectedOut is not null) output = redirectedOut;
 if (redirectedErr is not null) error = redirectedErr;
 
-return Cli.Run(args, output, error, Console.In);
+return Cli.Run(args, output, error, input);

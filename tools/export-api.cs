@@ -502,7 +502,7 @@ internal sealed class Catalog
         foreach (Type type in assembly.GetExportedTypes().OrderBy(t => t.FullName, StringComparer.Ordinal))
         {
             if (CatalogFilter.IsCompilerMetadata(type)) continue;
-            CatalogType entry = CatalogType.For(type, docs, hoisted, inits, modopts);
+            CatalogType? entry = CatalogType.For(type, docs, hoisted, inits, modopts);
             if (entry is not null) catalog.Types.Add(entry);
         }
 
@@ -883,7 +883,7 @@ internal sealed class CatalogMember
         // return; reflection's attribute API does not surface modreqs, so the answer comes from
         // the assembly's metadata signature (InitAccessors). Rendering init as `set` would
         // invite the after-construction assignment the declaration forbids.
-        bool isInit = inits.IsInit(p.DeclaringType, p.Name);
+        bool isInit = inits.IsInit(p.DeclaringType!, p.Name);
         string access = (p.GetMethod?.IsPublic == true ? "get; " : "")
             + (p.SetMethod?.IsPublic == true ? (isInit ? "init; " : "set; ") : "");
         HashSet<Type>? generics = p.GetMethod is null ? null : modopts.AnnotatedTypes(p.GetMethod, -1);

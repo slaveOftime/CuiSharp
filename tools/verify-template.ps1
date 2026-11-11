@@ -221,6 +221,36 @@ internal static class AnalyzerProbe
         if ($LASTEXITCODE -ne 0 -or $dispatchHelp -notmatch 'dotnet cui <command>') {
             throw "dotnet cui did not dispatch to the installed tool: $dispatchHelp"
         }
+
+        # The offline catalog must be inside the packed tool, not just beside the repo's source.
+        # Run from the package scratch folder, which has no app project and no cui.dll, then read
+        # the installed tool's JSON answer as strict UTF-8.
+        $catalogPsi = [System.Diagnostics.ProcessStartInfo]::new('dotnet')
+        $catalogPsi.WorkingDirectory = $work
+        foreach ($argument in @('cui', 'api', 'ChartOpts', '--json')) { $catalogPsi.ArgumentList.Add($argument) }
+        $catalogPsi.UseShellExecute = $false
+        $catalogPsi.RedirectStandardOutput = $true
+        $catalogPsi.RedirectStandardError = $true
+        $catalogPsi.StandardOutputEncoding = [System.Text.UTF8Encoding]::new($false, $true)
+        $catalogPsi.StandardErrorEncoding = [System.Text.UTF8Encoding]::new($false, $true)
+        $catalog = [System.Diagnostics.Process]::Start($catalogPsi)
+        try {
+            $catalogOut = $catalog.StandardOutput.ReadToEndAsync()
+            $catalogErr = $catalog.StandardError.ReadToEndAsync()
+            if (-not $catalog.WaitForExit(60000)) { throw 'installed dotnet cui api timed out' }
+            $json = $catalogOut.GetAwaiter().GetResult()
+            $errors = $catalogErr.GetAwaiter().GetResult()
+            if ($catalog.ExitCode -ne 0) { throw "installed dotnet cui api failed: $errors" }
+            $answer = $json | ConvertFrom-Json
+            if ($answer.match -ne 'exact' -or $answer.term -ne 'ChartOpts' -or
+                -not ($answer.lines -match 'public .* MaxPoints')) {
+                throw "installed dotnet cui api returned no ChartOpts declaration: $json"
+            }
+        }
+        finally {
+            if (-not $catalog.HasExited) { $catalog.Kill($true); $catalog.WaitForExit() }
+            $catalog.Dispose()
+        }
     } finally { $env:PATH = $savedPath }
     Write-Host "    $shimName installed, and dotnet cui resolves through it" -ForegroundColor Green
 
@@ -246,7 +276,7 @@ internal static class AnalyzerProbe
     # exact characters; this check never silently skips because a sample page happened to be ASCII.
     $miniPath = Join-Path $miniApp $miniFile
     $miniSource = [System.IO.File]::ReadAllText($miniPath)
-    $asciiHeading = 'ui.Heading("MiniApp", 1);'
+    $asciiHeading = "ui.Heading(`"$miniName`", 1);"
     if (-not $miniSource.Contains($asciiHeading, [StringComparison]::Ordinal)) {
         throw "the generated mini no longer contains the expected heading: $miniPath"
     }

@@ -438,6 +438,7 @@ internal static class AppLocator
             StandardErrorEncoding = Encoding.UTF8,
         };
         if (workingDirectory is not null) info.WorkingDirectory = workingDirectory;
+        info.Environment["MSBUILDDISABLENODEREUSE"] = "1";
         foreach (string argument in arguments) info.ArgumentList.Add(argument);
 
         // A helper that cannot start or whose pipes break is a diagnosis the user can act on —
