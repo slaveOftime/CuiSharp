@@ -78,6 +78,9 @@ The work runs on the pool — `Run` hands it to `Task.Run`, so even the synchron
 continuation does not run on the UI thread, it publishes a value the UI thread reads next frame. That
 is the whole async story, and it is why nothing deadlocks.
 
+The frame that applies it must run on the thread that called `Run`. Create a mutation on the UI
+thread (a component's field, as above), and that is where its completion is queued and applied.
+
 A mutation owns one run at a time and remembers which one. If a result arrives after the component
 was disposed — the user navigated away while the request was in flight — it is dropped rather than
 applied into a page that no longer exists, and a run that has been superseded cannot clear the state

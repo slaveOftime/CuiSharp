@@ -187,9 +187,16 @@ no dirty flag to keep.
 `CuiSurface` runs the same draw code with no window, driving frames by hand: that is what the
 tests, the benchmarks, the snapshots and `dotnet cui` use.
 
-There is no synchronization context, no dispatcher and no `TimeProvider` today. `Mutation` applies
-its result through `Completions`, and that is the whole async story: continuations do not run on the
-UI thread, they hand a value over at the next frame boundary.
+There is no synchronization context and no `TimeProvider` today. `Mutation` applies its result
+through `Completions`, and that is the whole async story: continuations do not run on the UI thread,
+they hand a value over at the next frame boundary.
+
+That boundary belongs to one thread. `Completions` queues into a `FrameDispatcher`, found through a
+thread-static and captured when `Run` starts the work, so a frame applies only results queued by
+mutations started on its thread. This also handles components constructed by DI before the window
+loop starts. A process-wide queue — what this used to be — is applied by whichever surface draws
+first, which can run another thread's callback against the wrong UI and make that frame collect its
+allocations.
 
 ## Native callbacks
 
