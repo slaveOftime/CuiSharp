@@ -42,6 +42,11 @@ internal sealed partial class GalleryApp
     private double _statusAt;
     private int _dialChoice = -1;
     private int _themeMode = -1;
+
+    // Design tokens the page drives, at CUI's own defaults so the gallery opens looking stock.
+    private float _tokenRadius = 10f;
+    private float _tokenScale = 1f;
+    private string _tokenSample = "";
     private int _deletedProjects;
     private int _splitChoice = -1;
 
@@ -115,6 +120,31 @@ internal sealed partial class GalleryApp
         {
             ui.ThemeSwitcher(ref _themeMode, true);
             ui.ThemeToggle();
+        }
+
+        Section(ui, "Design tokens",
+            "ui.Style is the live theme: a radius and a text multiplier reshape every control below, " +
+            "and CUI's own defaults come back when they are set back to them.");
+        using (ui.Box(new Box { Dir = Dir.Grid, Columns = 2, MinColumnWidth = 220, Gap = 16 }))
+        {
+            ui.Slider("Corner radius", ref _tokenRadius, 0, 22, new SliderOpts { ShowValue = true, Format = "%.0f pt" });
+            ui.Slider("Text scale", ref _tokenScale, 0.85f, 1.4f, new SliderOpts { ShowValue = true, Format = "%.2fx" });
+        }
+
+        // Assigned every frame: a token reaches the theme CUI draws with on the next one, so there
+        // is no state to invalidate and no draw call to make after it.
+        ThemeStyle style = ui.Style;
+        style.RadiusControl = _tokenRadius;
+        style.RadiusPanel = _tokenRadius + 4;
+        style.RadiusSurface = _tokenRadius + 8;
+        style.FontScale = _tokenScale;
+
+        using (ui.Row(new Box { Gap = 8, Wrap = true, PadTop = 8 }))
+        {
+            ui.Button("Primary", new ButtonOpts { Variant = ButtonVariant.Primary });
+            ui.Button("Secondary");
+            ui.Input("token-sample", ref _tokenSample, new InputOpts { Placeholder = "An input follows the radius" });
+            ui.Badge("Badge");
         }
 
         Section(ui, "User menu", "Account trigger for sidebars and headers.");

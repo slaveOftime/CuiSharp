@@ -184,6 +184,14 @@ The theme is CUI's, not the app's: `ui.Theme` and `ui.Accent` read it and assign
 flips it, and CUI animates every colour token across the change on the frames that follow. There is
 no dirty flag to keep.
 
+`ui.Style` is the same theme seen as tokens. `ThemeStyle` holds CUI's own `cui_theme` pointer rather
+than a copy, so a member is a read or a write of what the next frame draws with, costs no allocation,
+and cannot outlive the frame — which is why it is a `ref struct` and why a local is the way to use it.
+It is a view, not a bag of settings: a container's padding and gap stay in its `Box`, and native
+still owns the defaults, the light/dark palettes and the animation. Only the tokens upstream reads on
+every frame are writable; the two that `cui__theme_build` copies into other tokens are not exposed,
+because a write to those would not be visible until the next rebuild.
+
 `CuiSurface` runs the same draw code with no window, driving frames by hand: that is what the
 tests, the benchmarks, the snapshots and `dotnet cui` use.
 

@@ -41,6 +41,18 @@ The gallery now draws everything CUI ships, and a published binary carries only 
 - **`ui.ChatMessage(text, opts)`** is the usual call: the markdown result is an optional `ref`, so
   a plain bubble no longer needs a throwaway local. `ui.InlineEdit(id, ref text)` gets the same
   treatment from a default buffer size.
+- **`ui.Style` exposes CUI's design tokens.** `ThemeStyle` is a live view over the theme the frame
+  draws with — `RadiusControl`/`RadiusPanel`/`RadiusSurface`, `ControlSm`/`ControlMd`/`ControlLg`,
+  `TextXs`/`TextSm`/`TextBody`/`TextLg`, `GetHeading(1..4)`/`SetHeading`, `FontScale`, `Motion`, the
+  palette through `style[Token.Accent]`, the four tone colours a widget reads live
+  (`ToneInfo`, `ToneTeal`, `ToneViolet`, `ToneRose`) and the two shadow layers of each elevation.
+  It holds CUI's own pointer, so nothing is copied, an assignment allocates nothing and applies on
+  the next frame. A theme or accent switch keeps the radii, the motion multiplier and the font
+  scale, which upstream does on purpose. Padding and gap are not tokens — a container carries its
+  own in its `Box` — and the guide shows the preset struct that gives an app one rhythm.
+- **`Color` is comparable and printable.** `IEquatable<Color>`, `==`, `!=` and a `ToString` that
+  reads `#rrggbb`, `#rrggbbaa` or `Token.Accent`. A token compares as the token, not as the channels
+  it resolves to, which is what a widget draws with.
 
 ### Changed
 
