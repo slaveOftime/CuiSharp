@@ -45,12 +45,14 @@ return CuiApp.Run(new CuiAppOptions { Title = "Shape", Width = 900, Height = 600
     }
 });
 
+#if CHART
 static float[] Sine(int n)
 {
     var v = new float[n];
     for (int i = 0; i < n; i++) v[i] = MathF.Sin(i * 0.1f) * 50 + 50;
     return v;
 }
+#endif
 
 #if FORM
 partial class Program

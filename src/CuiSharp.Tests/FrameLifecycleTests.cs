@@ -95,7 +95,12 @@ public class FrameLifecycleTests
             perFrame[batch] = (GC.GetAllocatedBytesForCurrentThread() - before) / 20;
         }
 
-        Assert.Equal(0, perFrame.Median());
+        // The denominator is 20 frames, so a batch that allocated 40-59 B reports 2 here: the
+        // batches are in the message because "2 B per frame" alone says nothing about which
+        // allocation it was, and this has been seen once every eight full-suite runs while never
+        // reproducing with the class to itself.
+        Assert.True(perFrame.Median() == 0,
+            $"allocation per frame by batch: {string.Join(", ", perFrame)} B");
     }
 }
 

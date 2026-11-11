@@ -53,6 +53,12 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 if (-not $Performance) { $Performance = Join-Path $root 'docs/PERFORMANCE.md' }
 if (-not $Size) { $Size = Join-Path $root 'docs/SIZE.md' }
+
+# A gate that checks nothing reports the same thing as a gate that passed, which is how a job
+# with a typo in its flags stays green for a year.
+if (-not $Benchmark -and $AotBytes -le 0 -and -not $SizeCsv) {
+    throw 'budget: nothing to check. Pass -Benchmark, -AotBytes or -SizeCsv.'
+}
 if (-not (Test-Path $Performance)) { throw "budget: no $Performance" }
 if (-not (Test-Path $Size)) { throw "budget: no $Size" }
 
@@ -112,8 +118,18 @@ if ($SizeCsv) {
     }
     if ($ceilings.Count -eq 0) { throw "budget: $Size has no 'budget <value> <unit>' rows to check the size report against" }
 
+    # One CSV can hold two widths of MIN: the shipped one and what the same app measured before the
+    # size profile. The budget is about the product, so a pre-profile row is not a number it can
+    # compare — and taking whichever row came last made the verdict depend on row order.
     $measured = @{}
-    foreach ($row in Import-Csv -Path $SizeCsv) { $measured[$row.Shape] = [long]$row.Bytes }
+    $skipped = @()
+    foreach ($row in Import-Csv -Path $SizeCsv) {
+        if ($row.Width -eq 'before') { $skipped += "$($row.Shape)/$($row.Width)"; continue }
+        $measured[$row.Shape] = [long]$row.Bytes
+    }
+    if ($skipped.Count -gt 0) {
+        Write-Host ("note:   not the shipped width, so not checked: {0}" -f ($skipped -join ', '))
+    }
 
     foreach ($shape in $ceilings.Keys) {
         $ceiling = $ceilings[$shape]
@@ -127,6 +143,16 @@ if ($SizeCsv) {
         if ($bytes -gt $ceiling.Value) {
             $failures += ("shape {0} is {1:N0} B, over the {2} budget by {3:N0} B" -f
                 $shape, $bytes, $ceiling.Label, ($bytes - $ceiling.Value))
+        }
+    }
+
+    # The other direction: a shape that gets measured but never written into the table is a number
+    # nobody defends, which is the state this gate exists to leave behind.
+    if ($RequireAll) {
+        foreach ($shape in $measured.Keys) {
+            if (-not $ceilings.Contains($shape)) {
+                $failures += "shape $shape was measured but has no budget in $Size"
+            }
         }
     }
 }

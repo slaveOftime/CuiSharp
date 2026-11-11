@@ -98,9 +98,6 @@ function Publish-Floor {
     <StripSymbols>true</StripSymbols>
     <DebugType>none</DebugType>
     <DebugSymbols>false</DebugSymbols>
-    <DebuggerSupport>false</DebuggerSupport>
-    <IlcGenerateStackTraceData>false</IlcGenerateStackTraceData>
-    <IlcDisableReflection>true</IlcDisableReflection>
   </PropertyGroup>
 </Project>
 '@ | Set-Content -Path (Join-Path $dir 'Floor.csproj') -Encoding utf8
@@ -117,8 +114,9 @@ $floor = Publish-Floor
 $rows.Add([pscustomobject]@{ Shape = 'hello'; Width = 'dotnet floor'; Bytes = $floor })
 
 foreach ($name in $shapes) {
-    # MIN on both widths; every other shape once, on the width the package ships.
-    $forShape = if ($name -eq 'MIN') { $widths } else { @('shipped') }
+    # MIN on the widths asked for; a widget's cost is what it adds to the shipped width, so every
+    # other shape is measured once, there.
+    $forShape = if ($name -eq 'MIN') { $widths } else { @($widths | Where-Object { $_ -eq 'shipped' }) }
     foreach ($width in $forShape) {
         Write-Host "==> $name / $width" -ForegroundColor Cyan
         $rows.Add([pscustomobject]@{ Shape = $name; Width = $width; Bytes = (Publish-Shape $name $width) })
@@ -152,6 +150,9 @@ if ($min['shipped']) {
 
 if ($Csv) {
     if (-not [System.IO.Path]::IsPathRooted($Csv)) { $Csv = Join-Path $root $Csv }
+    # The last thing a multi-minute run does must not be the thing that fails on a missing folder.
+    $folder = Split-Path -Parent $Csv
+    if ($folder -and -not (Test-Path $folder)) { New-Item -ItemType Directory -Force -Path $folder | Out-Null }
     $rows | Export-Csv -NoTypeInformation -Path $Csv
     Write-Host "wrote $Csv" -ForegroundColor Cyan
 }

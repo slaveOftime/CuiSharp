@@ -3,11 +3,11 @@
   <!--
     What a published binary contains, as opposed to what the API offers.
 
-    Numbers and method: docs/SIZE.md. The short version is that a NativeAOT CuiSharp app is 58%
-    .NET runtime, 20% CUI native and 3% this library's own code, so the bytes worth arguing about
-    are the ones the runtime adds when a feature is compiled in and nobody calls it. Two of those
-    are here: the headless channel (about 180 KB of managed code and the IO stack behind it) and
-    the framework diagnostics a shipped app never reads.
+    Numbers and method: docs/SIZE.md. The short version is that a published CuiSharp app is 72%
+    .NET runtime and framework, 24% CUI native and 4% this library's own code, so the bytes worth
+    arguing about are the ones the runtime adds when a feature is compiled in and nobody calls it.
+    Two of those are here: the headless channel (about 180 KB of managed code and the IO stack
+    behind it) and the framework diagnostics a shipped app never reads.
 
     Every switch is applied only where it pays — a self-contained AOT publish, which is the one
     build whose size is a product — and each one can be overridden, because an app that has
@@ -48,6 +48,11 @@
     -->
     <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == '' And '$(CuiSharpVerboseErrors)' != 'true'">true</UseSystemResourceKeys>
     <StackTraceSupport Condition="'$(StackTraceSupport)' == '' And '$(CuiSharpVerboseErrors)' != 'true'">false</StackTraceSupport>
+
+    <!-- No debugger attaches to a shipped binary, and the debug header it exports is bytes on every
+         platform. Not part of CuiSharpVerboseErrors: that is about what an exception says, not
+         about whether one can be stepped through on a machine that is not the user's. -->
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == ''">false</DebuggerSupport>
 
     <!-- Telemetry, hot-reload metadata and a distributed-tracing Activity per HTTP request: an
          app that wants one of these asks for it by setting the switch back. -->

@@ -63,6 +63,21 @@ public class ProtocolBoundsTests
     }
 
     [Fact]
+    public void AMissingBannerSaysHowToPublishForTheChannel()
+    {
+        // The package trims the channel out of a self-contained publish, so the likeliest cause of
+        // silence is a published exe that never had it. A message that only says "it waited" sends
+        // the reader looking in the app instead of at the publish command.
+        using var silence = new Feed();
+
+        var error = Assert.Throws<ToolException>(() => HeadlessClient.Attach(
+            silence, new MemoryStream(), readyTimeout: TimeSpan.FromMilliseconds(100)));
+
+        Assert.Contains("never printed CUI-READY", error.Message, StringComparison.Ordinal);
+        Assert.Contains("-p:CuiSharpHeadless=true", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ACommandTimeoutSaysTheAnswerIsWhatDidNotArrive()
     {
         // The regression: every read reported the readiness message, so a command that hung after

@@ -17,7 +17,6 @@
     <OutputType>WinExe</OutputType>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>SizeMatrix</RootNamespace>
     <AssemblyName>Shape$(Shape)</AssemblyName>
     <DefineConstants Condition="'$(Shape)' != ''">$(DefineConstants);$(Shape)</DefineConstants>
@@ -29,7 +28,8 @@
   </ItemGroup>
 
 
-  <!-- The same publish profile the template and the gallery use. -->
+  <!-- The same publish profile the template and the gallery use. Nothing that belongs to the
+       package's size profile is restated here: that file is imported below. -->
   <PropertyGroup Condition="'$(RuntimeIdentifier)' != ''">
     <SelfContained>true</SelfContained>
     <PublishAot>true</PublishAot>
@@ -38,9 +38,6 @@
     <StripSymbols>true</StripSymbols>
     <DebugType>none</DebugType>
     <DebugSymbols>false</DebugSymbols>
-    <DebuggerSupport>false</DebuggerSupport>
-    <IlcGenerateStackTraceData>false</IlcGenerateStackTraceData>
-    <IlcDisableReflection>true</IlcDisableReflection>
     <AllowedReferenceRelatedFileExtensions>.none</AllowedReferenceRelatedFileExtensions>
   </PropertyGroup>
 

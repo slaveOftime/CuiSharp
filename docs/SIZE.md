@@ -38,18 +38,25 @@ product: `dotnet run` keeps the headless channel and the framework's exception m
 | `CuiSharpHeadless` | `false` for an AOT publish, `true` otherwise | the protocol `dotnet cui` drives an app with |
 | `CuiSharpVerboseErrors` | `false` | keeps framework exception messages and stack traces |
 
+The set also turns `DebuggerSupport` off, which drops the debug header an AOT binary otherwise
+exports on every platform. It is not part of `CuiSharpVerboseErrors`: that one is about what an
+exception says, not about whether one can be stepped through on a machine that is not the user's.
+
 `PublishAot` alone would be the wrong signal: the file-based app shape sets it for `dotnet run`
 too, and compiling the channel out there would take the protocol away from the shortest way of
 trying an app. The profile wants `PublishAot` **and** a `RuntimeIdentifier`.
 
-What it is worth, same app, same native library:
+What it is worth, same app, same native library. The "before" column is the app as 0.3.1 published
+it, so it predates both changes in this release; `tools/size-report.ps1 -Widths before` measures only
+the switches, and prints 1 474 048 B for `MIN`, because the `ScopeEnds` fix is in the source either
+way:
 
 | App | Before the profile | Shipped |
 |---|---|---|
 | minimal app | 1 498 112 | 1 165 312 (−22.2%) |
 | gallery, 28 pages | 2 581 504 | 2 292 736 (−11.2%) |
 | `dotnet new cui-app`, published | — | 2 244 608 |
-| `dotnet new cui-mini`, published | — | 1 165 312 |
+| `dotnet new cui-mini`, published | — | 1 163 776 |
 
 Nearly all of it is the headless channel: `System.IO`, `Console`, `Encoding` and the reflection
 over an enum the command lexer reads arrive with it, and a switch only removes them when the
@@ -67,12 +74,13 @@ Difference from the minimal app on the shipped width — the same frame plus one
 | Added | Cost |
 |---|---|
 | a table with eight rows | +7 168 B (0.6%) |
-| a line chart, 200 points | +31 232 B (2.6%) |
-| an inline edit, a checkbox, a slider | +34 304 B (2.9%) |
-| Markdown and a code block | +60 928 B (5.1%) |
+| a line chart, 200 points | +30 720 B (2.6%) |
+| an inline edit, a checkbox, a slider | +33 792 B (2.9%) |
+| Markdown and a code block | +61 440 B (5.3%) |
 
-**A feature costs tens of kilobytes, not hundreds.** An app that uses charts and a table pays about
-4% over one that does not, which is why the tiers below are about the floor and not about widgets.
+**A feature costs tens of kilobytes, not hundreds.** An app that uses a table and a chart pays about
+3% over one that does not, which is why the work in this release was about the floor and not about
+widgets.
 
 ## And what the native library costs
 

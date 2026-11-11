@@ -443,12 +443,22 @@ jobs:
         run: |
           pwsh tools/size-report.ps1 -All -Widths shipped -Csv size.csv
           pwsh tools/budget-check.ps1 -SizeCsv size.csv -RequireAll
+          # Thrown, not just left in $LASTEXITCODE: the summary below runs either way, and a person
+          # reading a red run should see why at the point that decides it.
+          if ($LASTEXITCODE -ne 0) { throw 'a shape went over its budget in docs/SIZE.md' }
+          '## App sizes' | Out-File $env:GITHUB_STEP_SUMMARY -Append
+          '| Shape | Width | Bytes |' | Out-File $env:GITHUB_STEP_SUMMARY -Append
+          '|---|---|---|' | Out-File $env:GITHUB_STEP_SUMMARY -Append
+          Import-Csv size.csv | ForEach-Object { "| $($_.Shape) | $($_.Width) | $([long]$_.Bytes) |" } |
+            Out-File $env:GITHUB_STEP_SUMMARY -Append
 
       - uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: benchmark
-          path: benchmark.txt
+          path: |
+            benchmark.txt
+            size.csv
 
   # The package is what users get, so one job meets it the way they do: pack, scaffold from
   # the package, build, test, publish a NativeAOT single file and drive it. The Linux leg links
