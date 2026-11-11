@@ -9,10 +9,10 @@
     than from a number that exists only in CI — a budget nobody can see is a budget nobody trusts.
 
 .EXAMPLE
-    pwsh tools/budget-check.ps1 -Benchmark artifacts/benchmark.txt -AotBytes 2134016
+    pwsh tools/budget-check.ps1 -Benchmark artifacts/benchmark.txt -AotBytes 3167232
 
 .EXAMPLE
-    pwsh tools/budget-check.ps1 -AotBytes 2134016     # size only, no benchmark run
+    pwsh tools/budget-check.ps1 -AotBytes 3167232     # size only, no benchmark run
 #>
 [CmdletBinding()]
 param(

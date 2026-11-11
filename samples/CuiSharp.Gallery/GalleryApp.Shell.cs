@@ -59,24 +59,26 @@ internal sealed partial class GalleryApp
                     }
                 }
 
-                switch (Page)
+                // The extended pages share the C gallery's habit of living in their own id
+                // scope, so "name" on two pages stays two widgets. The thirteen original
+                // pages carry global ids, as they always did.
+                if (Page >= FirstExtendedPage)
                 {
-                    case 0: PageOverview(ui); break;
-                    case 1: PageButtons(ui); break;
-                    case 2: PageInputs(ui); break;
-                    case 3: PageSelection(ui); break;
-                    case 4: PageNavigation(ui); break;
-                    case 5: PageOverlays(ui); break;
-                    case 6: PageFeedback(ui); break;
-                    case 7: PageData(ui); break;
-                    case 8: PageCharts(ui); break;
-                    case 9: PageStudio(ui); break;
-                    case 10: PageTools(ui); break;
-                    case 11: PageDeveloperTools(ui); break;
-                    default: PageMoreDeveloperTools(ui); break;
+                    using (ui.Id(Page))
+                    {
+                        DrawPage(ui);
+                    }
+                }
+                else
+                {
+                    DrawPage(ui);
                 }
             }
         }
+
+        // The scene textures belong to the render context but only the media page
+        // shows them; off that page they are released, and made again on the way back.
+        if (Page != MediaPage) ReleaseSceneTextures(ui);
 
         using (var sheet = ui.Sheet("CUI", ref _drawer, new SheetOpts { Side = Side.Left, Size = 280 }))
         {
@@ -84,6 +86,41 @@ internal sealed partial class GalleryApp
         }
 
         Dialogs(ui);
+    }
+
+    private void DrawPage(Ui ui)
+    {
+        switch (Page)
+        {
+            case 0: PageOverview(ui); break;
+            case 1: PageButtons(ui); break;
+            case 2: PageInputs(ui); break;
+            case 3: PageSelection(ui); break;
+            case 4: PageNavigation(ui); break;
+            case 5: PageOverlays(ui); break;
+            case 6: PageFeedback(ui); break;
+            case 7: PageData(ui); break;
+            case 8: PageCharts(ui); break;
+            case 9: PageStudio(ui); break;
+            case 10: PageTools(ui); break;
+            case 11: PageDeveloperTools(ui); break;
+            case 12: PageMoreDeveloperTools(ui); break;
+            case 13: PageActions(ui); break;
+            case 14: PageSmartInputs(ui); break;
+            case 15: PagePickers(ui); break;
+            case 16: PageCapture(ui); break;
+            case 17: PageDisclosure(ui); break;
+            case 18: PageReader(ui); break;
+            case 19: PageGrid(ui); break;
+            case 20: PageCode(ui); break;
+            case 21: PageSocial(ui); break;
+            case 22: PagePlanning(ui); break;
+            case 23: PageViz(ui); break;
+            case 24: PageMotion(ui); break;
+            case 25: PageAi(ui); break;
+            case 26: PageAudio(ui); break;
+            default: PageFiles(ui); break;
+        }
     }
 
     private void Sidebar(Ui ui, bool drawer)

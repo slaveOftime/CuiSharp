@@ -1,4 +1,4 @@
-// Page 10 of 11: the audio/production controls, the radial gauge and a candlestick chart.
+// Page 10 of 28: the audio/production controls, the radial gauge and a candlestick chart.
 // Part of the CuiSharp.Gallery sample: Studio
 using CuiSharp;
 

@@ -56,7 +56,7 @@ public class GeneratedWrapperRuntimeTests
         {
             using (ui.Column(new() { Width = Size.Fill, Pad = 10 }))
             {
-                ui.InlineEdit("edit", ref text, 64);
+                ui.InlineEdit("edit", ref text);
                 ui.PropText("Title", ref text, 64);
             }
         };

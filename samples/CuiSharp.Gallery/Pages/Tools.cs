@@ -1,4 +1,4 @@
-// Page 11 of 11: the workspace tools: terminal, file browser, image viewer and
+// Page 11 of 28: the workspace tools: terminal, file browser, image viewer and
 // cropper, emoji picker and a guided tour.
 // Part of the CuiSharp.Gallery sample: Tools
 using CuiSharp;
@@ -141,8 +141,10 @@ internal sealed partial class GalleryApp
 
             if (_tourStep >= 0)
             {
-                // The widget sets Step back to -1 when the tour is done or dismissed.
-                _tourStep = ui.Tour("tour", _tourSteps, ref _tourStep, new TourOpts { Width = 320 });
+                // The widget moves the step through the ref and sets it back to -1 when the tour
+                // ends. Its result is the action the user took, not the step: assigning it here
+                // would replace the step with CUI_TOUR_NONE and the tour would never advance.
+                _ = ui.Tour("tour", _tourSteps, ref _tourStep, new TourOpts { Width = 320 });
             }
         }
     }

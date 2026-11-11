@@ -1,4 +1,4 @@
-// Page 12 of 13: the observability tools a developer app puts on screen: a trace, a
+// Page 12 of 28: the observability tools a developer app puts on screen: a trace, a
 // network waterfall, a dependency graph, the commit history, a CI run, compiler
 // diagnostics, editable key = value pairs, a filter builder, a cron schedule and a
 // keyboard map.

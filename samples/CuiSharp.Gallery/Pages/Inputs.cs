@@ -1,4 +1,4 @@
-// Page 3 of 9: text fields, tags, codes, pickers.
+// Page 3 of 28: text fields, tags, codes, pickers.
 // Part of the CuiSharp.Gallery sample: Inputs
 using CuiSharp;
 

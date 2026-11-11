@@ -83,14 +83,14 @@ public static unsafe class AiInterfacesUiExtensions
         }
 
         /// <summary>cui_response_actions_ex</summary>
-        public int ResponseActions(UiText id, ref int vote, ResponseActionsOpts o = default)
+        public ResponseEvents ResponseActions(UiText id, ref int vote, ResponseActionsOpts o = default)
         {
             int __vote = (int)(vote);
             var __opts = o.ToNative((nint)(&__vote));
             var __result = Native.ResponseActions(ui.Handle, Utf8.Get(id), in __opts);
             vote = __vote;
             WidgetRecorder.Note(ui.Handle, "ResponseActions", id);
-            return __result;
+            return (ResponseEvents)__result;
         }
 
         /// <summary>cui_prompt_suggestions_ex</summary>
@@ -116,7 +116,7 @@ public static unsafe class AiInterfacesUiExtensions
         }
 
         /// <summary>cui_chat_composer_ex</summary>
-        public int ChatComposer(UiText id, ref string buf, int cap, ref int removed, ref int model, ComposerOpts o = default)
+        public ComposerEvents ChatComposer(UiText id, ref string buf, int cap, ref int removed, ref int model, ComposerOpts o = default)
         {
             var __bufSlot = ui.RentText(Native.MakeId(ui.Handle, Utf8.Get(id)) ^ 0xcd43af79u, ref buf, (int)cap);
             int __removed = (int)(removed);
@@ -127,7 +127,7 @@ public static unsafe class AiInterfacesUiExtensions
             removed = __removed;
             model = __model;
             WidgetRecorder.Note(ui.Handle, "ChatComposer", id);
-            return __result;
+            return (ComposerEvents)__result;
         }
 
         /// <summary>cui_voice_orb_ex</summary>

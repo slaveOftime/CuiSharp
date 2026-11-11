@@ -133,6 +133,62 @@ public class HeadlessLoopTests
         Assert.Contains("tree", answer, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void WheelIsACommandAndAnswersWithTheFrameItProduced()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        using var app = TestApp.Start(new Counter(), 400, 300);
+
+        // Nothing here scrolls, but the command must still dispatch and answer with a frame;
+        // the scrolling itself is proven in TestingHarnessTests.
+        string answer = Wire(app, "wheel 200 150 -4");
+
+        Assert.DoesNotContain("Unknown command", answer, StringComparison.Ordinal);
+        Assert.Contains("Button \"Add\"", answer, StringComparison.Ordinal);
+        Assert.Contains("needs three numbers", Wire(app, "wheel 200"), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void PulseDrawsFramesAndCarriesTheHeapInsteadOfTheTree()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        var page = new Counter();
+        using var app = TestApp.Start(page, 400, 300);
+
+        // The whole point of pulse: the frames are drawn, but no tree is serialised.
+        string answer = Wire(app, "pulse 7");
+
+        Assert.StartsWith("7 heap ", answer, StringComparison.Ordinal);
+        Assert.DoesNotContain("Button", answer, StringComparison.Ordinal);
+        Assert.True(long.TryParse(answer["7 heap ".Length..], out long heap) && heap > 0);
+
+        // The frames were real frames: the app drew them and its clock moved.
+        Assert.Contains("clicks 0", Wire(app, "tree"), StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("pulse 0")]
+    [InlineData("pulse -3")]
+    [InlineData("frame 0")]
+    [InlineData("frame 99999999999")]
+    public void AFrameCountThatCannotMeanAnythingIsAnErrorNotASilentNop(string command)
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        using var app = TestApp.Start(new Counter(), 400, 300);
+        var output = new StringWriter();
+
+        HeadlessLoop.Run(app, new StringReader(command + "\nquit\n"), output);
+        string answer = output.ToString().ReplaceLineEndings("\n");
+
+        // A negative count used to answer "-3 heap ..." and a number too large for an int took
+        // the whole session down with an unhandled OverflowException.
+        Assert.Contains("CUI-ERR", answer, StringComparison.Ordinal);
+        Assert.Contains("CUI-OK 0\n", answer, StringComparison.Ordinal);   // the quit still answered
+    }
+
     /// <summary>A page whose heading and button both say "Save", so a click has to choose.</summary>
     private sealed class Ambiguous : Component
     {

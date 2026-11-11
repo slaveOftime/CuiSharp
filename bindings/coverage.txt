@@ -109,7 +109,7 @@ GENERATED cui_hex_result -> HexResult (+ write-back)
 
 WIDGETS
 Wrapper emission is being migrated by header section (Phase 2, Step 2). Not a completed coverage gate.
-Generated wrappers: 277; raw functions covered including scope ends: 317/492
+Generated wrappers: 274; raw functions covered including scope ends: 314/492
 MANUAL cui_create: `CuiSurface.Create` owns context creation (CuiSurface.cs).
 MANUAL cui_destroy: `CuiSurface.Dispose` (CuiSurface.cs).
 MANUAL cui_set_renderer: `CuiSurface.Create` installs the software renderer; CuiApp lets CUI pick (CuiSurface.cs).
@@ -134,8 +134,8 @@ MANUAL cui_input_text: `CuiSurface.Type(text)` (CuiSurface.Input.cs) delivers UT
 MANUAL cui_input_focus: `CuiSurface.Focus(bool)` (CuiSurface.Input.cs).
 MANUAL cui_input_file_hover: `CuiSurface.FileHover(x, y)` and `FileHoverEnd()` (CuiSurface.Input.cs).
 MANUAL cui_input_file_drop: `CuiSurface.FileDrop(paths, x, y)` (CuiSurface.Input.cs).
-MANUAL cui_dropped_file_count: `CuiSurface.DroppedFileCount` (CuiSurface.Input.cs).
-MANUAL cui_dropped_file: `CuiSurface.DroppedFile(index)` (CuiSurface.Input.cs).
+MANUAL cui_dropped_file_count: `CuiSurface.DroppedFileCount` (CuiSurface.Input.cs) and `ui.DroppedFileCount` (Ui/Ui.Overlays.cs): the surface feeds drops, a frame reads them.
+MANUAL cui_dropped_file: `CuiSurface.DroppedFile(index)` (CuiSurface.Input.cs) and `ui.DroppedFile(index)` (Ui/Ui.Overlays.cs): the path of the dropped file, decoded from the native buffer.
 MANUAL cui_file_drag_active: `CuiSurface.FileDragActive` (CuiSurface.Input.cs).
 EXCLUDED cui_set_platform: Platform input is delivered by the window backend and the test harness, not by draw code.
 MANUAL cui_get_cursor: `ui.Cursor` (Ui.Frame.cs).
@@ -280,9 +280,9 @@ MANUAL cui_bar_chart_ex: Charts take managed series and decimate long feeds into
 MANUAL cui_donut_chart_ex: Charts take managed series and decimate long feeds into the frame arena; auto-decimation is Phase 2, Step 3.
 GENERATED cui_sparkline
 GENERATED cui_gauge
-MANUAL cui_image_create: Texture handle ownership and pixel upload belong with the typed image API in Phase 2, Step 3.
-MANUAL cui_image_load: Texture handle ownership and out-parameters belong with the typed image API in Phase 2, Step 3.
-MANUAL cui_image_destroy: Texture handle ownership belongs with the typed image API in Phase 2, Step 3.
+MANUAL cui_image_create: ui.CreateImage (Ui/Ui.Images.cs): validates the pixel span, pins it and hands over the texture handle.
+MANUAL cui_image_load: ui.LoadImage (Ui/Ui.Images.cs): decodes a PNG or JPEG, reports the pixel size and returns the handle as the result.
+MANUAL cui_image_destroy: ui.DestroyImage (Ui/Ui.Images.cs): releases a texture handle; 0 is ignored so a field clears in one step.
 GENERATED cui_image_ex
 GENERATED cui_image_viewer_ex
 GENERATED cui_cropper_ex
@@ -302,7 +302,7 @@ MANUAL cui_reorder_item_begin: Reorder keeps a per-list build state until reorde
 MANUAL cui_reorder_item_end: the scope closes with cui_reorder_item_begin (Reorder keeps a per-list build state until reorder_end, so the manual wrapper keeps the scope and write-back in one place.)
 GENERATED cui_progress_ring
 GENERATED cui_split_button_ex
-GENERATED cui_toggle_group_ex
+MANUAL cui_toggle_group_ex: ui.ToggleGroup (Ui/Ui.BoolGroups.cs): the group edits one bool per label in the caller's array; the wrapper copies through a frame-arena byte block because native writes count bools, not one.
 GENERATED cui_confirm_button_ex
 GENERATED cui_status_button_ex
 GENERATED cui_reactions
@@ -321,7 +321,7 @@ GENERATED cui_data_grid_cell_edit
 GENERATED cui_data_grid_edit
 MANUAL cui_data_grid_end: the scope closes with cui_data_grid_begin_ex (Ui.DataGrid in Ui.DataGrid.cs owns selection and cursor storage through GridScope.Dispose; native retains these pointers while rows draw.)
 GENERATED cui_tree_cell
-GENERATED cui_filter_bar
+MANUAL cui_filter_bar: ui.FilterBar (Ui/Ui.BoolGroups.cs): the bar edits one option bitmask per field in the caller's array; the wrapper copies through a frame-arena uint block because native writes count masks, not one.
 MANUAL cui_tree_table_begin_ex: `ui.TreeTable(id, columns, nodes, row, …)` (Ui/Ui.TreeTable.cs) pins the caller's `TreeNode[]` so the table's open/selected/loading writes land in it, and rents the label delegate through the frame-callback bridge.
 GENERATED cui_tree_table_row
 GENERATED cui_tree_table_name
@@ -425,7 +425,7 @@ GENERATED cui_toc_anchor
 GENERATED cui_banner_ex
 GENERATED cui_countdown_ex
 GENERATED cui_checklist_ex
-GENERATED cui_multi_select_ex
+MANUAL cui_multi_select_ex: ui.MultiSelect (Ui/Ui.BoolGroups.cs): the list edits one bool per item in the caller's array; the wrapper copies through a frame-arena byte block because native writes count bools, not one.
 GENERATED cui_range_calendar
 GENERATED cui_date_range_picker_ex
 MANUAL cui_date_to_days: `Date.DayNumber` (Interop/Types.cs).

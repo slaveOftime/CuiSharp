@@ -33,7 +33,7 @@ cui_agent_status_ex
 ## `ChatComposer`
 
 ```csharp
-public int ChatComposer(UiText id, ref string buf, int cap, ref int removed, ref int model, ComposerOpts o = default)
+public ComposerEvents ChatComposer(UiText id, ref string buf, int cap, ref int removed, ref int model, ComposerOpts o = default)
 ```
 
 cui_chat_composer_ex
@@ -81,7 +81,7 @@ cui_reasoning_begin
 ## `ResponseActions`
 
 ```csharp
-public int ResponseActions(UiText id, ref int vote, ResponseActionsOpts o = default)
+public ResponseEvents ResponseActions(UiText id, ref int vote, ResponseActionsOpts o = default)
 ```
 
 cui_response_actions_ex

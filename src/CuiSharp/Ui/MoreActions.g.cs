@@ -22,18 +22,6 @@ public static unsafe class MoreActionsUiExtensions
             return __result;
         }
 
-        /// <summary>cui_toggle_group_ex</summary>
-        public bool ToggleGroup(UiText id, ReadOnlySpan<string> labels, ref bool values, ToggleGroupOpts o = default)
-        {
-            byte __values = (byte)(values ? 1 : 0);
-            if (o.Icons is { } __icons && __icons.Length < labels.Length) throw new ArgumentException("Icons must contain at least one entry per item.", nameof(o));
-            var __opts = o.ToNative();
-            var __result = Native.ToggleGroup(ui.Handle, Utf8.Get(id), UiMarshal.Strings(labels), (int)(labels.Length), (nint)(&__values), in __opts);
-            values = __values != 0;
-            WidgetRecorder.Note(ui.Handle, "ToggleGroup", id);
-            return __result != 0;
-        }
-
         /// <summary>cui_confirm_button_ex</summary>
         public bool ConfirmButton(UiText label, ConfirmOpts o = default)
         {
@@ -53,11 +41,15 @@ public static unsafe class MoreActionsUiExtensions
         }
 
         /// <summary>cui_reactions</summary>
-        public int Reactions(UiText id, ReadOnlySpan<Reaction> items)
+        public int Reactions(UiText id, Span<Reaction> items)
         {
             var __items = Utf8.AllocFrame<NativeReaction>(items.Length);
             for (int i = 0; i < items.Length; i++) __items[i] = items[i].ToNative();
             var __result = Native.Reactions(ui.Handle, Utf8.Get(id), (nint)__items, (int)(items.Length));
+            if (__result >= 0)
+            {
+                for (int i = 0; i < items.Length; i++) items[i] = Reaction.FromNative(__items[i]);
+            }
             WidgetRecorder.Note(ui.Handle, "Reactions", id);
             return __result;
         }

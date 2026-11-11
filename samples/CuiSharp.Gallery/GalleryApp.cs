@@ -1,5 +1,6 @@
-// A faithful C# port of CUI's component gallery (examples/gallery_ui.c):
-// the same nine pages, the same components, the same state machine.
+// A faithful C# port of CUI's component gallery: the thirteen pages of
+// examples/gallery_ui.c and the fifteen of examples/gallery_more.c, the same
+// components, the same state machine.
 //
 // State lives in fields instead of CUI. That is the whole point of the
 // immediate-mode model: nothing to invalidate, no view model to keep in sync.
@@ -13,13 +14,24 @@ namespace CuiSharp.Gallery;
 
 internal sealed partial class GalleryApp : IDisposable
 {
-    public const int PageCount = 13;
+    public const int PageCount = 28;
+
+    /// <summary>The first page ported from <c>examples/gallery_more.c</c>; from here on every
+    /// page draws inside its own id scope, as the C gallery's second half does.</summary>
+    private const int FirstExtendedPage = 13;
+
+    /// <summary>The page index of <em>Social and media</em>: the only page that shows the
+    /// scene textures, so the only page they are kept alive for.</summary>
+    private const int MediaPage = 21;
 
     internal static readonly string[] PageNames =
     {
         "Overview", "Buttons", "Inputs", "Selection", "Navigation",
         "Overlays", "Feedback", "Data display", "Charts", "Studio", "Tools",
         "Developer tools", "More developer tools",
+        "Actions", "Smart inputs", "Pickers", "Capture", "Disclosure", "Reader",
+        "Data grid", "Code", "Social and media", "Planning", "More charts",
+        "Motion", "AI", "Audio", "Files",
     };
 
     internal static readonly string[] PageIcons =
@@ -27,6 +39,9 @@ internal sealed partial class GalleryApp : IDisposable
         Icons.LayoutDashboard, Icons.Zap, Icons.Type, Icons.SlidersHorizontal,
         Icons.Compass, Icons.Layers, Icons.Bell, Icons.Database, Icons.ChartLine,
         Icons.SlidersHorizontal, Icons.Terminal, Icons.SquareTerminal, Icons.Bug,
+        Icons.Command, Icons.SquarePen, Icons.Calendar, Icons.Upload, Icons.Layers,
+        Icons.FileText, Icons.Grid3x3, Icons.Code, Icons.MessageSquare, Icons.ListChecks,
+        Icons.ChartPie, Icons.Activity, Icons.MessageSquare, Icons.AudioLines, Icons.Folder,
     };
 
     private static readonly string[] AccentNames =
@@ -215,7 +230,7 @@ internal sealed partial class GalleryApp : IDisposable
     // ---- lifetime -------------------------------------------------------
 
     /// <summary>Text fields are plain strings now, so there is nothing unmanaged to release.</summary>
-    public void Dispose() { }
+    public void Dispose() => _shell?.Dispose();
 
     // ---- shapes ---------------------------------------------------------
 

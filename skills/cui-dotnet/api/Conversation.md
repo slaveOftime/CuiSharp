@@ -25,7 +25,7 @@ cui_chat_divider
 ## `ChatMessage`
 
 ```csharp
-public void ChatMessage(UiText text, ref MarkdownResult markdownresult, ChatOpts o = default)
+public void ChatMessage(UiText text, ref MarkdownResult markdownResult, ChatOpts o = default)
 ```
 
 cui_chat_message_ex
@@ -33,7 +33,7 @@ cui_chat_message_ex
 ## `Comment`
 
 ```csharp
-public int Comment(UiText id, UiText author, UiText text, ref int likes, ref bool liked, CommentOpts o = default)
+public CommentEvents Comment(UiText id, UiText author, UiText text, ref int likes, ref bool liked, CommentOpts o = default)
 ```
 
 cui_comment_ex

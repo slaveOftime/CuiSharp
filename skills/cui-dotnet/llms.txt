@@ -63,13 +63,13 @@
 
 - `ui.AgentPlan(UiText id, ReadOnlySpan<PlanStep> steps, AgentPlanOpts o = default)` → `int`  ([AI interfaces](api/AiInterfaces.md))
 - `ui.AgentStatus(UiText text, AgentStatusOpts o = default)` → `void`  ([AI interfaces](api/AiInterfaces.md))
-- `ui.ChatComposer(UiText id, ref string buf, int cap, ref int removed, ref int model, ComposerOpts o = default)` → `int`  ([AI interfaces](api/AiInterfaces.md))
+- `ui.ChatComposer(UiText id, ref string buf, int cap, ref int removed, ref int model, ComposerOpts o = default)` → `ComposerEvents`  ([AI interfaces](api/AiInterfaces.md))
 - `ui.Citation(int number, in Source source)` → `bool`  ([AI interfaces](api/AiInterfaces.md))
 - `ui.ContextMeter(UiText id, float used, float limit, ContextOpts o = default)` → `void`  ([AI interfaces](api/AiInterfaces.md))
 - `ui.ModelPicker(UiText id, ReadOnlySpan<Model> models, ref int selected, ModelPickerOpts o = default)` → `bool`  ([AI interfaces](api/AiInterfaces.md))
 - `ui.PromptSuggestions(UiText id, ReadOnlySpan<PromptSuggestion> items, PromptSuggestionsOpts o = default)` → `int`  ([AI interfaces](api/AiInterfaces.md))
 - `ui.Reasoning(UiText id, ReasoningOpts o = default)` → `OpenScope`  ([AI interfaces](api/AiInterfaces.md))
-- `ui.ResponseActions(UiText id, ref int vote, ResponseActionsOpts o = default)` → `int`  ([AI interfaces](api/AiInterfaces.md))
+- `ui.ResponseActions(UiText id, ref int vote, ResponseActionsOpts o = default)` → `ResponseEvents`  ([AI interfaces](api/AiInterfaces.md))
 - `ui.SourceList(UiText id, ReadOnlySpan<Source> sources)` → `int`  ([AI interfaces](api/AiInterfaces.md))
 - `ui.ToolCall(UiText id, UiText name, ToolCallOpts o = default)` → `void`  ([AI interfaces](api/AiInterfaces.md))
 - `ui.VoiceOrb(UiText id, VoiceState state, float level, VoiceOrbOpts o = default)` → `bool`  ([AI interfaces](api/AiInterfaces.md))
@@ -103,8 +103,8 @@
 - `ui.CommandPalette(ref bool open, ReadOnlySpan<Command> commands)` → `int` — Spotlight style command palette. Returns the index of the chosen command, or -1. Open it with a shortcut: if (cui_shortcut(ui, CUI_MOD_PRIMARY, CUI_KEY_K)) open = true;  ([Command palette (block)](api/CommandPaletteBlock.md))
 - `ui.CommitGraph(UiText id, ReadOnlySpan<Commit> commits, ref int selected, CommitGraphOpts o = default)` → `CommitGraphResult`  ([Commit graph](api/CommitGraph.md))
 - `ui.ChatDivider(UiText label)` → `void`  ([Conversation](api/Conversation.md))
-- `ui.ChatMessage(UiText text, ref MarkdownResult markdownresult, ChatOpts o = default)` → `void`  ([Conversation](api/Conversation.md))
-- `ui.Comment(UiText id, UiText author, UiText text, ref int likes, ref bool liked, CommentOpts o = default)` → `int`  ([Conversation](api/Conversation.md))
+- `ui.ChatMessage(UiText text, ref MarkdownResult markdownResult, ChatOpts o = default)` → `void`  ([Conversation](api/Conversation.md))
+- `ui.Comment(UiText id, UiText author, UiText text, ref int likes, ref bool liked, CommentOpts o = default)` → `CommentEvents`  ([Conversation](api/Conversation.md))
 - `ui.Presence(UiText id, ReadOnlySpan<PresenceUser> users, int maxVisible, float size)` → `void`  ([Conversation](api/Conversation.md))
 - `ui.TypingIndicator(UiText name)` → `void`  ([Conversation](api/Conversation.md))
 - `ui.Coverage(UiText id, ReadOnlySpan<CoverageFile> files, CoverageOpts o = default)` → `CoverageResult`  ([Coverage](api/Coverage.md))
@@ -129,7 +129,6 @@
 - `ui.DataGridCellText(UiText text)` → `void`  ([Data grid](api/DataGrid.md))
 - `ui.DataGridEdit(ref string buf, int cap)` → `bool` — The same editable text, inside the current cell (after an avatar, say).  ([Data grid](api/DataGrid.md))
 - `ui.DataGridRow(int row)` → `bool`  ([Data grid](api/DataGrid.md))
-- `ui.FilterBar(UiText id, ReadOnlySpan<FilterField> fields, ref uint selected, ref string search, int searchCap)` → `bool`  ([Data grid](api/DataGrid.md))
 - `ui.TreeCell(UiText label, int depth, bool hasChildren, ref bool open, UiText icon)` → `bool` — Tree cell: indentation, a disclosure chevron and a label, for tree tables (use it in a table or grid cell). Returns true when *open toggled.  ([Data grid](api/DataGrid.md))
 - `ui.GraphView(UiText id, ReadOnlySpan<GraphNode> nodes, ReadOnlySpan<GraphEdge> edges, ref int selected, GraphOpts o = default)` → `GraphResult`  ([Dependency graph](api/DependencyGraph.md))
 - `ui.Alert(UiText title, AlertOpts o = default)` → `bool` — Inline alert. Returns false once dismissed (when dismissible).  ([Dialogs, sheets, toasts, alerts](api/DialogsSheetsToastsAlerts.md))
@@ -200,7 +199,7 @@
 - `ui.Carousel(UiText id, int count, ref int index, CarouselOpts o = default)` → `OpenScope`  ([Media](api/Media.md))
 - `ui.CarouselSlide()` → `LayoutScope`  ([Media](api/Media.md))
 - `ui.Counter(UiText id, double value, CounterOpts o = default)` → `void` — * left to right in any interface: see cui__keep_ltr  ([Media](api/Media.md))
-- `ui.ImageCompare(UiText id, ulong before, ulong after, out float pos, CompareOpts o = default)` → `bool`  ([Media](api/Media.md))
+- `ui.ImageCompare(UiText id, ulong before, ulong after, ref float pos, CompareOpts o = default)` → `bool`  ([Media](api/Media.md))
 - `ui.Ticker(UiText id, ReadOnlySpan<TickerItem> items, TickerOpts o = default)` → `void`  ([Media](api/Media.md))
 - `ui.ContextMenu(UiText id)` → `OpenScope` — Context menu: opens on right click over the previous component.  ([Menus and popovers](api/MenusAndPopovers.md))
 - `ui.Menu(UiText label, MenuOpts o = default)` → `OpenScope`  ([Menus and popovers](api/MenusAndPopovers.md))
@@ -213,16 +212,15 @@
 - `ui.PopoverOpen(UiText id)` → `void`  ([Menus and popovers](api/MenusAndPopovers.md))
 - `ui.PopoverToggle(UiText id)` → `void`  ([Menus and popovers](api/MenusAndPopovers.md))
 - `ui.Tooltip(UiText text)` → `void` — Tooltip for the previous component, shown after a short hover delay.  ([Menus and popovers](api/MenusAndPopovers.md))
-- `ui.Tour(UiText id, ReadOnlySpan<TourStep> steps, ref int step, TourOpts o = default)` → `int` — What happened this frame: one of CUI_TOUR_*.  ([Menus and popovers](api/MenusAndPopovers.md))
+- `ui.Tour(UiText id, ReadOnlySpan<TourStep> steps, ref int step, TourOpts o = default)` → `TourAction` — What happened this frame: one of CUI_TOUR_*.  ([Menus and popovers](api/MenusAndPopovers.md))
 - `ui.ConfirmButton(UiText label, ConfirmOpts o = default)` → `bool`  ([More actions](api/MoreActions.md))
-- `ui.Reactions(UiText id, ReadOnlySpan<Reaction> items)` → `int`  ([More actions](api/MoreActions.md))
+- `ui.Reactions(UiText id, Span<Reaction> items)` → `int`  ([More actions](api/MoreActions.md))
 - `ui.SpeedDial(UiText id, ReadOnlySpan<SpeedAction> actions, SpeedDialOpts o = default)` → `int`  ([More actions](api/MoreActions.md))
 - `ui.SplitButton(UiText label, ReadOnlySpan<string> items, SplitButtonOpts o = default)` → `int`  ([More actions](api/MoreActions.md))
 - `ui.StatusButton(UiText label, Status status, StatusButtonOpts o = default)` → `bool`  ([More actions](api/MoreActions.md))
 - `ui.SwipeItem(UiText id, ReadOnlySpan<SwipeAction> left, ReadOnlySpan<SwipeAction> right)` → `int`  ([More actions](api/MoreActions.md))
 - `ui.ThemeSwitcher(ref int mode, bool withSystem)` → `bool` — Theme switcher: light, dark and (optionally) system, as a compact icon segmented control. mode is 0 light, 1 dark, 2 system. Light and dark are applied for you; for system call cui_set_theme with the OS setting. Returns true when mode changed.  ([More actions](api/MoreActions.md))
 - `ui.ThemeToggle()` → `bool` — Sun and moon icon button that toggles the theme with a morph.  ([More actions](api/MoreActions.md))
-- `ui.ToggleGroup(UiText id, ReadOnlySpan<string> labels, ref bool values, ToggleGroupOpts o = default)` → `bool`  ([More actions](api/MoreActions.md))
 - `ui.UserMenu(UiText name, UserMenuOpts o = default)` → `OpenScope`  ([More actions](api/MoreActions.md))
 - `ui.ActivityRings(UiText id, ReadOnlySpan<VizItem> rings, RingsOpts o = default)` → `int`  ([More charts](api/MoreCharts.md))
 - `ui.BarList(UiText id, ReadOnlySpan<VizItem> items, BarListOpts o = default)` → `int`  ([More charts](api/MoreCharts.md))
@@ -247,7 +245,7 @@
 - `ui.Banner(UiText text, ref bool open, BannerOpts o = default)` → `bool`  ([More feedback](api/MoreFeedback.md))
 - `ui.Checklist(UiText id, ReadOnlySpan<CheckStep> steps, ChecklistOpts o = default)` → `int`  ([More feedback](api/MoreFeedback.md))
 - `ui.Countdown(UiText id, double secondsLeft, CountdownOpts o = default)` → `void` — * left to right in any interface: see cui__keep_ltr  ([More feedback](api/MoreFeedback.md))
-- `ui.InlineEdit(UiText id, ref string buf, int cap, InlineEditOpts o = default)` → `int`  ([More inputs](api/MoreInputs.md))
+- `ui.InlineEdit(UiText id, ref string buf, int cap = 256, InlineEditOpts o = default)` → `int`  ([More inputs](api/MoreInputs.md))
 - `ui.MoneyInput(UiText id, ref double value, MoneyOpts o = default)` → `bool`  ([More inputs](api/MoreInputs.md))
 - `ui.Scrub(UiText label, ref float value, float min, float max, ScrubOpts o = default)` → `bool`  ([More inputs](api/MoreInputs.md))
 - `ui.ShortcutLabel(KeyCombo combo)` → `string?`  ([More inputs](api/MoreInputs.md))
@@ -258,14 +256,14 @@
 - `ui.DockSeparator()` → `void`  ([Motion and text effects](api/MotionAndTextEffects.md))
 - `ui.GradientText(UiText text, GradientTextOpts o = default)` → `void`  ([Motion and text effects](api/MotionAndTextEffects.md))
 - `ui.Loader(LoaderOpts o = default)` → `void`  ([Motion and text effects](api/MotionAndTextEffects.md))
-- `ui.NowPlaying(UiText id, ref NowPlayingState np, NowPlayingOpts o = default)` → `int`  ([Motion and text effects](api/MotionAndTextEffects.md))
+- `ui.NowPlaying(UiText id, ref NowPlayingState np, NowPlayingOpts o = default)` → `PlayerEvents`  ([Motion and text effects](api/MotionAndTextEffects.md))
 - `ui.NumberRoll(UiText id, UiText text, TextFxOpts o = default)` → `void` — A figure whose changed digits roll into place: up when the value rises, down when it falls, a beat apart from the left; unchanged characters stay still. Pass the formatted text ("$64,210", "1.2k"); digits are tabular.  ([Motion and text effects](api/MotionAndTextEffects.md))
 - `ui.ShimmerText(UiText text, TextFxOpts o = default)` → `void` — Text with a highlight sweeping across it, for "Thinking..." states.  ([Motion and text effects](api/MotionAndTextEffects.md))
 - `ui.Spotlight(UiText id, SpotlightOpts o = default)` → `LayoutScope`  ([Motion and text effects](api/MotionAndTextEffects.md))
 - `ui.TabBar(UiText id, ReadOnlySpan<TabBarItem> items, ref int selected, TabBarOpts o = default)` → `bool`  ([Motion and text effects](api/MotionAndTextEffects.md))
 - `ui.TextReveal(UiText id, UiText text, TextFxOpts o = default)` → `void` — Words fade and rise into place one after another, when first shown and again whenever the text changes.  ([Motion and text effects](api/MotionAndTextEffects.md))
 - `ui.Typewriter(UiText id, UiText text, TextFxOpts o = default)` → `bool` — Types the text out. When the text grows (streamed tokens) it carries on from where it was; other changes start over. Returns true once complete.  ([Motion and text effects](api/MotionAndTextEffects.md))
-- `ui.Waveform(UiText id, ReadOnlySpan<float> peaks, out float progress, WaveformOpts o = default)` → `bool`  ([Motion and text effects](api/MotionAndTextEffects.md))
+- `ui.Waveform(UiText id, ReadOnlySpan<float> peaks, ref float progress, WaveformOpts o = default)` → `bool`  ([Motion and text effects](api/MotionAndTextEffects.md))
 - `ui.WordRotate(UiText id, ReadOnlySpan<string> words, float interval, TextFxOpts o = default)` → `void` — One word at a time; the next one rolls up into place and the width follows.  ([Motion and text effects](api/MotionAndTextEffects.md))
 - `ui.Breadcrumb(ReadOnlySpan<string> items)` → `int`  ([Navigation](api/Navigation.md))
 - `ui.NavItem(UiText label, NavOpts o = default)` → `bool`  ([Navigation](api/Navigation.md))
@@ -288,19 +286,18 @@
 - `ui.HistogramSlider(UiText label, ReadOnlySpan<float> bins, ref float lo, ref float hi, float min, float max, HistogramOpts o = default)` → `bool`  ([Pickers](api/Pickers.md))
 - `ui.Knob(UiText id, ref float value, float min, float max, KnobOpts o = default)` → `bool`  ([Pickers](api/Pickers.md))
 - `ui.LevelMeter(UiText id, ReadOnlySpan<float> levels, LevelMeterOpts o = default)` → `bool` — Returns true when the clip light was clicked to clear it.  ([Pickers](api/Pickers.md))
-- `ui.MultiSelect(UiText id, ReadOnlySpan<string> items, ref bool selected, MultiSelectOpts o = default)` → `bool`  ([Pickers](api/Pickers.md))
 - `ui.RangeCalendar(UiText id, ref DateRange range, int months)` → `bool` — One or two months side by side; click a start and an end.  ([Pickers](api/Pickers.md))
 - `ui.RulerSlider(UiText label, ref float value, float min, float max, RulerOpts o = default)` → `bool`  ([Pickers](api/Pickers.md))
 - `ui.TimeDial(UiText id, ref int hour, ref int minute, float size)` → `bool` — Time dial: a clock face. Drag the hand to set hours, then minutes.  ([Pickers](api/Pickers.md))
 - `ui.TimePicker(UiText id, ref int hour, ref int minute, TimeOpts o = default)` → `bool`  ([Pickers](api/Pickers.md))
 - `ui.WheelPicker(UiText id, ReadOnlySpan<string> items, ref int index, WheelOpts o = default)` → `bool`  ([Pickers](api/Pickers.md))
 - `ui.Pipeline(UiText id, ReadOnlySpan<string> stages, ReadOnlySpan<PipelineJob> jobs, ref int selected, PipelineOpts o = default)` → `PipelineResult`  ([Pipeline](api/Pipeline.md))
-- `ui.Gantt(UiText id, ReadOnlySpan<GanttTask> tasks, Date origin, int days, GanttOpts o = default)` → `int` — * left to right in any interface: see cui__keep_ltr  ([Planning](api/Planning.md))
+- `ui.Gantt(UiText id, Span<GanttTask> tasks, Date origin, int days, GanttOpts o = default)` → `int` — * left to right in any interface: see cui__keep_ltr  ([Planning](api/Planning.md))
 - `ui.Kanban(UiText id)` → `bool`  ([Planning](api/Planning.md))
-- `ui.KanbanCard(int cardId)` → `OpenScope`  ([Planning](api/Planning.md))
-- `ui.KanbanColumn(UiText title, int cardCount, KanbanColumnOpts o = default)` → `OpenScope`  ([Planning](api/Planning.md))
+- `ui.KanbanCard(int cardId)` → `LayoutScope`  ([Planning](api/Planning.md))
+- `ui.KanbanColumn(UiText title, int cardCount, KanbanColumnOpts o = default)` → `LayoutScope`  ([Planning](api/Planning.md))
 - `ui.MonthCalendar(UiText id, ref Date month, ReadOnlySpan<MonthEvent> events, ref Date selected, MonthOpts o = default)` → `MonthResult`  ([Planning](api/Planning.md))
-- `ui.WeekCalendar(UiText id, Date weekStart, ReadOnlySpan<CalendarEvent> events, WeekOpts o = default)` → `int` — * left to right in any interface: see cui__keep_ltr  ([Planning](api/Planning.md))
+- `ui.WeekCalendar(UiText id, Date weekStart, Span<CalendarEvent> events, WeekOpts o = default)` → `int` — * left to right in any interface: see cui__keep_ltr  ([Planning](api/Planning.md))
 - `ui.Problems(UiText id, ReadOnlySpan<ProblemItem> diags, ProblemsOpts o = default)` → `ProblemsResult`  ([Problems panel](api/ProblemsPanel.md))
 - `ui.QueryBuilder(UiText id, ReadOnlySpan<QueryField> fields, Span<QueryNode> nodes, ref int count, int capacity, QueryOpts o = default)` → `bool`  ([Query builder](api/QueryBuilder.md))
 - `ui.RegexTester(UiText id, ref string pattern, int patternCap, ref string text, int textCap, ref RegexFlags flags, RegexTesterOpts o = default)` → `RegexTesterResult`  ([Regular expressions and the regex tester](api/RegularExpressionsAndTheRegexTester.md))
@@ -356,8 +353,10 @@ Hand-written, because the wrapper needs state a C call cannot carry; they are pa
 - `ui.Canvas(...)` — hand-written in `Ui/Ui.Draw.cs`
 - `ui.Clip(...)` — hand-written in `Ui/Ui.Draw.cs`
 - `ui.ColorOf(...)` — hand-written in `Ui/Ui.Frame.cs`
+- `ui.CreateImage(...)` — hand-written in `Ui/Ui.Images.cs`
 - `ui.DataGrid(...)` — hand-written in `Ui/Ui.DataGrid.cs`
 - `ui.DateToday(...)` — hand-written in `Ui/Ui.Overlays.cs`
+- `ui.DestroyImage(...)` — hand-written in `Ui/Ui.Images.cs`
 - `ui.DiffRows(...)` — hand-written in `Ui/Ui.Diff.cs`
 - `ui.Disabled(...)` — hand-written in `Ui/Ui.Frame.cs`
 - `ui.Dispose(...)` — hand-written in `Ui/Ui.DataGrid.cs`
@@ -372,6 +371,8 @@ Hand-written, because the wrapper needs state a C call cannot carry; they are pa
 - `ui.DrawRectGradient(...)` — hand-written in `Ui/Ui.Draw.cs`
 - `ui.DrawShadow(...)` — hand-written in `Ui/Ui.Draw.cs`
 - `ui.DrawText(...)` — hand-written in `Ui/Ui.Draw.cs`
+- `ui.DroppedFile(...)` — hand-written in `Ui/Ui.Overlays.cs`
+- `ui.FilterBar(...)` — hand-written in `Ui/Ui.BoolGroups.cs`
 - `ui.GetEnumerator(...)` — hand-written in `Ui/Ui.IdScopes.cs`
 - `ui.HexView(...)` — hand-written in `Ui/Ui.Hex.cs`
 - `ui.Icon(...)` — hand-written in `Ui/Ui.Overlays.cs`
@@ -381,12 +382,14 @@ Hand-written, because the wrapper needs state a C call cannot carry; they are pa
 - `ui.KeyPressed(...)` — hand-written in `Ui/Ui.Frame.cs`
 - `ui.LinesThatFit(...)` — hand-written in `Ui/Ui.Frame.cs`
 - `ui.LoadFont(...)` — hand-written in `Ui/Ui.Fonts.cs`
+- `ui.LoadImage(...)` — hand-written in `Ui/Ui.Images.cs`
 - `ui.LogView(...)` — hand-written in `Ui/Ui.Log.cs`
 - `ui.MakeId(...)` — hand-written in `Ui/Ui.Draw.cs`
 - `ui.MeasureText(...)` — hand-written in `Ui/Ui.Frame.cs`
 - `ui.MouseClicked(...)` — hand-written in `Ui/Ui.Frame.cs`
 - `ui.MouseDown(...)` — hand-written in `Ui/Ui.Frame.cs`
 - `ui.MoveNext(...)` — hand-written in `Ui/Ui.IdScopes.cs`
+- `ui.MultiSelect(...)` — hand-written in `Ui/Ui.BoolGroups.cs`
 - `ui.OtpInput(...)` — hand-written in `Ui/Ui.Overlays.cs`
 - `ui.PopClip(...)` — hand-written in `Ui/Ui.Draw.cs`
 - `ui.PushClip(...)` — hand-written in `Ui/Ui.Draw.cs`
@@ -404,6 +407,7 @@ Hand-written, because the wrapper needs state a C call cannot carry; they are pa
 - `ui.TagInput(...)` — hand-written in `Ui/Ui.Overlays.cs`
 - `ui.Terminal(...)` — hand-written in `Ui/Ui.Terminal.cs`
 - `ui.ToString(...)` — hand-written in `Ui/Ui.TreeTable.cs`
+- `ui.ToggleGroup(...)` — hand-written in `Ui/Ui.BoolGroups.cs`
 - `ui.ToggleTheme(...)` — hand-written in `Ui/Ui.Frame.cs`
 - `ui.TokenColor(...)` — hand-written in `Ui/Ui.Frame.cs`
 - `ui.TreeTable(...)` — hand-written in `Ui/Ui.TreeTable.cs`

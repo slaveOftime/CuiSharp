@@ -378,6 +378,20 @@ public class HeadlessApp : IDisposable
         return Frame();
     }
 
+    /// <summary>
+    /// Moves the pointer to (<paramref name="x"/>, <paramref name="y"/>) and scrolls there:
+    /// the wheel goes to whichever scroll area holds that point. The distance is in wheel
+    /// notches and a positive <paramref name="dy"/> scrolls up, as a real wheel does; a negative
+    /// one reaches for what is below the fold. Draws the frame that shows the new offset — a
+    /// spring-animated scroll needs a few <see cref="Frame(int)"/> calls to settle where it lands.
+    /// </summary>
+    public HeadlessApp ScrollAt(float x, float y, float dy, float dx = 0)
+    {
+        _surface.MouseMove(x, y);
+        _surface.Scroll(dy, dx);
+        return Frame();
+    }
+
     /// <summary>Presses the left button and draws the frame that sees the press.</summary>
     public HeadlessApp Press()
     {

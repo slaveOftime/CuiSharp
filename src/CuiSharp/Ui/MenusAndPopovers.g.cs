@@ -30,14 +30,14 @@ public static unsafe class MenusAndPopoversUiExtensions
         }
 
         /// <summary>What happened this frame: one of CUI_TOUR_*.</summary>
-        public int Tour(UiText id, ReadOnlySpan<TourStep> steps, ref int step, TourOpts o = default)
+        public TourAction Tour(UiText id, ReadOnlySpan<TourStep> steps, ref int step, TourOpts o = default)
         {
             var __steps = Utf8.AllocFrame<NativeTourStep>(steps.Length);
             for (int i = 0; i < steps.Length; i++) __steps[i] = steps[i].ToNative();
             var __opts = o.ToNative();
             var __result = Native.Tour(ui.Handle, Utf8.Get(id), (nint)__steps, (int)(steps.Length), ref step, in __opts);
             WidgetRecorder.Note(ui.Handle, "Tour", id);
-            return __result;
+            return (TourAction)__result;
         }
 
         /// <summary>cui_popover_open</summary>

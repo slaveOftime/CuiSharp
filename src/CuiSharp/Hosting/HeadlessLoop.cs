@@ -48,7 +48,7 @@ public static class HeadlessLoop
 
     private static readonly string[] Commands =
     [
-        "tree", "print", "find", "click", "type", "key", "focus", "move", "frame", "faults", "png", "quit",
+        "tree", "print", "find", "click", "type", "key", "focus", "move", "wheel", "frame", "pulse", "faults", "png", "quit",
     ];
 
     /// <summary>True when this process was asked to run without a window.</summary>
@@ -143,7 +143,7 @@ public static class HeadlessLoop
             {
                 Answer(sink, ok: true, Execute(app, command, argument));
             }
-            catch (Exception error) when (error is InvalidOperationException or ArgumentException or IOException or FormatException)
+            catch (Exception error) when (error is InvalidOperationException or ArgumentException or IOException or FormatException or OverflowException)
             {
                 Answer(sink, ok: false, error.Message);
             }
@@ -190,7 +190,9 @@ public static class HeadlessLoop
         "key" => Key(app, argument),
         "focus" => app.Focus().Print(),
         "move" => Move(app, argument),
-        "frame" => app.Frame(argument.Length == 0 ? 1 : int.Parse(argument, CultureInfo.InvariantCulture)).Print(),
+        "wheel" => Wheel(app, argument),
+        "frame" => Frame(app, argument),
+        "pulse" => Pulse(app, argument),
         "faults" => app.Faults.Count == 0 ? "" : string.Join("\n", app.Faults),
         "png" => SavePng(app, argument),
         _ => throw new InvalidOperationException($"Unknown command \"{command}\". Known: {string.Join(", ", Commands)}."),
@@ -200,6 +202,20 @@ public static class HeadlessLoop
     {
         WidgetTarget target = app.Find(argument);
         return $"{target.Kind} \"{target.Text}\" at {target.Rect}";
+    }
+
+    /// <summary>
+    /// Draws frames without printing the tree: a client that wants to load the app should not
+    /// have its measurement disturbed by the measuring — printing a two-thousand-node tree is
+    /// work no real frame does. The answer carries the frame count and the managed heap size,
+    /// so a sampler can watch allocation without touching the app.
+    /// </summary>
+    private static string Pulse(HeadlessApp app, string argument)
+    {
+        int frames = argument.Length == 0 ? 1 : int.Parse(argument, CultureInfo.InvariantCulture);
+        if (frames < 1) throw new ArgumentException($"pulse needs a count of at least 1, not {frames}.");
+        app.Frame(frames);
+        return $"{frames} heap {GC.GetTotalMemory(false)}";
     }
 
     private static string Click(HeadlessApp app, string argument)
@@ -250,6 +266,35 @@ public static class HeadlessLoop
         return app.MoveTo(
             float.Parse(parts[0], CultureInfo.InvariantCulture),
             float.Parse(parts[1], CultureInfo.InvariantCulture)).Print();
+    }
+
+    /// <summary>
+    /// Draws <paramref name="argument"/> frames and answers with the tree. One is the default;
+    /// a count of zero or less is a client bug, and saying so beats drawing nothing quietly.
+    /// </summary>
+    private static string Frame(HeadlessApp app, string argument)
+    {
+        int frames = argument.Length == 0 ? 1 : int.Parse(argument, CultureInfo.InvariantCulture);
+        if (frames < 1) throw new ArgumentException($"frame needs a count of at least 1, not {frames}.");
+        return app.Frame(frames).Print();
+    }
+
+    /// <summary>
+    /// Scrolls at a point: <c>wheel 120 400 -8</c> hovers the sidebar and turns the wheel eight
+    /// notches down. That is how a control below a scroll area's fold is reached before it can
+    /// be clicked; give the spring a <c>frame</c> or two to settle.
+    /// </summary>
+    private static string Wheel(HeadlessApp app, string argument)
+    {
+        string[] parts = argument.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length is < 3 or > 4)
+            throw new ArgumentException("wheel needs three numbers and an optional fourth: `wheel 120 400 -8 [0]`.", nameof(argument));
+
+        return app.ScrollAt(
+            float.Parse(parts[0], CultureInfo.InvariantCulture),
+            float.Parse(parts[1], CultureInfo.InvariantCulture),
+            float.Parse(parts[2], CultureInfo.InvariantCulture),
+            parts.Length == 4 ? float.Parse(parts[3], CultureInfo.InvariantCulture) : 0f).Print();
     }
 
     private static string SavePng(HeadlessApp app, string argument)

@@ -37,12 +37,10 @@ public static unsafe class MediaUiExtensions
         }
 
         /// <summary>cui_image_compare_ex</summary>
-        public bool ImageCompare(UiText id, ulong before, ulong after, out float pos, CompareOpts o = default)
+        public bool ImageCompare(UiText id, ulong before, ulong after, ref float pos, CompareOpts o = default)
         {
-            float __pos = 0;
             var __opts = o.ToNative();
-            var __result = Native.ImageCompare(ui.Handle, Utf8.Get(id), before, after, (nint)(&__pos), in __opts);
-            pos = __pos;
+            var __result = Native.ImageCompare(ui.Handle, Utf8.Get(id), before, after, ref pos, in __opts);
             WidgetRecorder.Note(ui.Handle, "ImageCompare", id);
             return __result != 0;
         }
