@@ -652,6 +652,7 @@ class CuiSharp.CuiRegex
   static String Slice(String, RegexMatch)
 class CuiSharp.CuiSharpNativeException : InvalidOperationException
 class CuiSharp.CuiSurface
+  IntPtr GetDrawData()
   String DroppedFile(Int32)
   Void BeginFrame(Single)
   Void Click(MouseButton)
@@ -686,9 +687,11 @@ class CuiSharp.CuiSurface
   property Int32 PixelWidth { get; }
   property Int32 Width { get; }
   property Nullable<RectF> LastDamage { get; }
+  property RendererKind Kind { get; }
   property Single Scale { get; }
   property Ui Ui { get; }
   static CuiSurface Create(Int32, Int32, Single, Int32, Theme, Accent)
+  static CuiSurface CreateGpu(Int32, Int32, in NativeRendererIface, Single, Theme, Accent)
 class CuiSharp.CuiTree
   static Int32 Sort(TreeNode[], Int32, Comparison<Int32>, String)
 class CuiSharp.CuiWindow
@@ -5128,6 +5131,9 @@ class CuiSharp.RegularExpressionsAndTheRegexTesterUiExtensions+<G>$2E78AC6C4589E
 enum CuiSharp.Renderer
   Auto
   OpenGL
+  Software
+enum CuiSharp.RendererKind
+  Gpu
   Software
 struct CuiSharp.RequestBarOpts
   field Boolean Loading

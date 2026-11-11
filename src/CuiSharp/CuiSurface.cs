@@ -14,8 +14,19 @@ public enum PixelFormat
     Bgra = 1,
 }
 
+/// <summary>Which rasterizer a surface uses to turn draw data into pixels.</summary>
+public enum RendererKind
+{
+    /// <summary>Software rasterizer into a pixel buffer (CPU, works everywhere).</summary>
+    Software = 0,
+
+    /// <summary>GPU renderer (WebGL2 in the browser) consuming the surface's draw data.</summary>
+    Gpu = 1,
+}
+
 /// <summary>
-/// A CUI context with no window, rendered by the built-in software rasterizer.
+/// A CUI context with no window, rendered by the built-in software rasterizer or handed to a
+/// GPU renderer as draw data (<see cref="CreateGpu"/>).
 /// <para>
 /// This is the piece that makes UI code testable: the same <see cref="CuiApp"/>
 /// draw callback can run here, produce real pixels, and be asserted on in a unit
@@ -53,13 +64,14 @@ public sealed unsafe partial class CuiSurface : IDisposable
     private CuiSurface? _previous;
     private FrameRecorder? _recorderBelow;
 
-    private CuiSurface(nint sw, nint ctx, int width, int height, float scale)
+    private CuiSurface(nint sw, nint ctx, int width, int height, float scale, RendererKind kind)
     {
         _sw = sw;
         _ctx = ctx;
         _width = width;
         _height = height;
         _scale = scale;
+        Kind = kind;
     }
 
     /// <summary>The native context, for the input surface this type also exposes.</summary>
@@ -83,6 +95,9 @@ public sealed unsafe partial class CuiSurface : IDisposable
 
     /// <summary>Device pixels per point.</summary>
     public float Scale => _scale;
+
+    /// <summary>Which rasterizer this surface uses.</summary>
+    public RendererKind Kind { get; }
 
     /// <summary>Framebuffer width in pixels.</summary>
     public int PixelWidth => (int)(_width * _scale);
@@ -143,10 +158,45 @@ public sealed unsafe partial class CuiSurface : IDisposable
         }
 
         Native.SetViewport(ctx, width, height, scale);
-        return new CuiSurface(sw, ctx, width, height, scale);
+        return new CuiSurface(sw, ctx, width, height, scale, RendererKind.Software);
     }
 
-    /// <summary>Starts a frame. Call <see cref="EndFrame"/> when the UI is built.</summary>
+    /// <summary>Creates a windowless context for a GPU renderer (WebGL2 in the browser).</summary>
+    /// <remarks>
+    /// No rasterizer runs inside the process: the surface produces <c>cui_draw_data</c> and the
+    /// host draws it — a JS WebGL2 renderer reads <see cref="GetDrawData"/> straight out of wasm
+    /// memory. <paramref name="textures"/> must supply the texture callbacks (create, update,
+    /// destroy), because CUI uploads its font atlas through them on the first text it draws.
+    /// The desktop GL renderer is a different path: use a window, not this method.
+    /// </remarks>
+    public static CuiSurface CreateGpu(
+        int width,
+        int height,
+        in NativeRendererIface textures,
+        float scale = 1f,
+        Theme theme = Theme.Light,
+        Accent accent = Accent.Neutral)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(width, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(height, 1);
+        if (textures.TextureCreate == 0 || textures.TextureUpdate == 0 || textures.TextureDestroy == 0)
+        {
+            throw new ArgumentException("a GPU surface needs texture create, update and destroy callbacks");
+        }
+
+        var desc = new NativeCtxDesc
+        {
+            Renderer = textures,
+            Theme = theme,
+            Accent = accent,
+        };
+
+        nint ctx = Native.Create(in desc);
+        if (ctx == 0) throw new InvalidOperationException("cui_create failed.");
+
+        Native.SetViewport(ctx, width, height, scale);
+        return new CuiSurface(0, ctx, width, height, scale, RendererKind.Gpu);
+    }
     /// <remarks>
     /// <see cref="EndFrame"/> runs layout and paint, so by the time the next
     /// frame starts the previous one's deferred canvas callbacks and arena
@@ -218,6 +268,7 @@ public sealed unsafe partial class CuiSurface : IDisposable
     {
         ArgumentNullException.ThrowIfNull(pixels);
         ObjectDisposedException.ThrowIf(_ctx == 0, this);
+        if (_sw == 0) throw new InvalidOperationException("a GPU surface has no pixel buffer; draw the draw data instead.");
 
         int w = PixelWidth, h = PixelHeight;
         if (pixels.Length < w * h * 4)
@@ -246,6 +297,7 @@ public sealed unsafe partial class CuiSurface : IDisposable
         set
         {
             if (_ctx == 0 || _incremental == value) return;
+            if (_sw == 0) throw new InvalidOperationException("incremental rendering is a software-renderer feature.");
             _incremental = value;
             Native.SwSetIncremental(_sw, (byte)(value ? 1 : 0));
         }
@@ -256,7 +308,7 @@ public sealed unsafe partial class CuiSurface : IDisposable
     {
         get
         {
-            if (_ctx == 0) return null;
+            if (_ctx == 0 || _sw == 0) return null;
             int x = 0, y = 0, w = 0, h = 0;
             return Native.SwLastDamage(_sw, ref x, ref y, ref w, ref h) == 0 ? null : new RectF(x, y, w, h);
         }
@@ -311,6 +363,14 @@ public sealed unsafe partial class CuiSurface : IDisposable
             return dd == null ? 0 : dd->CommandCount;
         }
     }
+
+    /// <summary>The draw data the last frame produced, for a GPU renderer.</summary>
+    /// <remarks>
+    /// The pointer and the memory behind it are valid until the next <see cref="BeginFrame"/>.
+    /// A GPU renderer reads vertices, indices, commands and the font atlas id straight out of
+    /// this structure — the same <c>cui_draw_data</c> the built-in renderers consume.
+    /// </remarks>
+    public nint GetDrawData() => Native.GetDrawData(_ctx);
 
     /// <inheritdoc />
     public void Dispose()

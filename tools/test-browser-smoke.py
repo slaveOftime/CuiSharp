@@ -156,13 +156,21 @@ def run(site: Path, timeout_seconds: float) -> None:
         expression = """(() => {
           const canvas = document.querySelector('#surface');
           const status = document.querySelector('#status')?.textContent ?? '';
-          if (!canvas || !canvas.width || !canvas.height) return JSON.stringify({status, nonBackground: 0});
-          const data = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+          const kind = document.documentElement.dataset.renderer;
+          if (!kind || !canvas || !canvas.width || !canvas.height) return JSON.stringify({status, nonBackground: 0});
+          let data;
+          if (kind === '2d') data = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+          else {
+            const gl = canvas.getContext('webgl2');
+            if (!gl) return JSON.stringify({status, nonBackground: -1, error: 'no webgl2 context'});
+            data = new Uint8Array(canvas.width * canvas.height * 4);
+            gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, data);
+          }
           let nonBackground = 0;
           for (let i = 0; i < data.length; i += 32) {
             if (data[i] !== 248 || data[i + 1] !== 248 || data[i + 2] !== 248) nonBackground++;
           }
-          return JSON.stringify({status, width: canvas.width, height: canvas.height, nonBackground});
+          return JSON.stringify({status, width: canvas.width, height: canvas.height, nonBackground, renderer: kind});
         })()"""
 
         deadline = time.monotonic() + timeout_seconds
