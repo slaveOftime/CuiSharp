@@ -172,6 +172,30 @@ internal sealed class HeadlessClient : IDisposable
     /// <summary>The frame size the app reported, e.g. <c>1080x720</c>.</summary>
     internal string Size { get; private set; } = "?";
 
+    /// <summary>
+    /// What the app's process costs right now: the CPU time it has burned in total, and the
+    /// memory it holds. A sampler reads it twice around a window of work and the difference is
+    /// what that work cost.
+    /// </summary>
+    /// <exception cref="ToolException">The app this was asked about has already exited.</exception>
+    internal (TimeSpan Cpu, long WorkingSetBytes, long PrivateBytes) Sample()
+    {
+        if (_process is not { } process)
+            throw new ToolException("Sampling needs an app this tool started, not one attached to.");
+
+        try
+        {
+            process.Refresh();
+            return (process.TotalProcessorTime, process.WorkingSet64, process.PrivateMemorySize64);
+        }
+        catch (InvalidOperationException)
+        {
+            // Between the first sample and the second the app may have died, and a walk that
+            // reports a stack trace for it says less than the app's own stderr does.
+            throw new ToolException($"The app exited before it could be sampled.{Tail()}");
+        }
+    }
+
     /// <summary>Sends one command and reads its answer.</summary>
     internal Answer Send(string command, CancellationToken cancellation = default)
     {
@@ -182,7 +206,10 @@ internal sealed class HeadlessClient : IDisposable
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
         timeout.CancelAfter(AnswerTimeout);
         string header = ReadHeader(timeout.Token);
-        bool ok = TryParseHeader(header, out int length);
+        // The status is in the header, not in whether it parsed: CUI-ERR is a well-formed answer
+        // that says the command failed, and reading it as success prints an error to stdout and
+        // exits 0, which no script can tell from a good run.
+        TryParseHeader(header, out bool ok, out int length);
         string payload = ReadExactly(length, timeout.Token);
         // The answer ends with a newline so a person reading the raw stream sees one answer per
         // block; consume it or the next header would look empty.
@@ -202,15 +229,14 @@ internal sealed class HeadlessClient : IDisposable
         }
     }
 
-    internal static bool IsHeader(string line) => TryParseHeader(line, out _);
+    /// <summary>Whether <paramref name="line"/> is a header at all, whatever it reports.</summary>
+    internal static bool IsHeader(string line) => TryParseHeader(line, out _, out _);
 
     /// <summary>
     /// Whether <paramref name="line"/> is a header, and what it promises. A header that names more
     /// bytes than the protocol can carry is an error rather than a header: the alternative is
     /// allocating whatever a broken child asked for.
     /// </summary>
-    internal static bool TryParseHeader(string line, out int length) => TryParseHeader(line, out _, out length);
-
     internal static bool TryParseHeader(string line, out bool ok, out int length)
     {
         ok = false;
