@@ -468,3 +468,57 @@ public enum Font
     Mono = 3,
     Icons = 4,
 }
+
+/// <summary>CUI_TOUR_NONE</summary>
+public enum TourAction
+{
+    None = 0,
+    Next = 1,
+    Back = 2,
+    Done = 3,
+    Skipped = 4,
+}
+
+/// <summary>CUI_COMMENT_LIKE</summary>
+[System.Flags]
+public enum CommentEvents
+{
+    None = 0,
+    Like = 1,
+    Reply = 2,
+}
+
+/// <summary>CUI_PLAYER_TOGGLE</summary>
+[System.Flags]
+public enum PlayerEvents
+{
+    None = 0,
+    Toggle = 1,
+    Prev = 2,
+    Next = 4,
+    Seek = 8,
+}
+
+/// <summary>CUI_RESPONSE_COPY</summary>
+[System.Flags]
+public enum ResponseEvents
+{
+    None = 0,
+    Copy = 1,
+    Regenerate = 2,
+    Up = 4,
+    Down = 8,
+    Share = 16,
+}
+
+/// <summary>CUI_COMPOSER_SEND</summary>
+[System.Flags]
+public enum ComposerEvents
+{
+    None = 0,
+    Send = 1,
+    Stop = 2,
+    Attach = 4,
+    Remove = 8,
+    Model = 16,
+}

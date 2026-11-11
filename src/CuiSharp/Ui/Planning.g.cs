@@ -34,43 +34,46 @@ public static unsafe class PlanningUiExtensions
         }
 
         /// <summary>cui_kanban_column_begin_ex</summary>
-        public OpenScope KanbanColumn(UiText title, int cardCount, KanbanColumnOpts o = default)
+        public LayoutScope KanbanColumn(UiText title, int cardCount, KanbanColumnOpts o = default)
         {
             var __opts = o.ToNative();
             var __result = Native.KanbanColumnBegin(ui.Handle, Utf8.Get(title), cardCount, in __opts);
-            return new OpenScope(ui.Handle, &Native.KanbanColumnEnd, "KanbanColumn", title, __result != 0);
+            return new LayoutScope(ui.Handle, &Native.KanbanColumnEnd, "KanbanColumn", title);
         }
 
-        /// <summary>Draws the body only when the container opens, and closes it on exceptions.</summary>
-        public void KanbanColumn(UiText title, int cardCount, DrawFn body, KanbanColumnOpts o = default)
+        /// <summary>Always opens the container; clicked reports its interaction result.</summary>
+        public LayoutScope KanbanColumn(UiText title, int cardCount, KanbanColumnOpts o, out bool clicked)
         {
-            ArgumentNullException.ThrowIfNull(body);
-            using var scope = ui.KanbanColumn(title, cardCount, o);
-            if (scope) body(ui);
+            var __opts = o.ToNative();
+            clicked = Native.KanbanColumnBegin(ui.Handle, Utf8.Get(title), cardCount, in __opts) != 0;
+            return new LayoutScope(ui.Handle, &Native.KanbanColumnEnd, "KanbanColumn", title);
         }
 
         /// <summary>cui_kanban_card_begin</summary>
-        public OpenScope KanbanCard(int cardId)
+        public LayoutScope KanbanCard(int cardId)
         {
             var __result = Native.KanbanCardBegin(ui.Handle, cardId);
-            return new OpenScope(ui.Handle, &Native.KanbanCardEnd, "KanbanCard", null, __result != 0);
+            return new LayoutScope(ui.Handle, &Native.KanbanCardEnd, "KanbanCard", null);
         }
 
-        /// <summary>Draws the body only when the container opens, and closes it on exceptions.</summary>
-        public void KanbanCard(int cardId, DrawFn body)
+        /// <summary>Always opens the container; clicked reports its interaction result.</summary>
+        public LayoutScope KanbanCard(int cardId, out bool clicked)
         {
-            ArgumentNullException.ThrowIfNull(body);
-            using var scope = ui.KanbanCard(cardId);
-            if (scope) body(ui);
+            clicked = Native.KanbanCardBegin(ui.Handle, cardId) != 0;
+            return new LayoutScope(ui.Handle, &Native.KanbanCardEnd, "KanbanCard", null);
         }
 
         /// <summary>* left to right in any interface: see cui__keep_ltr</summary>
-        public int WeekCalendar(UiText id, Date weekStart, ReadOnlySpan<CalendarEvent> events, WeekOpts o = default)
+        public int WeekCalendar(UiText id, Date weekStart, Span<CalendarEvent> events, WeekOpts o = default)
         {
             var __events = Utf8.AllocFrame<NativeCalEvent>(events.Length);
             for (int i = 0; i < events.Length; i++) __events[i] = events[i].ToNative();
             var __opts = o.ToNative();
             var __result = Native.WeekCalendar(ui.Handle, Utf8.Get(id), UiMarshal.ToNative(weekStart), (nint)__events, (int)(events.Length), in __opts);
+            if (__result >= 0)
+            {
+                for (int i = 0; i < events.Length; i++) events[i] = CalendarEvent.FromNative(__events[i]);
+            }
             WidgetRecorder.Note(ui.Handle, "WeekCalendar", id);
             return __result;
         }
@@ -95,12 +98,16 @@ public static unsafe class PlanningUiExtensions
         }
 
         /// <summary>* left to right in any interface: see cui__keep_ltr</summary>
-        public int Gantt(UiText id, ReadOnlySpan<GanttTask> tasks, Date origin, int days, GanttOpts o = default)
+        public int Gantt(UiText id, Span<GanttTask> tasks, Date origin, int days, GanttOpts o = default)
         {
             var __tasks = Utf8.AllocFrame<NativeGanttTask>(tasks.Length);
             for (int i = 0; i < tasks.Length; i++) __tasks[i] = tasks[i].ToNative();
             var __opts = o.ToNative();
             var __result = Native.Gantt(ui.Handle, Utf8.Get(id), (nint)__tasks, (int)(tasks.Length), UiMarshal.ToNative(origin), days, in __opts);
+            if (__result >= 0)
+            {
+                for (int i = 0; i < tasks.Length; i++) tasks[i] = GanttTask.FromNative(__tasks[i]);
+            }
             WidgetRecorder.Note(ui.Handle, "Gantt", id);
             return __result;
         }

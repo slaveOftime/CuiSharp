@@ -17,20 +17,24 @@ public class ProtocolBoundsTests
         // The old parser took the announced length on trust and allocated it.
         var tooBig = $"CUI-OK {HeadlessClient.MaxPayloadBytes + 1}";
 
-        var error = Assert.Throws<ToolException>(() => HeadlessClient.TryParseHeader(tooBig, out _));
+        var error = Assert.Throws<ToolException>(() => HeadlessClient.TryParseHeader(tooBig, out _, out _));
         Assert.Contains("bytes", error.Message, StringComparison.Ordinal);
     }
 
     [Fact]
     public void TheLongestCarryableAnswerIsStillAHeader()
     {
-        Assert.True(HeadlessClient.TryParseHeader($"CUI-OK {HeadlessClient.MaxPayloadBytes}", out int length));
+        Assert.True(HeadlessClient.TryParseHeader($"CUI-OK {HeadlessClient.MaxPayloadBytes}", out bool ok, out int length));
+        Assert.True(ok);
         Assert.Equal(HeadlessClient.MaxPayloadBytes, length);
 
         // Anything that is not a number is the app talking, not protocol, which is not an error.
-        Assert.False(HeadlessClient.TryParseHeader("CUI-OK later", out _));
-        Assert.False(HeadlessClient.TryParseHeader("Starting up…", out _));
-        Assert.True(HeadlessClient.TryParseHeader("CUI-ERR 0", out _));
+        Assert.False(HeadlessClient.TryParseHeader("CUI-OK later", out _, out _));
+        Assert.False(HeadlessClient.TryParseHeader("Starting up…", out _, out _));
+
+        // A refusal is a header too, and it says so: false, not merely "parsed".
+        Assert.True(HeadlessClient.TryParseHeader("CUI-ERR 0", out bool refused, out _));
+        Assert.False(refused);
     }
 
     [Fact]
@@ -51,6 +55,23 @@ public class ProtocolBoundsTests
         Assert.Equal("ok", answer.Payload);
         string line = Assert.Single(relayed);
         Assert.Equal(HeadlessClient.MaxLineBytes, line.Length);
+    }
+
+    [Fact]
+    public void ARefusedCommandIsAnAnswerThatSaysSoNotASuccess()
+    {
+        // The regression: Send took the "is this a header" answer as the status, so every CUI-ERR
+        // became Ok with the error text as its payload — the tool printed it to stdout and exited
+        // 0, which a script cannot tell from a good run.
+        var stream = new Feed(
+            Encoding.UTF8.GetBytes("CUI-READY 800 600" + (char)10),
+            Encoding.UTF8.GetBytes("CUI-ERR 21" + (char)10 + "Unknown command \"dance\"" + (char)10));
+
+        using var client = HeadlessClient.Attach(stream, new MemoryStream());
+        Answer answer = client.Send("dance");
+
+        Assert.False(answer.Ok);
+        Assert.Contains("Unknown command", answer.Payload, StringComparison.Ordinal);
     }
 
     [Fact]

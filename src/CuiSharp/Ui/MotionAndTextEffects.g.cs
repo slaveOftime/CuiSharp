@@ -123,25 +123,23 @@ public static unsafe class MotionAndTextEffectsUiExtensions
         }
 
         /// <summary>cui_waveform_ex</summary>
-        public bool Waveform(UiText id, ReadOnlySpan<float> peaks, out float progress, WaveformOpts o = default)
+        public bool Waveform(UiText id, ReadOnlySpan<float> peaks, ref float progress, WaveformOpts o = default)
         {
-            float __progress = 0;
             var __opts = o.ToNative();
-            var __result = Native.Waveform(ui.Handle, Utf8.Get(id), UiMarshal.Values<float>(peaks), (int)(peaks.Length), (nint)(&__progress), in __opts);
-            progress = __progress;
+            var __result = Native.Waveform(ui.Handle, Utf8.Get(id), UiMarshal.Values<float>(peaks), (int)(peaks.Length), ref progress, in __opts);
             WidgetRecorder.Note(ui.Handle, "Waveform", id);
             return __result != 0;
         }
 
         /// <summary>cui_now_playing_ex</summary>
-        public int NowPlaying(UiText id, ref NowPlayingState np, NowPlayingOpts o = default)
+        public PlayerEvents NowPlaying(UiText id, ref NowPlayingState np, NowPlayingOpts o = default)
         {
             var __np = np.ToNative();
             var __opts = o.ToNative();
             var __result = Native.NowPlaying(ui.Handle, Utf8.Get(id), ref __np, in __opts);
             np = NowPlayingState.FromNative(__np);
             WidgetRecorder.Note(ui.Handle, "NowPlaying", id);
-            return __result;
+            return (PlayerEvents)__result;
         }
 
     }

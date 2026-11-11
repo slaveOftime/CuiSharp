@@ -25,7 +25,7 @@ cui_confirm_button_ex
 ## `Reactions`
 
 ```csharp
-public int Reactions(UiText id, ReadOnlySpan<Reaction> items)
+public int Reactions(UiText id, Span<Reaction> items)
 ```
 
 cui_reactions
@@ -77,14 +77,6 @@ public bool ThemeToggle()
 ```
 
 Sun and moon icon button that toggles the theme with a morph.
-
-## `ToggleGroup`
-
-```csharp
-public bool ToggleGroup(UiText id, ReadOnlySpan<string> labels, ref bool values, ToggleGroupOpts o = default)
-```
-
-cui_toggle_group_ex
 
 ## `UserMenu`
 

@@ -14,7 +14,7 @@ public static unsafe class MoreInputsUiExtensions
     extension(Ui ui)
     {
         /// <summary>cui_inline_edit_ex</summary>
-        public int InlineEdit(UiText id, ref string buf, int cap, InlineEditOpts o = default)
+        public int InlineEdit(UiText id, ref string buf, int cap = 256, InlineEditOpts o = default)
         {
             var __bufSlot = ui.RentText(Native.MakeId(ui.Handle, Utf8.Get(id)) ^ 0x7d0ae244u, ref buf, (int)cap);
             var __opts = o.ToNative();

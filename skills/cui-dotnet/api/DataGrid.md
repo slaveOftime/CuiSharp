@@ -54,14 +54,6 @@ public bool DataGridRow(int row)
 
 cui_data_grid_row
 
-## `FilterBar`
-
-```csharp
-public bool FilterBar(UiText id, ReadOnlySpan<FilterField> fields, ref uint selected, ref string search, int searchCap)
-```
-
-cui_filter_bar
-
 ## `TreeCell`
 
 ```csharp

@@ -1,4 +1,4 @@
-// Page 9 of 9: line, bar, donut charts and gauges.
+// Page 9 of 28: line, bar, donut charts and gauges.
 // Part of the CuiSharp.Gallery sample: Charts
 using CuiSharp;
 

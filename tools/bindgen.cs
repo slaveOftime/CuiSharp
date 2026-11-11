@@ -459,6 +459,12 @@ sealed class Overrides
     /// <summary>Functions that return a C string, which the wrapper copies into a managed one.</summary>
     public Dictionary<string, ReasonOverride> StringResults { get; set; } = new();
 
+    /// <summary>
+    /// Functions whose <c>int</c> return is a named enum: the wrapper casts it, so a caller reads
+    /// <c>(events &amp; PlayerEvents.Next) != 0</c> instead of comparing against a C constant.
+    /// </summary>
+    public Dictionary<string, NameOverride> ReturnTypes { get; set; } = new();
+
     /// <summary>`char * buf` parameters that become a `ref string` text field.</summary>
     public Dictionary<string, TextFieldOverride> TextFields { get; set; } = new();
 
@@ -713,9 +719,13 @@ sealed class HeaderReader(string includeDir, string clangInclude, Overrides over
             foreach (string text in extra)
             {
                 int eq = text.IndexOf('=');
-                values.Add(eq < 0
+                var member = eq < 0
                     ? new EnumValueModel(text, text, "")
-                    : new EnumValueModel(text[..eq].Trim(), text[..eq].Trim(), text[(eq + 1)..].Trim()));
+                    : new EnumValueModel(text[..eq].Trim(), text[..eq].Trim(), text[(eq + 1)..].Trim());
+                // A named zero is the "nothing set" member of a flags enum: it reads first,
+                // the way Mods and every other C# flag type in the binding declares it.
+                if (member.Value == "0") values.Insert(0, member);
+                else values.Add(member);
             }
         }
 
@@ -1051,7 +1061,13 @@ public static CXType Strip(CXType type)
         // checkbox takes bool *value and then int option.
         // An array is named in the plural. A trailing `_count` is not proof: pagination
         // takes `int *page, int page_count`, where the second is a total, not a length.
-        bool plural = name.EndsWith('s') && !name.EndsWith("opts", StringComparison.Ordinal);
+        // An array is also const, because the widget only reads it. A non-const pointer to
+        // one scalar is a value the widget moves: `float *pos` and `float *progress` end in
+        // an s and are still one number, not a list.
+        bool scalar = inner.kind is CXTypeKind.CXType_Float or CXTypeKind.CXType_Double
+            or CXTypeKind.CXType_Int or CXTypeKind.CXType_UInt;
+        bool plural = name.EndsWith('s') && !name.EndsWith("opts", StringComparison.Ordinal)
+            && !(scalar && !isConst);
         if (plural || overrides.ArrayParams.ContainsKey(name + "@" + CurrentFunction)) return "nint";
 
         if (structNames.TryGetValue(TagName(inner) ?? "", out string? structName))
@@ -1484,8 +1500,10 @@ sealed class Idiomatic
             string function = key[..dot], param = key[(dot + 1)..];
             if (!_api.Functions.Any(f => f.CName == function))
                 throw new InvalidOperationException($"Unknown function for optional injected parameter: {key}");
-            bool injected = _overrides.InjectedFields.Keys.Any(k => k[(k.LastIndexOf('.') + 1)..] == param);
-            if (!injected) throw new InvalidOperationException($"Optional injected parameter needs a matching injected field: {key}");
+            // The key names the parameter the wrapper emits, not the C field: an injection that
+            // renames (`param`) or whose record camels differently is matched by that name.
+            if (!_overrides.InjectedFields.Any(e => ComponentParamName(e.Key, e.Value) == param))
+                throw new InvalidOperationException($"Optional injected parameter needs a matching injected field: {key}");
         }
         foreach (var (key, value) in _overrides.ParameterDefaults)
         {
@@ -1589,6 +1607,14 @@ sealed class Idiomatic
             RequireReason(key, value.Why);
             if (!_api.Functions.Any(f => f.CName == key)) throw new InvalidOperationException($"Unknown function: {key}");
         }
+        foreach (var (key, value) in _overrides.ReturnTypes)
+        {
+            RequireReason(key, value.Why);
+            var function = _api.Functions.SingleOrDefault(f => f.CName == key)
+                ?? throw new InvalidOperationException($"Unknown function: {key}");
+            // The result is cast, so it has to be a value the cast can apply to.
+            if (function.ReturnType.Kind != "Int") throw new InvalidOperationException($"Return type override needs an int return: {key}");
+        }
         foreach (var (key, value) in _overrides.ExcludedFunctions)
         {
             if (!_api.Functions.Any(f => f.CName == key)) throw new InvalidOperationException($"Unknown function: {key}");
@@ -1662,6 +1688,15 @@ sealed class Idiomatic
     {
         if (string.IsNullOrWhiteSpace(why)) throw new InvalidOperationException($"Override {key} needs a why.");
     }
+
+    /// <summary>
+    /// The parameter name an injected option field becomes in the wrapper: the name it was given,
+    /// or the camel-cased record it is stored in, which is what <see cref="WidgetPlan"/> emits.
+    /// </summary>
+    private static string ComponentParamName(string fieldKey, InjectedField field) =>
+        field.Param ?? (field.Record is { } record
+            ? Names.Camel(record)
+            : fieldKey[(fieldKey.LastIndexOf('.') + 1)..]);
 
     private OptionPlan PlanOption(StructModel str)
     {
@@ -2098,6 +2133,13 @@ sealed class Idiomatic
             // managed string that outlives the frame.
             returns = "string?";
             returnStatement = "return Marshal.PtrToStringUTF8(__result);";
+        }
+        else if (_overrides.ReturnTypes.TryGetValue(function.CName, out var typed))
+        {
+            // The int carries flag bits or an action code: name the type so the call site does
+            // not have to cast, and so the constants travel with the return value.
+            returns = typed.Name;
+            returnStatement = $"return ({typed.Name})__result;";
         }
         else
         {
@@ -2587,7 +2629,7 @@ sealed class Idiomatic
                     .Where(i => _overrides.OptionalInjectedParams.ContainsKey(w.Native.CName + "." + i.Param)).ToArray();
                 if (optional.Length > 0)
                 {
-                    Summary(sb, $"Same as the overload with {string.Join(", ", optional.Select(i => "ref " + i.Param))}, but reports nothing back: the state pointer is null, so the widget keeps no sort/interaction state.", "        ");
+                    Summary(sb, $"Same as the overload with {string.Join(", ", optional.Select(i => "ref " + i.Param))}, but reports nothing back: the state pointer is null, so the widget stores no state the caller could read.", "        ");
                     var reduced = w.Params.Where(p => optional.All(i => i.Param != p.Name));
                     // The options line carries the address of the injected record, so it
                     // has to be rewritten to a null pointer, not just kept as-is.
@@ -2602,6 +2644,9 @@ sealed class Idiomatic
                     if (w.Native.CsReturn == "void") sb.AppendLine("            " + reducedCall + ";");
                     else sb.AppendLine($"            var __result = {reducedCall};");
                     foreach (string line in reducedWriteBack) sb.AppendLine("            " + line);
+                    // The optional overload draws the same widget, so it has to be as findable as
+                    // the full one: a test that clicks it must see the id it was drawn with.
+                    if (NoteLine(w) is { } reducedNote) sb.AppendLine("            " + reducedNote);
                     if (w.End is not null)
                         sb.AppendLine($"            return {ScopeNew(w, "__result", w.Return)};");
                     else if (w.ReturnStatement is { } reducedStatement) sb.AppendLine("            " + reducedStatement);

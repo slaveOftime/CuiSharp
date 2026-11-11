@@ -35,9 +35,16 @@ internal static class Cli
           key <name>          press a key, e.g. `key Tab`
           focus               report that the window has focus (needed before typing)
           move <x> <y>        put the pointer somewhere without clicking (hover, tooltips)
+          wheel <x> <y> <dy> [dx]  scroll at a point, in wheel notches (negative dy goes down)
           frame [count]       draw more frames, then print the tree
+          pulse [count]       draw frames without printing the tree (answers: count, heap bytes)
           faults              what the app threw while drawing, if anything
           png <path>          save the last frame as a PNG
+
+        Commands the tool answers itself:
+          dwell <seconds>     keep the app drawing for that long, then answer with one STATS
+                              line: wall and cpu milliseconds, frames, fps, and the app's
+                              heap, working-set and private bytes
 
         Options:
           -p, --project <path>  the app to run (a project file or its directory). Default: here
@@ -77,6 +84,11 @@ internal static class Cli
 
             if (options.Streaming) return Relay(client, input, output, error);
 
+            // dwell is the one command the tool answers itself, and it reads the same in a
+            // session as it does on the command line: `dotnet cui dwell 3`.
+            if (TryReadDwell(options.Line, out double seconds))
+                return Dwell(client, output, error, seconds) ? 0 : 1;
+
             Answer answer = client.Send(options.Line);
             if (!answer.Ok)
             {
@@ -104,6 +116,12 @@ internal static class Cli
         while (source.ReadLine() is { } line)
         {
             if (line.Trim().Length == 0) continue;
+            if (TryReadDwell(line.Trim(), out double seconds))
+            {
+                if (!Dwell(client, output, error, seconds)) return 1;
+                continue;
+            }
+
             Answer answer = client.Send(line.Trim());
             if (!answer.Ok)
             {
@@ -115,6 +133,73 @@ internal static class Cli
         }
 
         return 0;
+    }
+
+    /// <summary>
+    /// Recognises <c>dwell 3</c> — the one command the tool answers itself. Parsing is a
+    /// separate method so the grammar is testable without an app to dwell in.
+    /// </summary>
+    internal static bool TryReadDwell(string line, out double seconds)
+    {
+        seconds = 0;
+        // The char array is written out because StringSplitOptions is an enum with an int
+        // base: `Split(' ', '\t', options)` would bind to Split(char, int, options) and turn
+        // the options into a maximum count.
+        string[] parts = line.Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length != 2 || parts[0] != "dwell") return false;
+        if (!double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out seconds))
+            throw new ToolException($"dwell needs a number of seconds, not \"{parts[1]}\".");
+
+        // A dwell of zero or less measures nothing, and Infinity or NaN — which TryParse accepts —
+        // would either spin forever or end the walk's table with a row of zeros. Both are typos.
+        if (!double.IsFinite(seconds) || seconds <= 0)
+            throw new ToolException($"dwell needs a positive number of seconds, not \"{parts[1]}\".");
+
+        return true;
+    }
+
+    /// <summary>
+    /// Holds a page on screen for a while with the app really drawing: idle, the app only waits
+    /// for the next command, so a dwell that sent nothing would measure a sleeping process. It
+    /// ticks <c>pulse</c> until the window is through — pulse draws without printing the tree,
+    /// so the measurement does not pay for serialising the very interface it is measuring — and
+    /// answers with what the process burned between the first sample and the last.
+    /// </summary>
+    private static bool Dwell(HeadlessClient client, TextWriter output, TextWriter error, double seconds)
+    {
+        const int perPulse = 240;
+        var before = client.Sample();
+        long heap = 0;
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        long frames = 0;
+        while (watch.Elapsed.TotalSeconds < seconds)
+        {
+            Answer answer = client.Send($"pulse {perPulse}");
+            if (!answer.Ok)
+            {
+                error.WriteLine(answer.Payload);
+                return false;
+            }
+
+            frames += perPulse;
+            // The pulse carries the app's own view of its managed heap: "240 heap 458752".
+            int at = answer.Payload.IndexOf("heap ", StringComparison.Ordinal);
+            if (at >= 0 && long.TryParse(answer.Payload[(at + 5)..].Trim(), out long bytes)) heap = bytes;
+        }
+
+        watch.Stop();
+        (TimeSpan Cpu, long WorkingSetBytes, long PrivateBytes) after = client.Sample();
+        output.WriteLine(string.Format(
+            CultureInfo.InvariantCulture,
+            "STATS wall {0} cpu {1} frames {2} fps {3:0.0} heap {4} ws {5} private {6}",
+            watch.ElapsedMilliseconds,
+            Math.Round((after.Cpu - before.Cpu).TotalMilliseconds),
+            frames,
+            frames / Math.Max(watch.Elapsed.TotalSeconds, 0.001),
+            heap,
+            after.WorkingSetBytes,
+            after.PrivateBytes));
+        return true;
     }
 
     /// <summary>

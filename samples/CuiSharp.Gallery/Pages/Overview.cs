@@ -1,4 +1,4 @@
-// Page 1 of 9: metrics, a form card and a team card.
+// Page 1 of 28: metrics, a form card and a team card.
 // Part of the CuiSharp.Gallery sample: Overview
 using CuiSharp;
 

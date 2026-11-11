@@ -13,16 +13,37 @@
   "extraEnumMembers": {
     "cui_mod": [
       "Primary = Ctrl"
+    ],
+    "CUI_PLAYER_TOGGLE": [
+      "None = 0"
+    ],
+    "CUI_COMPOSER_SEND": [
+      "None = 0"
+    ],
+    "CUI_RESPONSE_COPY": [
+      "None = 0"
+    ],
+    "CUI_COMMENT_LIKE": [
+      "None = 0"
     ]
   },
   "flagsEnums": [
-    "cui_mod"
+    "cui_mod",
+    "CUI_PLAYER_TOGGLE",
+    "CUI_COMPOSER_SEND",
+    "CUI_RESPONSE_COPY",
+    "CUI_COMMENT_LIKE"
   ],
   "skipFunctions": [],
   "skipStructs": [],
   "suppressGcTransition": [],
   "anonymousEnumNames": {
-    "CUI_FONT_BODY": "Font"
+    "CUI_FONT_BODY": "Font",
+    "CUI_PLAYER_TOGGLE": "PlayerEvents",
+    "CUI_COMPOSER_SEND": "ComposerEvents",
+    "CUI_RESPONSE_COPY": "ResponseEvents",
+    "CUI_COMMENT_LIKE": "CommentEvents",
+    "CUI_TOUR_NONE": "TourAction"
   },
   "typeAliases": {
     "cui_font": {
@@ -60,7 +81,8 @@
     "cui_chat_opts.markdown_result": {
       "type": "nint",
       "why": "The markdown view's last result, updated by the widget; the wrapper owns it for the call and writes it back.",
-      "record": "MarkdownResult"
+      "record": "MarkdownResult",
+      "param": "markdownResult"
     },
     "cui_timeline_editor_opts.view": {
       "type": "nint",
@@ -76,6 +98,9 @@
   "optionalInjectedParams": {
     "cui_table_begin_ex.sort": {
       "why": "Sorting is optional: a table with no sortable columns should not need a throwaway cui_table_sort. Passing a null pointer disables header sorting natively (cui_data.c only reads o->sort when a column is sortable)."
+    },
+    "cui_chat_message_ex.markdownResult": {
+      "why": "The markdown view's links and task toggles are only wanted when the bubble renders markdown: with a null result pointer native reports nothing and the common call stays `ui.ChatMessage(text, opts)`."
     }
   },
   "parameterDefaults": {
@@ -126,6 +151,10 @@
     "cui_request_bar_ex.cap": {
       "value": "2048",
       "why": "Room for a URL with a full query, so the common call reads `ui.RequestBar(id, ref method, ref url)`."
+    },
+    "cui_inline_edit_ex.cap": {
+      "value": "256",
+      "why": "An editable label is short, so the common call reads `ui.InlineEdit(id, ref text)`."
     }
   },
   "parameterStorage": {
@@ -222,6 +251,16 @@
       "end": "cui_card_end",
       "clicked": true,
       "why": "The bool return reports clicked, not openness; cui_card_begin always opens its layout container."
+    },
+    "cui_kanban_column_begin_ex": {
+      "end": "cui_kanban_column_end",
+      "clicked": true,
+      "why": "The bool return reports the + button clicked, not openness; cui_kanban_column_begin always opens its layout container."
+    },
+    "cui_kanban_card_begin": {
+      "end": "cui_kanban_card_end",
+      "clicked": true,
+      "why": "The bool return reports the card clicked, not openness; cui_kanban_card_begin always opens its layout container."
     }
   },
   "manualWidgets": {
@@ -244,13 +283,13 @@
       "why": "Charts take managed series and decimate long feeds into the frame arena; auto-decimation is Phase 2, Step 3."
     },
     "cui_image_create": {
-      "why": "Texture handle ownership and pixel upload belong with the typed image API in Phase 2, Step 3."
+      "why": "ui.CreateImage (Ui/Ui.Images.cs): validates the pixel span, pins it and hands over the texture handle."
     },
     "cui_image_load": {
-      "why": "Texture handle ownership and out-parameters belong with the typed image API in Phase 2, Step 3."
+      "why": "ui.LoadImage (Ui/Ui.Images.cs): decodes a PNG or JPEG, reports the pixel size and returns the handle as the result."
     },
     "cui_image_destroy": {
-      "why": "Texture handle ownership belongs with the typed image API in Phase 2, Step 3."
+      "why": "ui.DestroyImage (Ui/Ui.Images.cs): releases a texture handle; 0 is ignored so a field clears in one step."
     },
     "cui_reorder_begin": {
       "why": "Native code keeps the order array until reorder_end; the manual wrapper owns a stable frame-arena copy and writes the managed array back on ReorderEnd."
@@ -658,10 +697,10 @@
       "why": "`CuiSurface.FileDrop(paths, x, y)` (CuiSurface.Input.cs)."
     },
     "cui_dropped_file_count": {
-      "why": "`CuiSurface.DroppedFileCount` (CuiSurface.Input.cs)."
+      "why": "`CuiSurface.DroppedFileCount` (CuiSurface.Input.cs) and `ui.DroppedFileCount` (Ui/Ui.Overlays.cs): the surface feeds drops, a frame reads them."
     },
     "cui_dropped_file": {
-      "why": "`CuiSurface.DroppedFile(index)` (CuiSurface.Input.cs)."
+      "why": "`CuiSurface.DroppedFile(index)` (CuiSurface.Input.cs) and `ui.DroppedFile(index)` (Ui/Ui.Overlays.cs): the path of the dropped file, decoded from the native buffer."
     },
     "cui_file_drag_active": {
       "why": "`CuiSurface.FileDragActive` (CuiSurface.Input.cs)."
@@ -734,6 +773,15 @@
     },
     "cui_get_strings": {
       "why": "Returns the pointer CUI keeps, which is the published table's block or NULL for English: `ui.Localization` answers it without handing out a raw pointer."
+    },
+    "cui_toggle_group_ex": {
+      "why": "ui.ToggleGroup (Ui/Ui.BoolGroups.cs): the group edits one bool per label in the caller's array; the wrapper copies through a frame-arena byte block because native writes count bools, not one."
+    },
+    "cui_multi_select_ex": {
+      "why": "ui.MultiSelect (Ui/Ui.BoolGroups.cs): the list edits one bool per item in the caller's array; the wrapper copies through a frame-arena byte block because native writes count bools, not one."
+    },
+    "cui_filter_bar": {
+      "why": "ui.FilterBar (Ui/Ui.BoolGroups.cs): the bar edits one option bitmask per field in the caller's array; the wrapper copies through a frame-arena uint block because native writes count masks, not one."
     }
   },
   "outParams": {
@@ -742,12 +790,6 @@
     },
     "cui_virtual_list_begin.last": {
       "why": "The header documents that the visible range is filled in, so an out parameter is the honest shape."
-    },
-    "cui_image_compare_ex.pos": {
-      "why": "Before/after slider position: the widget drags it, so the wrapper takes it as out and returns the new value."
-    },
-    "cui_waveform_ex.progress": {
-      "why": "Playback position: clicking the waveform seeks, so the wrapper takes it as out and returns the new value."
     }
   },
   "excludedModules": {
@@ -1373,6 +1415,28 @@
       "why": "Returns a sentence in CUI frame memory, or NULL when the expression is invalid: the wrapper copies it."
     }
   },
+  "returnTypes": {
+    "cui_tour_ex": {
+      "name": "TourAction",
+      "why": "The int is one CUI_TOUR_* action, not a count: the tour writes the step through its ref parameter, so a caller that assigned the return to the step would overwrite it."
+    },
+    "cui_now_playing_ex": {
+      "name": "PlayerEvents",
+      "why": "The int is a CUI_PLAYER_* flag word for the transport button that was pressed."
+    },
+    "cui_chat_composer_ex": {
+      "name": "ComposerEvents",
+      "why": "The int is a CUI_COMPOSER_* flag word: send, stop, attach, remove, model."
+    },
+    "cui_response_actions_ex": {
+      "name": "ResponseEvents",
+      "why": "The int is a CUI_RESPONSE_* flag word for the action row under an answer."
+    },
+    "cui_comment_ex": {
+      "name": "CommentEvents",
+      "why": "The int is a CUI_COMMENT_* flag word: like and reply."
+    }
+  },
   "textFields": {
     "cui_inline_edit_ex.buf": {
       "capacity": "cap",
@@ -1628,6 +1692,21 @@
       "count": "count",
       "why": "The widget flips switches and sets rollouts: the wrapper copies the flags back on the frame the result names a changed flag, because converting one allocates its switch and rollout arrays.",
       "changedWhen": "__result.Flag >= 0"
+    },
+    "cui_reactions.items": {
+      "count": "count",
+      "why": "Clicking a reaction toggles it and rolls its count in the array: the wrapper copies the pills back on the frame one changed, because converting every pill every frame would allocate strings for nothing.",
+      "changedWhen": "__result >= 0"
+    },
+    "cui_week_calendar_ex.events": {
+      "count": "count",
+      "why": "Dragging moves an event in place: the wrapper copies the events back on the frame the widget names a moved one, because converting every event every frame would allocate strings for nothing.",
+      "changedWhen": "__result >= 0"
+    },
+    "cui_gantt_ex.tasks": {
+      "count": "count",
+      "why": "Dragging reschedules a task in place: the wrapper copies the tasks back on the frame the widget names a moved one, because converting every task every frame would allocate strings for nothing.",
+      "changedWhen": "__result >= 0"
     }
   },
   "hiddenOptionFields": {

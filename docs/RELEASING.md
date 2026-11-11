@@ -46,12 +46,14 @@ what `release.yml` and `ci.yml` pin; `build-native.sh` fails if the produced `li
 ## 3. Regenerate the face of the release
 
 ```sh
-pwsh tools/snapshots.ps1                                          # light, thirteen pages
+pwsh tools/snapshots.ps1                                          # light, twenty-eight pages
 pwsh tools/snapshots.ps1 -Theme dark -Suffix -dark -Pages overview,charts,studio,data
 ```
 
 The snapshots in `docs/images/gallery` are what the README shows and what a person compares against
-their own machine, so they are taken from the app — never edited.
+their own machine, so they are taken from the app — never edited. Three of them photograph the
+machine they ran on: the calendar's today, the year of activity, and the directory the file browser
+opens, so their pictures move with the date and the checkout.
 
 ## 4. Update the record
 

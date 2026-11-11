@@ -54,7 +54,7 @@ way:
 | App | Before the profile | Shipped |
 |---|---|---|
 | minimal app | 1 498 112 | 1 165 312 (−22.2%) |
-| gallery, 28 pages | 2 581 504 | 2 292 736 (−11.2%) |
+| gallery, 28 pages | 3 167 232 | 2 862 592 (−9.6%) |
 | `dotnet new cui-app`, published | — | 2 244 608 |
 | `dotnet new cui-mini`, published | — | 1 163 264 |
 
@@ -113,7 +113,8 @@ until the switch was limited, which is how the dependency was found.
 The generator now takes the end function at the call site — `new LayoutScope(ui.Handle,
 &Native.BoxEnd, "Box", o.Id)` — so an end function is reachable exactly when the wrapper that calls
 it is, which is the rule the rest of the binding already follows. Worth **−24 064 B** on the minimal
-app and **−2 048 B** on the gallery: an app that draws everything was paying for what it used.
+app, and **−2 048 B** on the gallery when it was thirteen pages: the more an app draws, the less
+there is left to drop, which is why the size profile further down is what a full gallery notices.
 
 ## Still open
 

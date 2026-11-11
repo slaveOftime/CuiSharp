@@ -1,4 +1,4 @@
-// Page 13 of 13: the rest of a developer app: test results, a stack trace, blame,
+// Page 13 of 28: the rest of a developer app: test results, a stack trace, blame,
 // coverage, a regex tester, an HTTP client, an API reference, feature flags, uptime and
 // an event histogram.
 // Part of the CuiSharp.Gallery sample: MoreDeveloperTools

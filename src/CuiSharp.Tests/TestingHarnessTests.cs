@@ -41,6 +41,23 @@ public class TestingHarnessTests
         protected override void Draw(Ui ui) => throw new InvalidOperationException("boom");
     }
 
+    /// <summary>Forty buttons in a scroll area: the last one starts out below the fold.</summary>
+    private sealed class LongList : Component
+    {
+        public int Clicks;
+
+        protected override void Draw(Ui ui)
+        {
+            using (ui.Scroll(new ScrollOpts { Id = "list", Width = Size.Fill, Height = Size.Fill }))
+            {
+                for (int i = 0; i < 40; i++)
+                {
+                    if (ui.Button($"Row {i}")) Clicks++;
+                }
+            }
+        }
+    }
+
     [Fact]
     public void FindAControlByItsLabelAndClickIt()
     {
@@ -114,6 +131,75 @@ public class TestingHarnessTests
         app.Release();
 
         Assert.True(page.Accepted);
+    }
+
+    [Fact]
+    public void TheWheelReachesAControlBelowTheFold()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        var page = new LongList();
+        using var app = TestApp.Start(page, 400, 300);
+
+        // Row 39 starts out under the 300 px viewport, where a click would hit something else.
+        float before = app.FindButton("Row 39").Rect.Y;
+
+        // The wheel at the scroll area's centre, down forty notches: more than the list has.
+        // The spring wants frames to settle, not just the next one.
+        app.ScrollAt(200, 150, -40);
+        app.Frame(60);
+        float after = app.FindButton("Row 39").Rect.Y;
+
+        Assert.True(after < before, $"the wheel moved Row 39 from {before} to {after}");
+        app.FindButton("Row 39").Click();
+        Assert.Equal(1, page.Clicks);
+    }
+
+    /// <summary>A two-step tour over two buttons: the shape every gallery page with a tour uses.</summary>
+    private sealed class Guided : Component
+    {
+        public int Step;
+        public bool Running = true;
+        private readonly TourStep[] _steps = new TourStep[2];
+
+        protected override void Draw(Ui ui)
+        {
+            using (ui.Column(new() { Width = Size.Fill, Pad = 16, Gap = 8 }))
+            {
+                ui.Button("First");
+                _steps[0] = new TourStep(ui.LastId, "One", "The first thing.");
+                ui.Button("Second");
+                _steps[1] = new TourStep(ui.LastId, "Two", "The second thing.");
+
+                // The step is the tour's, written through the ref: its return value is the action
+                // the user took, and assigning it here would replace the step with that code.
+                if (Step >= 0) _ = ui.Tour("tour", _steps, ref Step);
+                Running = Step >= 0;
+            }
+        }
+    }
+
+    [Fact]
+    public void TheTourMovesItsStepThroughTheRefAndEndsItself()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        var page = new Guided();
+        using var app = TestApp.Start(page, 500, 400);
+        app.Settle();
+
+        Assert.Equal(0, page.Step);
+
+        // Right is the tour's own next gesture, so the step moves without the card's button.
+        app.Key(Key.Right);
+        app.Settle();
+        Assert.Equal(1, page.Step);
+
+        // The last step's next is Done, which ends the tour: -1 is the only value that stops it.
+        app.Key(Key.Right);
+        app.Settle();
+        Assert.Equal(-1, page.Step);
+        Assert.False(page.Running);
     }
 
     [Fact]

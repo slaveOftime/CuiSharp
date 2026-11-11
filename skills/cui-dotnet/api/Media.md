@@ -57,7 +57,7 @@ public void Counter(UiText id, double value, CounterOpts o = default)
 ## `ImageCompare`
 
 ```csharp
-public bool ImageCompare(UiText id, ulong before, ulong after, out float pos, CompareOpts o = default)
+public bool ImageCompare(UiText id, ulong before, ulong after, ref float pos, CompareOpts o = default)
 ```
 
 cui_image_compare_ex

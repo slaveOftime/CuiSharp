@@ -7,7 +7,7 @@ Call these inside a frame, on a `Ui` value:
 ```csharp
 protected override void Draw(Ui ui)
 {
-    using (ui.MultiSelect(/* options */))
+    using (ui.RangeCalendar(/* options */))
     {
         // ...
     }
@@ -53,14 +53,6 @@ public bool LevelMeter(UiText id, ReadOnlySpan<float> levels, LevelMeterOpts o =
 ```
 
 Returns true when the clip light was clicked to clear it.
-
-## `MultiSelect`
-
-```csharp
-public bool MultiSelect(UiText id, ReadOnlySpan<string> items, ref bool selected, MultiSelectOpts o = default)
-```
-
-cui_multi_select_ex
 
 ## `RangeCalendar`
 

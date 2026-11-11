@@ -13,18 +13,6 @@ public static unsafe class PickersUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_multi_select_ex</summary>
-        public bool MultiSelect(UiText id, ReadOnlySpan<string> items, ref bool selected, MultiSelectOpts o = default)
-        {
-            byte __selected = (byte)(selected ? 1 : 0);
-            if (o.Icons is { } __icons && __icons.Length < items.Length) throw new ArgumentException("Icons must contain at least one entry per item.", nameof(o));
-            var __opts = o.ToNative();
-            var __result = Native.MultiSelect(ui.Handle, Utf8.Get(id), UiMarshal.Strings(items), (int)(items.Length), (nint)(&__selected), in __opts);
-            selected = __selected != 0;
-            WidgetRecorder.Note(ui.Handle, "MultiSelect", id);
-            return __result != 0;
-        }
-
         /// <summary>One or two months side by side; click a start and an end.</summary>
         public bool RangeCalendar(UiText id, ref DateRange range, int months)
         {

@@ -65,7 +65,7 @@ cui_loader_ex
 ## `NowPlaying`
 
 ```csharp
-public int NowPlaying(UiText id, ref NowPlayingState np, NowPlayingOpts o = default)
+public PlayerEvents NowPlaying(UiText id, ref NowPlayingState np, NowPlayingOpts o = default)
 ```
 
 cui_now_playing_ex
@@ -121,7 +121,7 @@ Types the text out. When the text grows (streamed tokens) it carries on from whe
 ## `Waveform`
 
 ```csharp
-public bool Waveform(UiText id, ReadOnlySpan<float> peaks, out float progress, WaveformOpts o = default)
+public bool Waveform(UiText id, ReadOnlySpan<float> peaks, ref float progress, WaveformOpts o = default)
 ```
 
 cui_waveform_ex

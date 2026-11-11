@@ -25869,6 +25869,165 @@
           "Value": "4"
         }
       ]
+    },
+    {
+      "CName": "CUI_TOUR_NONE",
+      "CsName": "TourAction",
+      "Values": [
+        {
+          "CName": "CUI_TOUR_NONE",
+          "CsName": "None",
+          "Value": "0"
+        },
+        {
+          "CName": "CUI_TOUR_NEXT",
+          "CsName": "Next",
+          "Value": "1"
+        },
+        {
+          "CName": "CUI_TOUR_BACK",
+          "CsName": "Back",
+          "Value": "2"
+        },
+        {
+          "CName": "CUI_TOUR_DONE",
+          "CsName": "Done",
+          "Value": "3"
+        },
+        {
+          "CName": "CUI_TOUR_SKIPPED",
+          "CsName": "Skipped",
+          "Value": "4"
+        }
+      ]
+    },
+    {
+      "CName": "CUI_COMMENT_LIKE",
+      "CsName": "CommentEvents",
+      "IsFlags": true,
+      "Values": [
+        {
+          "CName": "None",
+          "CsName": "None",
+          "Value": "0"
+        },
+        {
+          "CName": "CUI_COMMENT_LIKE",
+          "CsName": "Like",
+          "Value": "1"
+        },
+        {
+          "CName": "CUI_COMMENT_REPLY",
+          "CsName": "Reply",
+          "Value": "2"
+        }
+      ]
+    },
+    {
+      "CName": "CUI_PLAYER_TOGGLE",
+      "CsName": "PlayerEvents",
+      "IsFlags": true,
+      "Values": [
+        {
+          "CName": "None",
+          "CsName": "None",
+          "Value": "0"
+        },
+        {
+          "CName": "CUI_PLAYER_TOGGLE",
+          "CsName": "Toggle",
+          "Value": "1"
+        },
+        {
+          "CName": "CUI_PLAYER_PREV",
+          "CsName": "Prev",
+          "Value": "2"
+        },
+        {
+          "CName": "CUI_PLAYER_NEXT",
+          "CsName": "Next",
+          "Value": "4"
+        },
+        {
+          "CName": "CUI_PLAYER_SEEK",
+          "CsName": "Seek",
+          "Value": "8"
+        }
+      ]
+    },
+    {
+      "CName": "CUI_RESPONSE_COPY",
+      "CsName": "ResponseEvents",
+      "IsFlags": true,
+      "Values": [
+        {
+          "CName": "None",
+          "CsName": "None",
+          "Value": "0"
+        },
+        {
+          "CName": "CUI_RESPONSE_COPY",
+          "CsName": "Copy",
+          "Value": "1"
+        },
+        {
+          "CName": "CUI_RESPONSE_REGENERATE",
+          "CsName": "Regenerate",
+          "Value": "2"
+        },
+        {
+          "CName": "CUI_RESPONSE_UP",
+          "CsName": "Up",
+          "Value": "4"
+        },
+        {
+          "CName": "CUI_RESPONSE_DOWN",
+          "CsName": "Down",
+          "Value": "8"
+        },
+        {
+          "CName": "CUI_RESPONSE_SHARE",
+          "CsName": "Share",
+          "Value": "16"
+        }
+      ]
+    },
+    {
+      "CName": "CUI_COMPOSER_SEND",
+      "CsName": "ComposerEvents",
+      "IsFlags": true,
+      "Values": [
+        {
+          "CName": "None",
+          "CsName": "None",
+          "Value": "0"
+        },
+        {
+          "CName": "CUI_COMPOSER_SEND",
+          "CsName": "Send",
+          "Value": "1"
+        },
+        {
+          "CName": "CUI_COMPOSER_STOP",
+          "CsName": "Stop",
+          "Value": "2"
+        },
+        {
+          "CName": "CUI_COMPOSER_ATTACH",
+          "CsName": "Attach",
+          "Value": "4"
+        },
+        {
+          "CName": "CUI_COMPOSER_REMOVE",
+          "CsName": "Remove",
+          "Value": "8"
+        },
+        {
+          "CName": "CUI_COMPOSER_MODEL",
+          "CsName": "Model",
+          "Value": "16"
+        }
+      ]
     }
   ],
   "Functions": [
@@ -37906,7 +38065,7 @@
         {
           "CName": "pos",
           "CsName": "pos",
-          "CsType": "nint",
+          "CsType": "ref float",
           "Type": {
             "Spelling": "float *",
             "Kind": "Pointer",
@@ -40219,7 +40378,7 @@
         {
           "CName": "progress",
           "CsName": "progress",
-          "CsType": "nint",
+          "CsType": "ref float",
           "Type": {
             "Spelling": "float *",
             "Kind": "Pointer",
@@ -52564,25 +52723,6 @@
       "Value": 8
     },
     {
-      "CName": "CUI_TOUR_NONE"
-    },
-    {
-      "CName": "CUI_TOUR_NEXT",
-      "Value": 1
-    },
-    {
-      "CName": "CUI_TOUR_BACK",
-      "Value": 2
-    },
-    {
-      "CName": "CUI_TOUR_DONE",
-      "Value": 3
-    },
-    {
-      "CName": "CUI_TOUR_SKIPPED",
-      "Value": 4
-    },
-    {
       "CName": "CUI_TREE_HAS_CHILDREN",
       "Value": 1
     },
@@ -52601,70 +52741,6 @@
     {
       "CName": "CUI_DIFF_IGNORE_EOL",
       "Value": 1
-    },
-    {
-      "CName": "CUI_COMMENT_LIKE",
-      "Value": 1
-    },
-    {
-      "CName": "CUI_COMMENT_REPLY",
-      "Value": 2
-    },
-    {
-      "CName": "CUI_PLAYER_TOGGLE",
-      "Value": 1
-    },
-    {
-      "CName": "CUI_PLAYER_PREV",
-      "Value": 2
-    },
-    {
-      "CName": "CUI_PLAYER_NEXT",
-      "Value": 4
-    },
-    {
-      "CName": "CUI_PLAYER_SEEK",
-      "Value": 8
-    },
-    {
-      "CName": "CUI_RESPONSE_COPY",
-      "Value": 1
-    },
-    {
-      "CName": "CUI_RESPONSE_REGENERATE",
-      "Value": 2
-    },
-    {
-      "CName": "CUI_RESPONSE_UP",
-      "Value": 4
-    },
-    {
-      "CName": "CUI_RESPONSE_DOWN",
-      "Value": 8
-    },
-    {
-      "CName": "CUI_RESPONSE_SHARE",
-      "Value": 16
-    },
-    {
-      "CName": "CUI_COMPOSER_SEND",
-      "Value": 1
-    },
-    {
-      "CName": "CUI_COMPOSER_STOP",
-      "Value": 2
-    },
-    {
-      "CName": "CUI_COMPOSER_ATTACH",
-      "Value": 4
-    },
-    {
-      "CName": "CUI_COMPOSER_REMOVE",
-      "Value": 8
-    },
-    {
-      "CName": "CUI_COMPOSER_MODEL",
-      "Value": 16
     },
     {
       "CName": "CUI_REGEX_ICASE",

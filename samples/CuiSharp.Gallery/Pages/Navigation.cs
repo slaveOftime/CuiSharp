@@ -1,4 +1,4 @@
-// Page 5 of 9: tabs, breadcrumbs, pagination, stepper.
+// Page 5 of 28: tabs, breadcrumbs, pagination, stepper.
 // Part of the CuiSharp.Gallery sample: Navigation
 using CuiSharp;
 

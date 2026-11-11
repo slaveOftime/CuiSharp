@@ -61,17 +61,5 @@ public static unsafe class DataGridUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_filter_bar</summary>
-        public bool FilterBar(UiText id, ReadOnlySpan<FilterField> fields, ref uint selected, ref string search, int searchCap)
-        {
-            var __fields = Utf8.AllocFrame<NativeFilterField>(fields.Length);
-            for (int i = 0; i < fields.Length; i++) __fields[i] = fields[i].ToNative();
-            var __searchSlot = ui.RentText(Native.MakeId(ui.Handle, Utf8.Get(id)) ^ 0xa0d7bcf1u, ref search, (int)searchCap);
-            var __result = Native.FilterBar(ui.Handle, Utf8.Get(id), (nint)__fields, (int)(fields.Length), ref selected, (nint)__searchSlot.Buffer, (nuint)__searchSlot.Capacity);
-            if (Ui.TextChanged(__searchSlot)) search = Ui.DecodeText(__searchSlot);
-            WidgetRecorder.Note(ui.Handle, "FilterBar", id);
-            return __result != 0;
-        }
-
     }
 }

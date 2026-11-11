@@ -41,7 +41,7 @@ src/CuiSharp.Tools/           dotnet cui: build, run headless, relay one command
 src/CuiSharp.Templates/       dotnet new cui-app / cui-mini
 src/CuiSharp.Tests/           ABI, enums, marshalling, frame behaviour, hosting, tools, docs drift
 src/CuiSharp.Benchmarks/      BenchmarkDotNet suites + --fps and --scale harnesses
-samples/CuiSharp.Gallery/     thirteen pages of every component, one file per page
+samples/CuiSharp.Gallery/     twenty-eight pages of every component, one file per page
 native/                       submodule + the two build scripts
 tools/                        bindgen.cs, regen.ps1, verify-template.ps1, api-surface.ps1, snapshots.ps1
 bindings/                     api.json (generated IR), overrides.json (inputs), coverage.txt (report)
@@ -80,11 +80,23 @@ The convention table the generator's default rules implement:
 | `const float *v, int count` | `ReadOnlySpan<float> v` |
 | `char *buf, size_t cap` | `ref string value` over a pooled buffer |
 | `bool *` / `int *` single value | `ref bool` / `ref int` |
+| `float *pos` (non-const, one value) | `ref float pos` — the widget moves it |
 | `x_begin` returning void/id + `x_end` | `LayoutScope X(...)` — `using` closes it |
 | `x_begin` returning bool + `x_end` | `OpenScope X(...)` — `Open`, `implicit operator bool` |
-| result flags (`CUI_CHANGED`, …) | typed `readonly struct` (`InputResult`, `TableSortResult`) |
+| result flags (`CUI_CHANGED`, …) | `readonly struct` (`InputResult`) when the bits are shared and read one by one |
+| a widget's own event or action word | the `[Flags]` enum or enum it names (`PlayerEvents`, `TourAction`) |
 | `CUI_TONE_DANGER` | `Tone.Danger` |
 | header comment | `/// <summary>` |
+
+An array is a `const` pointer, and a widget that writes one value back through a pointer says so
+with a non-const one: `float *pos` is the compare divider, not a list of positions. That is why
+the plural-name heuristic in `Parameter()` is narrowed to const pointers — `pos` and `progress` end
+in an `s` and are still one number.
+
+An `int` return is the last thing callers should have to decode. When the header documents it as
+one of `CUI_TOUR_*` or a `CUI_PLAYER_*` word, the wrapper returns that enum (`returnTypes` in
+`overrides.json`), because the alternative is a call site comparing against a constant it has to
+reach into `Interop` for — and, for the tour, mistaking the action for the step it returns beside.
 
 Adding a wrapper to the hand-written layer instead of the generator is allowed, but it must be
 recorded in `bindings/overrides.json` as `MANUAL` with the member and the file, because

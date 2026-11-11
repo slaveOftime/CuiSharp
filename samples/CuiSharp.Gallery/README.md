@@ -1,6 +1,6 @@
 # CuiSharp.Gallery
 
-Every component the binding wraps, in thirteen pages, one file per page. It is the integration test
+Every component the binding wraps, in twenty-eight pages, one file per page. It is the integration test
 and the size/performance canary at the same time: it uses no hosting, no DI and no test project, so
 it measures the library a person gets.
 
@@ -37,6 +37,9 @@ dotnet cui png docs/images/gallery/09-charts.png
 The screenshots in `../docs/images/gallery` come from exactly that; `pwsh tools/snapshots.ps1`
 regenerates all of them (and `-Theme dark` the dark set).
 
+`pwsh tools/page-costs.ps1` uses the same driving to walk every page and measure what the app
+costs while it shows each one — the page-by-page table in `docs/PERFORMANCE.md` is its output.
+
 ## Files
 
 | File | Contents |
@@ -50,15 +53,26 @@ regenerates all of them (and `-Theme dark` the dark set).
 ## What is ported
 
 All nine pages of CUI's `examples/gallery_ui.c` — Overview, Buttons, Inputs, Selection, Navigation,
-Overlays, Feedback, Data display, Charts — plus four more: **Studio** (gauges, knobs, faders,
-meters), **Tools** (terminal, log view, hex view, diff), and CUI 1.3's two developer-tools pages,
-**Developer tools** (trace, waterfall, dependency graph, commit graph, pipeline, problems, key =
-value pairs, filter builder, cron schedule, keymap) and **More developer tools** (tests, stack
-trace, blame, coverage, regex tester, HTTP client, API reference, feature flags, uptime, event
-histogram).
+Overlays, Feedback, Data display, Charts — plus Studio (gauge, knobs, faders, meters), Tools
+(terminal, log view, hex view, diff), and CUI 1.3's two developer-tools pages, **Developer tools**
+(trace, waterfall, dependency graph, commit graph, pipeline, problems, key = value pairs, filter
+builder, cron schedule, keymap) and **More developer tools** (tests, stack trace, blame, coverage,
+regex tester, HTTP client, API reference, feature flags, uptime, event histogram).
 
-The other fifteen pages of `examples/gallery_more.c` are **not** ported yet; it is tracked in
-[docs/PLAN.md](../../docs/PLAN.md).
+All fifteen pages of `examples/gallery_more.c` are ported too: **Actions** (split buttons, toggle
+groups, reactions, swipe, speed dial), **Smart inputs** (inline edit, scrub, money, affixes,
+shortcut recorder, emoji), **Pickers** (multi-select, date range, time, wheel, dial, ruler),
+**Capture** (dropzones, avatar, signature), **Disclosure** (banner, hover card, expandable,
+countdown, checklist, undo toast), **Reader** (scroll-spy ToC), **Data grid** (filter bar,
+2 000-row virtualized grid, tree table), **Code** (highlighted blocks, JSON viewer), **Social and
+media** (chat, comments, presence, carousel, image viewer/cropper/compare, card stack),
+**Planning** (kanban, week calendar, gantt, month calendar), **More charts** (heatmap, treemap,
+radar, funnel, waffle, sankey, activity rings, candlestick…), **Motion** (shimmer, typewriter,
+spotlight, dock, now playing, waveform), **AI** (composer, reasoning, tool calls, sources, plan,
+voice orb), **Audio** (knobs, faders, meters, tour) and **Files** (browser, dialogs, terminal).
+
+Some nav items sit below the sidebar's fold; `dotnet cui wheel 120 400 -8` scrolls it before the
+click, which is also how `tools/snapshots.ps1` reaches them.
 
 ## A page
 
