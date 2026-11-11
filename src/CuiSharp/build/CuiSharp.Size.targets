@@ -15,6 +15,7 @@
 
       CuiSharpSizeProfile=true|false   the whole diagnostic set; on for an AOT publish
       CuiSharpHeadless=true|false      the protocol `dotnet cui` drives an app with
+      CuiSharpLive=true|false          the opt-in live named-pipe channel
       CuiSharpVerboseErrors=true       keep framework exception messages and stack traces
 
     A build that is not a self-contained AOT publish keeps the headless channel and its exception
@@ -29,6 +30,8 @@
     <CuiSharpSizeProfile Condition="'$(CuiSharpSizeProfile)' == '' And '$(_CuiSharpSized)' == 'true'">true</CuiSharpSizeProfile>
     <CuiSharpHeadless Condition="'$(CuiSharpHeadless)' == '' And '$(_CuiSharpSized)' == 'true'">false</CuiSharpHeadless>
     <CuiSharpHeadless Condition="'$(CuiSharpHeadless)' == ''">true</CuiSharpHeadless>
+    <CuiSharpLive Condition="'$(CuiSharpLive)' == '' And '$(_CuiSharpSized)' == 'true'">false</CuiSharpLive>
+    <CuiSharpLive Condition="'$(CuiSharpLive)' == ''">true</CuiSharpLive>
     <CuiSharpVerboseErrors Condition="'$(CuiSharpVerboseErrors)' == ''">false</CuiSharpVerboseErrors>
   </PropertyGroup>
 
@@ -39,6 +42,7 @@
   -->
   <ItemGroup>
     <RuntimeHostConfigurationOption Include="CuiSharp.Headless" Value="$(CuiSharpHeadless)" Trim="true" />
+    <RuntimeHostConfigurationOption Include="CuiSharp.Live" Value="$(CuiSharpLive)" Trim="true" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(CuiSharpSizeProfile)' == 'true'">

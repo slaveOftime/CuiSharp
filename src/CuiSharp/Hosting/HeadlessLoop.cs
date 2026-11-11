@@ -174,6 +174,22 @@ public static class HeadlessLoop
         }
     }
 
+    // The live listener must interrupt a partial line on disconnect/shutdown, not just check
+    // cancellation between commands. Keep the same bound as the synchronous headless reader.
+    internal static async Task<string?> ReadCommandAsync(TextReader source, CancellationToken ct)
+    {
+        var line = new StringBuilder(128);
+        char[] one = new char[1];
+        while (await source.ReadAsync(one.AsMemory(), ct).ConfigureAwait(false) != 0)
+        {
+            if (one[0] == '\n') return line.ToString().TrimEnd('\r');
+            if (line.Length >= MaxCommandChars)
+                throw new ArgumentException($"A command line longer than {MaxCommandChars} characters was not read. Commands end with a newline.");
+            line.Append(one[0]);
+        }
+        return line.Length == 0 ? null : line.ToString();
+    }
+
     /// <summary>
     /// Anything the app prints belongs on stderr: stdout is the protocol, and a stray
     /// <c>Console.WriteLine</c> — in the app, in a service it resolved, in a logger — would
@@ -382,6 +398,18 @@ public static class HeadlessLoop
 
     internal static void Answer(TextWriter sink, bool ok, string payload, int limit = MaxAnswerBytes)
     {
+        sink.Write(FrameAnswer(ok, payload, limit));
+        sink.Flush();
+    }
+
+    internal static async Task AnswerAsync(TextWriter sink, bool ok, string payload, CancellationToken ct)
+    {
+        await sink.WriteAsync(FrameAnswer(ok, payload, MaxAnswerBytes).AsMemory(), ct).ConfigureAwait(false);
+        await sink.FlushAsync(ct).ConfigureAwait(false);
+    }
+
+    private static string FrameAnswer(bool ok, string payload, int limit)
+    {
         int bytes = Encoding.UTF8.GetByteCount(payload);
         if (bytes > limit)
         {
@@ -394,9 +422,6 @@ public static class HeadlessLoop
             bytes = Encoding.UTF8.GetByteCount(payload);
         }
 
-        sink.Write($"{(ok ? "CUI-OK" : "CUI-ERR")} {bytes}\n");
-        if (bytes > 0) sink.Write(payload);
-        sink.Write('\n');
-        sink.Flush();
+        return $"{(ok ? "CUI-OK" : "CUI-ERR")} {bytes}\n{payload}\n";
     }
 }

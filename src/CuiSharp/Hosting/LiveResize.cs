@@ -116,12 +116,12 @@ internal static unsafe class LiveResize
                 break;
 
             case Win32.WmDestroy:
-                LiveSession.Active?.OnWindowDestroying(hwnd);
+                if (Features.Live) LiveSession.CurrentThread?.OnWindowDestroying(hwnd);
                 break;
 
             case Win32.WmNcDestroy:
                 // The window is going away: stop holding its procedure, then let CUI clean up.
-                LiveSession.Active?.OnWindowDestroying(hwnd);
+                if (Features.Live) LiveSession.CurrentThread?.OnWindowDestroying(hwnd);
                 Installed.Remove(hwnd);
                 break;
         }

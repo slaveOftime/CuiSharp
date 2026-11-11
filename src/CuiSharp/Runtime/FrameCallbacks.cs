@@ -119,7 +119,8 @@ internal static unsafe class FrameCallbacks
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     internal static nint TreeLabelThunk(void* user, int node)
     {
-        Hosting.LiveSession.Active?.EnterCallback();
+        var live = Features.Live ? Hosting.LiveSession.CurrentThread : null;
+        live?.EnterCallback();
         try
         {
             Holder? holder = HolderOf(user);
@@ -127,7 +128,7 @@ internal static unsafe class FrameCallbacks
         }
         finally
         {
-            Hosting.LiveSession.Active?.ExitCallback();
+            live?.ExitCallback();
         }
     }
 
@@ -135,14 +136,15 @@ internal static unsafe class FrameCallbacks
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     internal static int TreeCompareThunk(void* user, int a, int b)
     {
-        Hosting.LiveSession.Active?.EnterCallback();
+        var live = Features.Live ? Hosting.LiveSession.CurrentThread : null;
+        live?.EnterCallback();
         try
         {
             return HolderOf(user)?.Function is Comparison<int> compare ? compare(a, b) : 0;
         }
         finally
         {
-            Hosting.LiveSession.Active?.ExitCallback();
+            live?.ExitCallback();
         }
     }
 
@@ -158,14 +160,15 @@ internal static unsafe class FrameCallbacks
         if (data == null) return;
         nint user = *(nint*)data;
         if (user == 0) return;
-        Hosting.LiveSession.Active?.EnterCallback();
+        var live = Features.Live ? Hosting.LiveSession.ForContext(ui) : null;
+        live?.EnterCallback();
         try
         {
             if (HolderOf((void*)user)?.Function is Action onFree) onFree();
         }
         finally
         {
-            Hosting.LiveSession.Active?.ExitCallback();
+            live?.ExitCallback();
         }
     }
 

@@ -12,6 +12,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
+using System.Threading.Channels;
 using CuiSharp.Interop;
 
 namespace CuiSharp.Hosting;
@@ -28,6 +29,12 @@ internal sealed class LiveSession : IDisposable
 
     private static readonly Lock StaticGate = new();
     private static Published _published = new(0, null);
+    [ThreadStatic] private static LiveSession? _threadSession;
+
+    // Callback guards belong to the window thread, never to a background surface's painter.
+    internal static LiveSession? CurrentThread => _threadSession;
+    internal static LiveSession? ForContext(nint ctx) =>
+        _threadSession is { } session && session._ctx == ctx ? session : null;
 
     /// <summary>The session of the window this process is showing, or null when nothing is driven.</summary>
     internal static LiveSession? Active => Volatile.Read(ref _published).Session;
@@ -54,6 +61,8 @@ internal sealed class LiveSession : IDisposable
     private readonly List<string> _faults = [];
     private readonly CancellationTokenSource _pipeCts = new();
     private readonly Task _pipeTask;
+    private NamedPipeServerStream? _pipeServer;
+    internal Task PipeCompletion => _pipeTask;
 
     private nint _messageHwnd;
     private nint _app;
@@ -72,6 +81,7 @@ internal sealed class LiveSession : IDisposable
     private bool _armed;
     private int _callbackDepth;
     private bool _injectedPress;
+    private Key _injectedKey;
     private bool _timerArmed;
     private volatile bool _closing;
     private bool _disposed;
@@ -119,6 +129,7 @@ internal sealed class LiveSession : IDisposable
         PipeName = $"cui-live-{Environment.ProcessId}-{nonce}";
         DiscoveryFilePath = Path.Combine(GetDiscoveryDirectory(), $"{PipeName}.json");
         _reserved = true;
+        _threadSession = this;
         _pipeTask = Task.Run(() => RunPipeServerAsync(_pipeCts.Token));
     }
 
@@ -218,8 +229,7 @@ internal sealed class LiveSession : IDisposable
     internal Task<LiveSnapshot> FrameAsync(int count, bool capture = true, CancellationToken cancellation = default)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(count, 1);
-        int extra = capture ? count : count;
-        var steps = new Step[extra];
+        var steps = new Step[count];
         for (int i = 0; i < count - (capture ? 1 : 0); i++) steps[i] = new Step(StepKind.Frame);
         if (capture) steps[^1] = new Step(StepKind.Capture);
         return Submit(steps, pixels: false, cancellation);
@@ -407,7 +417,7 @@ internal sealed class LiveSession : IDisposable
             _completing = null;
             _active = null;
             _cancelCleanup = null;
-            ReleaseInjectedPress();
+            ReleaseInjectedInput();
         }
 
         if (HasWork()) WakeAgainSoon();
@@ -445,11 +455,20 @@ internal sealed class LiveSession : IDisposable
                 _lastInjectedFrame = frame;
                 break;
             case StepKind.KeyDown:
-                Native.InputKey(_ctx, step.Key, 1, 0);
+                // Do not take ownership of a key the human already holds.
+                if (Native.KeyDown(_ctx, step.Key) == 0)
+                {
+                    Native.InputKey(_ctx, step.Key, 1, 0);
+                    _injectedKey = step.Key;
+                }
                 _lastInjectedFrame = frame;
                 break;
             case StepKind.KeyUp:
-                Native.InputKey(_ctx, step.Key, 0, 0);
+                if (_injectedKey == step.Key && _injectedKey != Key.None)
+                {
+                    Native.InputKey(_ctx, step.Key, 0, 0);
+                    _injectedKey = Key.None;
+                }
                 _lastInjectedFrame = frame;
                 break;
             case StepKind.Text:
@@ -577,12 +596,10 @@ internal sealed class LiveSession : IDisposable
     {
         command.Discard();
         ulong currentFrame = _bound ? Native.FrameCount(_ctx) : 0;
-        if (_injectedPress)
+        if (_injectedPress || _injectedKey != Key.None)
         {
-            Native.InputMouseLeave(_ctx);
-            Native.InputMouseButton(_ctx, MouseButton.Left, 0);
-            _injectedPress = false;
-            Native.RequestRedraw(_ctx);
+            if (_injectedPress) Native.InputMouseLeave(_ctx);
+            ReleaseInjectedInput();
             _cancelCleanup = command;
             _cancelFrame = currentFrame;
             return;
@@ -599,12 +616,19 @@ internal sealed class LiveSession : IDisposable
         command.Tcs.TrySetCanceled();
     }
 
-    private void ReleaseInjectedPress()
+    private void ReleaseInjectedInput()
     {
-        if (!_injectedPress) return;
-        _injectedPress = false;
-        if (!_bound) return;
-        Native.InputMouseButton(_ctx, MouseButton.Left, 0);
+        if (!_bound || _closing) return;
+        if (_injectedPress)
+        {
+            Native.InputMouseButton(_ctx, MouseButton.Left, 0);
+            _injectedPress = false;
+        }
+        if (_injectedKey != Key.None)
+        {
+            Native.InputKey(_ctx, _injectedKey, 0, 0);
+            _injectedKey = Key.None;
+        }
         Native.RequestRedraw(_ctx);
     }
 
@@ -671,92 +695,125 @@ internal sealed class LiveSession : IDisposable
 
     private async Task RunPipeServerAsync(CancellationToken ct)
     {
-        while (!ct.IsCancellationRequested)
+        try
         {
-            try
+            while (!ct.IsCancellationRequested)
             {
-                using var server = new NamedPipeServerStream(
-                    PipeName,
-                    PipeDirection.InOut,
-                    1,
-                    PipeTransmissionMode.Byte,
-                    PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
-
-                await server.WaitForConnectionAsync(ct).ConfigureAwait(false);
-                await ServePipeClientAsync(server, ct).ConfigureAwait(false);
+                try
+                {
+                    using var server = new NamedPipeServerStream(
+                        PipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte,
+                        PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+                    lock (_gate)
+                    {
+                        if (_disposed) return;
+                        _pipeServer = server;
+                    }
+                    try
+                    {
+                        await server.WaitForConnectionAsync(ct).ConfigureAwait(false);
+                        await ServePipeClientAsync(server, ct).ConfigureAwait(false);
+                    }
+                    finally
+                    {
+                        lock (_gate) _pipeServer = null;
+                    }
+                }
+                catch (Exception error) when (error is IOException or ObjectDisposedException)
+                {
+                    if (!ct.IsCancellationRequested)
+                        await Task.Delay(25, ct).ConfigureAwait(false);
+                }
             }
-            catch (OperationCanceledException) when (ct.IsCancellationRequested)
-            {
-                break;
-            }
-            catch (Exception)
-            {
-                if (ct.IsCancellationRequested) break;
-                await Task.Delay(25, ct).ConfigureAwait(false);
-            }
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
         }
     }
 
     private async Task ServePipeClientAsync(NamedPipeServerStream stream, CancellationToken ct)
     {
-        // Wait briefly for the first frame to bind the window if a client connected during startup.
-        Stopwatch bindWait = Stopwatch.StartNew();
-        while (!_bound && !_disposed && !_closing && bindWait.Elapsed < TimeSpan.FromSeconds(15))
-        {
-            await Task.Delay(10, ct).ConfigureAwait(false);
-        }
-
+        using var connection = CancellationTokenSource.CreateLinkedTokenSource(ct);
         using var reader = new StreamReader(stream, new UTF8Encoding(false), detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true);
-        using var writer = new StreamWriter(stream, new UTF8Encoding(false), bufferSize: 1024, leaveOpen: true) { AutoFlush = false };
+        using var writer = new StreamWriter(stream, new UTF8Encoding(false), bufferSize: 1024, leaveOpen: true);
 
-        writer.Write($"CUI-READY {_options.Width} {_options.Height}\n");
-        writer.Flush();
+        await writer.WriteAsync($"CUI-READY {_options.Width} {_options.Height}\n".AsMemory(), ct).ConfigureAwait(false);
+        await writer.FlushAsync(ct).ConfigureAwait(false);
 
-        while (!ct.IsCancellationRequested && stream.IsConnected)
+        // The sole reader keeps watching for EOF even while a command awaits UI frames. A bounded
+        // queue permits pipelining without letting a client retain unlimited commands in the app.
+        var lines = Channel.CreateBounded<string>(new BoundedChannelOptions(MaxQueue)
         {
-            string? read;
-            try
+            SingleReader = true,
+            SingleWriter = true,
+        });
+        Task<string?> receiving = ReceiveCommandsAsync(reader, lines.Writer, connection);
+        try
+        {
+            await foreach (string line in lines.Reader.ReadAllAsync(connection.Token).ConfigureAwait(false))
             {
-                read = HeadlessLoop.ReadCommand(reader);
-            }
-            catch (ArgumentException error)
-            {
-                HeadlessLoop.Answer(writer, ok: false, error.Message);
-                return;
-            }
-            catch (IOException)
-            {
-                return;
-            }
+                int space = line.IndexOf(' ', StringComparison.Ordinal);
+                string command = (space < 0 ? line : line[..space]).ToLowerInvariant();
+                string argument = space < 0 ? "" : line[(space + 1)..];
+                if (command is "quit" or "exit")
+                {
+                    await HeadlessLoop.AnswerAsync(writer, true, "", connection.Token).ConfigureAwait(false);
+                    RequestClose();
+                    return;
+                }
 
-            if (read is null) return;
-            string line = read.Trim();
-            if (line.Length == 0) continue;
+                try
+                {
+                    string payload = await ExecuteCommandAsync(command, argument, connection.Token).ConfigureAwait(false);
+                    await HeadlessLoop.AnswerAsync(writer, true, payload, connection.Token).ConfigureAwait(false);
+                }
+                catch (Exception error) when (error is InvalidOperationException or ArgumentException or IOException or FormatException or OverflowException)
+                {
+                    connection.Token.ThrowIfCancellationRequested();
+                    await HeadlessLoop.AnswerAsync(writer, false, error.Message, connection.Token).ConfigureAwait(false);
+                }
+            }
+        }
+        catch (OperationCanceledException) when (connection.IsCancellationRequested)
+        {
+            // Submit's task completes only after injected input cleanup has been consumed. Do not
+            // accept another connection until that acknowledgement, even after the client left.
+        }
+        finally
+        {
+            connection.Cancel();
+            string? complaint = await receiving.ConfigureAwait(false);
+            if (complaint is not null && !ct.IsCancellationRequested)
+                await HeadlessLoop.AnswerAsync(writer, false, complaint, ct).ConfigureAwait(false);
+        }
+    }
 
-            int space = line.IndexOf(' ', StringComparison.Ordinal);
-            string command = (space < 0 ? line : line[..space]).ToLowerInvariant();
-            string argument = space < 0 ? "" : line[(space + 1)..];
-
-            if (command is "quit" or "exit")
+    private static async Task<string?> ReceiveCommandsAsync(
+        StreamReader reader, ChannelWriter<string> lines, CancellationTokenSource connection)
+    {
+        try
+        {
+            while (await HeadlessLoop.ReadCommandAsync(reader, connection.Token).ConfigureAwait(false) is { } read)
             {
-                HeadlessLoop.Answer(writer, ok: true, "");
-                RequestClose();
-                return;
+                string line = read.Trim();
+                if (line.Length == 0) continue;
+                if (!lines.TryWrite(line))
+                    return $"The live connection already has {MaxQueue} commands waiting; wait for an answer before sending more.";
             }
-
-            try
-            {
-                string payload = await ExecuteCommandAsync(command, argument, ct).ConfigureAwait(false);
-                HeadlessLoop.Answer(writer, ok: true, payload);
-            }
-            catch (OperationCanceledException) when (ct.IsCancellationRequested)
-            {
-                return;
-            }
-            catch (Exception error) when (error is InvalidOperationException or ArgumentException or IOException or FormatException or OverflowException)
-            {
-                HeadlessLoop.Answer(writer, ok: false, error.Message);
-            }
+            return null;
+        }
+        catch (ArgumentException error)
+        {
+            return error.Message;
+        }
+        catch (Exception error) when (error is IOException or ObjectDisposedException or OperationCanceledException)
+        {
+            return null;
+        }
+        finally
+        {
+            lines.TryComplete();
+            connection.Cancel();
         }
     }
 
@@ -902,42 +959,46 @@ internal sealed class LiveSession : IDisposable
         throw new InvalidOperationException($"No widget matching \"{query}\". The frame drew:\n{tree.Print()}");
     }
 
-    private async Task<string> WaitReadyAsync(double seconds, CancellationToken ct)
-    {
-        TimeSpan budget = TimeSpan.FromSeconds(seconds);
-        Stopwatch watch = Stopwatch.StartNew();
-        int frames = 0;
-        while (true)
-        {
-            LiveSnapshot snap = await SnapshotAsync(pixels: false, ct).ConfigureAwait(false);
-            frames++;
-            if (snap.Ready) return snap.Print();
-            if (watch.Elapsed >= budget)
-            {
-                throw new InvalidOperationException(
-                    $"No frame marked itself ready within {seconds}s ({frames} frames drawn). " +
-                    "The app declares readiness with ui.MarkReady() once its data is complete.");
-            }
-        }
-    }
+    private Task<string> WaitReadyAsync(double seconds, CancellationToken ct) => WaitAsync(seconds, null, ct);
 
-    private async Task<string> WaitTextAsync(double seconds, string query, CancellationToken ct)
+    private Task<string> WaitTextAsync(double seconds, string query, CancellationToken ct) => WaitAsync(seconds, query, ct);
+
+    private async Task<string> WaitAsync(double seconds, string? query, CancellationToken ct)
     {
-        TimeSpan budget = TimeSpan.FromSeconds(seconds);
         Stopwatch watch = Stopwatch.StartNew();
+        TimeSpan budget = TimeSpan.FromSeconds(seconds);
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        deadline.CancelAfter(budget);
         int frames = 0;
-        while (true)
+        LiveSnapshot? last = null;
+        try
         {
-            LiveSnapshot snap = await SnapshotAsync(pixels: false, ct).ConfigureAwait(false);
-            frames++;
-            if (snap.Tree.TryFind(query, out _)) return snap.Print();
-            if (watch.Elapsed >= budget)
+            while (watch.Elapsed < budget)
             {
-                throw new InvalidOperationException(
-                    $"No frame drew \"{query}\" within {seconds}s ({frames} frames drawn). " +
-                    $"The last frame drew:\n{snap.Print()}");
+                ct.ThrowIfCancellationRequested();
+                Task<LiveSnapshot> pending = SnapshotAsync(pixels: false, deadline.Token);
+                // A capture injects no input. The wait may end during a modal pump or a stalled
+                // draw; its cancelled capture retires at the next boundary, without keeping
+                // the protocol caller hostage to that frame. Observe a later teardown fault.
+                _ = pending.ContinueWith(static task => { _ = task.Exception; }, CancellationToken.None,
+                    TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                last = await pending.WaitAsync(deadline.Token).ConfigureAwait(false);
+                frames++;
+                ct.ThrowIfCancellationRequested();
+                bool satisfied = query is null ? last.Ready : last.Tree.TryFind(query, out _);
+                if (watch.Elapsed >= budget || deadline.IsCancellationRequested) break;
+                if (satisfied) return last.Print();
             }
         }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested && deadline.IsCancellationRequested)
+        {
+        }
+        ct.ThrowIfCancellationRequested();
+        throw new InvalidOperationException(query is null
+            ? $"No frame marked itself ready within {seconds}s ({frames} frames drawn). " +
+                "The app declares readiness with ui.MarkReady() once its data is complete."
+            : $"No frame drew \"{query}\" within {seconds}s ({frames} frames drawn). " +
+                (last is null ? "No frame completed during the wait." : $"The last frame drew:\n{last.Print()}"));
     }
 
     private static unsafe void SavePng(string path, byte[] pixels, int w, int h)
@@ -1053,8 +1114,10 @@ internal sealed class LiveSession : IDisposable
 
         DeleteDiscoveryFile();
         _pipeCts.Cancel();
+        lock (_gate) _pipeServer?.Dispose();
 
         FailAllPending("The live app closed before it could answer.");
+        if (ReferenceEquals(_threadSession, this)) _threadSession = null;
 
         if (_bound) WidgetRecorder.Attach(_recorder, enabled: false);
         StopWake();
@@ -1079,15 +1142,10 @@ internal sealed class LiveSession : IDisposable
             }
         }
 
-        try
-        {
-            _pipeTask.Wait(TimeSpan.FromMilliseconds(200));
-        }
-        catch (AggregateException)
-        {
-        }
-
-        _pipeCts.Dispose();
+        // All reads/writes are cancellable and the active pipe is closed. Pending UI tasks were
+        // failed above, so joining cannot depend on the window pumping another frame.
+        try { _pipeTask.GetAwaiter().GetResult(); }
+        finally { _pipeCts.Dispose(); }
     }
 
     private enum StepKind

@@ -1,3 +1,5 @@
+using System.IO.Pipes;
+using System.Text;
 using System.Text.Json;
 using CuiSharp.Hosting;
 using CuiSharp.Tools;
@@ -364,6 +366,169 @@ public class LiveControlTests
         (exit, _, err) = RunCli("quit", "-a");
         Assert.Equal(0, exit);
         Assert.True(window.WaitClosed(TimeSpan.FromSeconds(10)));
+    }
+
+    [Fact]
+    public async Task ACanceledKeyIsReleasedBeforeAcknowledgementAndTheNextKeyStillWorks()
+    {
+        if (!CanRun) return;
+        using var cancel = new CancellationTokenSource();
+        bool sawDown = false, held = false;
+        int presses = 0;
+        using LiveWindow window = LiveWindow.StartLive(ui =>
+        {
+            held = ui.KeyDown(Key.A);
+            if (held)
+            {
+                sawDown = true;
+                if (ui.KeyPressed(Key.A)) presses++;
+                cancel.Cancel();
+            }
+            ui.Text(held ? "Held" : "Released");
+        });
+
+        await Assert.ThrowsAsync<TaskCanceledException>(() => window.Session.KeyAsync(Key.A, cancel.Token).WaitAsync(TimeSpan.FromSeconds(5)));
+        Assert.True(sawDown);
+        Assert.False(held);
+        LiveSnapshot later = await window.Session.FrameAsync(3).WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Contains(later.Entries, widget => widget.Text == "Released");
+        int before = presses;
+        await window.Session.KeyAsync(Key.A).WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal(before + 1, presses);
+        Assert.False(held);
+    }
+
+    [Fact]
+    public async Task ABackgroundSurfacePainterDoesNotBlockTheLiveWindowsBoundary()
+    {
+        if (!CanRun) return;
+        using LiveWindow window = LiveWindow.StartLive(ui => ui.Text("Live window"));
+        Await(window.Session.SnapshotAsync(pixels: false));
+        using var entered = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        Task background = Task.Run(() =>
+        {
+            using var surface = CuiSurface.Create(100, 100);
+            surface.BeginFrame();
+            surface.Ui.Canvas("background", Size.Px(80), Size.Px(80), (ui, rect) =>
+            {
+                entered.Set();
+                release.Wait(TimeSpan.FromSeconds(10));
+                ui.DrawRect(rect, Color.Accent);
+            });
+            surface.EndFrame();
+        });
+        try
+        {
+            Assert.True(entered.Wait(TimeSpan.FromSeconds(5)));
+            LiveSnapshot snapshot = await window.Session.SnapshotAsync(pixels: false)
+                .WaitAsync(TimeSpan.FromSeconds(3));
+            Assert.Contains(snapshot.Entries, widget => widget.Text == "Live window");
+            Assert.False(background.IsCompleted);
+        }
+        finally
+        {
+            release.Set();
+            await background.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+    }
+
+    [Theory]
+    [InlineData("wait", "0.2")]
+    [InlineData("waittext", "0.2 Target")]
+    public async Task AWaitExpiresWhileItsFrameIsBlockedInsteadOfAcceptingALateSuccess(string command, string argument)
+    {
+        if (!CanRun) return;
+        bool armed = false;
+        using var entered = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        using LiveWindow window = LiveWindow.StartLive(ui =>
+        {
+            if (Volatile.Read(ref armed))
+            {
+                entered.Set();
+                release.Wait(TimeSpan.FromSeconds(10));
+                ui.MarkReady();
+                ui.Text("Target");
+            }
+            else ui.Text("Loading");
+        });
+        Await(window.Session.SnapshotAsync(pixels: false));
+        Volatile.Write(ref armed, true);
+        Task<LiveSnapshot> blocked = window.Session.SnapshotAsync(pixels: false);
+        try
+        {
+            // Start the clock only once the UI is definitely blocked; scheduling a first
+            // frame must not consume the deadline this test is trying to exercise.
+            Assert.True(entered.Wait(TimeSpan.FromSeconds(5)));
+            Task<string> wait = window.Session.ExecuteCommandAsync(command, argument);
+            InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                wait.WaitAsync(TimeSpan.FromSeconds(3)));
+            Assert.Contains("within 0.2s", error.Message, StringComparison.Ordinal);
+            Assert.False(release.IsSet);
+        }
+        finally { release.Set(); }
+        await blocked.WaitAsync(TimeSpan.FromSeconds(5));
+        LiveSnapshot later = await window.Session.SnapshotAsync(pixels: false).WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(later.Ready);
+        Assert.Contains(later.Entries, widget => widget.Text == "Target");
+    }
+
+    [Fact]
+    public async Task DisconnectingDuringAWaitFreesThePipeForTheNextClient()
+    {
+        if (!CanRun) return;
+        int frames = 0;
+        using LiveWindow window = LiveWindow.StartLive(ui =>
+        {
+            Interlocked.Increment(ref frames);
+            ui.Text("Still loading");
+        });
+        Await(window.Session.SnapshotAsync(pixels: false));
+        using (var first = ConnectPipe(window))
+        {
+            using var reader = new StreamReader(first, Encoding.UTF8, false, 1024, leaveOpen: true);
+            Assert.StartsWith("CUI-READY ", await reader.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(5)));
+            int before = Volatile.Read(ref frames);
+            first.Write(Encoding.UTF8.GetBytes("wait 3600\n"));
+            first.Flush();
+            Assert.True(SpinWait.SpinUntil(() => Volatile.Read(ref frames) >= before + 3, TimeSpan.FromSeconds(5)));
+        }
+        using var next = ConnectPipe(window);
+        using var client = HeadlessClient.Attach(next, next, readyTimeout: TimeSpan.FromSeconds(3));
+        Answer answer = client.Send("tree", answerTimeout: TimeSpan.FromSeconds(3));
+        Assert.True(answer.Ok, answer.Payload);
+        Assert.Contains("Still loading", answer.Payload, StringComparison.Ordinal);
+        Assert.False(window.IsClosed);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("part of a command")]
+    public async Task ClosingTheWindowClosesAnIdleOrPartialLineClientAndJoinsTheServer(string partialLine)
+    {
+        if (!CanRun) return;
+        using LiveWindow window = LiveWindow.StartLive(ui => ui.Text("Shutdown"));
+        using var pipe = ConnectPipe(window);
+        using var reader = new StreamReader(pipe, Encoding.UTF8, false, 1024, leaveOpen: true);
+        Assert.StartsWith("CUI-READY ", await reader.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(5)));
+        if (partialLine.Length > 0)
+        {
+            pipe.Write(Encoding.UTF8.GetBytes(partialLine));
+            pipe.Flush();
+        }
+        window.Session.RequestClose();
+        Assert.True(window.WaitClosed(TimeSpan.FromSeconds(5)));
+        Assert.Null(await reader.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(3)));
+        Assert.True(window.Session.PipeCompletion.IsCompletedSuccessfully);
+        Assert.False(File.Exists(window.Session.DiscoveryFilePath));
+    }
+
+    private static NamedPipeClientStream ConnectPipe(LiveWindow window)
+    {
+        var pipe = new NamedPipeClientStream(".", window.Session.PipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
+        try { pipe.Connect(3000); return pipe; }
+        catch { pipe.Dispose(); throw; }
     }
 
     private static (int Exit, string Out, string Err) RunCli(params string[] args)

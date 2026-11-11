@@ -36,8 +36,8 @@ in [ARCHITECTURE.md](ARCHITECTURE.md). Every item here passes the same gates as 
 - **Complete layout introspection.** `cui layout` can report verified named rectangles and
   lower-bound unions, but CUI exposes neither id-0 container rectangles nor authoritative
   scroll/content extents. A read-only layout walk and scroll-info API belong upstream.
-- **Safe live-window control.** A managed window-session prototype cannot prove callbacks are at a
-  safe frame boundary during nested modal/deferred-paint pumps, nor reliably cancel input during
-  native teardown. This needs an upstream post-at-frame-boundary/wake and destroy-lifecycle hook;
-  do not ship the current prototype as a supported tool.
+- **Cross-platform live-window control.** Windows live attach is opt-in and uses the pinned
+  backend's between-frame message pump, thread/context-owned callback guards and destruction
+  hooks. Other backends still need an upstream post-at-frame-boundary/wake and destroy-lifecycle
+  API; do not substitute a background render loop or silently start a headless app.
 - **macOS signing and notarization** for a distributed `.app`.

@@ -259,10 +259,20 @@ anything round-trip. The reader re-synchronizes on any line that is not a header
 print whatever it likes: its output goes to stderr and the protocol stays clean.
 
 The tool stays a relay: it builds (or reuses a published build), starts the app headless, sends
-one command, prints one answer, and gets out of the way. It is deliberately not a test framework,
-not a session manager and not a hot reload integration — `CuiSharp.Testing` is the fast, repeatable
-way to drive an app from an agent, and `dotnet watch` is how a human edits in place. Anything that
-would need a stateful daemon belongs in the testing driver, not here.
+one command, prints one answer, and gets out of the way. With `--attach`, the same protocol drives
+an explicitly enabled Windows live window over a user-only local named pipe instead. There is no
+HTTP/MCP server or separate daemon. `CuiSharp.Testing` remains the fast, repeatable way to drive an
+app from an agent, and `dotnet watch` is how a human edits in place.
+
+Live work runs on the owning window thread, between completed frames in the pinned Win32 backend's
+message pump. Callback nesting guards are thread/context-owned: an unrelated surface cannot change
+that window's guard. A connection has a bounded asynchronous reader that detects EOF even during
+command execution. Disconnects cancel outstanding work; injected keys/buttons are released and a
+cleanup frame consumes the release before the next client is accepted. Already-consumed actions
+cannot be rolled back. Capture-only waits enforce their wall-clock deadline even if drawing stalls
+and never accept a late success. Teardown closes the active pipe and joins its worker after pending
+UI tasks are failed, without requiring another frame. `CuiSharpLive=false` removes the live channel
+from an ordinary AOT publish; retaining it requires `-p:CuiSharpLive=true` and runtime opt-in.
 
 An app opts in by running headless (`CUISHARP_HEADLESS=1` or `--headless`). `CuiApp.Run` is the only
 place that decides, and a hosted app reaches it with its host's draw callback, so a tool drives the

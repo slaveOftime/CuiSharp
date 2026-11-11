@@ -251,17 +251,6 @@ public sealed unsafe class CuiApp : IDisposable
         if (Features.Headless && Hosting.HeadlessLoop.Requested(args))
             return Hosting.HeadlessLoop.Run(draw, options);
 
-        // Live attach is opt-in three ways and platform-honest: a Windows-first hook, so any
-        // other platform that was asked for it fails here instead of showing a window no tool
-        // can reach.
-        bool live = Features.Live && (options.LiveAttach || Hosting.LiveSession.Requested(args));
-        if (live && !OperatingSystem.IsWindows())
-        {
-            throw new NotSupportedException(
-                "Live attach is Windows-only for now: no other backend has a proven way to wake CUI's " +
-                "idle loop or run work at its frame boundaries. Run without live attach on this platform.");
-        }
-
         // CUI owns the loop here on purpose. `cui_app_run` registers a frame
         // callback, and that is the callback the OS-driven resize loop invokes:
         // while the user drags a window border, Windows runs a modal message loop
@@ -271,12 +260,17 @@ public sealed unsafe class CuiApp : IDisposable
         // the caller's loop that is blocked, so the plan's rule is that a real
         // window runs through Run.
         var state = new RunState(options, draw);
-        if (live)
+        // Keep the opt-in branch inside the feature gate, rather than storing the gate in a
+        // local: AOT's dependency scanner must discard the entire IPC construction path.
+        if (Features.Live)
         {
-            // The message window belongs to the thread that runs cui_app_run, so it is created
-            // here, on the thread about to enter the loop — and a live request that cannot build
-            // its channel fails here, before any window shows, instead of running undriven.
-            state.Live = new Hosting.LiveSession(options, state.Frame);
+            if (options.LiveAttach || Hosting.LiveSession.Requested(args))
+            {
+                if (!OperatingSystem.IsWindows())
+                    throw new NotSupportedException("Live attach is Windows-only for now. Run without live attach on this platform.");
+                // The message window belongs to the thread about to enter CUI's native loop.
+                state.Live = new Hosting.LiveSession(options, state.Frame);
+            }
         }
 
         GCHandle handle = GCHandle.Alloc(state);
@@ -310,7 +304,7 @@ public sealed unsafe class CuiApp : IDisposable
         }
         finally
         {
-            state.Live?.Dispose();
+            if (Features.Live) state.Live?.Dispose();
             LiveResize.Uninstall(state.WindowHandle);
             state.Window?.Release();
             handle.Free();
@@ -337,7 +331,7 @@ public sealed unsafe class CuiApp : IDisposable
             nint app = Win32.AppOf(Win32.FindCuiWindow());
             if (app == 0)
             {
-                if (Live is not null)
+                if (Features.Live && Live is not null)
                     throw new InvalidOperationException("Live attach could not recover the native CUI window on the UI thread.");
                 return;
             }
@@ -346,7 +340,7 @@ public sealed unsafe class CuiApp : IDisposable
             Window = new CuiWindow(app) { FileDialog = Options.FileDialog };
             LiveResize.Install(WindowHandle, Options.NoVsync);
             Options.WindowCreated?.Invoke(Window);
-            Live?.Bind(app, ui, WindowHandle);
+            if (Features.Live) Live?.Bind(app, ui, WindowHandle);
         }
     }
 
@@ -366,7 +360,7 @@ public sealed unsafe class CuiApp : IDisposable
         state.Frame.Reset();
         Utf8.BeginFrame();
         state.Frame.SyncLocalization(ui);
-        state.Live?.EnterFrame();
+        if (Features.Live) state.Live?.EnterFrame();
         try
         {
             state.Draw(new Ui(ui, state.Frame));
@@ -375,7 +369,7 @@ public sealed unsafe class CuiApp : IDisposable
         {
             // A live capture is reading this frame's labels out of the arena the line above will
             // reset on the next callback, so its copies are taken now, before that happens.
-            state.Live?.SealFrame();
+            if (Features.Live) state.Live?.SealFrame();
         }
     }
 

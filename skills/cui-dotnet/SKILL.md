@@ -600,6 +600,10 @@ behind, so anything that should be checked twice belongs in a test instead.
   pass `-a` / `--attach` (or `--attach=<pid|title>`) to any command (`dotnet cui tree -a`,
   `dotnet cui click Save -a`, `dotnet cui png live.png -a`, `dotnet cui quit -a`). Commands travel over
   a user-only local named pipe (`cui-live-<pid>-<nonce>`) and leave the window open between calls.
+  Published AOT apps omit the listener by default: publish with `-p:CuiSharpLive=true` to retain it,
+  then opt in at runtime with `--live` or `LiveAttach`. Disconnecting abandons pending commands;
+  already-consumed input cannot be undone, but injected held input is released before the next
+  client is accepted. A wait timeout is an error, including when the frame completes late.
 - The app's own output — `Console.WriteLine`, a logger, a stack trace — reaches your stderr, so stdout
   is exactly the answer you asked for.
 - Text in a script the bundled Latin faces do not cover draws nothing at all, with no box and no
@@ -615,13 +619,14 @@ behind, so anything that should be checked twice belongs in a test instead.
 
 `dotnet publish -c Release -r win-x64` links CUI into one executable. The package already trims it:
 a self-contained publish compiles the headless channel and the framework diagnostics a shipped app
-never reads out of the binary, which is about 20% of a small app. Three properties are the whole
+never reads out of the binary, which is about 20% of a small app. Four properties are the whole
 vocabulary, and the defaults are right for most apps:
 
 | Property | Default on a publish | Set it when |
 |---|---|---|
 | `CuiSharpSizeProfile` | `true` | `false` keeps telemetry, hot-reload metadata and HTTP tracing |
 | `CuiSharpHeadless` | `false` | `true` keeps the channel a tool drives the published exe with |
+| `CuiSharpLive` | `false` | `true` keeps Windows live attach; the app must still opt in at runtime |
 | `CuiSharpVerboseErrors` | `false` | `true` keeps framework exception messages and stack traces |
 
 `OptimizationPreference=Size` and `InvariantGlobalization=true` are the app's call, not the
