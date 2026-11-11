@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 
 namespace CuiSharp.Hosting;
@@ -60,7 +59,17 @@ public sealed class Mutation<T> : IDisposable
         ArgumentNullException.ThrowIfNull(work);
         _work = work;
         _apply = apply;
+        // A component is usually built on the UI thread, but DI may construct it earlier or
+        // elsewhere. Run() binds the completion to the thread that actually starts the work.
+        Frames = FrameDispatcher.Current;
     }
+
+    /// <summary>
+    /// The frame thread that applies this mutation's result. Captured when the mutation is created
+    /// and reset on every <see cref="Run"/> call, so a mutation built ahead of the UI it belongs to
+    /// still lands on the thread that starts its work.
+    /// </summary>
+    internal FrameDispatcher Frames { get; private set; }
 
     /// <summary>True while the operation is in flight.</summary>
     public bool IsRunning => _pending is { IsCompleted: false };
@@ -79,6 +88,10 @@ public sealed class Mutation<T> : IDisposable
     public void Run()
     {
         if (IsRunning || _disposed) return;
+
+        // Called from Draw, the one place a mutation is meant to start: the frame that is drawing
+        // is the frame that will apply the result, whatever thread the mutation was built on.
+        Frames = FrameDispatcher.Current;
 
         Volatile.Write(ref _error, null);
         _pending = null;
@@ -177,7 +190,11 @@ public sealed class Mutation<T> : IDisposable
         }
         else if (current)
         {
+            // Error is the completion signal callers observe. Publish it only after PendingWork
+            // has been settled, so observing the error also observes the matching count update.
+            Settle(generation);
             Volatile.Write(ref _error, task.Exception?.GetBaseException() ?? new TaskCanceledException(task));
+            return;
         }
 
         Settle(generation);
@@ -245,19 +262,15 @@ public sealed class Mutation : IDisposable
 /// <para>
 /// The frame boundary is the only place it may run, so a frame never observes a
 /// half-applied result: everything queued is applied at the start of a frame, and
-/// that frame draws the new state.
+/// that frame draws the new state. Only a frame on the thread which started the work drains its
+/// completions — see <see cref="FrameDispatcher"/>.
 /// </para>
 /// </summary>
 internal static class Completions
 {
-    private static readonly ConcurrentQueue<Action> Queue = new();
-
     internal static void Post<T>(Mutation<T> owner, T value, long generation) =>
-        Queue.Enqueue(() => owner.Apply(value, generation));
+        owner.Frames.Post(() => owner.Apply(value, generation));
 
     /// <summary>Runs everything that finished since the last frame, on the calling thread.</summary>
-    internal static void Drain()
-    {
-        while (Queue.TryDequeue(out Action? apply)) apply();
-    }
+    internal static void Drain() => FrameDispatcher.Current.Drain();
 }

@@ -391,12 +391,57 @@ if (!ui.WantsKeyboard && ui.Shortcut(Mods.Primary, Key.K))
 
 ## Theming
 
+Two layers: the theme the app picks, and the tokens it can retune.
+
 ```csharp
 CuiApp.Run(new CuiAppOptions { Theme = Theme.Dark, Accent = Accent.Violet, FollowSystemTheme = true }, Draw);
 ui.Theme = Theme.Dark;                // from any frame; CUI animates the change
 ui.Accent = Accent.Blue;
 ui.ToggleTheme();                     // what a Ctrl+J dark-mode command is
 ```
+
+### Design tokens
+
+`ui.Style` is the live theme: radii, control heights, the text and heading scale, the motion
+multiplier and the palette. Take it into a local — the local is a pointer into CUI's own theme, so
+nothing is copied and nothing allocates — and an assignment applies from the next frame.
+
+```csharp
+ThemeStyle t = ui.Style;
+
+t.RadiusControl = 6;      // buttons, inputs (10)
+t.RadiusPanel = 10;       // menus, popovers; their items follow (14)
+t.RadiusSurface = 14;     // cards, dialogs (18)
+
+t.ControlMd = 32;          // default control height (36); Sm 30, Lg 44
+t.TextBody = 14;           // body text (13); Xs 11, Sm 12, Lg 15
+t.SetHeading(1, 32);       // h1..h4 (36, 28, 22, 17)
+
+t.FontScale = 1.1f;       // every size at once, for a "text size" preference
+t.Motion = 2f;            // slow motion while designing a transition
+t[Token.Accent] = Color.Oklch(0.62f, 0.19f, 145);   // a brand colour, still a token
+```
+
+A theme or accent switch keeps the radii, the motion multiplier and the font scale, so an app that
+retunes those once at startup keeps them through a dark-mode command. Every other member is a read
+of what CUI is drawing with this frame, which is the honest way to react to it.
+
+**Spacing is not a token.** Padding and gap belong to the container that has them, so one rhythm is
+a preset struct the app declares once and passes around:
+
+```csharp
+internal static class Rhythm
+{
+    public static readonly Box Panel = new() { Pad = 20, Gap = 12 };
+    public static readonly Box Tight = new() { Pad = 12, Gap = 6 };
+}
+
+using (ui.Column(Rhythm.Panel)) { … }
+```
+
+Everything here participates in the frame's budget: reading and writing tokens allocates nothing, so
+it is safe to do it every frame (`TextBody = MathF.Round(13 * Scale)` for a slider) and just as safe
+to do it once at startup.
 
 ## Translating the date names
 

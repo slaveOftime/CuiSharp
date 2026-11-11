@@ -41,6 +41,18 @@ The gallery now draws everything CUI ships, and a published binary carries only 
 - **`ui.ChatMessage(text, opts)`** is the usual call: the markdown result is an optional `ref`, so
   a plain bubble no longer needs a throwaway local. `ui.InlineEdit(id, ref text)` gets the same
   treatment from a default buffer size.
+- **`ui.Style` exposes CUI's design tokens.** `ThemeStyle` is a live view over the theme the frame
+  draws with — `RadiusControl`/`RadiusPanel`/`RadiusSurface`, `ControlSm`/`ControlMd`/`ControlLg`,
+  `TextXs`/`TextSm`/`TextBody`/`TextLg`, `GetHeading(1..4)`/`SetHeading`, `FontScale`, `Motion`, the
+  palette through `style[Token.Accent]`, the four tone colours a widget reads live
+  (`ToneInfo`, `ToneTeal`, `ToneViolet`, `ToneRose`) and the two shadow layers of each elevation.
+  It holds CUI's own pointer, so nothing is copied, an assignment allocates nothing and applies on
+  the next frame. A theme or accent switch keeps the radii, the motion multiplier and the font
+  scale, which upstream does on purpose. Padding and gap are not tokens — a container carries its
+  own in its `Box` — and the guide shows the preset struct that gives an app one rhythm.
+- **`Color` is comparable and printable.** `IEquatable<Color>`, `==`, `!=` and a `ToString` that
+  reads `#rrggbb`, `#rrggbbaa` or `Token.Accent`. A token compares as the token, not as the channels
+  it resolves to, which is what a widget draws with.
 
 ### Changed
 
@@ -78,6 +90,11 @@ The gallery now draws everything CUI ships, and a published binary carries only 
 
 ### Fixed
 
+- **A frame does not collect completions from work started on another thread.** `Mutation` handed
+  its completion to one process-wide queue that every surface drained, so the next frame to draw
+  could run another thread's `apply` callback against state it did not own, and pay for the allocation
+  itself. Completions now queue into the `FrameDispatcher` of the thread that called `Run`; only
+  frames on that thread drain them. No API change.
 - **`ui.Tour` no longer needs its result assigned to the step.** `cui_tour_ex` returns the action
   the user took and moves the step through its `ref`, so `step = ui.Tour(…)` overwrote the step
   with `CUI_TOUR_NONE` every frame: the tours on the gallery's Tools and Audio pages could not

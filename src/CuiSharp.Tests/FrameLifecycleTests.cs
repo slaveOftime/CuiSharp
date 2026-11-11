@@ -84,9 +84,10 @@ public class FrameLifecycleTests
         // below is only meaningful with it off.
         Assert.False(WidgetRecorder.Enabled, "a recorder leaked onto this thread");
 
-        // The typical frame, not one lucky run: a batch that straddles a one-off allocation
-        // (another test class finishing on this thread, a pool growing) says nothing about the
-        // frame, while a real per-frame regression shows up in every batch.
+        // Five batches distinguish a steady allocation from a one-off runtime allocation: require
+        // the median to be zero, and report every batch so a failure shows its pattern. The batches
+        // matter because "2 B per frame" alone says little: 40 B collected in one 20-frame batch
+        // reports 2 here, not 40.
         var perFrame = new long[5];
         for (int batch = 0; batch < perFrame.Length; batch++)
         {
@@ -95,10 +96,6 @@ public class FrameLifecycleTests
             perFrame[batch] = (GC.GetAllocatedBytesForCurrentThread() - before) / 20;
         }
 
-        // The denominator is 20 frames, so a batch that allocated 40-59 B reports 2 here: the
-        // batches are in the message because "2 B per frame" alone says nothing about which
-        // allocation it was, and this has been seen once every eight full-suite runs while never
-        // reproducing with the class to itself.
         Assert.True(perFrame.Median() == 0,
             $"allocation per frame by batch: {string.Join(", ", perFrame)} B");
     }

@@ -166,6 +166,32 @@ public unsafe ref partial struct Ui
     /// <summary>Switches to the other theme: what a "dark mode" command is.</summary>
     public readonly void ToggleTheme() => Native.SetTheme(Handle, Theme == Theme.Dark ? Theme.Light : Theme.Dark);
 
+    /// <summary>
+    /// The design tokens this frame draws with — radii, control heights, text and heading sizes, the
+    /// motion multiplier and the palette — as a live view to read and to assign.
+    /// </summary>
+    /// <remarks>
+    /// Take it into a local first: it is a pointer into CUI's own theme, so the local allocates
+    /// nothing and an assignment through it applies from the next frame. <see cref="ThemeStyle"/> says
+    /// what each member means and how a theme switch treats it.
+    /// </remarks>
+    /// <example><code>
+    /// var style = ui.Style;
+    /// style.RadiusControl = 6;
+    /// style.ControlMd = 32;
+    /// style.FontScale = 1.1f;
+    /// </code></example>
+    public readonly ThemeStyle Style
+    {
+        get
+        {
+            if (Handle == 0)
+                throw new InvalidOperationException("a theme belongs to a frame; there is no context to read it from");
+
+            return new ThemeStyle((NativeTheme*)Native.ThemeGet(Handle));
+        }
+    }
+
     /// <summary>Resolves a semantic token to its channels; other colors come back unchanged.</summary>
     public Color ColorOf(Color color)
     {

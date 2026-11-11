@@ -503,7 +503,7 @@
       "why": "`ui.SetReducedMotion(bool)` (Ui.Frame.cs)."
     },
     "cui_theme_get": {
-      "why": "`ui.TokenColor` and `CuiSurface`/`CuiApp` own the theme pointer; the raw struct stays internal."
+      "why": "`ui.Style` (Ui.Style.cs) hands out a ThemeStyle over this pointer for the tokens an app may retune, and `ui.TokenColor` (Ui.Frame.cs) reads one of them; the raw NativeTheme stays internal to those two."
     },
     "cui_make_id": {
       "why": "`ui.MakeId(id)` (Ui.Draw.cs), also used by `ui.Id`/`ui.Keyed`."

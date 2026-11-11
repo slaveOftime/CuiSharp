@@ -184,12 +184,27 @@ The theme is CUI's, not the app's: `ui.Theme` and `ui.Accent` read it and assign
 flips it, and CUI animates every colour token across the change on the frames that follow. There is
 no dirty flag to keep.
 
+`ui.Style` is the same theme seen as tokens. `ThemeStyle` holds CUI's own `cui_theme` pointer rather
+than a copy, so a member is a read or a write of what the next frame draws with, costs no allocation,
+and cannot outlive the frame — which is why it is a `ref struct` and why a local is the way to use it.
+It is a view, not a bag of settings: a container's padding and gap stay in its `Box`, and native
+still owns the defaults, the light/dark palettes and the animation. Only the tokens upstream reads on
+every frame are writable; the two that `cui__theme_build` copies into other tokens are not exposed,
+because a write to those would not be visible until the next rebuild.
+
 `CuiSurface` runs the same draw code with no window, driving frames by hand: that is what the
 tests, the benchmarks, the snapshots and `dotnet cui` use.
 
-There is no synchronization context, no dispatcher and no `TimeProvider` today. `Mutation` applies
-its result through `Completions`, and that is the whole async story: continuations do not run on the
-UI thread, they hand a value over at the next frame boundary.
+There is no synchronization context and no `TimeProvider` today. `Mutation` applies its result
+through `Completions`, and that is the whole async story: continuations do not run on the UI thread,
+they hand a value over at the next frame boundary.
+
+That boundary belongs to one thread. `Completions` queues into a `FrameDispatcher`, found through a
+thread-static and captured when `Run` starts the work, so a frame applies only results queued by
+mutations started on its thread. This also handles components constructed by DI before the window
+loop starts. A process-wide queue — what this used to be — is applied by whichever surface draws
+first, which can run another thread's callback against the wrong UI and make that frame collect its
+allocations.
 
 ## Native callbacks
 

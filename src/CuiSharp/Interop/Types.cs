@@ -5,7 +5,7 @@ using CuiSharp.Interop;
 namespace CuiSharp;
 
 /// <summary>cui_color. Either four channels or a semantic token that follows the theme.</summary>
-public readonly struct Color
+public readonly struct Color : IEquatable<Color>
 {
     public readonly byte R, G, B, A;
 
@@ -77,6 +77,29 @@ public readonly struct Color
         UiMarshal.FromNative(Native.Alpha(UiMarshal.ToNative(this), multiplier));
 
     public bool IsToken => G == 0xC5 && B == 0x1D;
+
+    /// <summary>
+    /// The same four channels, or the same token. A token compares equal to itself and not to the
+    /// channels it resolves to, because a token is what a widget draws with.
+    /// </summary>
+    public bool Equals(Color other) => R == other.R && G == other.G && B == other.B && A == other.A;
+
+    public override bool Equals(object? obj) => obj is Color other && Equals(other);
+
+    public override int GetHashCode() => HashCode.Combine(R, G, B, A);
+
+    public static bool operator ==(Color left, Color right) => left.Equals(right);
+
+    public static bool operator !=(Color left, Color right) => !left.Equals(right);
+
+    /// <summary>
+    /// <c>#rrggbb</c>, the token's name, or <c>#rrggbbaa</c> — whichever says the colour in a debugger
+    /// or a failed assertion most usefully.
+    /// </summary>
+    public override string ToString() =>
+        IsToken && Enum.IsDefined(typeof(Token), (int)R) && (Token)R != Token.None && (Token)R != Token.Count
+            ? $"Token.{Enum.GetName(typeof(Token), (int)R)}"
+            : A == 255 ? $"#{R:x2}{G:x2}{B:x2}" : $"#{R:x2}{G:x2}{B:x2}{A:x2}";
 }
 
 /// <summary>cui_size: FIT, FILL, a fixed size in points, or a percentage of the parent.</summary>
