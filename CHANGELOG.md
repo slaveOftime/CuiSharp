@@ -90,6 +90,11 @@ The gallery now draws everything CUI ships, and a published binary carries only 
 
 ### Fixed
 
+- **A frame does not collect completions from work started on another thread.** `Mutation` handed
+  its completion to one process-wide queue that every surface drained, so the next frame to draw
+  could run another thread's `apply` callback against state it did not own, and pay for the allocation
+  itself. Completions now queue into the `FrameDispatcher` of the thread that called `Run`; only
+  frames on that thread drain them. No API change.
 - **`ui.Tour` no longer needs its result assigned to the step.** `cui_tour_ex` returns the action
   the user took and moves the step through its `ref`, so `step = ui.Tour(…)` overwrote the step
   with `CUI_TOUR_NONE` every frame: the tours on the gallery's Tools and Audio pages could not

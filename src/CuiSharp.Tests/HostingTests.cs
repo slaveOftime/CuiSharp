@@ -242,6 +242,64 @@ public class HostingTests
     }
 
     [Fact]
+    public void AFrameOnAnotherThreadDoesNotApplyThisThreadsResult()
+    {
+        // The mutation is constructed on this thread, as DI can do before the window starts, but
+        // Run and the frame loop belong to the UI thread. The completion must follow Run's thread,
+        // not the constructor's, and a frame on the constructor thread must not apply it.
+        int constructedOn = Environment.CurrentManagedThreadId;
+        int pendingBefore = Component.PendingOperations;
+        var applied = new List<int>();
+        var work = new SlowWork();
+        using var mutation = new Mutation<int>(_ => work.Task, applied.Add);
+        using var ready = new ManualResetEventSlim();
+        using var allowDrain = new ManualResetEventSlim();
+        Exception? uiError = null;
+        int runOn = 0;
+
+        var ui = new Thread(() =>
+        {
+            try
+            {
+                runOn = Environment.CurrentManagedThreadId;
+                mutation.Run();
+                ready.Set();
+                if (!allowDrain.Wait(TimeSpan.FromSeconds(10)))
+                    throw new TimeoutException("the test never released the UI frame");
+                Completions.Drain();
+            }
+            catch (Exception error)
+            {
+                uiError = error;
+                ready.Set();
+            }
+        });
+        ui.Start();
+
+        try
+        {
+            Assert.True(ready.Wait(TimeSpan.FromSeconds(10)), "the UI thread never started the mutation");
+            Assert.Null(uiError);
+            Assert.NotEqual(constructedOn, runOn);
+
+            work.Finish(7);
+            SpinUntil(() => Component.PendingOperations == pendingBefore);
+
+            // A frame on the construction thread is not the owner of this result.
+            Completions.Drain();
+            Assert.Empty(applied);
+        }
+        finally
+        {
+            allowDrain.Set();
+            Assert.True(ui.Join(TimeSpan.FromSeconds(10)), "the UI thread never finished its frame");
+        }
+
+        Assert.Null(uiError);
+        Assert.Equal([7], applied);
+    }
+
+    [Fact]
     public void RepeatedOperationsSettlePendingWorkExactly()
     {
         // A stale completion that settles the newest run's count leaks a pending frame for the
