@@ -1,4 +1,4 @@
-// Page 4 of 9: checkboxes, switches, radios, sliders, chips.
+// Page 4 of 28: checkboxes, switches, radios, sliders, chips.
 // Part of the CuiSharp.Gallery sample: Selection
 using CuiSharp;
 

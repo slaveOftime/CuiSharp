@@ -87,7 +87,7 @@ public static unsafe class DataDisplayUiExtensions
             return new OpenScope(ui.Handle, ScopeKind.Table, "Table", id, __result != 0);
         }
 
-        /// <summary>Same as the overload with ref sort, but reports nothing back: the state pointer is null, so the widget keeps no sort/interaction state.</summary>
+        /// <summary>Same as the overload with ref sort, but reports nothing back: the state pointer is null, so the widget stores no state the caller could read.</summary>
         public OpenScope Table(UiText id, ReadOnlySpan<TableColumn> columns, TableOpts o = default)
         {
             var __columns = Utf8.AllocFrame<NativeTableColumn>(columns.Length);

@@ -17,7 +17,7 @@ protected override void Draw(Ui ui)
 ## `Gantt`
 
 ```csharp
-public int Gantt(UiText id, ReadOnlySpan<GanttTask> tasks, Date origin, int days, GanttOpts o = default)
+public int Gantt(UiText id, Span<GanttTask> tasks, Date origin, int days, GanttOpts o = default)
 ```
 
 * left to right in any interface: see cui__keep_ltr
@@ -33,7 +33,7 @@ cui_kanban_begin
 ## `KanbanCard`
 
 ```csharp
-public OpenScope KanbanCard(int cardId)
+public LayoutScope KanbanCard(int cardId)
 ```
 
 cui_kanban_card_begin
@@ -41,7 +41,7 @@ cui_kanban_card_begin
 ## `KanbanColumn`
 
 ```csharp
-public OpenScope KanbanColumn(UiText title, int cardCount, KanbanColumnOpts o = default)
+public LayoutScope KanbanColumn(UiText title, int cardCount, KanbanColumnOpts o = default)
 ```
 
 cui_kanban_column_begin_ex
@@ -57,7 +57,7 @@ cui_month_calendar_ex
 ## `WeekCalendar`
 
 ```csharp
-public int WeekCalendar(UiText id, Date weekStart, ReadOnlySpan<CalendarEvent> events, WeekOpts o = default)
+public int WeekCalendar(UiText id, Date weekStart, Span<CalendarEvent> events, WeekOpts o = default)
 ```
 
 * left to right in any interface: see cui__keep_ltr

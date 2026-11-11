@@ -186,6 +186,12 @@ if (result.Changed) Save(_name);      // also .Submitted, .Focused, .Blurred, .A
 
 `TextArea`, `Search`, `TagInput` and `OtpInput` work the same way.
 
+A widget that both moves state through a `ref` and reports what the user did returns the action as
+an enum, never as an `int` that reads like the state: `ui.Tour(id, steps, ref step)` returns
+`TourAction`, `ui.NowPlaying` returns `PlayerEvents`, `ui.ChatComposer` returns `ComposerEvents`,
+`ui.ResponseActions` returns `ResponseEvents`, `ui.Comment` returns `CommentEvents`. Assign the enum
+only if you want the action; the `ref` is the state.
+
 ## Grid state and value selection
 
 Keep one `GridState` per grid, sized to the model. Its selection array must have at least one
@@ -306,6 +312,7 @@ million-sample feed holds 144 fps with 0 B of managed allocation per frame.
 | The UI freezes on a button press | something blocked in the frame | no `.Result`, `.Wait()`, `Thread.Sleep` in `Draw` (CUI001) |
 | Frame rate sags | allocation per frame: LINQ, `new`, string concat | interpolate into a widget; hoist arrays with `static readonly` (CUI007) |
 | An async handler deadlocks or the app crashes at shutdown | `ConfigureAwait(false)` or `async void` in a component | await normally in `Mutation`/`Run` (CUI005, CUI006) |
+| A tour never advances, or Done leaves the card on screen | the widget's return was assigned to the `ref` it also writes | `ui.Tour(…, ref step)` writes the step; its `TourAction` result is what the user pressed |
 
 IDE quick fixes are available for scope disposal (`CUI002`), conditional-body guards (`CUI003`),
 repeated-widget keys (`CUI004`) and an awaited BCL `ConfigureAwait` (`CUI005`). Scope/id fixes are

@@ -18,12 +18,12 @@ class CuiSharp.AiInterfacesUiExtensions
   static Boolean Citation(Ui, Int32, in Source)
   static Boolean ModelPicker(Ui, UiText, ReadOnlySpan<Model>, ref Int32, ModelPickerOpts)
   static Boolean VoiceOrb(Ui, UiText, VoiceState, Single, VoiceOrbOpts)
+  static ComposerEvents ChatComposer(Ui, UiText, ref String, Int32, ref Int32, ref Int32, ComposerOpts)
   static Int32 AgentPlan(Ui, UiText, ReadOnlySpan<PlanStep>, AgentPlanOpts)
-  static Int32 ChatComposer(Ui, UiText, ref String, Int32, ref Int32, ref Int32, ComposerOpts)
   static Int32 PromptSuggestions(Ui, UiText, ReadOnlySpan<PromptSuggestion>, PromptSuggestionsOpts)
-  static Int32 ResponseActions(Ui, UiText, ref Int32, ResponseActionsOpts)
   static Int32 SourceList(Ui, UiText, ReadOnlySpan<Source>)
   static OpenScope Reasoning(Ui, UiText, ReasoningOpts)
+  static ResponseEvents ResponseActions(Ui, UiText, ref Int32, ResponseActionsOpts)
   static Void AgentStatus(Ui, UiText, AgentStatusOpts)
   static Void ContextMeter(Ui, UiText, Single, Single, ContextOpts)
   static Void Reasoning(Ui, UiText, DrawFn, ReasoningOpts)
@@ -32,12 +32,12 @@ class CuiSharp.AiInterfacesUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
   Boolean Citation(Int32, in Source)
   Boolean ModelPicker(UiText, ReadOnlySpan<Model>, ref Int32, ModelPickerOpts)
   Boolean VoiceOrb(UiText, VoiceState, Single, VoiceOrbOpts)
+  ComposerEvents ChatComposer(UiText, ref String, Int32, ref Int32, ref Int32, ComposerOpts)
   Int32 AgentPlan(UiText, ReadOnlySpan<PlanStep>, AgentPlanOpts)
-  Int32 ChatComposer(UiText, ref String, Int32, ref Int32, ref Int32, ComposerOpts)
   Int32 PromptSuggestions(UiText, ReadOnlySpan<PromptSuggestion>, PromptSuggestionsOpts)
-  Int32 ResponseActions(UiText, ref Int32, ResponseActionsOpts)
   Int32 SourceList(UiText, ReadOnlySpan<Source>)
   OpenScope Reasoning(UiText, ReasoningOpts)
+  ResponseEvents ResponseActions(UiText, ref Int32, ResponseActionsOpts)
   Void AgentStatus(UiText, AgentStatusOpts)
   Void ContextMeter(UiText, Single, Single, ContextOpts)
   Void Reasoning(UiText, DrawFn, ReasoningOpts)
@@ -438,6 +438,10 @@ class CuiSharp.CommandPaletteBlockUiExtensions
 class CuiSharp.CommandPaletteBlockUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
   Int32 CommandPalette(ref Boolean, ReadOnlySpan<Command>)
 class CuiSharp.CommandPaletteBlockUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4+<M>$D152016828D0F2CB0A8B78500F4F70D3
+enum CuiSharp.CommentEvents
+  Like
+  None
+  Reply
 struct CuiSharp.CommentOpts
   field Boolean Edited
   field Int32 Depth
@@ -470,6 +474,13 @@ struct CuiSharp.CompareOpts
   field Size Width
   field String AfterLabel
   field String BeforeLabel
+enum CuiSharp.ComposerEvents
+  Attach
+  Model
+  None
+  Remove
+  Send
+  Stop
 struct CuiSharp.ComposerOpts
   field Boolean Busy
   field Int32 MaxLines
@@ -500,14 +511,16 @@ enum CuiSharp.ControlSize
   Md
   Sm
 class CuiSharp.ConversationUiExtensions
-  static Int32 Comment(Ui, UiText, UiText, UiText, ref Int32, ref Boolean, CommentOpts)
+  static CommentEvents Comment(Ui, UiText, UiText, UiText, ref Int32, ref Boolean, CommentOpts)
   static Void ChatDivider(Ui, UiText)
+  static Void ChatMessage(Ui, UiText, ChatOpts)
   static Void ChatMessage(Ui, UiText, ref MarkdownResult, ChatOpts)
   static Void Presence(Ui, UiText, ReadOnlySpan<PresenceUser>, Int32, Single)
   static Void TypingIndicator(Ui, UiText)
 class CuiSharp.ConversationUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
-  Int32 Comment(UiText, UiText, UiText, ref Int32, ref Boolean, CommentOpts)
+  CommentEvents Comment(UiText, UiText, UiText, ref Int32, ref Boolean, CommentOpts)
   Void ChatDivider(UiText)
+  Void ChatMessage(UiText, ChatOpts)
   Void ChatMessage(UiText, ref MarkdownResult, ChatOpts)
   Void Presence(UiText, ReadOnlySpan<PresenceUser>, Int32, Single)
   Void TypingIndicator(UiText)
@@ -783,7 +796,6 @@ class CuiSharp.DataGridUiExtensions
   static Boolean DataGridCellEdit(Ui, ref String, Int32)
   static Boolean DataGridEdit(Ui, ref String, Int32)
   static Boolean DataGridRow(Ui, Int32)
-  static Boolean FilterBar(Ui, UiText, ReadOnlySpan<FilterField>, ref UInt32, ref String, Int32)
   static Boolean TreeCell(Ui, UiText, Int32, Boolean, ref Boolean, UiText)
   static Void DataGridCell(Ui)
   static Void DataGridCellText(Ui, UiText)
@@ -791,7 +803,6 @@ class CuiSharp.DataGridUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
   Boolean DataGridCellEdit(ref String, Int32)
   Boolean DataGridEdit(ref String, Int32)
   Boolean DataGridRow(Int32)
-  Boolean FilterBar(UiText, ReadOnlySpan<FilterField>, ref UInt32, ref String, Int32)
   Boolean TreeCell(UiText, Int32, Boolean, ref Boolean, UiText)
   Void DataGridCell()
   Void DataGridCellText(UiText)
@@ -1435,6 +1446,7 @@ class CuiSharp.Hosting.HeadlessApp
   HeadlessApp ParkPointer()
   HeadlessApp Press()
   HeadlessApp Release()
+  HeadlessApp ScrollAt(Single, Single, Single, Single)
   HeadlessApp Type(String)
   Int32 Settle(Int32, Nullable<TimeSpan>)
   String Print(Boolean)
@@ -1779,7 +1791,7 @@ class CuiSharp.Interop.Native
   static Byte HoldButton(IntPtr, IntPtr, in NativeHoldOpts)
   static Byte HoverCardBegin(IntPtr, IntPtr, in NativeHoverCardOpts)
   static Byte IconButton(IntPtr, IntPtr, in NativeButtonOpts)
-  static Byte ImageCompare(IntPtr, IntPtr, UInt64, UInt64, IntPtr, in NativeCompareOpts)
+  static Byte ImageCompare(IntPtr, IntPtr, UInt64, UInt64, ref Single, in NativeCompareOpts)
   static Byte ImageViewer(IntPtr, IntPtr, UInt64, Int32, Int32, ref NativeImageView, in NativeImageViewerOpts)
   static Byte InspectorBegin(IntPtr, IntPtr, in NativeInspectorOpts)
   static Byte InspectorGroup(IntPtr, IntPtr, IntPtr)
@@ -1873,7 +1885,7 @@ class CuiSharp.Interop.Native
   static Byte VoiceOrb(IntPtr, IntPtr, VoiceState, Single, in NativeVoiceOrbOpts)
   static Byte WantsKeyboard(IntPtr)
   static Byte WantsMouse(IntPtr)
-  static Byte Waveform(IntPtr, IntPtr, IntPtr, Int32, IntPtr, in NativeWaveformOpts)
+  static Byte Waveform(IntPtr, IntPtr, IntPtr, Int32, ref Single, in NativeWaveformOpts)
   static Byte WheelPicker(IntPtr, IntPtr, IntPtr, Int32, ref Int32, in NativeWheelOpts)
   static Byte WritePng(IntPtr, IntPtr, Int32, Int32, Int32)
   static Cursor GetCursor(IntPtr)
@@ -4492,7 +4504,7 @@ class CuiSharp.MarkdownViewUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
   MarkdownResult Markdown(UiText, UiText, MarkdownOpts)
 class CuiSharp.MarkdownViewUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4+<M>$D152016828D0F2CB0A8B78500F4F70D3
 class CuiSharp.MediaUiExtensions
-  static Boolean ImageCompare(Ui, UiText, UInt64, UInt64, out Single, CompareOpts)
+  static Boolean ImageCompare(Ui, UiText, UInt64, UInt64, ref Single, CompareOpts)
   static Int32 CardStack(Ui, UiText, Int32, DrawFn, CardStackOpts)
   static LayoutScope CardStackItem(Ui, Int32)
   static LayoutScope CarouselSlide(Ui)
@@ -4501,7 +4513,7 @@ class CuiSharp.MediaUiExtensions
   static Void Counter(Ui, UiText, Double, CounterOpts)
   static Void Ticker(Ui, UiText, ReadOnlySpan<TickerItem>, TickerOpts)
 class CuiSharp.MediaUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
-  Boolean ImageCompare(UiText, UInt64, UInt64, out Single, CompareOpts)
+  Boolean ImageCompare(UiText, UInt64, UInt64, ref Single, CompareOpts)
   Int32 CardStack(UiText, Int32, DrawFn, CardStackOpts)
   LayoutScope CardStackItem(Int32)
   LayoutScope CarouselSlide()
@@ -4531,10 +4543,10 @@ struct CuiSharp.MenuOpts
 class CuiSharp.MenusAndPopoversUiExtensions
   static Boolean MenuItem(Ui, UiText, MenuItemOpts)
   static Boolean PopoverIsOpen(Ui, UiText)
-  static Int32 Tour(Ui, UiText, ReadOnlySpan<TourStep>, ref Int32, TourOpts)
   static OpenScope ContextMenu(Ui, UiText)
   static OpenScope Menu(Ui, UiText, MenuOpts)
   static OpenScope Popover(Ui, UiText, PopoverOpts)
+  static TourAction Tour(Ui, UiText, ReadOnlySpan<TourStep>, ref Int32, TourOpts)
   static Void ContextMenu(Ui, UiText, DrawFn)
   static Void Menu(Ui, UiText, DrawFn, MenuOpts)
   static Void MenuLabel(Ui, UiText)
@@ -4547,10 +4559,10 @@ class CuiSharp.MenusAndPopoversUiExtensions
 class CuiSharp.MenusAndPopoversUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
   Boolean MenuItem(UiText, MenuItemOpts)
   Boolean PopoverIsOpen(UiText)
-  Int32 Tour(UiText, ReadOnlySpan<TourStep>, ref Int32, TourOpts)
   OpenScope ContextMenu(UiText)
   OpenScope Menu(UiText, MenuOpts)
   OpenScope Popover(UiText, PopoverOpts)
+  TourAction Tour(UiText, ReadOnlySpan<TourStep>, ref Int32, TourOpts)
   Void ContextMenu(UiText, DrawFn)
   Void Menu(UiText, DrawFn, MenuOpts)
   Void MenuLabel(UiText)
@@ -4616,8 +4628,7 @@ class CuiSharp.MoreActionsUiExtensions
   static Boolean StatusButton(Ui, UiText, Status, StatusButtonOpts)
   static Boolean ThemeSwitcher(Ui, ref Int32, Boolean)
   static Boolean ThemeToggle(Ui)
-  static Boolean ToggleGroup(Ui, UiText, ReadOnlySpan<String>, ref Boolean, ToggleGroupOpts)
-  static Int32 Reactions(Ui, UiText, ReadOnlySpan<Reaction>)
+  static Int32 Reactions(Ui, UiText, Span<Reaction>)
   static Int32 SpeedDial(Ui, UiText, ReadOnlySpan<SpeedAction>, SpeedDialOpts)
   static Int32 SplitButton(Ui, UiText, ReadOnlySpan<String>, SplitButtonOpts)
   static Int32 SwipeItem(Ui, UiText, ReadOnlySpan<SwipeAction>, ReadOnlySpan<SwipeAction>, DrawFn)
@@ -4628,8 +4639,7 @@ class CuiSharp.MoreActionsUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
   Boolean StatusButton(UiText, Status, StatusButtonOpts)
   Boolean ThemeSwitcher(ref Int32, Boolean)
   Boolean ThemeToggle()
-  Boolean ToggleGroup(UiText, ReadOnlySpan<String>, ref Boolean, ToggleGroupOpts)
-  Int32 Reactions(UiText, ReadOnlySpan<Reaction>)
+  Int32 Reactions(UiText, Span<Reaction>)
   Int32 SpeedDial(UiText, ReadOnlySpan<SpeedAction>, SpeedDialOpts)
   Int32 SplitButton(UiText, ReadOnlySpan<String>, SplitButtonOpts)
   Int32 SwipeItem(UiText, ReadOnlySpan<SwipeAction>, ReadOnlySpan<SwipeAction>, DrawFn)
@@ -4709,10 +4719,10 @@ class CuiSharp.MotionAndTextEffectsUiExtensions
   static Boolean DockItem(Ui, UiText, UiText, DockItemOpts)
   static Boolean TabBar(Ui, UiText, ReadOnlySpan<TabBarItem>, ref Int32, TabBarOpts)
   static Boolean Typewriter(Ui, UiText, UiText, TextFxOpts)
-  static Boolean Waveform(Ui, UiText, ReadOnlySpan<Single>, out Single, WaveformOpts)
-  static Int32 NowPlaying(Ui, UiText, ref NowPlayingState, NowPlayingOpts)
+  static Boolean Waveform(Ui, UiText, ReadOnlySpan<Single>, ref Single, WaveformOpts)
   static LayoutScope Dock(Ui, UiText, DockOpts)
   static LayoutScope Spotlight(Ui, UiText, SpotlightOpts)
+  static PlayerEvents NowPlaying(Ui, UiText, ref NowPlayingState, NowPlayingOpts)
   static Void DockSeparator(Ui)
   static Void GradientText(Ui, UiText, GradientTextOpts)
   static Void Loader(Ui, LoaderOpts)
@@ -4725,10 +4735,10 @@ class CuiSharp.MotionAndTextEffectsUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F9
   Boolean DockItem(UiText, UiText, DockItemOpts)
   Boolean TabBar(UiText, ReadOnlySpan<TabBarItem>, ref Int32, TabBarOpts)
   Boolean Typewriter(UiText, UiText, TextFxOpts)
-  Boolean Waveform(UiText, ReadOnlySpan<Single>, out Single, WaveformOpts)
-  Int32 NowPlaying(UiText, ref NowPlayingState, NowPlayingOpts)
+  Boolean Waveform(UiText, ReadOnlySpan<Single>, ref Single, WaveformOpts)
   LayoutScope Dock(UiText, DockOpts)
   LayoutScope Spotlight(UiText, SpotlightOpts)
+  PlayerEvents NowPlaying(UiText, ref NowPlayingState, NowPlayingOpts)
   Void DockSeparator()
   Void GradientText(UiText, GradientTextOpts)
   Void Loader(LoaderOpts)
@@ -4872,7 +4882,6 @@ class CuiSharp.PickersUiExtensions
   static Boolean HistogramSlider(Ui, UiText, ReadOnlySpan<Single>, ref Single, ref Single, Single, Single, HistogramOpts)
   static Boolean Knob(Ui, UiText, ref Single, Single, Single, KnobOpts)
   static Boolean LevelMeter(Ui, UiText, ReadOnlySpan<Single>, LevelMeterOpts)
-  static Boolean MultiSelect(Ui, UiText, ReadOnlySpan<String>, ref Boolean, MultiSelectOpts)
   static Boolean RangeCalendar(Ui, UiText, ref DateRange, Int32)
   static Boolean RulerSlider(Ui, UiText, ref Single, Single, Single, RulerOpts)
   static Boolean TimeDial(Ui, UiText, ref Int32, ref Int32, Single)
@@ -4884,7 +4893,6 @@ class CuiSharp.PickersUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
   Boolean HistogramSlider(UiText, ReadOnlySpan<Single>, ref Single, ref Single, Single, Single, HistogramOpts)
   Boolean Knob(UiText, ref Single, Single, Single, KnobOpts)
   Boolean LevelMeter(UiText, ReadOnlySpan<Single>, LevelMeterOpts)
-  Boolean MultiSelect(UiText, ReadOnlySpan<String>, ref Boolean, MultiSelectOpts)
   Boolean RangeCalendar(UiText, ref DateRange, Int32)
   Boolean RulerSlider(UiText, ref Single, Single, Single, RulerOpts)
   Boolean TimeDial(UiText, ref Int32, ref Int32, Single)
@@ -4932,23 +4940,29 @@ struct CuiSharp.PlanStep
   field TaskStatus Status
 class CuiSharp.PlanningUiExtensions
   static Boolean Kanban(Ui, UiText, out KanbanMove, DrawFn)
-  static Int32 Gantt(Ui, UiText, ReadOnlySpan<GanttTask>, Date, Int32, GanttOpts)
-  static Int32 WeekCalendar(Ui, UiText, Date, ReadOnlySpan<CalendarEvent>, WeekOpts)
+  static Int32 Gantt(Ui, UiText, Span<GanttTask>, Date, Int32, GanttOpts)
+  static Int32 WeekCalendar(Ui, UiText, Date, Span<CalendarEvent>, WeekOpts)
+  static LayoutScope KanbanCard(Ui, Int32)
+  static LayoutScope KanbanCard(Ui, Int32, out Boolean)
+  static LayoutScope KanbanColumn(Ui, UiText, Int32, KanbanColumnOpts)
+  static LayoutScope KanbanColumn(Ui, UiText, Int32, KanbanColumnOpts, out Boolean)
   static MonthResult MonthCalendar(Ui, UiText, ref Date, ReadOnlySpan<MonthEvent>, ref Date, MonthOpts)
-  static OpenScope KanbanCard(Ui, Int32)
-  static OpenScope KanbanColumn(Ui, UiText, Int32, KanbanColumnOpts)
-  static Void KanbanCard(Ui, Int32, DrawFn)
-  static Void KanbanColumn(Ui, UiText, Int32, DrawFn, KanbanColumnOpts)
 class CuiSharp.PlanningUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
   Boolean Kanban(UiText, out KanbanMove, DrawFn)
-  Int32 Gantt(UiText, ReadOnlySpan<GanttTask>, Date, Int32, GanttOpts)
-  Int32 WeekCalendar(UiText, Date, ReadOnlySpan<CalendarEvent>, WeekOpts)
+  Int32 Gantt(UiText, Span<GanttTask>, Date, Int32, GanttOpts)
+  Int32 WeekCalendar(UiText, Date, Span<CalendarEvent>, WeekOpts)
+  LayoutScope KanbanCard(Int32)
+  LayoutScope KanbanCard(Int32, out Boolean)
+  LayoutScope KanbanColumn(UiText, Int32, KanbanColumnOpts)
+  LayoutScope KanbanColumn(UiText, Int32, KanbanColumnOpts, out Boolean)
   MonthResult MonthCalendar(UiText, ref Date, ReadOnlySpan<MonthEvent>, ref Date, MonthOpts)
-  OpenScope KanbanCard(Int32)
-  OpenScope KanbanColumn(UiText, Int32, KanbanColumnOpts)
-  Void KanbanCard(Int32, DrawFn)
-  Void KanbanColumn(UiText, Int32, DrawFn, KanbanColumnOpts)
 class CuiSharp.PlanningUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4+<M>$D152016828D0F2CB0A8B78500F4F70D3
+enum CuiSharp.PlayerEvents
+  Next
+  None
+  Prev
+  Seek
+  Toggle
 struct CuiSharp.PopoverOpts
   field Placement Placement
   field Single Gap
@@ -5124,6 +5138,13 @@ struct CuiSharp.ResponseActionsOpts
   field Boolean NoRegenerate
   field Boolean NoShare
   field String CopyText
+enum CuiSharp.ResponseEvents
+  Copy
+  Down
+  None
+  Regenerate
+  Share
+  Up
 struct CuiSharp.RingsOpts
   field Boolean Legend
   field Single Size
@@ -5731,6 +5752,12 @@ struct CuiSharp.ToolOpts
   field String Tooltip
 struct CuiSharp.ToolbarOpts
   field Boolean NoBorder
+enum CuiSharp.TourAction
+  Back
+  Done
+  Next
+  None
+  Skipped
 struct CuiSharp.TourOpts
   field Boolean BlockTarget
   field Single Padding
@@ -5854,15 +5881,19 @@ struct CuiSharp.TreemapOpts
   field String Format
 struct CuiSharp.Ui
   Boolean DateToday(out Date)
+  Boolean FilterBar(UiText, ReadOnlySpan<FilterField>, Span<UInt32>, ref String, Int32)
   Boolean KeyDown(Key)
   Boolean KeyPressed(Key)
+  Boolean LoadImage(UiText, out UInt64, out Int32, out Int32)
   Boolean MouseClicked(MouseButton)
   Boolean MouseDown(MouseButton)
+  Boolean MultiSelect(UiText, ReadOnlySpan<String>, Span<Boolean>, MultiSelectOpts)
   Boolean Number(UiText, ref Double, Double, Double, NumberOpts)
   Boolean OtpInput(UiText, ref String, Int32)
   Boolean ReorderEnd()
   Boolean Shortcut(Mods, Key)
   Boolean TagInput(UiText, ref String, TagOpts)
+  Boolean ToggleGroup(UiText, ReadOnlySpan<String>, Span<Boolean>, ToggleGroupOpts)
   CanvasResult Canvas(UiText, Size, Size, PaintFn)
   ClipScope Clip(RectF)
   Color ColorOf(Color)
@@ -5882,11 +5913,14 @@ struct CuiSharp.Ui
   Single AnimateSpring(UiText, Single, Single, Single)
   Span<T> State(UiText)
   Span<T> State(UiText, Action)
+  String DroppedFile(Int32)
   TextMetrics MeasureText(UiText, Single, Font)
   UInt32 MakeId(UiText)
+  UInt64 CreateImage(Int32, Int32, ReadOnlySpan<Byte>)
   ValueTuple<Single, Single> ViewportSize()
   Void BarChart(UiText, ReadOnlySpan<Single>, ChartOpts, Color)
   Void BarChart(UiText, Series[], ChartOpts)
+  Void DestroyImage(UInt64)
   Void DonutChart(UiText, Single[], String[], ChartOpts)
   Void DrawArc(Single, Single, Single, Single, Single, Single, Color)
   Void DrawCircle(Single, Single, Single, Color)
@@ -5912,12 +5946,14 @@ struct CuiSharp.Ui
   Void SetReducedMotion(Boolean)
   Void ToggleTheme()
   property Accent Accent { get; set; }
+  property Boolean FileDragActive { get; }
   property Boolean IsDisabled { get; }
   property Boolean NeedsRedraw { get; }
   property Boolean WantsKeyboard { get; }
   property Boolean WantsMouse { get; }
   property Cursor Cursor { get; }
   property Double Time { get; }
+  property Int32 DroppedFileCount { get; }
   property Localization Localization { get; }
   property Mods Modifiers { get; }
   property RectF LastRect { get; }

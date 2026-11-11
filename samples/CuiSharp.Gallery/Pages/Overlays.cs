@@ -1,4 +1,4 @@
-// Page 6 of 9: dialogs, sheets, popovers, toasts, tooltips.
+// Page 6 of 28: dialogs, sheets, popovers, toasts, tooltips.
 // Part of the CuiSharp.Gallery sample: Overlays
 using CuiSharp;
 

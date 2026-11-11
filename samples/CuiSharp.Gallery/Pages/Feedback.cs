@@ -1,4 +1,4 @@
-// Page 7 of 9: alerts, progress, loading states, badges, avatars.
+// Page 7 of 28: alerts, progress, loading states, badges, avatars.
 // Part of the CuiSharp.Gallery sample: Feedback
 using CuiSharp;
 

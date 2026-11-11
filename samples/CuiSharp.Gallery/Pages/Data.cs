@@ -1,4 +1,4 @@
-// Page 8 of 9: table, tree, lists, accordion, virtual list.
+// Page 8 of 28: table, tree, lists, accordion, virtual list.
 // Part of the CuiSharp.Gallery sample: Data display
 using CuiSharp;
 

@@ -61,6 +61,19 @@ public unsafe ref partial struct Ui
     /// </code></example>
     public uint LastId => Native.LastId(Handle);
 
+    /// <summary>Number of files the window is tracking as dropped; a dropzone reports them first.</summary>
+    public int DroppedFileCount => Native.DroppedFileCount(Handle);
+
+    /// <summary>True while files are being dragged over the window, for a drop target to light up.</summary>
+    public bool FileDragActive => Native.FileDragActive(Handle) != 0;
+
+    /// <summary>The path of a dropped file, or null when the index is out of range.</summary>
+    public string? DroppedFile(int index)
+    {
+        var path = Native.DroppedFile(Handle, index);
+        return path == 0 ? null : System.Runtime.InteropServices.Marshal.PtrToStringUTF8(path);
+    }
+
     /// <summary>Enumerates items, each inside its own id scope derived from <paramref name="key"/>.</summary>
     public KeyedScope<T> Keyed<T>(T[] items, KeyFn<T> key)
     {

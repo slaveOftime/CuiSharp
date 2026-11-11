@@ -17,7 +17,7 @@ protected override void Draw(Ui ui)
 ## `InlineEdit`
 
 ```csharp
-public int InlineEdit(UiText id, ref string buf, int cap, InlineEditOpts o = default)
+public int InlineEdit(UiText id, ref string buf, int cap = 256, InlineEditOpts o = default)
 ```
 
 cui_inline_edit_ex

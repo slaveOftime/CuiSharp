@@ -1,4 +1,4 @@
-// Page 2 of 9: button variants, sizes, states, menus.
+// Page 2 of 28: button variants, sizes, states, menus.
 // Part of the CuiSharp.Gallery sample: Buttons
 using CuiSharp;
 

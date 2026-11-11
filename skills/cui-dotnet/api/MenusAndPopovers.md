@@ -105,7 +105,7 @@ Tooltip for the previous component, shown after a short hover delay.
 ## `Tour`
 
 ```csharp
-public int Tour(UiText id, ReadOnlySpan<TourStep> steps, ref int step, TourOpts o = default)
+public TourAction Tour(UiText id, ReadOnlySpan<TourStep> steps, ref int step, TourOpts o = default)
 ```
 
 What happened this frame: one of CUI_TOUR_*.

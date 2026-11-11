@@ -44,22 +44,9 @@ $gallery = Join-Path $root 'samples/CuiSharp.Gallery'
 $out = if ([System.IO.Path]::IsPathRooted($Out)) { $Out } else { Join-Path $root $Out }
 New-Item -ItemType Directory -Force $out | Out-Null
 
-# Numbers are fixed so a README link survives a page being added.
-$all = @(
-    [pscustomobject]@{ Number = '01'; Key = 'overview';   Label = 'Overview' }
-    [pscustomobject]@{ Number = '02'; Key = 'buttons';    Label = 'Buttons' }
-    [pscustomobject]@{ Number = '03'; Key = 'inputs';     Label = 'Inputs' }
-    [pscustomobject]@{ Number = '04'; Key = 'selection';  Label = 'Selection' }
-    [pscustomobject]@{ Number = '05'; Key = 'navigation'; Label = 'Navigation' }
-    [pscustomobject]@{ Number = '06'; Key = 'overlays';   Label = 'Overlays' }
-    [pscustomobject]@{ Number = '07'; Key = 'feedback';   Label = 'Feedback' }
-    [pscustomobject]@{ Number = '08'; Key = 'data';       Label = 'Data display' }
-    [pscustomobject]@{ Number = '09'; Key = 'charts';     Label = 'Charts' }
-    [pscustomobject]@{ Number = '10'; Key = 'studio';     Label = 'Studio' }
-    [pscustomobject]@{ Number = '11'; Key = 'tools';      Label = 'Tools' }
-    [pscustomobject]@{ Number = '12'; Key = 'devtools';   Label = 'Developer tools' }
-    [pscustomobject]@{ Number = '13'; Key = 'devtools2';  Label = 'More developer tools' }
-)
+# The page table is shared with the other tools that walk the gallery.
+. (Join-Path $PSScriptRoot 'gallery-pages.ps1')
+$all = $GalleryPages
 
 $chosen = if ($wantedPages.Count -eq 0) { $all } else {
     foreach ($wanted in $wantedPages) {
@@ -86,9 +73,21 @@ foreach ($page in $chosen) {
     if (Test-Path $path) { Remove-Item $path -Force }
     $written.Add($path)
 
+    # The nav list scrolls, and a click on an item below its fold hits whatever is drawn
+    # there. Park the scroll at the top first, and wheel down for the items that live there.
+    [void]$script.AppendLine('wheel 120 400 400')
+    [void]$script.AppendLine('frame 25')
+    if ($page.Scrolled) {
+        [void]$script.AppendLine('wheel 120 400 -40')
+        [void]$script.AppendLine('frame 25')
+    }
+
     # Click first, then save: the frame a click produces is the page it opened.
     [void]$script.AppendLine("click NavItem `"$($page.Label)`"")
     [void]$script.AppendLine("frame $Settle")
+    # Prove the click landed where it was aimed: the shell draws the page's name as the
+    # heading, and a find that misses fails the session, not just the picture.
+    [void]$script.AppendLine("find Heading `"$($page.Heading)`"")
     # Off the navigation, or the picture is of a hover.
     [void]$script.AppendLine('move 5 5')
     [void]$script.AppendLine('frame 2')

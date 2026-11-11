@@ -1,12 +1,14 @@
 # Performance
 
-Every number here is measured by `src/CuiSharp.Benchmarks` on one Windows
-machine. Trust the shape of the curves; treat absolute values as indicative.
+Every number here is measured on one Windows machine: the frame and scale tables by
+`src/CuiSharp.Benchmarks`, the page-by-page table by `tools/page-costs.ps1` driving the real
+gallery through `dotnet cui`. Trust the shape of the curves; treat absolute values as indicative.
 
 ```sh
 dotnet run -c Release --project src/CuiSharp.Benchmarks     # BenchmarkDotNet suites
 dotnet run -c Release --project src/CuiSharp.Benchmarks -- --scale    # 1k..1M points, one shot
 dotnet run -c Release --project src/CuiSharp.Benchmarks -- --fps 900  # live-chart frame times
+pwsh tools/page-costs.ps1                                   # every gallery page, 3 s each
 ```
 
 BenchmarkDotNet output lands in `BenchmarkDotNet.Artifacts/results/`. All benchmark runs are
@@ -32,10 +34,10 @@ machine the budget came from.
 
 | | Value | Where it is enforced |
 |---|---|---|
-| Gallery frame, 1240x820, software raster | **0.82 ms** mean (p50 0.69, p95 1.13, p99 1.33) | budget 0.90 ms, `--fps 900` |
+| Gallery frame, 1240x820, software raster | **0.83 ms** mean (p50 0.69, p95 1.16, p99 1.39) | budget 0.90 ms, `--fps 900` |
 | Build only (a GPU would rasterize) | 0.02 ms | same run |
 | Managed allocation per frame | **0 B** | `FrameLifecycleTests`, `NewComponentTests` |
-| Gallery AOT executable, win-x64 | 2 580 992 B | budget 2.7 MB |
+| Gallery AOT executable, win-x64 | 3 167 232 B | budget 3.2 MB |
 | A million virtual list rows | ~12 µs | `--scale` |
 | A million chart points, undecimated | 45.9 ms | why decimation exists |
 | A million chart points, decimated to 800 | 0.018 ms | same |
@@ -48,6 +50,83 @@ move, because a page still draws only the widgets on it. The ceiling moved with 
 than the other way round, and it is a round number above the measurement, so the next regression still
 fails the gate. `Localization` added 1 536 B on top of that, and no measurable frame time: it costs
 one null test per frame, and a published table is compared slot by slot only when one is attached.
+
+## Gallery, page by page
+
+`tools/page-costs.ps1` walks all twenty-eight pages in one headless process: it clicks each page,
+proves the heading says the page opened, parks the pointer, and then *dwells* — holding the page
+for three seconds while it really draws, through the silent `pulse` command, so the measurement
+never pays for serialising the tree it is measuring — while `dotnet cui` samples the app's
+process. The run below is the reference machine, light theme, `-Each 3`.
+
+`ms/frame` is wall time over frames completed in the dwell: it includes the protocol round trips
+around the drawing, so it is an upper bound of what the page's own frame costs.
+
+| Page | ms/frame | cpu ms | ws MB | priv MB |
+|---|---|---|---|---|
+| Overview | 0.09 | 3 219 | 56.3 | 38.9 |
+| Buttons | 0.10 | 2 922 | 57.0 | 39.3 |
+| Inputs | 0.08 | 2 984 | 57.7 | 39.7 |
+| Selection | 0.11 | 2 984 | 54.4 | 36.4 |
+| Navigation | 0.07 | 2 969 | 55.0 | 37.0 |
+| Overlays | 0.07 | 3 016 | 55.2 | 37.0 |
+| Feedback | 0.11 | 2 969 | 55.5 | 37.0 |
+| Data display | 0.14 | 2 969 | 57.2 | 38.4 |
+| Charts | 0.08 | 2 938 | 57.6 | 38.4 |
+| Studio | 0.12 | 2 953 | 58.3 | 39.0 |
+| Tools | 0.12 | 3 000 | 78.3 | 60.1 |
+| Developer tools | 0.21 | 3 078 | 79.3 | 59.2 |
+| More developer tools | 0.21 | 3 062 | 79.8 | 59.2 |
+| Actions | 0.12 | 2 984 | 80.0 | 59.2 |
+| Smart inputs | 0.10 | 2 969 | 80.1 | 59.2 |
+| Pickers | 0.12 | 2 953 | 80.2 | 59.2 |
+| Capture | 0.12 | 3 000 | 81.2 | 60.2 |
+| Disclosure | 0.17 | 2 984 | 81.1 | 59.7 |
+| Reader | 0.29 | 2 984 | 81.1 | 59.7 |
+| Data grid | 0.18 | 2 984 | 81.7 | 60.1 |
+| Code | 0.17 | 2 906 | 82.1 | 60.8 |
+| Social and media | 0.21 | 2 906 | 86.1 | 64.7 |
+| Planning | 0.19 | 3 062 | 81.9 | 60.8 |
+| **More charts** | **0.85** | 3 062 | 82.4 | 61.5 |
+| Motion | 0.15 | 2 984 | 82.6 | 61.6 |
+| AI | 0.22 | 2 969 | 82.9 | 61.6 |
+| Audio | 0.13 | 2 969 | 82.9 | 61.6 |
+| Files | 0.13 | 2 859 | 83.1 | 62.5 |
+
+What the table says:
+
+- **A page costs what it shows.** Navigation and Overlays, mostly buttons and labels, draw in
+  0.07 ms; Reader flows thirty heading-and-paragraph blocks in 0.29 ms; More charts, fifteen
+  charts including a 168-cell heatmap, a year of squares and a sankey, costs 0.85 ms — the most
+  expensive page in the gallery still fits a 60 fps frame seven times over.
+- **The cpu column is flat by construction**: the dwell keeps one core busy drawing, so every
+  page burns ~3 000 cpu-ms per 3 000 wall-ms. It becomes a signal only when a page cannot keep
+  a core fed — none today.
+- **ws and priv climb across the walk, not per page**: the steps are Tools (+21 MB) and Social
+  and media (+4 MB), both one-time native state. Walking the same twenty-eight pages a second time
+  in the same process adds **2.6 MB** (62.5 → 65.1), so nothing accumulates — the first walk is the
+  process meeting each page for the first time.
+- **The 21 MB at Tools is the colour-emoji font**, and it is the only large one. CUI draws emoji
+  from the system font, and the first emoji anywhere in the app loads `seguiemj.ttf`: 12.3 MB on
+  disk, kept whole in memory because it carries outlines rather than bitmap strikes, plus copies
+  of its 7.1 MB `COLR` and 0.25 MB `CPAL` tables. Three emoji at 32 px in an otherwise empty
+  headless process take private bytes from 13.3 to 34.2 MB; a new pixel size adds an atlas (1 MB
+  up to 40 px, 4 MB above). Nothing else on the page is visible at that scale: the terminal's ring
+  buffer is 32 KB of native memory, the log's 16 KB, and the file browser lists two dozen entries.
+- **The +4 MB at Social and media is its scene textures, and it is freed on the way out**: Planning
+  is 2.5 MB lower, and the dips on earlier pages (Overlays −3.5 MB) are the same thing — CUI
+  releasing textures the scene no longer shows.
+- **The managed heap is flat, and it is in the CSV.** Across two walks `heap` stays between 6.9 and
+  18.6 MB with no trend: the gen0 sawtooth, not growth. Private bytes rising against a flat heap
+  are native by definition — and .NET keeps freed gen2 segments committed until something asks it
+  for them, which is why a .NET process' private bytes never fall back as fast as its live data
+  does. What a *frame* allocates is pinned at **0 B** by `FrameLifecycleTests`; that, not a sampled
+  heap, is the number worth a column.
+
+```sh
+pwsh tools/page-costs.ps1                      # the whole walk, 3 s per page
+pwsh tools/page-costs.ps1 -Each 5 -Csv .tmp/page-costs.csv
+```
 
 ## Scale: a million of something
 

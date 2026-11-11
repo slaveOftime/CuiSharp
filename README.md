@@ -252,9 +252,9 @@ src/CuiSharp.CodeFixes/  IDE quick fixes, packed beside the analyzers
 src/CuiSharp.Testing/    TestApp: drive a component without a window
 src/CuiSharp.Tools/      dotnet cui
 src/CuiSharp.Templates/  dotnet new cui-app / cui-mini
-samples/CuiSharp.Gallery/ thirteen pages, one file per page
+samples/CuiSharp.Gallery/ twenty-eight pages, one file per page
 native/                  the CUI submodule and the two build scripts
-tools/                   bindgen.cs, regen.ps1, verify-template.ps1, snapshots.ps1
+tools/                   bindgen.cs, regen.ps1, verify-template.ps1, snapshots.ps1, page-costs.ps1
 bindings/                api.json (generated), overrides.json (inputs), coverage.txt (report)
 docs/                    PLAN (remaining work), ARCHITECTURE (rules), PERFORMANCE, RELEASING,
                          API-SURFACE.txt, images/gallery/

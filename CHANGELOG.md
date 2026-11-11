@@ -4,6 +4,59 @@ Every user-visible change, newest first. Pre-1.0 the minor number carries new su
 carries fixes. The section for a tag is what the GitHub release publishes, so the two cannot say
 different things.
 
+## [Unreleased]
+
+The gallery now draws everything CUI ships, and the wheel reached the headless protocol.
+
+### Added
+
+- **Fifteen gallery pages** port the rest of `examples/gallery_more.c`: actions, smart inputs,
+  pickers, capture, disclosure, reader, data grid, code, social and media, planning, more charts,
+  motion, AI, audio and files. The gallery is twenty-eight pages, one file per page, and
+  `tools/snapshots.ps1` clicks and verifies all of them.
+- **`wheel <x> <y> <dy> [dx]`** in the headless protocol and `dotnet cui`: scroll at a point, in
+  wheel notches. It is how a control below a scroll area's fold is reached before it can be
+  clicked — `HeadlessApp.ScrollAt` under it.
+- **`pulse [count]`** draws frames without printing the tree — a sampler should not pay for
+  serialising the interface it is measuring — and answers with the frame count and the app's
+  managed heap size.
+- **`dwell <seconds>`** in a `dotnet cui --stdin` session: the tool keeps the app drawing for
+  that long and answers with one `STATS` line of wall and cpu milliseconds, frames, fps, heap,
+  working set and private bytes.
+- **`tools/page-costs.ps1`** walks all twenty-eight gallery pages with a three-second dwell each
+  and samples the app's process; the page-by-page table in `docs/PERFORMANCE.md` is its output.
+- **`ui.CreateImage` / `ui.LoadImage` / `ui.DestroyImage`** carry `cui_image_*` as typed handles
+  instead of raw ints; the cropper, viewer and compare widgets take and return them.
+- **`ui.ToggleGroup`, `ui.MultiSelect` and `ui.FilterBar`** wrap the controls that write N
+  booleans through one pointer — the generator cannot express them, so they are `MANUAL`.
+  `ui.ImageCompare` and `ui.Waveform` keep the caller's values across a frame (`ref`, not the
+  zero-on-every-frame `out` the generator would have produced).
+- **`ui.DroppedFileCount` / `ui.DroppedFile(i)` / `ui.FileDragActive`** read the files an OS drag
+  dropped on the frame and say whether one is over the window right now.
+- **The `int` a widget returns for its own events is now an enum.** `ui.NowPlaying`,
+  `ui.ChatComposer`, `ui.ResponseActions` and `ui.Comment` return `PlayerEvents`,
+  `ComposerEvents`, `ResponseEvents` and `CommentEvents`; `ui.Tour` returns `TourAction`. They are
+  generated from the header's own `CUI_*` blocks, so `(events & PlayerEvents.Next) != 0` replaces
+  a cast into `Interop` for a constant.
+- **`ui.ChatMessage(text, opts)`** is the usual call: the markdown result is an optional `ref`, so
+  a plain bubble no longer needs a throwaway local. `ui.InlineEdit(id, ref text)` gets the same
+  treatment from a default buffer size.
+
+### Fixed
+
+- **`ui.Tour` no longer needs its result assigned to the step.** `cui_tour_ex` returns the action
+  the user took and moves the step through its `ref`, so `step = ui.Tour(…)` overwrote the step
+  with `CUI_TOUR_NONE` every frame: the tours on the gallery's Tools and Audio pages could not
+  advance, and Done left them on screen. `TourAction` makes the mistake a compile error.
+- **`pulse`/`frame` refuse a frame count that cannot mean anything** — `pulse 0` answered with
+  `-3 heap …` for a negative count, and a count too large for an `int` took the whole session down
+  with an unhandled `OverflowException` instead of answering `CUI-ERR`.
+- **`dwell` refuses zero, a negative number, `Infinity` and `NaN`** instead of spinning forever or
+  reporting a row of zeros, and it works as a one-shot `dotnet cui dwell 3` as well as in a
+  `--stdin` session.
+- **`ui.ImageCompare` and `ui.Waveform` are generated wrappers again**, not hand-written ones:
+  the generator treated a non-const `float *pos` as an array because its name ends in an `s`.
+
 ## [0.3.1] — 2026-11-10
 
 The date components speak another language, and the data grid owns its state.

@@ -44,7 +44,8 @@ public sealed partial class CuiSurface
     /// </summary>
     public void MouseLeave() => Native.InputMouseLeave(Handle);
 
-    /// <summary>Scrolls; positive <paramref name="dy"/> scrolls down.</summary>
+    /// <summary>Scrolls at the pointer's position. The distance is in wheel notches, and a
+    /// positive <paramref name="dy"/> scrolls up, towards the start, exactly as a real wheel does.</summary>
     public void Scroll(float dy, float dx = 0) => Native.InputScroll(Handle, dx, dy);
 
     /// <summary>Presses a key, with the modifiers held at the same time.</summary>

@@ -6,11 +6,6 @@ in [ARCHITECTURE.md](ARCHITECTURE.md). Every item here passes the same gates as 
 
 ## 1. Open work
 
-- **The gallery pages for the extended components** (`examples/gallery_more.c`'s other fifteen):
-  *Developer tools* and *More developer tools* cover CUI 1.3's twenty, but actions, smart inputs,
-  pickers, capture, disclosure, reader, data grid, code, social and media, planning, more charts,
-  motion, AI, audio and files still draw only in C's own gallery. One page per commit-sized slice;
-  a missing wrapper is a generator or `overrides.json` fix, never a hand edit.
 - **Remaining analyzer code fixes** for CUI001, CUI006–CUI008. CUI002/CUI003 rewrite scope disposal
   and guards; CUI004 keys repeated widgets in simple for/foreach loops; CUI005 removes an awaited
   BCL `ConfigureAwait(bool)`. IDE-only fixes ship in a separate assembly so command-line analyzers

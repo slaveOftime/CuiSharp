@@ -14,12 +14,20 @@ public static unsafe class ConversationUiExtensions
     extension(Ui ui)
     {
         /// <summary>cui_chat_message_ex</summary>
-        public void ChatMessage(UiText text, ref MarkdownResult markdownresult, ChatOpts o = default)
+        public void ChatMessage(UiText text, ref MarkdownResult markdownResult, ChatOpts o = default)
         {
-            var __markdownresult = markdownresult.ToNative();
-            var __opts = o.ToNative((nint)(&__markdownresult));
+            var __markdownResult = markdownResult.ToNative();
+            var __opts = o.ToNative((nint)(&__markdownResult));
             Native.ChatMessage(ui.Handle, Utf8.Get(text), in __opts);
-            markdownresult = MarkdownResult.FromNative(__markdownresult);
+            markdownResult = MarkdownResult.FromNative(__markdownResult);
+            WidgetRecorder.Note(ui.Handle, "ChatMessage", text);
+        }
+
+        /// <summary>Same as the overload with ref markdownResult, but reports nothing back: the state pointer is null, so the widget stores no state the caller could read.</summary>
+        public void ChatMessage(UiText text, ChatOpts o = default)
+        {
+            var __opts = o.ToNative(0);
+            Native.ChatMessage(ui.Handle, Utf8.Get(text), in __opts);
             WidgetRecorder.Note(ui.Handle, "ChatMessage", text);
         }
 
@@ -38,7 +46,7 @@ public static unsafe class ConversationUiExtensions
         }
 
         /// <summary>cui_comment_ex</summary>
-        public int Comment(UiText id, UiText author, UiText text, ref int likes, ref bool liked, CommentOpts o = default)
+        public CommentEvents Comment(UiText id, UiText author, UiText text, ref int likes, ref bool liked, CommentOpts o = default)
         {
             int __likes = (int)(likes);
             byte __liked = (byte)(liked ? 1 : 0);
@@ -47,7 +55,7 @@ public static unsafe class ConversationUiExtensions
             likes = __likes;
             liked = __liked != 0;
             WidgetRecorder.Note(ui.Handle, "Comment", id);
-            return __result;
+            return (CommentEvents)__result;
         }
 
         /// <summary>cui_presence</summary>

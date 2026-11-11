@@ -994,7 +994,7 @@ public static unsafe partial class Native
 
     /// <summary>cui_image_compare_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_image_compare_ex")]
-    public static partial byte ImageCompare(nint ui, nint id, ulong before, ulong after, nint pos, in NativeCompareOpts opts);
+    public static partial byte ImageCompare(nint ui, nint id, ulong before, ulong after, ref float pos, in NativeCompareOpts opts);
 
     /// <summary>cui_card_stack_begin</summary>
     [LibraryImport("cui", EntryPoint = "cui_card_stack_begin")]
@@ -1134,7 +1134,7 @@ public static unsafe partial class Native
 
     /// <summary>cui_waveform_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_waveform_ex")]
-    public static partial byte Waveform(nint ui, nint id, nint peaks, int count, nint progress, in NativeWaveformOpts opts);
+    public static partial byte Waveform(nint ui, nint id, nint peaks, int count, ref float progress, in NativeWaveformOpts opts);
 
     /// <summary>cui_now_playing_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_now_playing_ex")]

@@ -108,7 +108,9 @@ public class NewComponentTests
 
                 if (ui.Button("Start")) { }
                 target = ui.LastId;
-                step = ui.Tour("tour", [new TourStep(target, "Title", "Body")], ref step, new TourOpts { Width = 260 });
+                // The tour writes the step through the ref parameter; its result is the action
+                // the user took, not the step, so assigning it would end the tour at once.
+                _ = ui.Tour("tour", [new TourStep(target, "Title", "Body")], ref step, new TourOpts { Width = 260 });
             }
         });
 
