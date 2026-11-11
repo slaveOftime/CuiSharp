@@ -100,25 +100,68 @@ public static class ChartNormalizer
             return values.Length;
         }
 
-        double baseline = FindBaseline(values);
-        for (int i = 0; i < values.Length; i++)
+        float baseline = ValidateAndFindBaseline(values);
+        values.CopyTo(destination);
+        Scale(destination[..values.Length], baseline, mode);
+        return values.Length;
+    }
+
+    /// <summary>
+    /// Throws unless <paramref name="mode"/> is a real <see cref="NormalizeMode"/> value.
+    /// The chart path checks once per call, before any empty shortcut, so an unset or
+    /// unknown mode cannot take a fast path around validation.
+    /// </summary>
+    internal static void ValidateMode(NormalizeMode mode) =>
+        _ = mode is NormalizeMode.None or NormalizeMode.Index100 or NormalizeMode.Percent
+            ? 0
+            : throw new ArgumentOutOfRangeException(nameof(mode), mode, "not a NormalizeMode value");
+
+    /// <summary>
+    /// Validates a whole series for normalization and returns the baseline it would use:
+    /// the first nonzero sample. The whole span is scanned because a chart may decimate
+    /// a sample away, and a value decimation would hide is still a value the caller's
+    /// normalization was asked for.
+    /// </summary>
+    internal static float ValidateAndFindBaseline(ReadOnlySpan<float> values)
+    {
+        float baseline = 0f;
+        bool found = false;
+        foreach (float v in values)
         {
-            float v = values[i];
             if (!float.IsFinite(v))
                 throw new ArgumentException(
                     "a normalized series must not contain NaN or infinity; NaN is not a gap marker", nameof(values));
+            if (!found && v != 0f)
+            {
+                baseline = v;
+                found = true;
+            }
+        }
 
+        if (!found)
+            throw new ArgumentException("a normalized series needs a finite nonzero baseline; a series of zeros has none", nameof(values));
+        return baseline;
+    }
+
+    /// <summary>
+    /// Rescales already-retained samples in place against a validated baseline. The samples
+    /// are the ones a chart will actually draw - typically decimated output - so the scale
+    /// runs over a few hundred points whatever the source length was.
+    /// </summary>
+    internal static void Scale(Span<float> points, float baseline, NormalizeMode mode)
+    {
+        double b = baseline;
+        for (int i = 0; i < points.Length; i++)
+        {
             // double throughout: a float chain would round at the divide and again at the
             // multiply, and Index100 would fail to be the identity it promises at b = 100.
-            double ratio = (double)v / baseline;
+            double ratio = (double)points[i] / b;
             double result = mode == NormalizeMode.Index100 ? ratio * 100.0 : (ratio - 1.0) * 100.0;
             if (!double.IsFinite(result) || result > float.MaxValue || result < float.MinValue)
                 throw new ArgumentException(
-                    $"scaling {v} against baseline {baseline:F6} leaves the finite range", nameof(values));
+                    $"scaling {points[i]} against baseline {b:F6} leaves the finite range");
 
-            destination[i] = (float)result;
+            points[i] = (float)result;
         }
-
-        return values.Length;
     }
 }

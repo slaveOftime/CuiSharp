@@ -981,6 +981,8 @@ public partial struct ChartOpts
     public float Max;
     /// <summary>C# only: Upper bound on drawn points. 0 derives twice the viewport width; longer series are min/max decimated into the frame arena.</summary>
     public int MaxPoints;
+    /// <summary>C# only: Scale each series against its own first finite nonzero sample so series of different magnitudes compare by shape; see ChartNormalizer.</summary>
+    public NormalizeMode Normalize;
 
     internal readonly NativeChartOpts ToNative() => new()
     {

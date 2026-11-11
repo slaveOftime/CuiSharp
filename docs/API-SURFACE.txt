@@ -308,6 +308,7 @@ struct CuiSharp.ChartOpts
   field Boolean Smooth
   field Boolean Stacked
   field Int32 MaxPoints
+  field NormalizeMode Normalize
   field Single Height
   field Single Max
   field Single Min

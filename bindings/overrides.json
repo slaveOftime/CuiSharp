@@ -1277,6 +1277,11 @@
         "name": "MaxPoints",
         "type": "int",
         "why": "Upper bound on drawn points. 0 derives twice the viewport width; longer series are min/max decimated into the frame arena."
+      },
+      {
+        "name": "Normalize",
+        "type": "NormalizeMode",
+        "why": "Scale each series against its own first finite nonzero sample so series of different magnitudes compare by shape; see ChartNormalizer."
       }
     ]
   },
