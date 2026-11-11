@@ -595,6 +595,11 @@ behind, so anything that should be checked twice belongs in a test instead.
 - `click` answers with the frame *after* the click; a transition may need `frame N` first.
 - `--frames N` draws N frames before the command; `--app bin/App.exe` inspects a published build;
   `--no-build` reuses the last build; `--` passes the rest to the app.
+- To drive a **live window** while a human watches it (`dotnet watch run -- --live`, `CUISHARP_LIVE=1`,
+  or `CuiAppOptions { LiveAttach = true }` on Windows), run `dotnet cui ps` to list active windows and
+  pass `-a` / `--attach` (or `--attach=<pid|title>`) to any command (`dotnet cui tree -a`,
+  `dotnet cui click Save -a`, `dotnet cui png live.png -a`, `dotnet cui quit -a`). Commands travel over
+  a user-only local named pipe (`cui-live-<pid>-<nonce>`) and leave the window open between calls.
 - The app's own output — `Console.WriteLine`, a logger, a stack trace — reaches your stderr, so stdout
   is exactly the answer you asked for.
 - Text in a script the bundled Latin faces do not cover draws nothing at all, with no box and no

@@ -335,6 +335,27 @@ internal sealed class FrameRecorder
     }
 
     /// <summary>
+    /// Copies every pending label out of the frame arena into a managed string, once, at the
+    /// caller's word. A <see cref="CuiSurface"/> decodes at <see cref="End"/> because it ends the
+    /// frame before the arena is reused; a live window cannot — CUI ends its own frames, and the
+    /// arena is reset before the next managed point, so the capture seals at the end of the draw
+    /// callback and lets <see cref="End"/> decode the copies.
+    /// </summary>
+    internal void SealPendingText()
+    {
+        for (int i = 0; i < _pending.Count; i++)
+        {
+            Pending widget = _pending[i];
+            if (widget.Text is null && widget.Length > 0)
+            {
+                _pending[i] = new Pending(
+                    widget.Kind, 0, 0, widget.Decode(), widget.Id, widget.Depth,
+                    widget.Container, widget.OwnRect, widget.Detached, widget.Layer);
+            }
+        }
+    }
+
+    /// <summary>
     /// Opens a scope's layer bookkeeping: a floating kind raises the layer for its whole body
     /// and returns true, so even an unnamed dialog is a boundary the frame ends at. Every depth
     /// CUI can nest is tracked; past that the scope gets a layer of its own, because the honest

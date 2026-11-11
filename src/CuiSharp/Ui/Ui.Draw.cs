@@ -59,7 +59,15 @@ public unsafe ref partial struct Ui
         int slot = (int)(nint)user;
         if (frame is null || (uint)slot >= (uint)frame.Painters.Count) return;
 
-        frame.Painters[slot](new Ui(ui, frame), new RectF(rect.X, rect.Y, rect.W, rect.H));
+        Hosting.LiveSession.Active?.EnterCallback();
+        try
+        {
+            frame.Painters[slot](new Ui(ui, frame), new RectF(rect.X, rect.Y, rect.W, rect.H));
+        }
+        finally
+        {
+            Hosting.LiveSession.Active?.ExitCallback();
+        }
     }
 
     /// <summary>

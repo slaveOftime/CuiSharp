@@ -605,6 +605,7 @@ class CuiSharp.CuiAppOptions
   property Boolean FixedSize { get; set; }
   property Boolean FollowSystemTheme { get; set; }
   property Boolean Hidden { get; set; }
+  property Boolean LiveAttach { get; set; }
   property Boolean NoVsync { get; set; }
   property IFileDialogProvider FileDialog { get; set; }
   property Int32 Height { get; set; }

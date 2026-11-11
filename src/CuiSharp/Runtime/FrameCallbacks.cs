@@ -119,14 +119,32 @@ internal static unsafe class FrameCallbacks
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     internal static nint TreeLabelThunk(void* user, int node)
     {
-        Holder? holder = HolderOf(user);
-        return holder?.Function is Func<int, string?> label ? Text(holder, label(node)) : 0;
+        Hosting.LiveSession.Active?.EnterCallback();
+        try
+        {
+            Holder? holder = HolderOf(user);
+            return holder?.Function is Func<int, string?> label ? Text(holder, label(node)) : 0;
+        }
+        finally
+        {
+            Hosting.LiveSession.Active?.ExitCallback();
+        }
     }
 
     /// <summary>The tree sorter's <c>int (*cmp)(void *user, int a, int b)</c>.</summary>
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-    internal static int TreeCompareThunk(void* user, int a, int b) =>
-        HolderOf(user)?.Function is Comparison<int> compare ? compare(a, b) : 0;
+    internal static int TreeCompareThunk(void* user, int a, int b)
+    {
+        Hosting.LiveSession.Active?.EnterCallback();
+        try
+        {
+            return HolderOf(user)?.Function is Comparison<int> compare ? compare(a, b) : 0;
+        }
+        finally
+        {
+            Hosting.LiveSession.Active?.ExitCallback();
+        }
+    }
 
     /// <summary>
     /// <c>void (*fn)(cui_ctx *, void *)</c>: the disposer for a per-id state block. The block
@@ -140,7 +158,15 @@ internal static unsafe class FrameCallbacks
         if (data == null) return;
         nint user = *(nint*)data;
         if (user == 0) return;
-        if (HolderOf((void*)user)?.Function is Action onFree) onFree();
+        Hosting.LiveSession.Active?.EnterCallback();
+        try
+        {
+            if (HolderOf((void*)user)?.Function is Action onFree) onFree();
+        }
+        finally
+        {
+            Hosting.LiveSession.Active?.ExitCallback();
+        }
     }
 
     /// <summary>The static function pointer a label hook needs.</summary>

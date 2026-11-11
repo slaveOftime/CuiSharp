@@ -36,17 +36,19 @@ internal sealed class HeadlessClient : IDisposable
     internal const int MaxLineBytes = 4096;
 
     private readonly Process? _process;
+    private readonly bool _ownsProcess;
     private readonly Stream _out;
     private readonly Stream _in;
     private readonly TailBuffer _errors = new();
 
-    private HeadlessClient(Process? process, Stream output, Stream input, Action<string>? echo)
+    private HeadlessClient(Process? process, bool ownsProcess, Stream output, Stream input, Action<string>? echo)
     {
         Noise = echo;
         _process = process;
+        _ownsProcess = ownsProcess;
         _out = output;
         _in = input;
-        if (process is null) return;
+        if (process is null || !ownsProcess) return;
 
         process.ErrorDataReceived += (_, e) =>
         {
@@ -107,6 +109,7 @@ internal sealed class HeadlessClient : IDisposable
         Process process = Process.Start(info) ?? throw new ToolException($"Could not start {host}.");
         var client = new HeadlessClient(
             process,
+            ownsProcess: true,
             process.StandardOutput.BaseStream,
             process.StandardInput.BaseStream,
             echo);
@@ -124,7 +127,7 @@ internal sealed class HeadlessClient : IDisposable
 
     /// <summary>
     /// A client over streams instead of a child process: what the protocol's own tests speak, and
-    /// what an embedder driving a channel of its own can use.
+    /// what an embedder or live named-pipe session uses.
     /// </summary>
     internal static HeadlessClient Attach(
         Stream output,
@@ -132,9 +135,10 @@ internal sealed class HeadlessClient : IDisposable
         Action<string>? echo = null,
         TimeSpan? readyTimeout = null,
         TimeSpan? answerTimeout = null,
+        Process? process = null,
         CancellationToken cancellation = default)
     {
-        var client = new HeadlessClient(null, output, input, echo)
+        var client = new HeadlessClient(process, ownsProcess: false, output, input, echo)
         {
             ReadyTimeout = readyTimeout ?? TimeSpan.FromSeconds(60),
             AnswerTimeout = answerTimeout ?? TimeSpan.FromMinutes(1),
@@ -379,9 +383,10 @@ internal sealed class HeadlessClient : IDisposable
     /// <inheritdoc />
     public void Dispose()
     {
-        if (_process is not { } process)
+        if (_process is not { } process || !_ownsProcess)
         {
             _out.Dispose();
+            _process?.Dispose();
             return;
         }
 

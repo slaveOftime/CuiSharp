@@ -230,37 +230,26 @@ public class ApiCatalogCliTests
     [Fact]
     public void ANonCatalogCommandKeepsItsOwnGrammarEvenWithAwkwardOptionValues()
     {
-        // `tree --wait-text -loading` is legal in the ordinary flow: `-loading` is a value,
-        // not a flag. The catalog scan reads argv before anyone knows which flow this is, so
-        // it may hold a complaint but never voice one for a command it does not own.
-        Assert.False(Cli.TryReadCatalogCommand(
-            ["tree", "--wait-text", "-loading", "--help"], out Cli.CatalogRequest _));
-
+        // `tree --wait-text -loading` is legal: `-loading` is a value, not a flag.
         Cli.Options options = Cli.Options.Parse(["tree", "--wait-text", "-loading", "--help"]);
         Assert.Equal("tree", options.Command);
         Assert.Equal("waittext 10 -loading", options.WaitLine);
         Assert.True(options.Help);
 
-        // End to end the same line reaches the ordinary path: the complaint that comes back
-        // is about the project the test names, never about the value the scan held back.
         (int exit, _, string error) = Run("tree", "--wait-text", "-loading");
         Assert.Equal(1, exit);
         Assert.DoesNotContain("needs a value", error, StringComparison.Ordinal);
         Assert.Contains(NoProjectHere, error, StringComparison.Ordinal);
 
-        // And `--json` stays the ordinary parser's unknown option — the catalog commands are
-        // the only ones that answer machine-readable, and the scan must not grant it wider.
+        // And `--json` is rejected on ordinary app commands.
         (exit, _, error) = Run("tree", "--json");
         Assert.Equal(1, exit);
         Assert.Contains("Unknown option \"--json\"", error, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void ACatalogCommandReportsTheOptionMistakesTheScanHeldBack()
+    public void ACatalogCommandReportsMalformedOptionsThroughTheUnifiedParser()
     {
-        // The escrow is only ever cashed for api/icons — and on either side of the command
-        // word. After it: `--project --json` must name the option that lost its value, not
-        // swallow --json and not answer any query at all.
         var output = new StringWriter();
         var errors = new StringWriter();
         int exit = Cli.Run(["api", "ChartOpts", "--project", "--json"], output, errors);
@@ -268,8 +257,6 @@ public class ApiCatalogCliTests
         Assert.Contains("--project needs a value", errors.ToString(), StringComparison.Ordinal);
         Assert.Equal("", output.ToString());
 
-        // Before it: a malformed flag ahead of the command word is the same mistake, and
-        // again nothing is printed as if it were an answer.
         output = new StringWriter();
         errors = new StringWriter();
         exit = Cli.Run(["--wait-text", "--json", "api", "ChartOpts"], output, errors);
@@ -277,10 +264,6 @@ public class ApiCatalogCliTests
         Assert.Contains("--wait-text needs a value", errors.ToString(), StringComparison.Ordinal);
         Assert.Equal("", output.ToString());
 
-        // And a value the ordinary parser would refuse — a number that is not one, whatever
-        // its dashes — is refused here in the parser's own words, not a catalog-side echo:
-        // the scan borrows `--frames`/`--wait-timeout` validation rather than keeping a
-        // second grammar that could disagree with the first.
         (int badExit, _, string badError) = Run("api", "ChartOpts", "--wait-timeout", "abc");
         Assert.Equal(1, badExit);
         Assert.Contains("--wait-timeout needs a finite number of seconds", badError, StringComparison.Ordinal);
@@ -288,87 +271,29 @@ public class ApiCatalogCliTests
     }
 
     [Fact]
-    public void ASwallowedOptionValueNeverStealsTheCommandWord()
-    {
-        // `--wait-text --app tree api --help`: the ordinary parser spends the word after a
-        // flag on it, dash or not, so `--wait-text` eats `--app` and the command is `tree`.
-        // The scan may complain about that eaten flag, but it must consume identically while
-        // doing so — a scan whose position diverges calls this a catalog line and answers a
-        // validation error for an ordinary tree run.
-        Assert.False(Cli.TryReadCatalogCommand(
-            ["--wait-text", "--app", "tree", "api", "--help"], out Cli.CatalogRequest _));
-
-        Cli.Options options = Cli.Options.Parse(["--wait-text", "--app", "tree", "api", "--help"]);
-        Assert.Equal("tree", options.Command);
-        Assert.Equal("waittext 10 --app", options.WaitLine);
-        Assert.True(options.Help);
-
-        // End to end the line is what the ordinary grammar says it is: usage, exit 0.
-        var output = new StringWriter();
-        var errors = new StringWriter();
-        int exit = Cli.Run(["--wait-text", "--app", "tree", "api", "--help"], output, errors);
-        Assert.Equal(0, exit);
-        Assert.Contains("dotnet cui <command>", output.ToString(), StringComparison.Ordinal);
-        Assert.Equal("", errors.ToString());
-    }
-
-    [Fact]
-    public void TheScanOwnsTheLineOnlyForTheCommandOptionsParseWouldName()
-    {
-        // `--project --app api ChartOpts --help`: the ordinary parser spends `--app` on
-        // `--project`, so the first positional — the command — is `api`, and this line is
-        // the catalog's business. It then names the malformed flag rather than printing
-        // usage as if `api` had been swallowed into the option and never seen. (The earlier
-        // scan did exactly that: it refused to eat a dash-value, slid `api` into a slot the
-        // parser gives to nothing, and answered usage for a line it should have policed.)
-        Assert.Throws<ToolException>(() => Cli.TryReadCatalogCommand(
-            ["--project", "--app", "api", "ChartOpts", "--help"], out Cli.CatalogRequest _));
-
-        var output = new StringWriter();
-        var errors = new StringWriter();
-        int exit = Cli.Run(["--project", "--app", "api", "ChartOpts", "--help"], output, errors);
-        Assert.Equal(1, exit);
-        Assert.Contains("--project needs a value", errors.ToString(), StringComparison.Ordinal);
-        Assert.Equal("", output.ToString());
-    }
-
-    [Fact]
     public void AWaitTheCallerOverwritesIsJudgedByTheValueThatSurvives()
     {
-        // `--wait` is the one option whose value the parser does not judge where it reads it:
-        // every occurrence overwrites the last, and the surviving value is checked after the
-        // whole line. A scan that judges each occurrence condemns `--wait invalid --wait ready`
-        // — a legal wait, and a legal `api` call — for a typo the caller already replaced.
         Cli.Options overwritten = Cli.Options.Parse(["api", "ChartOpts", "--wait", "invalid", "--wait", "ready"]);
         Assert.Equal("wait 10", overwritten.WaitLine);
-
-        Assert.True(Cli.TryReadCatalogCommand(
-            ["api", "ChartOpts", "--wait", "invalid", "--wait", "ready"], out Cli.CatalogRequest _));
 
         (int exit, string output, string error) = Run("api", "ChartOpts", "--wait", "invalid", "--wait", "ready");
         Assert.Equal(0, exit);
         Assert.Contains("ChartOpts  [struct]", output, StringComparison.Ordinal);
         Assert.Equal("", error);
 
-        // With `--help` behind it the same line is the usage screen the ordinary grammar
-        // grants it, not a validation error about a word no wait will ever use.
         (exit, output, error) = Run("api", "ChartOpts", "--wait", "invalid", "--wait", "ready", "--help");
         Assert.Equal(0, exit);
         Assert.Contains("dotnet cui <command>", output.ToString(), StringComparison.Ordinal);
         Assert.Equal("", error);
 
-        // The filter still filters: the final `ready` is what the line waits on, so `icons
-        // help` answers CircleHelp instead of a complaint about the overwritten value.
         (exit, output, error) = Run("icons", "help", "--wait", "invalid", "--wait", "ready");
         Assert.Equal(0, exit);
         Assert.Contains("CircleHelp", output, StringComparison.Ordinal);
         Assert.DoesNotContain("dotnet cui <command>", output, StringComparison.Ordinal);
         Assert.Equal("", error);
 
-        // The other order is the mistake, and the scanner says so in the parser's own words:
-        // the last `--wait` is the one the run would have waited on.
-        Assert.Throws<ToolException>(() => Cli.TryReadCatalogCommand(
-            ["api", "ChartOpts", "--wait", "ready", "--wait", "invalid"], out Cli.CatalogRequest _));
+        Assert.Throws<ToolException>(() => Cli.Options.Parse(
+            ["api", "ChartOpts", "--wait", "ready", "--wait", "invalid"]));
 
         (exit, output, error) = Run("api", "ChartOpts", "--wait", "ready", "--wait", "invalid");
         Assert.Equal(1, exit);

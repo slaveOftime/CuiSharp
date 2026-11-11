@@ -222,13 +222,13 @@ public static class HeadlessLoop
     }
 
     /// <summary>The window a wait gets when its command does not name one, in seconds.</summary>
-    private const double DefaultWaitSeconds = 10;
+    internal const double DefaultWaitSeconds = 10;
 
     /// <summary>
     /// The longest wait this protocol serves. A wait binds the answer deadline of the client on
     /// the other end, so the trust boundary needs a ceiling as well as a floor.
     /// </summary>
-    private const double MaxWaitSeconds = 3600;
+    internal const double MaxWaitSeconds = 3600;
 
     /// <summary>
     /// Draws real frames until one marks itself ready (<c>ui.MarkReady</c>). The answer is the
@@ -282,7 +282,7 @@ public static class HeadlessLoop
     /// A wait window in seconds. <c>TryParse</c> accepts NaN and Infinity, and neither bounds a
     /// wait anyone could observe, so only finite positive numbers up to the ceiling pass.
     /// </summary>
-    private static double ParseWaitSeconds(string token)
+    internal static double ParseWaitSeconds(string token)
     {
         if (!double.TryParse(token, NumberStyles.Float, CultureInfo.InvariantCulture, out double seconds)
             || !double.IsFinite(seconds) || seconds <= 0 || seconds > MaxWaitSeconds)
@@ -313,7 +313,7 @@ public static class HeadlessLoop
     /// </summary>
     private static readonly Key[] Keys = Enum.GetValues<Key>();
 
-    private static Key ParseKey(string argument)
+    internal static Key ParseKey(string argument)
     {
         string wanted = argument.Trim();
         foreach (Key key in Keys)
