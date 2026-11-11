@@ -257,6 +257,218 @@ public class SemanticTreeTests
         Assert.Contains(app.Tree.Descendants(), n => n.Text == "dark");
     }
 
+    /// <summary>
+    /// A named box, row, column or scroll area must be recorded under the id CUI laid it out
+    /// under. A begin that reports no last_id used to leave the container borrowing the previous
+    /// widget's id, which made it claim someone else's rectangle.
+    /// </summary>
+    private sealed class NamedBoxes : Component
+    {
+        protected override void Draw(Ui ui)
+        {
+            ui.Button("Before");
+            using (ui.Column(new() { Id = "panel", Width = Size.Fill, Pad = 10, Gap = 6 }))
+            {
+                ui.Button("Inside");
+            }
+
+            using (ui.Scroll(new() { Id = "area", Height = Size.Px(60) }))
+            {
+                ui.Button("Scrolled");
+            }
+        }
+    }
+
+    [Fact]
+    public void ANamedBoxReportsItsOwnRectNotTheLastWidgets()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        using var app = TestApp.Start(new NamedBoxes(), 400, 300);
+
+        SemanticNode before = app.Tree.Find("Before");
+        SemanticNode panel = app.Tree.Find("panel");
+        SemanticNode inside = panel.Find("Inside");
+        SemanticNode area = app.Tree.Find("area");
+
+        // Before the identity fix these two pairs were the same rectangle.
+        Assert.NotEqual(before.Rect, panel.Rect);
+        Assert.NotEqual(before.Rect, area.Rect);
+        Assert.True(panel.Rect.W > 0 && panel.Rect.H > 0);
+        Assert.True(area.Rect.W > 0 && area.Rect.H > 0);
+
+        // And the rect is the box the app drew: the child sits inside it, the scroll area follows.
+        Assert.InRange(inside.Rect.Y, panel.Rect.Y, panel.Rect.Y + panel.Rect.H);
+        Assert.True(area.Rect.Y >= panel.Rect.Y + panel.Rect.H);
+    }
+
+    [Fact]
+    public void ANamedBoxFirstInTheFrameHasARealRectToo()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        using var app = TestApp.Start(ui =>
+        {
+            using (ui.Box(new() { Id = "first", Width = Size.Fill, Height = Size.Px(50), Pad = 8 }))
+                ui.Button("Only");
+        }, 300, 160);
+
+        // Nothing has reported an id before this box, so a borrowed last_id was 0 and the box
+        // had no rect at all; the id CUI returned for the box itself has one.
+        SemanticNode first = app.Tree.Find("first");
+        Assert.NotEqual(0u, first.Id);
+        Assert.True(first.Rect.W > 0 && first.Rect.H > 0);
+    }
+
+    [Fact]
+    public void ANamedRowAndANamedCardReportTheirOwnRectToo()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        using var app = TestApp.Start(ui =>
+        {
+            ui.Button("Before");
+            using (ui.Row(new() { Id = "line", Width = Size.Fill, Gap = 8 }))
+                ui.Button("Inside row");
+            using (ui.Card(new() { Id = "tile", Width = Size.Fill, Gap = 4 }))
+                ui.Button("Inside card");
+        }, 400, 300);
+
+        SemanticNode before = app.Tree.Find("Before");
+        foreach (string id in new[] { "line", "tile" })
+        {
+            SemanticNode container = app.Tree.Find(id);
+            SemanticNode inside = container.Find($"Inside {(id == "line" ? "row" : "card")}");
+
+            // The container's rect is the box CUI laid it out under its own id: it has one,
+            // and it is not the rect of whatever action widget was drawn before it.
+            Assert.True(container.Rect.W > 0 && container.Rect.H > 0);
+            Assert.NotEqual(before.Rect, container.Rect);
+            Assert.InRange(inside.Rect.Y, container.Rect.Y, container.Rect.Y + container.Rect.H);
+        }
+
+        // The row sits between the button and the card, so the rects really are three boxes.
+        SemanticNode line = app.Tree.Find("line");
+        SemanticNode tile = app.Tree.Find("tile");
+        Assert.True(line.Rect.Y >= before.Rect.Y + before.Rect.H);
+        Assert.True(tile.Rect.Y >= line.Rect.Y + line.Rect.H);
+    }
+
+    [Fact]
+    public void BothCardOverloadsRecordTheSameIdentityAndTheClickedOneReportsIt()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        SemanticNode plain = null!;
+        using (var app = TestApp.Start(ui =>
+        {
+            ui.Button("Before");
+            using (ui.Card(new() { Id = "tile", Width = Size.Fill, Gap = 4 }))
+                ui.Button("Inside card");
+        }, 400, 300))
+        {
+            plain = app.Tree.Find("tile");
+        }
+
+        var page = new CardPage();
+        using var clicked = TestApp.Start(page, 400, 300);
+
+        // First frame: nothing was clicked, so the scope reports the interaction truthfully.
+        Assert.False(page.FirstFrameClicked);
+        SemanticNode scoped = clicked.Tree.Find("tile");
+
+        // Same id in the same place through the other overload: the identity CUI gave the card
+        // is the same, and so is the box it was laid out in.
+        Assert.Equal(plain.Id, scoped.Id);
+        Assert.Equal(plain.Rect, scoped.Rect);
+        Assert.NotEqual(clicked.Tree.Find("Before").Rect, scoped.Rect);
+
+        // The identity is the card's own, so a click inside its own padding lands on the card:
+        // the frame that draws the click reports it. A borrowed id would click the button.
+        // (Only a hoverable card tracks interaction; the plain one still records identity.)
+        clicked.MoveTo(scoped.Rect.X + scoped.Rect.W / 2f, scoped.Rect.Y + scoped.Rect.H - 6f);
+        clicked.Press();
+        clicked.Release();
+        clicked.Frame();
+        Assert.True(page.ClickFrameClicked);
+    }
+
+    private sealed class CardPage : Component
+    {
+        public bool FirstFrameClicked;
+        public bool ClickFrameClicked;
+
+        protected override void Draw(Ui ui)
+        {
+            ui.Button("Before");
+            using (ui.Card(new() { Id = "tile", Width = Size.Fill, Gap = 4, Hoverable = true }, out bool clicked))
+            {
+                if (ui.FrameCount == 1) FirstFrameClicked = clicked;
+                else ClickFrameClicked |= clicked;
+                ui.Button("Inside card");
+            }
+        }
+    }
+
+    [Fact]
+    public void TheSameContainerNameInTwoIdScopesRecordsTwoNativeIds()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        uint scoped = 0;
+        using var app = TestApp.Start(ui =>
+        {
+            using (ui.Card(new() { Id = "dup", Width = Size.Fill }))
+                ui.Button("outside");
+            using (ui.Id(7))
+            {
+                scoped = ui.MakeId("dup");
+                using (ui.Card(new() { Id = "dup", Width = Size.Fill }))
+                    ui.Button("inside");
+            }
+        }, 400, 300);
+
+        SemanticNode first = app.Tree.Find("Card \"dup\"");
+        SemanticNode second = app.Tree.Descendants().Last(n => n.Kind == "Card");
+
+        // A name is only an id inside its id scope: CUI seeds the hash with the enclosing ui.Id,
+        // and the recorder reads back the id each container was actually laid out under, so the
+        // two same-named cards are two identities, each equal to ui.MakeId of its own scope.
+        Assert.NotEqual(first.Id, second.Id);
+        Assert.NotEqual(0u, first.Id);
+        Assert.Equal(scoped, second.Id);
+    }
+
+    [Fact]
+    public void DerivedScopeIdsSurviveUnicodeInterpolatedAndHiddenNames()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        uint unicode = 0, hidden = 0;
+        string name = $"布局 {1}";
+        using var app = TestApp.Start(ui =>
+        {
+            using (ui.Id(3))
+            {
+                unicode = ui.MakeId(name);
+                using (ui.Scroll(new() { Id = name, Height = Size.Px(60) }))
+                    ui.Button("内容");
+                hidden = ui.MakeId("可见###stable");
+                using (ui.Row(new() { Id = "可见###stable", Width = Size.Fill }))
+                    ui.Button("内容2");
+            }
+        }, 400, 300);
+
+        // The recorder recomputes CUI's derivation for these scopes, so whatever bytes the app
+        // named them with - Unicode, interpolated, or the hidden "visible###id" form - the
+        // recorded id is exactly the one native used for layout, and the name round-trips.
+        SemanticNode scroll = app.Tree.Find(name);
+        SemanticNode row = app.Tree.Find("可见###stable");
+        Assert.Equal(unicode, scroll.Id);
+        Assert.Equal(hidden, row.Id);
+        Assert.True(scroll.Rect.W > 0 && row.Rect.W > 0);
+    }
+
     [Fact]
     public void RecordingAFrameCostsTheDrawNothing()
     {

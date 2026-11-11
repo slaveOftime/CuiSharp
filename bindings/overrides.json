@@ -5,7 +5,8 @@
     "cui_size_kind": "SizeKind",
     "cui_renderer_kind": "Renderer",
     "cui_sw_format": "SwFormat",
-    "cui_token": "Token"
+    "cui_token": "Token",
+    "cui_task_status": "CuiTaskStatus"
   },
   "memberRenames": {
     "CUI_RENDERER_OPENGL": "OpenGL"
@@ -251,6 +252,24 @@
       "end": "cui_card_end",
       "clicked": true,
       "why": "The bool return reports clicked, not openness; cui_card_begin always opens its layout container."
+    },
+    "cui_scroll_begin": {
+      "end": "cui_scroll_end",
+      "clicked": false,
+      "deriveNamedId": true,
+      "why": "cui_scroll_begin returns void although it derives a named area's id as cui_make_id(id); the recorder recomputes that pure hash only while recording, so a named Scroll reports its own rect instead of the last widget's."
+    },
+    "cui_virtual_list_begin": {
+      "end": "cui_virtual_list_end",
+      "clicked": false,
+      "deriveNamedId": true,
+      "why": "The viewport is laid out under cui_make_id(id), but begin returns void and does not set last_id; the recorder derives that same id without changing native identity."
+    },
+    "cui_split_begin": {
+      "end": "cui_split_end",
+      "clicked": false,
+      "deriveNamedId": true,
+      "why": "The split container uses cui_make_id(id) without setting last_id; derive its own recorded id rather than borrow the preceding widget's rectangle."
     },
     "cui_kanban_column_begin_ex": {
       "end": "cui_kanban_column_end",
@@ -1258,6 +1277,11 @@
         "name": "MaxPoints",
         "type": "int",
         "why": "Upper bound on drawn points. 0 derives twice the viewport width; longer series are min/max decimated into the frame arena."
+      },
+      {
+        "name": "Normalize",
+        "type": "NormalizeMode",
+        "why": "Scale each series against its own first finite nonzero sample so series of different magnitudes compare by shape; see ChartNormalizer."
       }
     ]
   },

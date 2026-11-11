@@ -110,33 +110,40 @@ public sealed class NativePackagingTests
     }
 
     [Theory]
-    [InlineData("win-x64", null, "false", "true")]
-    [InlineData(null, null, "true", "")]
+    [InlineData("win-x64", null, "false", "false", "true")]
+    [InlineData(null, null, "true", "true", "")]
     // A published app that a tool should drive asks for the channel back, and the size profile is
     // not what provides it: the two switches answer separately.
-    [InlineData("win-x64", "-p:CuiSharpHeadless=true", "true", "true")]
+    [InlineData("win-x64", "-p:CuiSharpHeadless=true", "true", "false", "true")]
+    [InlineData("win-x64", "-p:CuiSharpLive=true", "false", "true", "true")]
+    [InlineData(null, "-p:CuiSharpLive=false", "true", "false", "")]
     public async Task TheSizeProfileAppliesToASelfContainedPublishAndToNothingElse(
-        string? rid, string? overrides, string headless, string profile)
+        string? rid, string? overrides, string headless, string live, string profile)
     {
         using var fixture = new NativeFixture();
         var arguments = new List<string> { "msbuild", fixture.Consumer(), "-p:PublishAot=true" };
         if (rid is not null) arguments.Add($"-p:RuntimeIdentifier={rid}");
         if (overrides is not null) arguments.Add(overrides);
-        arguments.AddRange(["-getProperty:CuiSharpHeadless", "-getProperty:CuiSharpSizeProfile",
+        arguments.AddRange(["-getProperty:CuiSharpHeadless", "-getProperty:CuiSharpLive", "-getProperty:CuiSharpSizeProfile",
             "-getItem:RuntimeHostConfigurationOption"]);
         var result = await RunAsync([.. arguments]);
         Assert.Equal(0, result.Exit);
         using var json = JsonDocument.Parse(result.Output);
         var properties = json.RootElement.GetProperty("Properties");
         Assert.Equal(headless, properties.GetProperty("CuiSharpHeadless").GetString());
+        Assert.Equal(live, properties.GetProperty("CuiSharpLive").GetString());
         Assert.Equal(profile, properties.GetProperty("CuiSharpSizeProfile").GetString());
 
         // The property is only worth anything if it reaches the trimmer as a feature switch: a
         // build that set it and then never wrote the switch would look identical from here.
-        var switchItem = Assert.Single(json.RootElement.GetProperty("Items")
-            .GetProperty("RuntimeHostConfigurationOption").EnumerateArray());
-        Assert.Equal("CuiSharp.Headless", switchItem.GetProperty("Identity").GetString());
-        Assert.Equal(headless, switchItem.GetProperty("Value").GetString());
+        var switches = json.RootElement.GetProperty("Items")
+            .GetProperty("RuntimeHostConfigurationOption").EnumerateArray().ToArray();
+        foreach (var (name, value) in new[] { ("CuiSharp.Headless", headless), ("CuiSharp.Live", live) })
+        {
+            var item = Assert.Single(switches, item => item.GetProperty("Identity").GetString() == name);
+            Assert.Equal(value, item.GetProperty("Value").GetString());
+            Assert.Equal("true", item.GetProperty("Trim").GetString());
+        }
     }
 
     /// <summary>
@@ -151,7 +158,7 @@ public sealed class NativePackagingTests
         var result = await RunAsync("msbuild", fixture.Consumer(), "-p:PublishAot=true",
             "-p:RuntimeIdentifier=win-x64", "-p:CuiSharpSizeProfile=false",
             "-getProperty:StackTraceSupport", "-getProperty:UseSystemResourceKeys",
-            "-getProperty:EventSourceSupport", "-getProperty:CuiSharpHeadless");
+            "-getProperty:EventSourceSupport", "-getProperty:CuiSharpHeadless", "-getProperty:CuiSharpLive");
         Assert.Equal(0, result.Exit);
         using var json = JsonDocument.Parse(result.Output);
         var properties = json.RootElement.GetProperty("Properties");
@@ -162,6 +169,7 @@ public sealed class NativePackagingTests
         // The channel is not part of the diagnostic set: turning telemetry back on must not quietly
         // put the IO stack back into every binary.
         Assert.Equal("false", properties.GetProperty("CuiSharpHeadless").GetString());
+        Assert.Equal("false", properties.GetProperty("CuiSharpLive").GetString());
     }
 
     /// <summary>

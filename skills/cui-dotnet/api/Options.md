@@ -15,7 +15,7 @@ C `cui_agent_plan_opts`.
 
 C `cui_agent_status_opts`.
 
-- `Status`: TaskStatus (default `Status`)
+- `Status`: CuiTaskStatus (default `Status`)
 - `Seconds`: float (default `Seconds`)
 - `Icon`: string? (default `Utf8.Get(Icon)`)
 
@@ -1522,7 +1522,7 @@ C `cui_toggle_group_opts`.
 
 C `cui_tool_call_opts`.
 
-- `Status`: TaskStatus (default `Status`)
+- `Status`: CuiTaskStatus (default `Status`)
 - `Icon`: string? (default `Utf8.Get(Icon)`)
 - `Detail`: string? (default `Utf8.Get(Detail)`)
 - `Input`: string? (default `Utf8.Get(Input)`)

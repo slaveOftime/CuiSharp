@@ -349,7 +349,7 @@ public enum LoaderStyle
 }
 
 /// <summary>cui_task_status</summary>
-public enum TaskStatus
+public enum CuiTaskStatus
 {
     Pending = 0,
     Running = 1,

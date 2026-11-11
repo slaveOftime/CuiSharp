@@ -25,7 +25,9 @@ public unsafe ref partial struct Ui
         var n = o.ToNative();
         bool changed = Native.ToggleGroup(Handle, Utf8.Get(id), UiMarshal.Strings(labels), labels.Length, (nint)flags, in n) != 0;
         for (int i = 0; i < labels.Length; i++) values[i] = flags[i] != 0;
-        WidgetRecorder.Note(Handle, "ToggleGroup", id);
+        // The count travels with the note: cui_toggle_group_ex returns before building anything
+        // when it is given none, and nothing on record can tell that call from a built one.
+        WidgetRecorder.Note(Handle, "ToggleGroup", id, labels.Length);
         return changed;
     }
 

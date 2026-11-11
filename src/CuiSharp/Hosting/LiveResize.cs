@@ -87,6 +87,10 @@ internal static unsafe class LiveResize
         if (Win32.IsWindow(hwnd) != 0) Win32.UnhookWindowProc(hwnd, hook.Previous);
     }
 
+    /// <summary>True while the OS modal size/move drag loop is running for <paramref name="hwnd"/>.</summary>
+    internal static bool IsResizing(nint hwnd) =>
+        hwnd != 0 && Installed.TryGetValue(hwnd, out Hook? hook) && hook.InSizeMove;
+
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
     private static nint Proc(nint hwnd, uint message, nint wparam, nint lparam)
     {
@@ -111,8 +115,13 @@ internal static unsafe class LiveResize
                 hook.SizeChanged = true;
                 break;
 
+            case Win32.WmDestroy:
+                if (Features.Live) LiveSession.CurrentThread?.OnWindowDestroying(hwnd);
+                break;
+
             case Win32.WmNcDestroy:
                 // The window is going away: stop holding its procedure, then let CUI clean up.
+                if (Features.Live) LiveSession.CurrentThread?.OnWindowDestroying(hwnd);
                 Installed.Remove(hwnd);
                 break;
         }

@@ -12,7 +12,9 @@
       1. pack CuiSharp and CuiSharp.Templates into a temporary folder
       2. install the template, `dotnet new cui-app`, and point the app at that folder
       3. build, test, and (unless -NoPublish) publish a NativeAOT single file
-      4. generate cui-mini, run its named .cs file and check its button through the headless protocol
+      4. generate cui-mini, run its named .cs file and check its button through the headless protocol,
+         then drive the same .cs file through the built tool, and install the packed tool into an
+         isolated --tool-path folder to check the command name it ships
       5. on Windows, observe the file-based app's native window and close it
 
     -Keep leaves the generated app and packages in place for inspection.
@@ -195,6 +197,63 @@ internal static class AnalyzerProbe
     $lines = ($tree -split "`n" | Select-Object -Skip 1 -First 4 | ForEach-Object { $_.Trim() })
     Write-Host ('    ' + ($lines -join ' / ')) -ForegroundColor Green
 
+    # The packaged command must be `dotnet-cui`: `dotnet cui <verb>` works by the dotnet CLI
+    # running a program named dotnet-cui, so a pack that ships `cui` leaves the documented verb
+    # unresolved. Isolated: a local pack, an install into $work, and a PATH prepend that is
+    # undone right after — nothing global is touched.
+    Step 'checking the installed tool package'
+    & dotnet pack (Join-Path $PSScriptRoot '../src/CuiSharp.Tools/CuiSharp.Tools.csproj') -c $Configuration -o $packages -p:Version=$version | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw 'packing CuiSharp.Tools failed' }
+    $toolPath = Join-Path $work 'installed-tool'
+    & dotnet tool install CuiSharp.Tools --version $version --tool-path $toolPath --add-source $packages | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw 'installing CuiSharp.Tools into the isolated tool path failed' }
+    $shimName = if ($IsWindows) { 'dotnet-cui.exe' } else { 'dotnet-cui' }
+    $shim = Join-Path $toolPath $shimName
+    if (-not (Test-Path $shim)) {
+        throw "the installed tool must ship a $shimName command; found: $((Get-ChildItem $toolPath).Name -join ', ')"
+    }
+    $shimHelp = (& $shim --help | Out-String)
+    if ($LASTEXITCODE -ne 0 -or $shimHelp -notmatch 'dotnet cui <command>') { throw "the installed command did not print its usage: $shimHelp" }
+    $savedPath = $env:PATH
+    try {
+        $env:PATH = "$toolPath$([System.IO.Path]::PathSeparator)$savedPath"
+        $dispatchHelp = (& dotnet cui --help | Out-String)
+        if ($LASTEXITCODE -ne 0 -or $dispatchHelp -notmatch 'dotnet cui <command>') {
+            throw "dotnet cui did not dispatch to the installed tool: $dispatchHelp"
+        }
+
+        # The offline catalog must be inside the packed tool, not just beside the repo's source.
+        # Run from the package scratch folder, which has no app project and no cui.dll, then read
+        # the installed tool's JSON answer as strict UTF-8.
+        $catalogPsi = [System.Diagnostics.ProcessStartInfo]::new('dotnet')
+        $catalogPsi.WorkingDirectory = $work
+        foreach ($argument in @('cui', 'api', 'ChartOpts', '--json')) { $catalogPsi.ArgumentList.Add($argument) }
+        $catalogPsi.UseShellExecute = $false
+        $catalogPsi.RedirectStandardOutput = $true
+        $catalogPsi.RedirectStandardError = $true
+        $catalogPsi.StandardOutputEncoding = [System.Text.UTF8Encoding]::new($false, $true)
+        $catalogPsi.StandardErrorEncoding = [System.Text.UTF8Encoding]::new($false, $true)
+        $catalog = [System.Diagnostics.Process]::Start($catalogPsi)
+        try {
+            $catalogOut = $catalog.StandardOutput.ReadToEndAsync()
+            $catalogErr = $catalog.StandardError.ReadToEndAsync()
+            if (-not $catalog.WaitForExit(60000)) { throw 'installed dotnet cui api timed out' }
+            $json = $catalogOut.GetAwaiter().GetResult()
+            $errors = $catalogErr.GetAwaiter().GetResult()
+            if ($catalog.ExitCode -ne 0) { throw "installed dotnet cui api failed: $errors" }
+            $answer = $json | ConvertFrom-Json
+            if ($answer.match -ne 'exact' -or $answer.term -ne 'ChartOpts' -or
+                -not ($answer.lines -match 'public .* MaxPoints')) {
+                throw "installed dotnet cui api returned no ChartOpts declaration: $json"
+            }
+        }
+        finally {
+            if (-not $catalog.HasExited) { $catalog.Kill($true); $catalog.WaitForExit() }
+            $catalog.Dispose()
+        }
+    } finally { $env:PATH = $savedPath }
+    Write-Host "    $shimName installed, and dotnet cui resolves through it" -ForegroundColor Green
+
     Step 'generating and running a file-based app'
     $defaultMini = Join-Path $work 'demo1'
     & dotnet new cui-mini -o $defaultMini | Out-Null
@@ -213,6 +272,17 @@ internal static class AnalyzerProbe
     if ($generated.Count -ne 1 -or $generated[0].Name -cne $miniFile) {
         throw "cui-mini must generate exactly one file named $miniFile"
     }
+    # Deterministic non-ASCII label: the tool's strict UTF-8 decoder below must observe these
+    # exact characters; this check never silently skips because a sample page happened to be ASCII.
+    $miniPath = Join-Path $miniApp $miniFile
+    $miniSource = [System.IO.File]::ReadAllText($miniPath)
+    $asciiHeading = "ui.Heading(`"$miniName`", 1);"
+    if (-not $miniSource.Contains($asciiHeading, [StringComparison]::Ordinal)) {
+        throw "the generated mini no longer contains the expected heading: $miniPath"
+    }
+    $miniSource = $miniSource.Replace($asciiHeading, 'ui.Heading("保存", 1);')
+    [System.IO.File]::WriteAllText($miniPath, $miniSource, [System.Text.UTF8Encoding]::new($false))
+
     Copy-Item (Join-Path $app 'NuGet.config') (Join-Path $miniApp 'NuGet.config')
 
     $psi = [System.Diagnostics.ProcessStartInfo]::new('dotnet')
@@ -245,6 +315,65 @@ internal static class AnalyzerProbe
     finally {
         if (-not $mini.HasExited) { $mini.Kill($true); $mini.WaitForExit() }
         $mini.Dispose()
+    }
+
+    # The template's other promise: `dotnet cui` drives that same file with no csproj anywhere.
+    # This is the whole tool path on a file-based app — Release build through the SDK's file
+    # handling, a headless launch, one command — checked on the app the template actually ships.
+    Step 'driving the file-based app with dotnet cui'
+    $fileToolInfo = [System.Diagnostics.ProcessStartInfo]::new('dotnet')
+    $fileToolInfo.WorkingDirectory = $miniApp
+    foreach ($argument in @('cui', 'tree', '--project', $miniFile, '--frames', '2')) { $fileToolInfo.ArgumentList.Add($argument) }
+    $fileToolInfo.UseShellExecute = $false
+    $fileToolInfo.RedirectStandardOutput = $true
+    $fileToolInfo.RedirectStandardError = $true
+    $fileToolInfo.StandardOutputEncoding = [System.Text.UTF8Encoding]::new($false, $true)
+    $fileToolInfo.StandardErrorEncoding = [System.Text.UTF8Encoding]::new($false, $true)
+    $fileToolInfo.Environment['PATH'] = "$toolPath$([System.IO.Path]::PathSeparator)$env:PATH"
+    $fileTool = [System.Diagnostics.Process]::Start($fileToolInfo)
+    try {
+        $stdout = $fileTool.StandardOutput.ReadToEndAsync()
+        $stderr = $fileTool.StandardError.ReadToEndAsync()
+        if (-not $fileTool.WaitForExit(300000)) { throw 'dotnet cui tree on the file-based app timed out after 5 minutes' }
+        $tree = $stdout.GetAwaiter().GetResult()
+        $errors = $stderr.GetAwaiter().GetResult()
+        if ($fileTool.ExitCode -ne 0) { throw "dotnet cui tree on $miniFile failed: $errors" }
+        if ($tree -notmatch 'Frame' -or $tree -notmatch 'Increment' -or -not $tree.Contains('保存')) {
+            throw "the installed dotnet cui did not build and render the file-based app as UTF-8: $tree"
+        }
+        Write-Host "    installed dotnet cui built and drove $miniFile; Unicode label round-tripped as UTF-8" -ForegroundColor Green
+    }
+    finally {
+        if (-not $fileTool.HasExited) { $fileTool.Kill($true); $fileTool.WaitForExit() }
+        $fileTool.Dispose()
+    }
+
+    # Redirected diagnostics are UTF-8 too. A non-existent filename that itself contains
+    # non-ASCII text checks stderr independently from the successful Unicode tree payload.
+    $badToolInfo = [System.Diagnostics.ProcessStartInfo]::new('dotnet')
+    $badToolInfo.WorkingDirectory = $miniApp
+    foreach ($argument in @('cui', 'tree', '--project', '不存在.cs')) { $badToolInfo.ArgumentList.Add($argument) }
+    $badToolInfo.UseShellExecute = $false
+    $badToolInfo.RedirectStandardOutput = $true
+    $badToolInfo.RedirectStandardError = $true
+    $badToolInfo.StandardOutputEncoding = [System.Text.UTF8Encoding]::new($false, $true)
+    $badToolInfo.StandardErrorEncoding = [System.Text.UTF8Encoding]::new($false, $true)
+    $badToolInfo.Environment['PATH'] = "$toolPath$([System.IO.Path]::PathSeparator)$env:PATH"
+    $badTool = [System.Diagnostics.Process]::Start($badToolInfo)
+    try {
+        $badOut = $badTool.StandardOutput.ReadToEndAsync()
+        $badErr = $badTool.StandardError.ReadToEndAsync()
+        if (-not $badTool.WaitForExit(60000)) { throw 'dotnet cui diagnostic smoke timed out' }
+        $diagnostic = $badErr.GetAwaiter().GetResult()
+        $null = $badOut.GetAwaiter().GetResult()
+        if ($badTool.ExitCode -ne 1 -or -not $diagnostic.Contains('不存在.cs')) {
+            throw "installed dotnet cui did not preserve the UTF-8 diagnostic: $diagnostic"
+        }
+        Write-Host '    installed tool stderr round-tripped UTF-8 diagnostics' -ForegroundColor Green
+    }
+    finally {
+        if (-not $badTool.HasExited) { $badTool.Kill($true); $badTool.WaitForExit() }
+        $badTool.Dispose()
     }
 
     # The template's promise is one binary, and a publish that leaves a .pdb beside it is how that

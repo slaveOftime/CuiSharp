@@ -155,6 +155,42 @@ public class ProtocolBoundsTests
         Assert.Contains("past this protocol's 16-byte limit", wire, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task TheAsyncCommandReaderAcceptsTheBoundAndRejectsTheNextCharacter()
+    {
+        string longest = new('x', HeadlessLoop.MaxCommandChars);
+        Assert.Equal(longest, await HeadlessLoop.ReadCommandAsync(new StringReader(longest + "\n"), CancellationToken.None));
+        Assert.Equal("tree", await HeadlessLoop.ReadCommandAsync(new StringReader("tree\r\n"), CancellationToken.None));
+        ArgumentException error = await Assert.ThrowsAsync<ArgumentException>(() =>
+            HeadlessLoop.ReadCommandAsync(new StringReader(longest + "x"), CancellationToken.None));
+        Assert.Contains("newline", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task TheAsyncCommandReaderCanCancelInTheMiddleOfALine()
+    {
+        using var stream = new Feed(Encoding.UTF8.GetBytes("type partial"));
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+        using var cancel = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            HeadlessLoop.ReadCommandAsync(reader, cancel.Token).WaitAsync(TimeSpan.FromSeconds(3)));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task AsyncAnswersRoundTripMultilineUnicodeByTheirByteCount(bool ok)
+    {
+        const string text = "Save 中文\n↳ another line";
+        var sink = new StringWriter();
+        await HeadlessLoop.AnswerAsync(sink, ok, text, CancellationToken.None);
+        using var stream = new Feed(Encoding.UTF8.GetBytes("CUI-READY 800 600\n" + sink));
+        using var client = HeadlessClient.Attach(stream, new MemoryStream());
+        Answer answer = client.Send("tree");
+        Assert.Equal(ok, answer.Ok);
+        Assert.Equal(text, answer.Payload);
+    }
+
     /// <summary>One stream the app would have written: some bytes, then nothing at all.</summary>
     private sealed class Feed(params byte[][] chunks) : Stream
     {

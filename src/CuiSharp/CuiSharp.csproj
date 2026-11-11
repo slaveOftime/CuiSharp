@@ -111,6 +111,10 @@
     -->
     <None Include="..\..\skills\cui-dotnet\**\*.md" Pack="true" PackagePath="skills/cui-dotnet/%(RecursiveDir)%(Filename)%(Extension)" Visible="false" />
     <None Include="..\..\skills\cui-dotnet\llms.txt" Pack="true" PackagePath="skills/cui-dotnet/" Visible="false" />
+    <!-- The machine-readable API catalog beside the pages an LLM reads: the same file
+         tools/export-api.cs writes and CuiSharp.Tools embeds, so a package consumer and the
+         tool never disagree. Glob above only takes *.md, so it needs its own line. -->
+    <None Include="..\..\skills\cui-dotnet\api\catalog.json" Pack="true" PackagePath="skills/cui-dotnet/api/" Visible="false" />
   </ItemGroup>
 
   <ItemGroup>

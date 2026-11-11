@@ -16,7 +16,7 @@
 
   <!-- Package metadata, inherited by every packable project. -->
   <PropertyGroup>
-    <Version>0.3.2</Version>
+    <Version>0.3.1</Version>
     <Authors>yappologistic</Authors>
     <Copyright>Copyright (c) 2026 yappologistic</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
