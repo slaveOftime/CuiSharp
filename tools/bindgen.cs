@@ -302,7 +302,7 @@ sealed record CType(string Spelling, string Kind, bool IsConst, CType? Element);
 
 sealed record NameOverride(string Name, string Why);
 sealed record DefaultOverride(string Value, string Why);
-sealed record ScopeOverride(string End, bool Clicked, string Why);
+sealed record ScopeOverride(string End, bool Clicked, string Why, bool DeriveNamedId = false);
 sealed record InjectedField(string Type, string Why)
 {
     /// <summary>The wrapper parameter name, e.g. "sort".</summary>
@@ -1647,6 +1647,11 @@ sealed class Idiomatic
                 throw new InvalidOperationException($"Unknown scope pair: {key} / {value.End}");
             if (end.CsReturn != "void" || end.Params.Length != 1 || value.Clicked && begin.ReturnType.Kind != "Bool")
                 throw new InvalidOperationException($"Unsupported scope semantics: {key} / {value.End}");
+            // deriveNamedId stands in for a begin that hides the id it derived from the app's
+            // name; a begin that returns or reports more has other rules, so fail if the pair
+            // ever changes shape.
+            if (value.DeriveNamedId && (begin.ReturnType.Kind != "Void" || value.Clicked))
+                throw new InvalidOperationException($"deriveNamedId needs a void, always-open begin: {key}");
         }
         foreach (var (key, reason) in _overrides.ManualWidgets)
         {
@@ -2572,10 +2577,21 @@ sealed class Idiomatic
     private string ScopeNew(WidgetPlan widget, string result, string scopeReturn)
     {
         string extra = scopeReturn == "OpenScope" ? $", {result} != 0" : "";
-        string id = widget.Params.FirstOrDefault(p => p.Type == "UiText" && p.Mode != "out ") is { } namer
-            ? namer.Name
+        bool namedByMarkup = widget.Params.Any(p => p.Type == "UiText" && p.Mode != "out ");
+        string id = namedByMarkup
+            ? widget.Params.First(p => p.Type == "UiText" && p.Mode != "out ").Name
             : ContainerIdArg(widget);
-        return $"new {scopeReturn}(ui.Handle, &Native.{widget.End!.CsName}, \"{widget.Name}\", {id}{extra})";
+        // Hand the recorder the id CUI lays this container out under, so it reads back the
+        // container's own rect instead of guessing from last_id (which a box begin never
+        // touches). A begin that returns a cui_id states it exactly; a deriveNamedId
+        // container derives it purely from the app's name (cui_make_id), and the recorder
+        // recomputes that hash only while recording, so an idle frame calls nothing new.
+        string nativeId = !namedByMarkup && widget.Native.ReturnType.Spelling == "cui_id"
+            ? $", nativeId: {result}"
+            : _overrides.Scopes.TryGetValue(widget.Native.CName, out var scope) && scope.DeriveNamedId
+                ? ", deriveNamedId: true"
+                : "";
+        return $"new {scopeReturn}(ui.Handle, &Native.{widget.End!.CsName}, \"{widget.Name}\", {id}{extra}{nativeId})";
     }
 
     /// <summary>

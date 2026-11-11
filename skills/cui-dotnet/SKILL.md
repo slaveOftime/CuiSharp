@@ -292,6 +292,13 @@ about 12 µs — the same as a thousand.
 for you — `LineChart`/`BarChart` collapse anything longer than `ChartOpts.MaxPoints` (default: twice
 the viewport width) into min/max pairs in the frame arena — so pass the whole feed.
 
+`ChartOpts.Normalize` rebases each line/bar series to its own first finite non-zero sample:
+`NormalizeMode.Index100` makes that point 100; `NormalizeMode.Percent` makes it 0. A negative
+baseline is allowed (and reverses the direction). The setting applies to `LineChart` and
+`BarChart`; `DonutChart` shares the options type but rejects normalization. When normalization is
+enabled, NaN/infinity and all-zero series are errors — **NaN is not a gap marker**. CUI spaces
+points uniformly by index, not by time; `Labels` are positional, and this is not a timestamp axis.
+
 ```csharp
 private readonly float[] _window = new float[SeriesDecimator.RequiredCapacity(400)];
 private readonly Series[] _series = [new Series { Values = _window }];
@@ -588,6 +595,15 @@ behind, so anything that should be checked twice belongs in a test instead.
 - `click` answers with the frame *after* the click; a transition may need `frame N` first.
 - `--frames N` draws N frames before the command; `--app bin/App.exe` inspects a published build;
   `--no-build` reuses the last build; `--` passes the rest to the app.
+- To drive a **live window** while a human watches it (`dotnet watch run -- --live`, `CUISHARP_LIVE=1`,
+  or `CuiAppOptions { LiveAttach = true }` on Windows), run `dotnet cui ps` to list active windows and
+  pass `-a` / `--attach` (or `--attach=<pid|title>`) to any command (`dotnet cui tree -a`,
+  `dotnet cui click Save -a`, `dotnet cui png live.png -a`, `dotnet cui quit -a`). Commands travel over
+  a user-only local named pipe (`cui-live-<pid>-<nonce>`) and leave the window open between calls.
+  Published AOT apps omit the listener by default: publish with `-p:CuiSharpLive=true` to retain it,
+  then opt in at runtime with `--live` or `LiveAttach`. Disconnecting abandons pending commands;
+  already-consumed input cannot be undone, but injected held input is released before the next
+  client is accepted. A wait timeout is an error, including when the frame completes late.
 - The app's own output — `Console.WriteLine`, a logger, a stack trace — reaches your stderr, so stdout
   is exactly the answer you asked for.
 - Text in a script the bundled Latin faces do not cover draws nothing at all, with no box and no
@@ -603,13 +619,14 @@ behind, so anything that should be checked twice belongs in a test instead.
 
 `dotnet publish -c Release -r win-x64` links CUI into one executable. The package already trims it:
 a self-contained publish compiles the headless channel and the framework diagnostics a shipped app
-never reads out of the binary, which is about 20% of a small app. Three properties are the whole
+never reads out of the binary, which is about 20% of a small app. Four properties are the whole
 vocabulary, and the defaults are right for most apps:
 
 | Property | Default on a publish | Set it when |
 |---|---|---|
 | `CuiSharpSizeProfile` | `true` | `false` keeps telemetry, hot-reload metadata and HTTP tracing |
 | `CuiSharpHeadless` | `false` | `true` keeps the channel a tool drives the published exe with |
+| `CuiSharpLive` | `false` | `true` keeps Windows live attach; the app must still opt in at runtime |
 | `CuiSharpVerboseErrors` | `false` | `true` keeps framework exception messages and stack traces |
 
 `OptimizationPreference=Size` and `InvariantGlobalization=true` are the app's call, not the
@@ -650,7 +667,10 @@ dialog is modal, a dropzone returns the paths it received.
 - **Icons** — 168 constants generated from `cui_icons.h`: `Icons.Check`, `Icons.Plus`, `Icons.Search`, …
 
 Each generated component has one line of documentation with its exact signature in `llms.txt`, and a
-per-section page under `api/`.
+per-section page under `api/`. To look one up without opening a file, `dotnet cui api <name>` prints
+the live declarations of `ChartOpts`, `Ui.LineChart`, or a bare member name from the catalog packaged
+with the tool (`--json` for machine output), and `dotnet cui icons [filter]` lists every glyph with
+its code point. Both answer offline from `api/catalog.json`: no app, no build, no native library.
 
 ## Files
 
@@ -663,6 +683,7 @@ Everything below is in this folder, beside this guide; nothing here points outsi
 | option structs and their fields | `api/Options.md` |
 | records used as array items | `api/Records.md` |
 | the whole API paged, one file per section | `api/` |
+| every declaration as data, for offline lookup | `api/catalog.json` (`dotnet cui api <name> --json`) |
 | what each widget does, and its keyboard | `widgets.md`, `widgets-more.md` |
 | hosting: components, mutations, DI | `hosting.md` |
 | which RIDs the package carries, and the glibc floor | `native-abi.md` |

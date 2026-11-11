@@ -3,25 +3,9 @@ using System.Globalization;
 namespace CuiSharp.Tools;
 
 /// <summary>
-/// <c>dotnet cui</c>: runs a CuiSharp app with no window and does one thing to it — print the
-/// controls of its last frame, screenshot it, click a control, type into it.
+/// <c>dotnet cui</c>: drives a CuiSharp app — either headless over stdio or attached to a live
+/// window over a local named pipe — and answers offline API/icon catalog queries.
 /// </summary>
-/// <remarks>
-/// <para>
-/// The app is not simulated: the tool builds it, runs it the way a person would, and speaks the
-/// headless protocol the framework serves. What you see is the frame the app really draws, with
-/// its own services, its own data and its own bugs.
-/// </para>
-/// <code>
-/// dotnet cui tree                     # what the first frame drew, nested
-/// dotnet cui click Save               # click a control, print the frame that reacted
-/// dotnet cui type Milk                # type into the focused field
-/// dotnet cui png shot.png             # the frame as a PNG
-/// dotnet cui tree --project src/App   # another app
-/// dotnet cui tree --app bin/App.exe   # a published build, not a rebuild
-/// dotnet cui tree -- --page=2         # arguments for the app itself
-/// </code>
-/// </remarks>
 internal static class Cli
 {
     private const string Usage = """
@@ -29,6 +13,7 @@ internal static class Cli
 
         Commands (what the app understands):
           tree                the controls the last frame drew, nested
+          layout              layout rectangles, observed union bounds and overflow diagnostics
           find <text>         one control: kind, label and rectangle
           click <text>        click a control, then print the frame it produced
           type <text>         type into the focused control, then print the frame
@@ -38,24 +23,58 @@ internal static class Cli
           wheel <x> <y> <dy> [dx]  scroll at a point, in wheel notches (negative dy goes down)
           frame [count]       draw more frames, then print the tree
           pulse [count]       draw frames without printing the tree (answers: count, heap bytes)
+          wait [seconds]      keep drawing until a frame marks itself ready (ui.MarkReady)
+          waittext <s> <text> keep drawing until a frame draws this text or query
           faults              what the app threw while drawing, if anything
           png <path>          save the last frame as a PNG
+          quit                close a live attached window
 
         Commands the tool answers itself:
+          ps [--json]         list running live CuiSharp windows (--live / CUISHARP_LIVE=1)
           dwell <seconds>     keep the app drawing for that long, then answer with one STATS
                               line: wall and cpu milliseconds, frames, fps, and the app's
                               heap, working-set and private bytes
 
+        Commands answered offline, from the API catalog inside this tool:
+          api <name>          one declaration: `api ChartOpts`, `api Ui.LineChart`, `api Button`.
+                              An exact answer exits 0; an ambiguous or unknown one names the
+                              qualified or nearest names and exits nonzero.
+          icons [filter]      every icon constant: name, code point, and the literal to paste.
+          Both take --json for machine-readable output; neither builds, launches or loads anything.
+
         Options:
-          -p, --project <path>  the app to run (a project file or its directory). Default: here
+          -a, --attach [id]     drive a running live window (--live) over its named pipe instead
+                                of starting a new headless process; use --attach=<pid|title> when
+                                more than one live window is open
+          -p, --project <path>  the app to run: a directory, a .csproj, or a file-based .cs
+                                app. Default: here
               --app <exe>       run a published build instead of building
               --framework <tfm> the target framework, when the project has more than one
               --frames <count>  draw this many frames before the command
           -s, --stdin           read commands from stdin and print each answer, one process
           -q, --quiet           only print the payload
+              --wait ready      precondition: draw until a frame marks itself ready (ui.MarkReady)
+              --wait-text <text> precondition: draw until a frame draws this text or query
+              --wait-timeout <s> wait window for the two above, in seconds (default 10, max 3600)
+
+        A wait is a precondition, not a command: `dotnet cui png out.png --wait ready` screenshots
+        the frame that proved the app ready, and an unsatisfied wait ends the run with exit=1
+        before the command is sent. `--wait ready` alone waits and then prints the tree.
 
         Anything after `--` goes to the app.
         """;
+
+    private static readonly Lazy<ApiCatalog> EmbeddedCatalog = new(() =>
+    {
+        try
+        {
+            return ApiCatalog.LoadEmbedded();
+        }
+        catch (InvalidDataException broken)
+        {
+            throw new ToolException(broken.Message);
+        }
+    });
 
     /// <summary>Runs the tool; the return value is the process exit code.</summary>
     internal static int Run(string[] args, TextWriter output, TextWriter error, TextReader? input = null)
@@ -69,27 +88,27 @@ internal static class Cli
                 return args.Length == 0 ? 2 : 0;
             }
 
+            if (options.Command is "api" or "icons")
+                return AnswerCatalog(options, output, error);
 
-            (string host, string[] hostArgs) = options.Host is { } exe
-                ? (exe, options.AppArgs)
-                : AppLocator.Resolve(options.Project, options.NoBuild, error, new(Framework: options.Framework)) is { } assembly
-                    ? ("dotnet", [assembly, .. options.AppArgs])
-                    : throw new ToolException($"No .NET app found at \"{options.Project ?? Directory.GetCurrentDirectory()}\".");
+            if (options.Command == "ps")
+            {
+                output.WriteLine(LiveClient.FormatList(LiveClient.List(), options.Json));
+                return 0;
+            }
 
-            // The app's own output is the app's own business: it goes where a shell would send
-            // the app's diagnostics, and the protocol on stdout stays clean.
-            using HeadlessClient client = HeadlessClient.Start(
-                host, hostArgs, echo: options.Quiet ? null : error.WriteLine);
-            if (options.Frames > 0) client.Send($"frame {options.Frames}");
+            using HeadlessClient client = options.Attach
+                ? LiveClient.Connect(options, error)
+                : StartHeadless(options, error);
+
+            if (!PassPreconditions(client, options, error)) return 1;
 
             if (options.Streaming) return Relay(client, input, output, error);
 
-            // dwell is the one command the tool answers itself, and it reads the same in a
-            // session as it does on the command line: `dotnet cui dwell 3`.
             if (TryReadDwell(options.Line, out double seconds))
                 return Dwell(client, output, error, seconds) ? 0 : 1;
 
-            Answer answer = client.Send(options.Line);
+            Answer answer = Ask(client, options.Line);
             if (!answer.Ok)
             {
                 error.WriteLine(answer.Payload);
@@ -106,23 +125,83 @@ internal static class Cli
         }
     }
 
+    private static HeadlessClient StartHeadless(Options options, TextWriter error)
+    {
+        (string host, string[] hostArgs) = options.Host is { } exe
+            ? (exe, options.AppArgs)
+            : AppLocator.Resolve(options.Project, options.NoBuild, error, new(Framework: options.Framework)) is { } assembly
+                ? ("dotnet", [assembly, .. options.AppArgs])
+                : throw new ToolException(
+                    $"No app found at \"{options.Project ?? Directory.GetCurrentDirectory()}\": " +
+                    "no .csproj and no file-based .cs app there.");
+
+        return HeadlessClient.Start(
+            host, hostArgs, echo: options.Quiet ? null : error.WriteLine);
+    }
+
+    private static int AnswerCatalog(Options options, TextWriter output, TextWriter error)
+    {
+        if (options.Command == "api" && options.Argument.Length == 0)
+        {
+            error.WriteLine(
+                "`api` needs a name to look up: `dotnet cui api ChartOpts`, `dotnet cui api Ui.LineChart`, "
+                + "or `dotnet cui icons` for the glyph list.");
+            return 2;
+        }
+
+        ApiCatalog catalog = EmbeddedCatalog.Value;
+        CatalogResult answer = options.Command == "icons"
+            ? catalog.IconsResult(options.Argument.Length == 0 ? null : options.Argument)
+            : catalog.Query(options.Argument);
+
+        output.WriteLine(options.Json ? answer.RenderJson() : answer.Render());
+        return answer.IsExact ? 0 : 1;
+    }
+
     /// <summary>
-    /// Feeds commands from stdin to one app process, so a session of ten commands pays for one
-    /// startup instead of ten. Answers go to stdout in order.
+    /// Draws and waits through everything that must be true before the command runs: the
+    /// <c>--frames</c> draw, then the wait gate.
     /// </summary>
-    private static int Relay(HeadlessClient client, TextReader? input, TextWriter output, TextWriter error)
+    internal static bool PassPreconditions(HeadlessClient client, Options options, TextWriter error)
+    {
+        if (options.Frames > 0)
+        {
+            Answer drawn = Ask(client, $"frame {options.Frames}");
+            if (!drawn.Ok)
+            {
+                error.WriteLine(drawn.Payload);
+                return false;
+            }
+        }
+
+        if (options.WaitLine is { } gate)
+        {
+            Answer waited = Ask(client, gate);
+            if (!waited.Ok)
+            {
+                error.WriteLine(waited.Payload);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>Feeds commands from stdin to one app session and prints each answer in order.</summary>
+    internal static int Relay(HeadlessClient client, TextReader? input, TextWriter output, TextWriter error)
     {
         TextReader source = input ?? Console.In;
         while (source.ReadLine() is { } line)
         {
-            if (line.Trim().Length == 0) continue;
-            if (TryReadDwell(line.Trim(), out double seconds))
+            string trimmed = line.Trim();
+            if (trimmed.Length == 0) continue;
+            if (TryReadDwell(trimmed, out double seconds))
             {
                 if (!Dwell(client, output, error, seconds)) return 1;
                 continue;
             }
 
-            Answer answer = client.Send(line.Trim());
+            Answer answer = Ask(client, trimmed);
             if (!answer.Ok)
             {
                 error.WriteLine(answer.Payload);
@@ -135,36 +214,21 @@ internal static class Cli
         return 0;
     }
 
-    /// <summary>
-    /// Recognises <c>dwell 3</c> — the one command the tool answers itself. Parsing is a
-    /// separate method so the grammar is testable without an app to dwell in.
-    /// </summary>
+    /// <summary>Recognises <c>dwell 3</c> — the one command the tool answers itself.</summary>
     internal static bool TryReadDwell(string line, out double seconds)
     {
         seconds = 0;
-        // The char array is written out because StringSplitOptions is an enum with an int
-        // base: `Split(' ', '\t', options)` would bind to Split(char, int, options) and turn
-        // the options into a maximum count.
         string[] parts = line.Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length != 2 || parts[0] != "dwell") return false;
         if (!double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out seconds))
             throw new ToolException($"dwell needs a number of seconds, not \"{parts[1]}\".");
 
-        // A dwell of zero or less measures nothing, and Infinity or NaN — which TryParse accepts —
-        // would either spin forever or end the walk's table with a row of zeros. Both are typos.
         if (!double.IsFinite(seconds) || seconds <= 0)
             throw new ToolException($"dwell needs a positive number of seconds, not \"{parts[1]}\".");
 
         return true;
     }
 
-    /// <summary>
-    /// Holds a page on screen for a while with the app really drawing: idle, the app only waits
-    /// for the next command, so a dwell that sent nothing would measure a sleeping process. It
-    /// ticks <c>pulse</c> until the window is through — pulse draws without printing the tree,
-    /// so the measurement does not pay for serialising the very interface it is measuring — and
-    /// answers with what the process burned between the first sample and the last.
-    /// </summary>
     private static bool Dwell(HeadlessClient client, TextWriter output, TextWriter error, double seconds)
     {
         const int perPulse = 240;
@@ -182,7 +246,6 @@ internal static class Cli
             }
 
             frames += perPulse;
-            // The pulse carries the app's own view of its managed heap: "240 heap 458752".
             int at = answer.Payload.IndexOf("heap ", StringComparison.Ordinal);
             if (at >= 0 && long.TryParse(answer.Payload[(at + 5)..].Trim(), out long bytes)) heap = bytes;
         }
@@ -202,10 +265,35 @@ internal static class Cli
         return true;
     }
 
-    /// <summary>
-    /// What the tool was asked for. Parsing is separate from running so that flag handling is
-    /// testable without spawning a process.
-    /// </summary>
+    private static readonly TimeSpan WaitAnswerSlack = TimeSpan.FromSeconds(30);
+
+    private static Answer Ask(HeadlessClient client, string line) =>
+        client.Send(line, answerTimeout: AnswerTimeoutFor(line));
+
+    /// <summary>The answer deadline a command line needs, or null for the default.</summary>
+    internal static TimeSpan? AnswerTimeoutFor(string line)
+    {
+        string[] words = line.Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        string? token = words.Length > 0
+            ? words[0].ToLowerInvariant() switch
+            {
+                "wait" => words.Length > 1 ? words[1] : "",
+                "waittext" => words.Length > 2 ? words[1] : null,
+                _ => null,
+            }
+            : null;
+
+        if (token is null
+            || !double.TryParse(token, NumberStyles.Float, CultureInfo.InvariantCulture, out double seconds)
+            || !double.IsFinite(seconds) || seconds <= 0 || seconds > Options.MaxWaitSeconds)
+        {
+            return null;
+        }
+
+        return TimeSpan.FromSeconds(seconds) + WaitAnswerSlack;
+    }
+
+    /// <summary>Parsed command-line options for <c>dotnet cui</c>.</summary>
     internal sealed record Options
     {
         internal string Command { get; init; } = "";
@@ -218,44 +306,66 @@ internal static class Cli
 
         internal bool Help { get; init; }
 
-        /// <summary>Read commands from stdin instead of taking one from the arguments.</summary>
+        internal bool Json { get; init; }
+
+        internal bool Attach { get; init; }
+
+        internal string? AttachTarget { get; init; }
+
         internal bool Streaming { get; init; }
 
-        /// <summary>Reuse the newest build instead of building.</summary>
         internal bool NoBuild { get; init; }
 
-        /// <summary>The project to build, when the app was not given as an executable.</summary>
         internal string? Project { get; init; }
 
-        /// <summary>The executable to run, instead of building.</summary>
         internal string? Host { get; init; }
 
-        /// <summary>The target framework, when the project targets more than one.</summary>
         internal string? Framework { get; init; }
 
-        /// <summary>Arguments for the app itself, from after <c>--</c>.</summary>
         internal string[] AppArgs { get; init; } = [];
 
-        /// <summary>The line the app receives: its command and the argument.</summary>
         internal string Line => Argument.Length == 0 ? Command : $"{Command} {Argument}";
+
+        internal double WaitSeconds { get; init; }
+
+        internal string? WaitLine { get; init; }
+
+        internal const double DefaultWaitSeconds = 10;
+
+        internal const double MaxWaitSeconds = 3600;
 
         internal static Options Parse(string[] args)
         {
             if (args.Length == 0) return new Options { Help = true };
 
-            string? project = null, host = null, framework = null;
+            string? project = null, host = null, framework = null, attachTarget = null;
+            string? wait = null, waitText = null;
+            double? waitTimeout = null;
             var appArgs = new List<string>();
             var words = new List<string>();
             int frames = 0;
-            bool quiet = false, help = false, streaming = false, noBuild = false;
+            bool quiet = false, help = false, streaming = false, noBuild = false, json = false, attach = false;
 
             for (int i = 0; i < args.Length; i++)
             {
                 string arg = args[i];
                 switch (arg)
                 {
-                    case "-h" or "--help" or "help":
+                    case "-h" or "--help":
                         help = true;
+                        break;
+                    case "help" when words.Count == 0:
+                        help = true;
+                        break;
+                    case "--json":
+                        json = true;
+                        break;
+                    case "-a" or "--attach":
+                        attach = true;
+                        break;
+                    case "-t" or "--target":
+                        attach = true;
+                        attachTarget = Value(args, ref i);
                         break;
                     case "-p" or "--project":
                         project = Value(args, ref i);
@@ -267,7 +377,16 @@ internal static class Cli
                         framework = Value(args, ref i);
                         break;
                     case "--frames":
-                        frames = int.Parse(Value(args, ref i), CultureInfo.InvariantCulture);
+                        frames = ParseFrames(Value(args, ref i));
+                        break;
+                    case "--wait":
+                        wait = Value(args, ref i);
+                        break;
+                    case "--wait-text":
+                        waitText = Value(args, ref i);
+                        break;
+                    case "--wait-timeout":
+                        waitTimeout = ParseWaitTimeout(Value(args, ref i));
                         break;
                     case "-q" or "--quiet":
                         quiet = true;
@@ -283,8 +402,15 @@ internal static class Cli
                         i = args.Length;
                         break;
                     default:
-                        // An unknown long option is a mistake, not a command: say so rather than
-                        // sending it to the app, which would answer "unknown command".
+                        if (arg.StartsWith("--attach=", StringComparison.Ordinal))
+                        {
+                            string value = arg["--attach=".Length..].Trim();
+                            if (value.Length == 0) throw new ToolException("--attach needs a target.");
+                            attach = true;
+                            attachTarget = value;
+                            break;
+                        }
+
                         if (arg.StartsWith("--", StringComparison.Ordinal) || arg.StartsWith('-'))
                             throw new ToolException($"Unknown option \"{arg}\". Use `--` to pass it to the app.");
                         words.Add(arg);
@@ -292,26 +418,81 @@ internal static class Cli
                 }
             }
 
+            bool waiting = wait is not null || waitText is not null;
+            if (wait is not null && !wait.Equals("ready", StringComparison.OrdinalIgnoreCase))
+                throw new ToolException($"--wait needs \"ready\", not \"{wait}\".");
+            if (wait is not null && waitText is not null)
+                throw new ToolException("Choose one wait: --wait ready or --wait-text <text>, not both.");
+            if (waitTimeout is not null && !waiting)
+                throw new ToolException("--wait-timeout needs --wait or --wait-text to bound.");
+
+            double waitSeconds = waitTimeout ?? DefaultWaitSeconds;
+            string? waitLine = null;
+            if (waiting)
+            {
+                string seconds = waitSeconds.ToString("R", CultureInfo.InvariantCulture);
+                waitLine = waitText is not null ? $"waittext {seconds} {waitText}" : $"wait {seconds}";
+            }
+
+            string command = words.Count > 0
+                ? words[0]
+                : waiting && !streaming ? "tree" : "";
+            string argument = words.Count > 1 ? string.Join(' ', words.Skip(1)) : "";
+
+            bool showHelp = help || (words.Count == 0 && !streaming && !waiting);
+            if (json && !showHelp && command is not ("api" or "icons" or "ps"))
+                throw new ToolException("Unknown option \"--json\". Only `api`, `icons`, and `ps` support --json.");
+
             return new Options
             {
-                Command = words.Count > 0 ? words[0] : "",
-                Argument = words.Count > 1 ? string.Join(' ', words.Skip(1)) : "",
+                Command = command,
+                Argument = argument,
                 Frames = frames,
                 Quiet = quiet,
+                Json = json,
+                Attach = attach,
+                AttachTarget = attachTarget,
                 Streaming = streaming,
                 NoBuild = noBuild,
-                Help = help || (words.Count == 0 && !streaming),
+                Help = showHelp,
                 Project = project,
                 Host = host,
                 Framework = framework,
                 AppArgs = [.. appArgs],
+                WaitSeconds = waiting ? waitSeconds : 0,
+                WaitLine = waitLine,
             };
+        }
+
+        internal static int ParseFrames(string value)
+        {
+            if (!int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out int frames) || frames < 0)
+                throw new ToolException($"--frames needs a count of at least 0, not \"{value}\".");
+
+            return frames;
+        }
+
+        internal static double ParseWaitTimeout(string value)
+        {
+            if (!double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double seconds)
+                || !double.IsFinite(seconds) || seconds <= 0 || seconds > MaxWaitSeconds)
+            {
+                throw new ToolException(
+                    $"--wait-timeout needs a finite number of seconds between 0 and {MaxWaitSeconds:0}, not \"{value}\".");
+            }
+
+            return seconds;
         }
 
         private static string Value(string[] args, ref int index)
         {
-            if (index + 1 >= args.Length) throw new ToolException($"{args[index]} needs a value.");
+            if (index + 1 >= args.Length || IsFlagToken(args[index + 1]))
+                throw new ToolException($"{args[index]} needs a value.");
             return args[++index];
         }
+
+        private static bool IsFlagToken(string token) =>
+            token.StartsWith("--", StringComparison.Ordinal)
+            || token is "-h" or "-q" or "-s" or "-p" or "-a" or "-t";
     }
 }

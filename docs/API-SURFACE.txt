@@ -11,9 +11,9 @@ enum CuiSharp.Accent
 struct CuiSharp.AgentPlanOpts
   field String Title
 struct CuiSharp.AgentStatusOpts
+  field CuiTaskStatus Status
   field Single Seconds
   field String Icon
-  field TaskStatus Status
 class CuiSharp.AiInterfacesUiExtensions
   static Boolean Citation(Ui, Int32, in Source)
   static Boolean ModelPicker(Ui, UiText, ReadOnlySpan<Model>, ref Int32, ModelPickerOpts)
@@ -116,6 +116,7 @@ struct CuiSharp.AvatarOpts
   field String Status
   field UInt64 Image
 struct CuiSharp.BadgeOpts
+  ctor(Tone)
   field Boolean Dot
   field Boolean Solid
   field ControlSize Size
@@ -154,6 +155,7 @@ class CuiSharp.BlameUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
   BlameResult Blame(UiText, ReadOnlySpan<String>, ReadOnlySpan<Int32>, ReadOnlySpan<BlameCommit>, BlameOpts)
 class CuiSharp.BlameUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4+<M>$D152016828D0F2CB0A8B78500F4F70D3
 struct CuiSharp.Box
+  ctor(Single, Single, Align, Size, Size)
   field Align Align
   field Boolean Clip
   field Boolean ScrollX
@@ -269,6 +271,7 @@ class CuiSharp.CaptureUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
   Void SignatureClear(UiText)
 class CuiSharp.CaptureUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4+<M>$D152016828D0F2CB0A8B78500F4F70D3
 struct CuiSharp.Card
+  ctor(Single, Single, Dir, Size, Size)
   field Align Align
   field Boolean Hoverable
   field Boolean Muted
@@ -295,6 +298,9 @@ struct CuiSharp.CarouselOpts
   field Single AutoAdvance
   field Single Gap
   field Single Height
+class CuiSharp.ChartNormalizer
+  static Int32 Normalize(ReadOnlySpan<Single>, Span<Single>, NormalizeMode)
+  static Single FindBaseline(ReadOnlySpan<Single>)
 struct CuiSharp.ChartOpts
   field Boolean Area
   field Boolean NoGrid
@@ -302,6 +308,7 @@ struct CuiSharp.ChartOpts
   field Boolean Smooth
   field Boolean Stacked
   field Int32 MaxPoints
+  field NormalizeMode Normalize
   field Single Height
   field Single Max
   field Single Min
@@ -598,6 +605,7 @@ class CuiSharp.CuiAppOptions
   property Boolean FixedSize { get; set; }
   property Boolean FollowSystemTheme { get; set; }
   property Boolean Hidden { get; set; }
+  property Boolean LiveAttach { get; set; }
   property Boolean NoVsync { get; set; }
   property IFileDialogProvider FileDialog { get; set; }
   property Int32 Height { get; set; }
@@ -675,6 +683,7 @@ class CuiSharp.CuiSurface
   Void Type(UiText)
   property Boolean FileDragActive { get; }
   property Boolean Incremental { get; set; }
+  property Boolean LastFrameReady { get; }
   property Boolean RecordWidgets { get; set; }
   property FrameSample LastFrame { get; set; }
   property IReadOnlyList<Exception> Faults { get; }
@@ -692,6 +701,12 @@ class CuiSharp.CuiSurface
   property Ui Ui { get; }
   static CuiSurface Create(Int32, Int32, Single, Int32, Theme, Accent)
   static CuiSurface CreateGpu(Int32, Int32, in NativeRendererIface, Single, Theme, Accent)
+enum CuiSharp.CuiTaskStatus
+  Done
+  Failed
+  Pending
+  Running
+  Skipped
 class CuiSharp.CuiTree
   static Int32 Sort(TreeNode[], Int32, Comparison<Int32>, String)
 class CuiSharp.CuiWindow
@@ -1457,9 +1472,12 @@ class CuiSharp.Hosting.HeadlessApp
   HeadlessApp Type(String)
   Int32 Settle(Int32, Nullable<TimeSpan>)
   String Print(Boolean)
+  String PrintLayout()
   String SavePng(String, Boolean)
   String ToString()
   Void Dispose()
+  WaitOutcome WaitFor(String, TimeSpan, CancellationToken)
+  WaitOutcome WaitReady(TimeSpan, CancellationToken)
   WidgetTarget Find(String)
   WidgetTarget Find(String, String)
   WidgetTarget FindButton(String)
@@ -1467,6 +1485,7 @@ class CuiSharp.Hosting.HeadlessApp
   WidgetTarget FindInput(String)
   WidgetTarget FindItem(String, Int32)
   property Boolean Animating { get; }
+  property Boolean Ready { get; }
   property Component Root { get; }
   property CuiSurface Surface { get; }
   property IReadOnlyList<SemanticWidget> Widgets { get; }
@@ -1477,6 +1496,11 @@ class CuiSharp.Hosting.HeadlessApp
   property SemanticNode Tree { get; }
   static HeadlessApp Start(Component, Int32, Int32, Single, Theme, Accent)
   static HeadlessApp Start(DrawFn, Int32, Int32, Single, Theme, Accent)
+struct CuiSharp.Hosting.HeadlessApp+WaitOutcome
+  String ToString()
+  property Boolean Satisfied { get; }
+  property Int32 Frames { get; }
+  property TimeSpan Elapsed { get; }
 class CuiSharp.Hosting.HeadlessLoop
   field String EnvironmentVariable
   property IReadOnlyList<String> Known { get; }
@@ -2243,10 +2267,10 @@ struct CuiSharp.Interop.NativeAgentPlanOpts
   field Int32 Sentinel
   field IntPtr Title
 struct CuiSharp.Interop.NativeAgentStatusOpts
+  field CuiTaskStatus Status
   field Int32 Sentinel
   field IntPtr Icon
   field Single Seconds
-  field TaskStatus Status
 struct CuiSharp.Interop.NativeAlertOpts
   field Byte Dismissible
   field Int32 Sentinel
@@ -3427,9 +3451,9 @@ struct CuiSharp.Interop.NativePipelineResult
   field Int32 Clicked
   field Int32 Hovered
 struct CuiSharp.Interop.NativePlanStep
+  field CuiTaskStatus Status
   field IntPtr Detail
   field IntPtr Title
-  field TaskStatus Status
 struct CuiSharp.Interop.NativePlatformIface
   field IntPtr DrawEmoji
   field IntPtr GetClipboard
@@ -4050,13 +4074,13 @@ struct CuiSharp.Interop.NativeToggleGroupOpts
   field Int32 Sentinel
   field IntPtr Icons
 struct CuiSharp.Interop.NativeToolCallOpts
+  field CuiTaskStatus Status
   field Int32 Sentinel
   field IntPtr Detail
   field IntPtr Icon
   field IntPtr Input
   field IntPtr Output
   field Single Seconds
-  field TaskStatus Status
 struct CuiSharp.Interop.NativeToolOpts
   field Byte Disabled
   field Int32 Sentinel
@@ -4389,6 +4413,9 @@ struct CuiSharp.KvEditorOpts
   field Size Width
   field String KeyPlaceholder
   field String ValuePlaceholder
+class CuiSharp.LayoutFormatter
+  field String Header
+  static String Print(SemanticNode)
 struct CuiSharp.LayoutScope
   Void Dispose()
 class CuiSharp.LayoutUiExtensions
@@ -4843,6 +4870,10 @@ struct CuiSharp.NodeView
   field Single X
   field Single Y
   field Single Zoom
+enum CuiSharp.NormalizeMode
+  Index100
+  None
+  Percent
 struct CuiSharp.NowPlayingOpts
   field Boolean Compact
   field Size Width
@@ -4941,10 +4972,10 @@ enum CuiSharp.Placement
   TopEnd
   TopStart
 struct CuiSharp.PlanStep
-  ctor(String, String, TaskStatus)
+  ctor(String, String, CuiTaskStatus)
+  field CuiTaskStatus Status
   field String Detail
   field String Title
-  field TaskStatus Status
 class CuiSharp.PlanningUiExtensions
   static Boolean Kanban(Ui, UiText, out KanbanMove, DrawFn)
   static Int32 Gantt(Ui, UiText, Span<GanttTask>, Date, Int32, GanttOpts)
@@ -5277,6 +5308,8 @@ class CuiSharp.SemanticNode
   SemanticNode Find(String)
   String Print(Boolean)
   String ToString()
+  property Boolean Detached { get; }
+  property Boolean HasOwnRect { get; }
   property Boolean IsContainer { get; set; }
   property IReadOnlyList<SemanticNode> Children { get; }
   property Int32 Depth { get; }
@@ -5289,6 +5322,8 @@ class CuiSharp.SemanticNode
 struct CuiSharp.SemanticWidget
   Boolean Contains(Single, Single)
   String ToString()
+  field Boolean Detached
+  field Boolean HasOwnRect
   field Boolean IsContainer
   field Int32 Depth
   field RectF Rect
@@ -5484,12 +5519,6 @@ struct CuiSharp.TagOpts
   field Size Width
   field String Label
   field String Placeholder
-enum CuiSharp.TaskStatus
-  Done
-  Failed
-  Pending
-  Running
-  Skipped
 class CuiSharp.Terminal
   Void Clear()
   Void Dispose()
@@ -5578,6 +5607,7 @@ struct CuiSharp.TextMetrics
   field Single LineHeight
   field Single Width
 struct CuiSharp.TextOpts
+  ctor(Single, Color)
   field Boolean NoWrap
   field Boolean Selectable
   field Boolean Tabular
@@ -5778,12 +5808,12 @@ enum CuiSharp.Tone
   Violet
   Warning
 struct CuiSharp.ToolCallOpts
+  field CuiTaskStatus Status
   field Single Seconds
   field String Detail
   field String Icon
   field String Input
   field String Output
-  field TaskStatus Status
 struct CuiSharp.ToolOpts
   field Boolean Disabled
   field String Label
@@ -5977,6 +6007,7 @@ struct CuiSharp.Ui
   Void Icon(UiText, Single, Color)
   Void LineChart(UiText, ReadOnlySpan<Single>, ChartOpts, Color)
   Void LineChart(UiText, Series[], ChartOpts)
+  Void MarkReady()
   Void PopClip()
   Void PushClip(RectF)
   Void ReorderBegin(UiText, Int32[])

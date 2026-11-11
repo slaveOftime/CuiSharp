@@ -49,7 +49,7 @@ A render test draws a real frame into a pixel buffer and asserts `surface.Faults
 page that throws cannot pass as a page that works. `dotnet cui tree` prints what a frame drew:
 
 ```sh
-dotnet tool install -g CuiSharp.Tools
+dotnet tool install -g CuiSharp.Tools    # exposes `dotnet cui`
 dotnet cui tree --project .   # the controls of the last frame, nested
 dotnet cui click Dark         # a control, by the label or id the tree printed
 dotnet cui png shot.png       # the frame as a PNG, for you or for a person

@@ -48,7 +48,7 @@ public static class HeadlessLoop
 
     private static readonly string[] Commands =
     [
-        "tree", "print", "find", "click", "type", "key", "focus", "move", "wheel", "frame", "pulse", "faults", "png", "quit",
+        "tree", "print", "layout", "find", "click", "type", "key", "focus", "move", "wheel", "frame", "pulse", "wait", "waittext", "faults", "png", "quit",
     ];
 
     /// <summary>True when this process was asked to run without a window.</summary>
@@ -174,6 +174,22 @@ public static class HeadlessLoop
         }
     }
 
+    // The live listener must interrupt a partial line on disconnect/shutdown, not just check
+    // cancellation between commands. Keep the same bound as the synchronous headless reader.
+    internal static async Task<string?> ReadCommandAsync(TextReader source, CancellationToken ct)
+    {
+        var line = new StringBuilder(128);
+        char[] one = new char[1];
+        while (await source.ReadAsync(one.AsMemory(), ct).ConfigureAwait(false) != 0)
+        {
+            if (one[0] == '\n') return line.ToString().TrimEnd('\r');
+            if (line.Length >= MaxCommandChars)
+                throw new ArgumentException($"A command line longer than {MaxCommandChars} characters was not read. Commands end with a newline.");
+            line.Append(one[0]);
+        }
+        return line.Length == 0 ? null : line.ToString();
+    }
+
     /// <summary>
     /// Anything the app prints belongs on stderr: stdout is the protocol, and a stray
     /// <c>Console.WriteLine</c> — in the app, in a service it resolved, in a logger — would
@@ -184,6 +200,7 @@ public static class HeadlessLoop
     private static string Execute(HeadlessApp app, string command, string argument) => command switch
     {
         "tree" or "print" => app.Print(),
+        "layout" => app.PrintLayout(),
         "find" => Find(app, argument),
         "click" => Click(app, argument),
         "type" => app.Type(argument).Print(),
@@ -193,6 +210,8 @@ public static class HeadlessLoop
         "wheel" => Wheel(app, argument),
         "frame" => Frame(app, argument),
         "pulse" => Pulse(app, argument),
+        "wait" => WaitCommand(app, argument),
+        "waittext" => WaitText(app, argument),
         "faults" => app.Faults.Count == 0 ? "" : string.Join("\n", app.Faults),
         "png" => SavePng(app, argument),
         _ => throw new InvalidOperationException($"Unknown command \"{command}\". Known: {string.Join(", ", Commands)}."),
@@ -218,6 +237,80 @@ public static class HeadlessLoop
         return $"{frames} heap {GC.GetTotalMemory(false)}";
     }
 
+    /// <summary>The window a wait gets when its command does not name one, in seconds.</summary>
+    internal const double DefaultWaitSeconds = 10;
+
+    /// <summary>
+    /// The longest wait this protocol serves. A wait binds the answer deadline of the client on
+    /// the other end, so the trust boundary needs a ceiling as well as a floor.
+    /// </summary>
+    internal const double MaxWaitSeconds = 3600;
+
+    /// <summary>
+    /// Draws real frames until one marks itself ready (<c>ui.MarkReady</c>). The answer is the
+    /// frame that proved the wait right; a miss is an error that names what never happened.
+    /// </summary>
+    private static string WaitCommand(HeadlessApp app, string argument)
+    {
+        double seconds = argument.Length == 0 ? DefaultWaitSeconds : ParseWaitSeconds(argument);
+        HeadlessApp.WaitOutcome outcome = app.WaitReady(TimeSpan.FromSeconds(seconds));
+        if (!outcome.Satisfied)
+        {
+            throw new InvalidOperationException(
+                $"No frame marked itself ready within {seconds}s ({outcome.Frames} frames drawn). " +
+                "The app declares readiness with ui.MarkReady() once its data is complete.");
+        }
+
+        return app.Print();
+    }
+
+    /// <summary>
+    /// Draws real frames until one draws the given text or query. The timeout is the command's
+    /// first token by contract and the query is everything after it, verbatim: text with spaces,
+    /// unicode, or a numeric tail (<c>waittext 5 共 3 items</c>) is never mistaken for a number.
+    /// </summary>
+    private static string WaitText(HeadlessApp app, string argument)
+    {
+        int space = argument.IndexOf(' ', StringComparison.Ordinal);
+        if (space < 0)
+        {
+            throw new ArgumentException(
+                "waittext needs a timeout in seconds and a query: `waittext 5 Button \"Save\"`.",
+                nameof(argument));
+        }
+
+        double seconds = ParseWaitSeconds(argument[..space]);
+        string query = argument[(space + 1)..];
+        if (query.Trim().Length == 0) throw new ArgumentException("waittext needs a query after the timeout.", nameof(argument));
+
+        HeadlessApp.WaitOutcome outcome = app.WaitFor(query, TimeSpan.FromSeconds(seconds));
+        if (!outcome.Satisfied)
+        {
+            throw new InvalidOperationException(
+                $"No frame drew \"{query}\" within {seconds}s ({outcome.Frames} frames drawn). " +
+                $"The last frame drew:\n{app.Print()}");
+        }
+
+        return app.Print();
+    }
+
+    /// <summary>
+    /// A wait window in seconds. <c>TryParse</c> accepts NaN and Infinity, and neither bounds a
+    /// wait anyone could observe, so only finite positive numbers up to the ceiling pass.
+    /// </summary>
+    internal static double ParseWaitSeconds(string token)
+    {
+        if (!double.TryParse(token, NumberStyles.Float, CultureInfo.InvariantCulture, out double seconds)
+            || !double.IsFinite(seconds) || seconds <= 0 || seconds > MaxWaitSeconds)
+        {
+            throw new ArgumentException(
+                $"wait needs a finite number of seconds between 0 and {MaxWaitSeconds:0}, not \"{token}\".",
+                nameof(token));
+        }
+
+        return seconds;
+    }
+
     private static string Click(HeadlessApp app, string argument)
     {
         // Clicking answers with the frame the click produced: that is what the caller wants to
@@ -236,7 +329,7 @@ public static class HeadlessLoop
     /// </summary>
     private static readonly Key[] Keys = Enum.GetValues<Key>();
 
-    private static Key ParseKey(string argument)
+    internal static Key ParseKey(string argument)
     {
         string wanted = argument.Trim();
         foreach (Key key in Keys)
@@ -305,6 +398,18 @@ public static class HeadlessLoop
 
     internal static void Answer(TextWriter sink, bool ok, string payload, int limit = MaxAnswerBytes)
     {
+        sink.Write(FrameAnswer(ok, payload, limit));
+        sink.Flush();
+    }
+
+    internal static async Task AnswerAsync(TextWriter sink, bool ok, string payload, CancellationToken ct)
+    {
+        await sink.WriteAsync(FrameAnswer(ok, payload, MaxAnswerBytes).AsMemory(), ct).ConfigureAwait(false);
+        await sink.FlushAsync(ct).ConfigureAwait(false);
+    }
+
+    private static string FrameAnswer(bool ok, string payload, int limit)
+    {
         int bytes = Encoding.UTF8.GetByteCount(payload);
         if (bytes > limit)
         {
@@ -317,9 +422,6 @@ public static class HeadlessLoop
             bytes = Encoding.UTF8.GetByteCount(payload);
         }
 
-        sink.Write($"{(ok ? "CUI-OK" : "CUI-ERR")} {bytes}\n");
-        if (bytes > 0) sink.Write(payload);
-        sink.Write('\n');
-        sink.Flush();
+        return $"{(ok ? "CUI-OK" : "CUI-ERR")} {bytes}\n{payload}\n";
     }
 }

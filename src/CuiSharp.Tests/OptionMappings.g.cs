@@ -2194,7 +2194,7 @@ public unsafe class GeneratedOptionMappingTests
         {
         var value = new ToolCallOpts
         {
-            Status = (TaskStatus)1,
+            Status = (CuiTaskStatus)1,
             Icon = "é",
             Detail = "é",
             Input = "é",
@@ -2231,7 +2231,7 @@ public unsafe class GeneratedOptionMappingTests
         {
         var value = new AgentStatusOpts
         {
-            Status = (TaskStatus)1,
+            Status = (CuiTaskStatus)1,
             Seconds = 2.5f,
             Icon = "é",
         };

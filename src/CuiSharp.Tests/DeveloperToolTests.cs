@@ -1,3 +1,5 @@
+using System.Threading.Tasks;
+
 namespace CuiSharp.Tests;
 
 /// <summary>
@@ -87,6 +89,57 @@ public class DeveloperToolTests
         Assert.Equal(-1, graphSelected);
         Assert.Equal(0, commitSelected);
         Assert.Equal(-1, pipelineSelected);
+    }
+
+    [Fact]
+    public void AgentWidgetsRenderWithUnambiguousTaskStatusTypes()
+    {
+        // The plan/status widgets take CuiTaskStatus by name: the rename from TaskStatus
+        // removed the collision with System.Threading.Tasks.TaskStatus, so this file uses
+        // both types unqualified (the BCL one below, the CUI one in the steps). Each widget
+        // is measured against an empty frame: the renderer clears to an opaque background,
+        // so nonzero pixels prove nothing - only bytes the widget moved away from that
+        // baseline show it painted. Removing either call fails that widget's assertion.
+        if (!OperatingSystem.IsWindows()) return;
+
+        var steps = new PlanStep[]
+        {
+            new("Fetch sources", "3 results", CuiTaskStatus.Done),
+            new("Draft the summary", null, CuiTaskStatus.Running),
+            new("Check the citations", null, CuiTaskStatus.Pending),
+        };
+        // The BCL enum resolves unqualified beside the renamed CUI one.
+        Assert.NotEqual(TaskStatus.Canceled, TaskStatus.Created);
+
+        var empty = RenderPage(static _ => { });
+        var plan = RenderPage(ui => Assert.Equal(-1, ui.AgentPlan("plan", steps)));
+        var status = RenderPage(ui =>
+            ui.AgentStatus("Reading report.pdf", new AgentStatusOpts { Status = CuiTaskStatus.Running, Seconds = 3 }));
+
+        // The plan is a full-width card and the status a bordered pill: each covers far
+        // more than a thousand bytes. The threshold rejects noise without naming any
+        // glyph colour or pixel position, so theming and layout drift cannot flip it.
+        Assert.True(DifferingBytes(empty, plan) > 1000, "AgentPlan left the frame as empty as the baseline");
+        Assert.True(DifferingBytes(empty, status) > 1000, "AgentStatus left the frame as empty as the baseline");
+    }
+
+    /// <summary>One headless frame at the standard size, faults checked, returned as pixels.</summary>
+    private static byte[] RenderPage(DrawFn draw)
+    {
+        using var surface = CuiSurface.Create(Width, Height);
+        var pixels = new byte[surface.PixelWidth * surface.PixelHeight * 4];
+        surface.Draw(draw, pixels);
+        Assert.Empty(surface.Faults);
+        return pixels;
+    }
+
+    /// <summary>Bytes a frame moved away from the baseline, so "it painted" is observable.</summary>
+    private static int DifferingBytes(byte[] baseline, byte[] pixels)
+    {
+        var changed = 0;
+        for (var i = 0; i < pixels.Length; i++)
+            if (pixels[i] != baseline[i]) changed++;
+        return changed;
     }
 
     [Fact]

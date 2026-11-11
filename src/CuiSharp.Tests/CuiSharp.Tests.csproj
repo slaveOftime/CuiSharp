@@ -46,6 +46,16 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <!--
+    TestApps/ReadyProbe is a standalone app project that the tool's real-process tests build by
+    path, the way a user builds their app. Its sources and its build output must never be
+    compiled into this assembly.
+  -->
+  <ItemGroup>
+    <Compile Remove="TestApps/**" />
+    <None Remove="TestApps/**" />
+  </ItemGroup>
+
 
   <!-- The template's own files, so a test can check that its pinned version tracks the package. -->
   <ItemGroup>
