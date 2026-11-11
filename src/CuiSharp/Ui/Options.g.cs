@@ -833,7 +833,7 @@ public partial struct AvatarOpts
     {
         Sentinel = 0,
         Size = Size,
-        Image = Image,
+        Image = (nuint)(Image),
         Status = Utf8.Get(Status),
         Square = (byte)(Square ? 1 : 0),
     };
@@ -1293,7 +1293,7 @@ public partial struct UserMenuOpts
         Sentinel = 0,
         Detail = Utf8.Get(Detail),
         Status = Utf8.Get(Status),
-        Avatar = Avatar,
+        Avatar = (nuint)(Avatar),
         Compact = (byte)(Compact ? 1 : 0),
         Placement = Placement,
         Width = Width,
@@ -1659,7 +1659,7 @@ public partial struct ChatOpts
         Status = Utf8.Get(Status),
         Grouped = (byte)(Grouped ? 1 : 0),
         LastInGroup = (byte)(LastInGroup ? 1 : 0),
-        Avatar = Avatar,
+        Avatar = (nuint)(Avatar),
         Markdown = (byte)(Markdown ? 1 : 0),
         MarkdownResult = markdownResult,
     };

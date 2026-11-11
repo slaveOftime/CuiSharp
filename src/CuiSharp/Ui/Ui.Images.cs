@@ -33,7 +33,7 @@ public unsafe ref partial struct Ui
     public bool LoadImage(UiText path, out ulong texture, out int width, out int height)
     {
         int w = 0, h = 0;
-        ulong tex = Native.ImageLoad(Handle, Utf8.Get(path), ref w, ref h);
+        nuint tex = Native.ImageLoad(Handle, Utf8.Get(path), ref w, ref h);
         texture = tex;
         width = w;
         height = h;
@@ -47,6 +47,6 @@ public unsafe ref partial struct Ui
     /// </summary>
     public void DestroyImage(ulong texture)
     {
-        if (texture != 0) Native.ImageDestroy(Handle, texture);
+        if (texture != 0) Native.ImageDestroy(Handle, (nuint)texture);
     }
 }

@@ -16,7 +16,7 @@ public static unsafe class HexViewerUiExtensions
         /// <summary>Go to offset: on the view&apos;s next frame its cursor moves to offset, that byte becomes the selection and it scrolls into view (to the middle when it was out of sight). Wire a &quot;Go to&quot; field to it; it is safe to call every frame.</summary>
         public void HexViewGoto(UiText id, ulong offset)
         {
-            Native.HexViewGoto(ui.Handle, Utf8.Get(id), offset);
+            Native.HexViewGoto(ui.Handle, Utf8.Get(id), (nuint)(offset));
             WidgetRecorder.Note(ui.Handle, "HexViewGoto", id);
         }
 

@@ -43,8 +43,8 @@ public static unsafe class CuiQuery
         for (int i = 0; i < nodes.Length; i++) __nodes[i] = nodes[i].ToNative();
         byte* text = Utf8.AllocFrameBytes(capacity);
 
-        ulong written = Native.QueryText((nint)__fields, fields.Length, (nint)__nodes, nodes.Length, (nint)text, (ulong)capacity);
-        return Encoding.UTF8.GetString(text, (int)Math.Min(written, (ulong)capacity - 1));
+        nuint written = Native.QueryText((nint)__fields, fields.Length, (nint)__nodes, nodes.Length, (nint)text, (nuint)capacity);
+        return Encoding.UTF8.GetString(text, (int)Math.Min(written, (nuint)capacity - 1));
     }
 
     /// <summary>

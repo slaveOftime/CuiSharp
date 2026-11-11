@@ -4191,7 +4191,7 @@
         {
           "CName": "image",
           "CsName": "Image",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "CType": "cui_texture",
           "Offset": 8,
           "Type": {
@@ -6254,7 +6254,7 @@
         {
           "CName": "avatar",
           "CsName": "Avatar",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "CType": "cui_texture",
           "Offset": 24,
           "Type": {
@@ -8967,7 +8967,7 @@
         {
           "CName": "avatar",
           "CsName": "Avatar",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "CType": "cui_texture",
           "Offset": 40,
           "Type": {
@@ -9152,7 +9152,7 @@
         {
           "CName": "avatar",
           "CsName": "Avatar",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "CType": "cui_texture",
           "Offset": 16,
           "Type": {
@@ -11892,7 +11892,7 @@
         {
           "CName": "art",
           "CsName": "Art",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "CType": "cui_texture",
           "Offset": 16,
           "Type": {
@@ -17625,7 +17625,7 @@
         {
           "CName": "recent_cap",
           "CsName": "RecentCap",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "CType": "size_t",
           "Offset": 32,
           "Type": {
@@ -17770,7 +17770,7 @@
         {
           "CName": "offset",
           "CsName": "Offset",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "CType": "size_t",
           "Type": {
             "Spelling": "size_t",
@@ -17781,7 +17781,7 @@
         {
           "CName": "length",
           "CsName": "Length",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "CType": "size_t",
           "Offset": 8,
           "Type": {
@@ -17830,7 +17830,7 @@
         {
           "CName": "start",
           "CsName": "Start",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "CType": "size_t",
           "Type": {
             "Spelling": "size_t",
@@ -17841,7 +17841,7 @@
         {
           "CName": "length",
           "CsName": "Length",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "CType": "size_t",
           "Offset": 8,
           "Type": {
@@ -17853,7 +17853,7 @@
         {
           "CName": "cursor",
           "CsName": "Cursor",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "CType": "size_t",
           "Offset": 16,
           "Type": {
@@ -18056,7 +18056,7 @@
         {
           "CName": "edit_offset",
           "CsName": "EditOffset",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "CType": "size_t",
           "Offset": 32,
           "Type": {
@@ -18068,7 +18068,7 @@
         {
           "CName": "edit_length",
           "CsName": "EditLength",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "CType": "size_t",
           "Offset": 40,
           "Type": {
@@ -23847,7 +23847,7 @@
         {
           "CName": "texture",
           "CsName": "Texture",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "CType": "cui_texture",
           "Offset": 16,
           "Type": {
@@ -24013,7 +24013,7 @@
         {
           "CName": "font_atlas",
           "CsName": "FontAtlas",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "CType": "cui_texture",
           "Offset": 56,
           "Type": {
@@ -27852,7 +27852,7 @@
         {
           "CName": "size",
           "CsName": "size",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "size_t",
             "Kind": "ULongLong"
@@ -30185,7 +30185,7 @@
         {
           "CName": "cap",
           "CsName": "cap",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "size_t",
             "Kind": "ULongLong"
@@ -30261,7 +30261,7 @@
         {
           "CName": "cap",
           "CsName": "cap",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "size_t",
             "Kind": "ULongLong"
@@ -30337,7 +30337,7 @@
         {
           "CName": "cap",
           "CsName": "cap",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "size_t",
             "Kind": "ULongLong"
@@ -33614,7 +33614,7 @@
     {
       "CName": "cui_image_create",
       "CsName": "ImageCreate",
-      "CsReturn": "ulong",
+      "CsReturn": "nuint",
       "Params": [
         {
           "CName": "ui",
@@ -33672,7 +33672,7 @@
     {
       "CName": "cui_image_load",
       "CsName": "ImageLoad",
-      "CsReturn": "ulong",
+      "CsReturn": "nuint",
       "Params": [
         {
           "CName": "ui",
@@ -33756,7 +33756,7 @@
         {
           "CName": "tex",
           "CsName": "tex",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "cui_texture",
             "Kind": "ULongLong"
@@ -33791,7 +33791,7 @@
         {
           "CName": "tex",
           "CsName": "tex",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "cui_texture",
             "Kind": "ULongLong"
@@ -33854,7 +33854,7 @@
         {
           "CName": "tex",
           "CsName": "tex",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "cui_texture",
             "Kind": "ULongLong"
@@ -33948,7 +33948,7 @@
         {
           "CName": "tex",
           "CsName": "tex",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "cui_texture",
             "Kind": "ULongLong"
@@ -34207,7 +34207,7 @@
         {
           "CName": "cap",
           "CsName": "cap",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "size_t",
             "Kind": "ULongLong"
@@ -35704,7 +35704,7 @@
         {
           "CName": "cap",
           "CsName": "cap",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "size_t",
             "Kind": "ULongLong"
@@ -35752,7 +35752,7 @@
         {
           "CName": "cap",
           "CsName": "cap",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "size_t",
             "Kind": "ULongLong"
@@ -35961,7 +35961,7 @@
         {
           "CName": "search_cap",
           "CsName": "searchCap",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "size_t",
             "Kind": "ULongLong"
@@ -36507,7 +36507,7 @@
         {
           "CName": "names_cap",
           "CsName": "namesCap",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "size_t",
             "Kind": "ULongLong"
@@ -36578,7 +36578,7 @@
         {
           "CName": "path_cap",
           "CsName": "pathCap",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "size_t",
             "Kind": "ULongLong"
@@ -36667,7 +36667,7 @@
         {
           "CName": "out_cap",
           "CsName": "outCap",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "size_t",
             "Kind": "ULongLong"
@@ -36987,7 +36987,7 @@
         {
           "CName": "cap",
           "CsName": "cap",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "size_t",
             "Kind": "ULongLong"
@@ -37360,7 +37360,7 @@
         {
           "CName": "old_len",
           "CsName": "oldLen",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "size_t",
             "Kind": "ULongLong"
@@ -37383,7 +37383,7 @@
         {
           "CName": "new_len",
           "CsName": "newLen",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "size_t",
             "Kind": "ULongLong"
@@ -38047,7 +38047,7 @@
         {
           "CName": "before",
           "CsName": "before",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "cui_texture",
             "Kind": "ULongLong"
@@ -38056,7 +38056,7 @@
         {
           "CName": "after",
           "CsName": "after",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "cui_texture",
             "Kind": "ULongLong"
@@ -41209,7 +41209,7 @@
         {
           "CName": "cap",
           "CsName": "cap",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "size_t",
             "Kind": "ULongLong"
@@ -43709,7 +43709,7 @@
         {
           "CName": "image",
           "CsName": "image",
-          "CsType": "ref ulong",
+          "CsType": "ref nuint",
           "Type": {
             "Spelling": "cui_texture *",
             "Kind": "Pointer",
@@ -43784,7 +43784,7 @@
         {
           "CName": "cap",
           "CsName": "cap",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "size_t",
             "Kind": "ULongLong"
@@ -45542,7 +45542,7 @@
     {
       "CName": "cui_dock_save",
       "CsName": "DockSave",
-      "CsReturn": "ulong",
+      "CsReturn": "nuint",
       "Params": [
         {
           "CName": "ui",
@@ -45587,7 +45587,7 @@
         {
           "CName": "cap",
           "CsName": "cap",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "size_t",
             "Kind": "ULongLong"
@@ -45970,7 +45970,7 @@
         {
           "CName": "cap",
           "CsName": "cap",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "size_t",
             "Kind": "ULongLong"
@@ -46359,7 +46359,7 @@
         {
           "CName": "text_cap",
           "CsName": "textCap",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "size_t",
             "Kind": "ULongLong"
@@ -46688,7 +46688,7 @@
         {
           "CName": "text_cap",
           "CsName": "textCap",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "size_t",
             "Kind": "ULongLong"
@@ -46941,7 +46941,7 @@
         {
           "CName": "size",
           "CsName": "size",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "size_t",
             "Kind": "ULongLong"
@@ -47254,7 +47254,7 @@
         {
           "CName": "size",
           "CsName": "size",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "size_t",
             "Kind": "ULongLong"
@@ -47330,7 +47330,7 @@
         {
           "CName": "offset",
           "CsName": "offset",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "size_t",
             "Kind": "ULongLong"
@@ -48310,7 +48310,7 @@
     {
       "CName": "cui_query_text",
       "CsName": "QueryText",
-      "CsReturn": "ulong",
+      "CsReturn": "nuint",
       "Params": [
         {
           "CName": "fields",
@@ -48374,7 +48374,7 @@
         {
           "CName": "cap",
           "CsName": "cap",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "size_t",
             "Kind": "ULongLong"
@@ -48514,7 +48514,7 @@
         {
           "CName": "cap",
           "CsName": "cap",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "size_t",
             "Kind": "ULongLong"
@@ -49283,7 +49283,7 @@
         {
           "CName": "pattern_cap",
           "CsName": "patternCap",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "size_t",
             "Kind": "ULongLong"
@@ -49305,7 +49305,7 @@
         {
           "CName": "text_cap",
           "CsName": "textCap",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "size_t",
             "Kind": "ULongLong"
@@ -49548,7 +49548,7 @@
         {
           "CName": "cap",
           "CsName": "cap",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "size_t",
             "Kind": "ULongLong"
@@ -49753,7 +49753,7 @@
         {
           "CName": "cap",
           "CsName": "cap",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "size_t",
             "Kind": "ULongLong"
@@ -51142,7 +51142,7 @@
         {
           "CName": "tex",
           "CsName": "tex",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "cui_texture",
             "Kind": "ULongLong"
@@ -51333,7 +51333,7 @@
         {
           "CName": "user_size",
           "CsName": "userSize",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "size_t",
             "Kind": "ULongLong"
@@ -51377,7 +51377,7 @@
         {
           "CName": "size",
           "CsName": "size",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "size_t",
             "Kind": "ULongLong"
@@ -52017,7 +52017,7 @@
         {
           "CName": "cap",
           "CsName": "cap",
-          "CsType": "ulong",
+          "CsType": "nuint",
           "Type": {
             "Spelling": "size_t",
             "Kind": "ULongLong"

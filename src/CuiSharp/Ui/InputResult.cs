@@ -31,8 +31,28 @@ public readonly struct InputResult
     /// <summary>The raw flag bits, for code that must forward them unchanged.</summary>
     public int Flags => _flags;
 
-    public override string ToString() =>
-        _flags == 0 ? "none" : string.Join(", ",
-            new[] { ("changed", Changed), ("submitted", Submitted), ("focused", Focused), ("blurred", Blurred) }
-                .Where(f => f.Item2).Select(f => f.Item1));
+    public override string ToString()
+    {
+        if (_flags == 0) return "none";
+
+        Span<char> text = stackalloc char[36];
+        int length = 0;
+        if (Changed) length = Append(text, length, "changed");
+        if (Submitted) length = Append(text, length, "submitted");
+        if (Focused) length = Append(text, length, "focused");
+        if (Blurred) length = Append(text, length, "blurred");
+        return new string(text[..length]);
+
+        static int Append(Span<char> destination, int length, ReadOnlySpan<char> part)
+        {
+            if (length != 0)
+            {
+                destination[length++] = ',';
+                destination[length++] = ' ';
+            }
+
+            part.CopyTo(destination[length..]);
+            return length + part.Length;
+        }
+    }
 }

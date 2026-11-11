@@ -752,7 +752,7 @@ public unsafe class GeneratedOptionMappingTests
         };
         var native = value.ToNative();
         Assert.Equal(value.Size, native.Size);
-        Assert.Equal(value.Image, native.Image);
+        Assert.Equal((nuint)value.Image, native.Image);
         Assert.Equal("é", Marshal.PtrToStringUTF8(native.Status));
         Assert.Equal((byte)1, native.Square);
         var zero = default(AvatarOpts).ToNative();
@@ -1167,7 +1167,7 @@ public unsafe class GeneratedOptionMappingTests
         var native = value.ToNative();
         Assert.Equal("é", Marshal.PtrToStringUTF8(native.Detail));
         Assert.Equal("é", Marshal.PtrToStringUTF8(native.Status));
-        Assert.Equal(value.Avatar, native.Avatar);
+        Assert.Equal((nuint)value.Avatar, native.Avatar);
         Assert.Equal((byte)1, native.Compact);
         Assert.Equal(value.Placement, native.Placement);
         Assert.Equal(value.Width, native.Width);
@@ -1497,7 +1497,7 @@ public unsafe class GeneratedOptionMappingTests
         Assert.Equal("é", Marshal.PtrToStringUTF8(native.Status));
         Assert.Equal((byte)1, native.Grouped);
         Assert.Equal((byte)1, native.LastInGroup);
-        Assert.Equal(value.Avatar, native.Avatar);
+        Assert.Equal((nuint)value.Avatar, native.Avatar);
         Assert.Equal((byte)1, native.Markdown);
         Assert.Equal((nint)123, native.MarkdownResult);
         var zero = default(ChatOpts).ToNative((nint)123);

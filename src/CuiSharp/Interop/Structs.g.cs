@@ -895,7 +895,7 @@ public unsafe struct NativeAvatarOpts
     /// <summary>float (offset 4)</summary>
     public float Size;
     /// <summary>cui_texture (offset 8)</summary>
-    public ulong Image;
+    public nuint Image;
     /// <summary>const char * (offset 16)</summary>
     public nint Status;
     /// <summary>_Bool (offset 24)</summary>
@@ -1327,7 +1327,7 @@ public unsafe struct NativeUserMenuOpts
     /// <summary>const char * (offset 16)</summary>
     public nint Status;
     /// <summary>cui_texture (offset 24)</summary>
-    public ulong Avatar;
+    public nuint Avatar;
     /// <summary>_Bool (offset 32)</summary>
     public byte Compact;
     /// <summary>cui_placement (offset 36)</summary>
@@ -1871,7 +1871,7 @@ public unsafe struct NativeChatOpts
     /// <summary>_Bool (offset 33)</summary>
     public byte LastInGroup;
     /// <summary>cui_texture (offset 40)</summary>
-    public ulong Avatar;
+    public nuint Avatar;
     /// <summary>_Bool (offset 48)</summary>
     public byte Markdown;
     /// <summary>cui_markdown_result * (offset 56)</summary>
@@ -1907,7 +1907,7 @@ public unsafe struct NativePresenceUser
     /// <summary>cui_color (offset 8)</summary>
     public NativeColor Color;
     /// <summary>cui_texture (offset 16)</summary>
-    public ulong Avatar;
+    public nuint Avatar;
     /// <summary>_Bool (offset 24)</summary>
     public byte Idle;
 }
@@ -2497,7 +2497,7 @@ public unsafe struct NativeNowPlaying
     /// <summary>const char * (offset 8)</summary>
     public nint Artist;
     /// <summary>cui_texture (offset 16)</summary>
-    public ulong Art;
+    public nuint Art;
     /// <summary>cui_color (offset 24)</summary>
     public NativeColor ArtColor;
     /// <summary>float (offset 28)</summary>
@@ -3727,7 +3727,7 @@ public unsafe struct NativeEmojiPickerOpts
     /// <summary>char * (offset 24)</summary>
     public nint Recent;
     /// <summary>size_t (offset 32)</summary>
-    public ulong RecentCap;
+    public nuint RecentCap;
     /// <summary>int * (offset 40)</summary>
     public nint Tone;
     /// <summary>const char * (offset 48)</summary>
@@ -3751,9 +3751,9 @@ public unsafe struct NativeEmojiPickerOpts
 public unsafe struct NativeHexRange
 {
     /// <summary>size_t (offset 0)</summary>
-    public ulong Offset;
+    public nuint Offset;
     /// <summary>size_t (offset 8)</summary>
-    public ulong Length;
+    public nuint Length;
     /// <summary>cui_tone (offset 16)</summary>
     public Tone Tone;
     /// <summary>const char * (offset 24)</summary>
@@ -3765,11 +3765,11 @@ public unsafe struct NativeHexRange
 public unsafe struct NativeHexSelection
 {
     /// <summary>size_t (offset 0)</summary>
-    public ulong Start;
+    public nuint Start;
     /// <summary>size_t (offset 8)</summary>
-    public ulong Length;
+    public nuint Length;
     /// <summary>size_t (offset 16)</summary>
-    public ulong Cursor;
+    public nuint Cursor;
 }
 
 /// <summary>cui_hex_view_opts, 64 bytes.</summary>
@@ -3811,9 +3811,9 @@ public unsafe struct NativeHexResult
     /// <summary>_Bool (offset 25)</summary>
     public byte Edited;
     /// <summary>size_t (offset 32)</summary>
-    public ulong EditOffset;
+    public nuint EditOffset;
     /// <summary>size_t (offset 40)</summary>
-    public ulong EditLength;
+    public nuint EditLength;
     /// <summary>int64_t (offset 48)</summary>
     public long Hovered;
     /// <summary>_Bool (offset 56)</summary>
@@ -5103,7 +5103,7 @@ public unsafe struct NativeDrawCmd
     /// <summary>cui_rect (offset 0)</summary>
     public NativeRect Clip;
     /// <summary>cui_texture (offset 16)</summary>
-    public ulong Texture;
+    public nuint Texture;
     /// <summary>uint32_t (offset 24)</summary>
     public uint IndexOffset;
     /// <summary>uint32_t (offset 28)</summary>
@@ -5133,7 +5133,7 @@ public unsafe struct NativeDrawData
     /// <summary>cui_color (offset 52)</summary>
     public NativeColor ClearColor;
     /// <summary>cui_texture (offset 56)</summary>
-    public ulong FontAtlas;
+    public nuint FontAtlas;
 }
 
 /// <summary>cui_app_desc, 48 bytes.</summary>

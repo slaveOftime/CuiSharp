@@ -660,6 +660,7 @@ class CuiSharp.CuiRegex
   static String Slice(String, RegexMatch)
 class CuiSharp.CuiSharpNativeException : InvalidOperationException
 class CuiSharp.CuiSurface
+  IntPtr GetDrawData()
   String DroppedFile(Int32)
   Void BeginFrame(Single)
   Void Click(MouseButton)
@@ -695,9 +696,11 @@ class CuiSharp.CuiSurface
   property Int32 PixelWidth { get; }
   property Int32 Width { get; }
   property Nullable<RectF> LastDamage { get; }
+  property RendererKind Kind { get; }
   property Single Scale { get; }
   property Ui Ui { get; }
   static CuiSurface Create(Int32, Int32, Single, Int32, Theme, Accent)
+  static CuiSurface CreateGpu(Int32, Int32, in NativeRendererIface, Single, Theme, Accent)
 enum CuiSharp.CuiTaskStatus
   Done
   Failed
@@ -1771,7 +1774,7 @@ class CuiSharp.Interop.Native
   static Accent GetAccent(IntPtr)
   static Byte AccordionBegin(IntPtr, IntPtr, IntPtr)
   static Byte Alert(IntPtr, IntPtr, in NativeAlertOpts)
-  static Byte AppFileDialog(IntPtr, in NativeFileDialogOpts, IntPtr, UInt64)
+  static Byte AppFileDialog(IntPtr, in NativeFileDialogOpts, IntPtr, UIntPtr)
   static Byte AppFrame(IntPtr)
   static Byte AppIsSoftware(IntPtr)
   static Byte AppOpenUrl(IntPtr)
@@ -1791,10 +1794,10 @@ class CuiSharp.Interop.Native
   static Byte ControlTile(IntPtr, IntPtr, IntPtr, in NativeTileOpts)
   static Byte CopyButton(IntPtr, IntPtr, IntPtr)
   static Byte CronNext(IntPtr, Int64, Int32, ref Int64)
-  static Byte Cropper(IntPtr, IntPtr, UInt64, Int32, Int32, ref NativeRect, in NativeCropperOpts)
+  static Byte Cropper(IntPtr, IntPtr, UIntPtr, Int32, Int32, ref NativeRect, in NativeCropperOpts)
   static Byte DataGridBegin(IntPtr, IntPtr, IntPtr, Int32, Int32, ref Int32, ref Int32, in NativeGridOpts)
-  static Byte DataGridCellEdit(IntPtr, IntPtr, UInt64)
-  static Byte DataGridEdit(IntPtr, IntPtr, UInt64)
+  static Byte DataGridCellEdit(IntPtr, IntPtr, UIntPtr)
+  static Byte DataGridEdit(IntPtr, IntPtr, UIntPtr)
   static Byte DataGridRow(IntPtr, Int32)
   static Byte DatePicker(IntPtr, IntPtr, ref NativeDate, in NativeDateOpts)
   static Byte DateRangePicker(IntPtr, IntPtr, ref NativeDateRange, in NativeDateRangeOpts)
@@ -1804,7 +1807,7 @@ class CuiSharp.Interop.Native
   static Byte DockLoad(IntPtr, IntPtr, IntPtr)
   static Byte DockPanelBegin(IntPtr, IntPtr, IntPtr, in NativeDockPanelOpts)
   static Byte EmojiFontLoadFile(IntPtr, IntPtr)
-  static Byte EmojiFontLoadMemory(IntPtr, IntPtr, UInt64, Byte)
+  static Byte EmojiFontLoadMemory(IntPtr, IntPtr, UIntPtr, Byte)
   static Byte EmojiFontLoadSystem(IntPtr)
   static Byte EmojiSupported(IntPtr, IntPtr, Int32)
   static Byte EmptyState(IntPtr, IntPtr, in NativeEmptyOpts)
@@ -1812,15 +1815,15 @@ class CuiSharp.Interop.Native
   static Byte ExpandableText(IntPtr, IntPtr, IntPtr, in NativeExpandableTextOpts)
   static Byte Fader(IntPtr, IntPtr, ref Single, Single, Single, in NativeFaderOpts)
   static Byte FileDragActive(IntPtr)
-  static Byte FilePicker(IntPtr, IntPtr, IntPtr, IntPtr, UInt64, in NativeFilePickerOpts)
-  static Byte FilterBar(IntPtr, IntPtr, IntPtr, Int32, ref UInt32, IntPtr, UInt64)
+  static Byte FilePicker(IntPtr, IntPtr, IntPtr, IntPtr, UIntPtr, in NativeFilePickerOpts)
+  static Byte FilterBar(IntPtr, IntPtr, IntPtr, Int32, ref UInt32, IntPtr, UIntPtr)
   static Byte GlIsSoftware(IntPtr)
   static Byte HistogramSlider(IntPtr, IntPtr, IntPtr, Int32, ref Single, ref Single, Single, Single, in NativeHistogramOpts)
   static Byte HoldButton(IntPtr, IntPtr, in NativeHoldOpts)
   static Byte HoverCardBegin(IntPtr, IntPtr, in NativeHoverCardOpts)
   static Byte IconButton(IntPtr, IntPtr, in NativeButtonOpts)
-  static Byte ImageCompare(IntPtr, IntPtr, UInt64, UInt64, ref Single, in NativeCompareOpts)
-  static Byte ImageViewer(IntPtr, IntPtr, UInt64, Int32, Int32, ref NativeImageView, in NativeImageViewerOpts)
+  static Byte ImageCompare(IntPtr, IntPtr, UIntPtr, UIntPtr, ref Single, in NativeCompareOpts)
+  static Byte ImageViewer(IntPtr, IntPtr, UIntPtr, Int32, Int32, ref NativeImageView, in NativeImageViewerOpts)
   static Byte InspectorBegin(IntPtr, IntPtr, in NativeInspectorOpts)
   static Byte InspectorGroup(IntPtr, IntPtr, IntPtr)
   static Byte IsDisabled(IntPtr)
@@ -1867,7 +1870,7 @@ class CuiSharp.Interop.Native
   static Byte PropEnum(IntPtr, IntPtr, IntPtr, Int32, ref Int32, in NativePropOpts)
   static Byte PropFloat(IntPtr, IntPtr, ref Single, in NativePropOpts)
   static Byte PropInt(IntPtr, IntPtr, ref Int32, in NativePropOpts)
-  static Byte PropText(IntPtr, IntPtr, IntPtr, UInt64, in NativePropOpts)
+  static Byte PropText(IntPtr, IntPtr, IntPtr, UIntPtr, in NativePropOpts)
   static Byte PropVec(IntPtr, IntPtr, ref Single, Int32, in NativePropOpts)
   static Byte QueryBuilder(IntPtr, IntPtr, IntPtr, Int32, IntPtr, ref Int32, Int32, in NativeQueryOpts)
   static Byte QueryMatch(IntPtr, Int32, IntPtr, Int32, IntPtr)
@@ -1896,7 +1899,7 @@ class CuiSharp.Interop.Native
   static Byte TableBegin(IntPtr, IntPtr, IntPtr, Int32, in NativeTableOpts)
   static Byte TableRow(IntPtr, Byte)
   static Byte Tabs(IntPtr, IntPtr, IntPtr, Int32, ref Int32, in NativeTabsOpts)
-  static Byte TagInput(IntPtr, IntPtr, IntPtr, UInt64, in NativeTagOpts)
+  static Byte TagInput(IntPtr, IntPtr, IntPtr, UIntPtr, in NativeTagOpts)
   static Byte ThemeSwitcher(IntPtr, ref Int32, Byte)
   static Byte ThemeToggle(IntPtr)
   static Byte TimeDial(IntPtr, IntPtr, ref Int32, ref Int32, Single)
@@ -1908,7 +1911,7 @@ class CuiSharp.Interop.Native
   static Byte TreeCell(IntPtr, IntPtr, Int32, Byte, IntPtr, IntPtr)
   static Byte TreeClicked(IntPtr)
   static Byte Typewriter(IntPtr, IntPtr, IntPtr, in NativeTextFxOpts)
-  static Byte UrlSetParams(IntPtr, UInt64, IntPtr, Int32)
+  static Byte UrlSetParams(IntPtr, UIntPtr, IntPtr, Int32)
   static Byte UserMenuBegin(IntPtr, IntPtr, in NativeUserMenuOpts)
   static Byte VoiceOrb(IntPtr, IntPtr, VoiceState, Single, in NativeVoiceOrbOpts)
   static Byte WantsKeyboard(IntPtr)
@@ -1919,31 +1922,31 @@ class CuiSharp.Interop.Native
   static Cursor GetCursor(IntPtr)
   static Double Time(IntPtr)
   static Font FontLoadFile(IntPtr, IntPtr)
-  static Font FontLoadMemory(IntPtr, IntPtr, UInt64, Byte)
+  static Font FontLoadMemory(IntPtr, IntPtr, UIntPtr, Byte)
   static Int32 ActivityRings(IntPtr, IntPtr, IntPtr, Int32, in NativeRingsOpts)
   static Int32 AgentPlan(IntPtr, IntPtr, IntPtr, Int32, in NativeAgentPlanOpts)
   static Int32 AppRun(in NativeAppDesc, IntPtr, IntPtr)
-  static Int32 AvatarUpload(IntPtr, IntPtr, IntPtr, ref UInt64, Single)
+  static Int32 AvatarUpload(IntPtr, IntPtr, IntPtr, ref UIntPtr, Single)
   static Int32 BarList(IntPtr, IntPtr, IntPtr, Int32, in NativeBarListOpts)
   static Int32 Breadcrumb(IntPtr, IntPtr, Int32)
   static Int32 CalendarHeatmap(IntPtr, IntPtr, NativeDate, IntPtr, Int32, in NativeCalendarHeatmapOpts)
   static Int32 Candlestick(IntPtr, IntPtr, IntPtr, Int32, in NativeCandlestickOpts)
   static Int32 CardStackEnd(IntPtr)
-  static Int32 ChatComposer(IntPtr, IntPtr, IntPtr, UInt64, in NativeComposerOpts)
+  static Int32 ChatComposer(IntPtr, IntPtr, IntPtr, UIntPtr, in NativeComposerOpts)
   static Int32 Checklist(IntPtr, IntPtr, IntPtr, Int32, in NativeChecklistOpts)
   static Int32 CommandPalette(IntPtr, IntPtr, IntPtr, Int32)
   static Int32 Comment(IntPtr, IntPtr, IntPtr, IntPtr, in NativeCommentOpts)
   static Int32 DateToDays(NativeDate)
-  static Int32 DiffCompute(IntPtr, UInt64, IntPtr, UInt64, UInt32, IntPtr, Int32, IntPtr)
+  static Int32 DiffCompute(IntPtr, UIntPtr, IntPtr, UIntPtr, UInt32, IntPtr, Int32, IntPtr)
   static Int32 DiffViewRows(IntPtr, IntPtr, IntPtr, Int32, Int32)
   static Int32 DroppedFileCount(IntPtr)
   static Int32 Dropzone(IntPtr, IntPtr, in NativeDropzoneOpts)
-  static Int32 FsList(IntPtr, IntPtr, ref NativeFileEntry, Int32, IntPtr, UInt64, Byte)
+  static Int32 FsList(IntPtr, IntPtr, ref NativeFileEntry, Int32, IntPtr, UIntPtr, Byte)
   static Int32 Funnel(IntPtr, IntPtr, IntPtr, Int32, in NativeFunnelOpts)
   static Int32 Gantt(IntPtr, IntPtr, IntPtr, Int32, NativeDate, Int32, in NativeGanttOpts)
   static Int32 Heatmap(IntPtr, IntPtr, IntPtr, Int32, Int32, in NativeHeatmapOpts)
-  static Int32 InlineEdit(IntPtr, IntPtr, IntPtr, UInt64, in NativeInlineEditOpts)
-  static Int32 Input(IntPtr, IntPtr, IntPtr, UInt64, in NativeInputOpts)
+  static Int32 InlineEdit(IntPtr, IntPtr, IntPtr, UIntPtr, in NativeInlineEditOpts)
+  static Int32 Input(IntPtr, IntPtr, IntPtr, UIntPtr, in NativeInputOpts)
   static Int32 KeyMods(IntPtr)
   static Int32 NowPlaying(IntPtr, IntPtr, ref NativeNowPlaying, in NativeNowPlayingOpts)
   static Int32 PasswordStrength(IntPtr, IntPtr)
@@ -1954,14 +1957,14 @@ class CuiSharp.Interop.Native
   static Int32 ResponseActions(IntPtr, IntPtr, in NativeResponseActionsOpts)
   static Int32 Sankey(IntPtr, IntPtr, IntPtr, Int32, IntPtr, Int32, in NativeSankeyOpts)
   static Int32 ScatterChart(IntPtr, IntPtr, IntPtr, Int32, in NativeScatterOpts)
-  static Int32 Search(IntPtr, IntPtr, IntPtr, UInt64, in NativeInputOpts)
+  static Int32 Search(IntPtr, IntPtr, IntPtr, UIntPtr, in NativeInputOpts)
   static Int32 SignaturePoints(IntPtr, IntPtr, IntPtr, IntPtr, ref Int32)
   static Int32 SourceList(IntPtr, IntPtr, IntPtr, Int32)
   static Int32 SpeedDial(IntPtr, IntPtr, IntPtr, Int32, in NativeSpeedDialOpts)
   static Int32 SplitBar(IntPtr, IntPtr, IntPtr, Int32, in NativeSplitBarOpts)
   static Int32 SplitButton(IntPtr, IntPtr, IntPtr, Int32, in NativeSplitButtonOpts)
   static Int32 SwipeItemEnd(IntPtr)
-  static Int32 Textarea(IntPtr, IntPtr, IntPtr, UInt64, in NativeInputOpts)
+  static Int32 Textarea(IntPtr, IntPtr, IntPtr, UIntPtr, in NativeInputOpts)
   static Int32 Toast(IntPtr, IntPtr, in NativeToastOpts)
   static Int32 Toc(IntPtr, IntPtr, IntPtr, Int32)
   static Int32 Tour(IntPtr, IntPtr, IntPtr, Int32, ref Int32, in NativeTourOpts)
@@ -1990,13 +1993,13 @@ class CuiSharp.Interop.Native
   static IntPtr LogGet(in NativeLogBuffer, Int32, IntPtr)
   static IntPtr QueryOpName(QueryType, Int32)
   static IntPtr ShortcutLabel(IntPtr, NativeKeyCombo)
-  static IntPtr State(IntPtr, UInt32, UInt64)
+  static IntPtr State(IntPtr, UInt32, UIntPtr)
   static IntPtr SwCreate()
   static IntPtr ThemeGet(IntPtr)
   static NativeApiExplorerResult ApiExplorer(IntPtr, IntPtr, IntPtr, Int32, in NativeApiExplorerOpts)
   static NativeBlameResult Blame(IntPtr, IntPtr, IntPtr, IntPtr, Int32, IntPtr, Int32, in NativeBlameOpts)
-  static NativeCanvasResult Canvas(IntPtr, IntPtr, NativeSize, NativeSize, IntPtr, IntPtr, UInt64)
-  static NativeCodeEditorResult CodeEditor(IntPtr, IntPtr, IntPtr, UInt64, in NativeCodeEditorOpts)
+  static NativeCanvasResult Canvas(IntPtr, IntPtr, NativeSize, NativeSize, IntPtr, IntPtr, UIntPtr)
+  static NativeCodeEditorResult CodeEditor(IntPtr, IntPtr, IntPtr, UIntPtr, in NativeCodeEditorOpts)
   static NativeColor Alpha(NativeColor, Single)
   static NativeColor ColorOf(IntPtr, NativeColor)
   static NativeColor GradientEval(IntPtr, Int32, Single)
@@ -2011,11 +2014,11 @@ class CuiSharp.Interop.Native
   static NativeDiffResult DiffView(IntPtr, IntPtr, IntPtr, IntPtr, in NativeDiffOpts)
   static NativeDocTabsResult DocTabs(IntPtr, IntPtr, IntPtr, Int32, ref Int32, in NativeDocTabsOpts)
   static NativeFeatureFlagsResult FeatureFlags(IntPtr, IntPtr, IntPtr, Int32, IntPtr, Int32, in NativeFeatureFlagsOpts)
-  static NativeFileBrowserResult FileBrowser(IntPtr, IntPtr, IntPtr, UInt64, in NativeFileBrowserOpts)
+  static NativeFileBrowserResult FileBrowser(IntPtr, IntPtr, IntPtr, UIntPtr, in NativeFileBrowserOpts)
   static NativeFlameResult FlameGraph(IntPtr, IntPtr, IntPtr, Int32, ref NativeFlameView, ref Int32, in NativeFlameOpts)
   static NativeGradientResult GradientEditor(IntPtr, IntPtr, IntPtr, ref Int32, Int32, in NativeGradientOpts)
   static NativeGraphResult GraphView(IntPtr, IntPtr, IntPtr, Int32, IntPtr, Int32, in NativeGraphOpts)
-  static NativeHexResult HexView(IntPtr, IntPtr, IntPtr, UInt64, ref NativeHexSelection, in NativeHexViewOpts)
+  static NativeHexResult HexView(IntPtr, IntPtr, IntPtr, UIntPtr, ref NativeHexSelection, in NativeHexViewOpts)
   static NativeKeymapResult Keymap(IntPtr, IntPtr, IntPtr, Int32, in NativeKeymapOpts)
   static NativeMarkdownResult Markdown(IntPtr, IntPtr, IntPtr, in NativeMarkdownOpts)
   static NativeMonthResult MonthCalendar(IntPtr, IntPtr, ref NativeDate, IntPtr, Int32, in NativeMonthOpts)
@@ -2025,11 +2028,11 @@ class CuiSharp.Interop.Native
   static NativeRect FlameSpanRect(IntPtr, UInt32, in NativeFlameSpan)
   static NativeRect GetRect(IntPtr, UInt32)
   static NativeRect LastRect(IntPtr)
-  static NativeRegexTesterResult RegexTester(IntPtr, IntPtr, IntPtr, UInt64, IntPtr, UInt64, in NativeRegexTesterOpts)
+  static NativeRegexTesterResult RegexTester(IntPtr, IntPtr, IntPtr, UIntPtr, IntPtr, UIntPtr, in NativeRegexTesterOpts)
   static NativeRendererIface GlIface(IntPtr)
   static NativeRendererIface SwIface(IntPtr)
-  static NativeRequestBarResult RequestBar(IntPtr, IntPtr, ref Int32, IntPtr, UInt64, in NativeRequestBarOpts)
-  static NativeScheduleResult SchedulePicker(IntPtr, IntPtr, IntPtr, UInt64, in NativeScheduleOpts)
+  static NativeRequestBarResult RequestBar(IntPtr, IntPtr, ref Int32, IntPtr, UIntPtr, in NativeRequestBarOpts)
+  static NativeScheduleResult SchedulePicker(IntPtr, IntPtr, IntPtr, UIntPtr, in NativeScheduleOpts)
   static NativeStackTraceResult StackTrace(IntPtr, IntPtr, IntPtr, Int32, in NativeStackTraceOpts)
   static NativeTerminalResult Terminal(IntPtr, IntPtr, ref NativeTerminalBuffer, in NativeTerminalOpts)
   static NativeTestExplorerResult TestExplorer(IntPtr, IntPtr, IntPtr, Int32, in NativeTestExplorerOpts)
@@ -2055,11 +2058,11 @@ class CuiSharp.Interop.Native
   static UInt32 LastId(IntPtr)
   static UInt32 MakeId(IntPtr, IntPtr)
   static UInt32 RowBegin(IntPtr, in NativeBox)
-  static UInt64 DockSave(IntPtr, IntPtr, IntPtr, UInt64)
   static UInt64 FrameCount(IntPtr)
-  static UInt64 ImageCreate(IntPtr, Int32, Int32, IntPtr)
-  static UInt64 ImageLoad(IntPtr, IntPtr, ref Int32, ref Int32)
-  static UInt64 QueryText(IntPtr, Int32, IntPtr, Int32, IntPtr, UInt64)
+  static UIntPtr DockSave(IntPtr, IntPtr, IntPtr, UIntPtr)
+  static UIntPtr ImageCreate(IntPtr, Int32, Int32, IntPtr)
+  static UIntPtr ImageLoad(IntPtr, IntPtr, ref Int32, ref Int32)
+  static UIntPtr QueryText(IntPtr, Int32, IntPtr, Int32, IntPtr, UIntPtr)
   static Void AccordionEnd(IntPtr)
   static Void AgentStatus(IntPtr, IntPtr, in NativeAgentStatusOpts)
   static Void AppDestroy(IntPtr)
@@ -2110,7 +2113,7 @@ class CuiSharp.Interop.Native
   static Void DrawCircle(IntPtr, NativeVec2, Single, NativeColor)
   static Void DrawEmoji(IntPtr, IntPtr, Int32, NativeRect)
   static Void DrawIcon(IntPtr, IntPtr, NativeRect, Single, NativeColor)
-  static Void DrawImage(IntPtr, UInt64, NativeRect, NativeRect, NativeCorners, NativeColor)
+  static Void DrawImage(IntPtr, UIntPtr, NativeRect, NativeRect, NativeCorners, NativeColor)
   static Void DrawLine(IntPtr, NativeVec2, NativeVec2, Single, NativeColor)
   static Void DrawPolygon(IntPtr, IntPtr, Int32, NativeColor)
   static Void DrawPolyline(IntPtr, IntPtr, Int32, Single, NativeColor, Byte)
@@ -2132,11 +2135,11 @@ class CuiSharp.Interop.Native
   static Void GlRender(IntPtr, in NativeDrawData, Byte)
   static Void GradientText(IntPtr, IntPtr, in NativeGradientTextOpts)
   static Void Heading(IntPtr, IntPtr, Int32)
-  static Void HexViewGoto(IntPtr, IntPtr, UInt64)
+  static Void HexViewGoto(IntPtr, IntPtr, UIntPtr)
   static Void HoverCardEnd(IntPtr)
   static Void Icon(IntPtr, IntPtr, Single, NativeColor)
-  static Void Image(IntPtr, UInt64, in NativeImageOpts)
-  static Void ImageDestroy(IntPtr, UInt64)
+  static Void Image(IntPtr, UIntPtr, in NativeImageOpts)
+  static Void ImageDestroy(IntPtr, UIntPtr)
   static Void InputFileDrop(IntPtr, IntPtr, Int32, Single, Single)
   static Void InputFileHover(IntPtr, Byte, Single, Single)
   static Void InputFocus(IntPtr, Byte)
@@ -2157,7 +2160,7 @@ class CuiSharp.Interop.Native
   static Void LogAppendText(ref NativeLogBuffer, LogLevel, Double, IntPtr, Int32)
   static Void LogAppendv(ref NativeLogBuffer, LogLevel, IntPtr, IntPtr)
   static Void LogClear(ref NativeLogBuffer)
-  static Void LogInit(ref NativeLogBuffer, IntPtr, Int32, IntPtr, UInt64)
+  static Void LogInit(ref NativeLogBuffer, IntPtr, Int32, IntPtr, UIntPtr)
   static Void LogView(IntPtr, IntPtr, ref NativeLogBuffer, in NativeLogViewOpts)
   static Void MenuBarBegin(IntPtr, IntPtr, in NativeMenuBarOpts)
   static Void MenuBarEnd(IntPtr)
@@ -2237,7 +2240,7 @@ class CuiSharp.Interop.Native
   static Void TableCellText(IntPtr, IntPtr)
   static Void TableEnd(IntPtr)
   static Void TerminalClear(ref NativeTerminalBuffer)
-  static Void TerminalInit(ref NativeTerminalBuffer, IntPtr, UInt64, IntPtr, Int32)
+  static Void TerminalInit(ref NativeTerminalBuffer, IntPtr, UIntPtr, IntPtr, Int32)
   static Void TerminalWrite(ref NativeTerminalBuffer, IntPtr, Int32)
   static Void Text(IntPtr, IntPtr, in NativeTextOpts)
   static Void TextReveal(IntPtr, IntPtr, IntPtr, in NativeTextFxOpts)
@@ -2320,7 +2323,7 @@ struct CuiSharp.Interop.NativeAvatarOpts
   field Int32 Sentinel
   field IntPtr Status
   field Single Size
-  field UInt64 Image
+  field UIntPtr Image
 struct CuiSharp.Interop.NativeBadgeOpts
   field Byte Dot
   field Byte Solid
@@ -2498,7 +2501,7 @@ struct CuiSharp.Interop.NativeChatOpts
   field IntPtr MarkdownResult
   field IntPtr Status
   field IntPtr Time
-  field UInt64 Avatar
+  field UIntPtr Avatar
 struct CuiSharp.Interop.NativeCheckOpts
   field Byte Disabled
   field Byte Indeterminate
@@ -2832,7 +2835,7 @@ struct CuiSharp.Interop.NativeDrawCmd
   field NativeRect Clip
   field UInt32 IndexCount
   field UInt32 IndexOffset
-  field UInt64 Texture
+  field UIntPtr Texture
 struct CuiSharp.Interop.NativeDrawData
   field Int32 CommandCount
   field Int32 HeightPx
@@ -2843,7 +2846,7 @@ struct CuiSharp.Interop.NativeDrawData
   field IntPtr Indices
   field IntPtr Vertices
   field NativeColor ClearColor
-  field UInt64 FontAtlas
+  field UIntPtr FontAtlas
 struct CuiSharp.Interop.NativeDropzoneOpts
   field Byte Compact
   field Int32 Sentinel
@@ -2867,7 +2870,7 @@ struct CuiSharp.Interop.NativeEmojiPickerOpts
   field NativeSize Width
   field Single Height
   field Single Size
-  field UInt64 RecentCap
+  field UIntPtr RecentCap
 struct CuiSharp.Interop.NativeEmptyOpts
   field Int32 Sentinel
   field IntPtr Action
@@ -3076,20 +3079,20 @@ struct CuiSharp.Interop.NativeHeatmapOpts
 struct CuiSharp.Interop.NativeHexRange
   field IntPtr Label
   field Tone Tone
-  field UInt64 Length
-  field UInt64 Offset
+  field UIntPtr Length
+  field UIntPtr Offset
 struct CuiSharp.Interop.NativeHexResult
   field Byte Copied
   field Byte Edited
   field Byte SelectionChanged
   field Int64 Hovered
   field NativeHexSelection Selection
-  field UInt64 EditLength
-  field UInt64 EditOffset
+  field UIntPtr EditLength
+  field UIntPtr EditOffset
 struct CuiSharp.Interop.NativeHexSelection
-  field UInt64 Cursor
-  field UInt64 Length
-  field UInt64 Start
+  field UIntPtr Cursor
+  field UIntPtr Length
+  field UIntPtr Start
 struct CuiSharp.Interop.NativeHexViewOpts
   field Byte NoAscii
   field Byte NoHeader
@@ -3405,7 +3408,7 @@ struct CuiSharp.Interop.NativeNowPlaying
   field NativeColor ArtColor
   field Single Duration
   field Single Position
-  field UInt64 Art
+  field UIntPtr Art
 struct CuiSharp.Interop.NativeNowPlayingOpts
   field Byte Compact
   field Int32 Sentinel
@@ -3468,7 +3471,7 @@ struct CuiSharp.Interop.NativePresenceUser
   field Byte Idle
   field IntPtr Name
   field NativeColor Color
-  field UInt64 Avatar
+  field UIntPtr Avatar
 struct CuiSharp.Interop.NativeProblemsOpts
   field Byte NoToolbar
   field Int32 Sentinel
@@ -4185,7 +4188,7 @@ struct CuiSharp.Interop.NativeUserMenuOpts
   field IntPtr Status
   field Placement Placement
   field Single Width
-  field UInt64 Avatar
+  field UIntPtr Avatar
 struct CuiSharp.Interop.NativeVec2
   field Single X
   field Single Y
@@ -5159,6 +5162,9 @@ class CuiSharp.RegularExpressionsAndTheRegexTesterUiExtensions+<G>$2E78AC6C4589E
 enum CuiSharp.Renderer
   Auto
   OpenGL
+  Software
+enum CuiSharp.RendererKind
+  Gpu
   Software
 struct CuiSharp.RequestBarOpts
   field Boolean Loading

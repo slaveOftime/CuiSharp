@@ -24,7 +24,7 @@ public static unsafe class EmojiUiExtensions
         /// <summary>cui_emoji_font_load_memory</summary>
         public bool EmojiFontLoadMemory(ReadOnlySpan<byte> data, bool copy)
         {
-            var __result = Native.EmojiFontLoadMemory(ui.Handle, UiMarshal.Values<byte>(data), (ulong)(data.Length), (byte)(copy ? 1 : 0));
+            var __result = Native.EmojiFontLoadMemory(ui.Handle, UiMarshal.Values<byte>(data), (nuint)(data.Length), (byte)(copy ? 1 : 0));
             return __result != 0;
         }
 
