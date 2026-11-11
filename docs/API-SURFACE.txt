@@ -397,7 +397,11 @@ class CuiSharp.CodeUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
   Void CodeBlock(UiText, UiText, CodeOpts)
 class CuiSharp.CodeUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4+<M>$D152016828D0F2CB0A8B78500F4F70D3
 struct CuiSharp.Color
+  Boolean Equals(Color)
+  Boolean Equals(Object)
   Color WithAlpha(Single)
+  Int32 GetHashCode()
+  String ToString()
   ctor(Byte, Byte, Byte, Byte)
   field Byte A
   field Byte B
@@ -5301,6 +5305,13 @@ enum CuiSharp.Severity
   Hint
   Info
   Warning
+struct CuiSharp.Shadow
+  String ToString()
+  ctor(Single, Single, Single, Single)
+  field Single Alpha
+  field Single Blur
+  field Single Spread
+  field Single Y
 struct CuiSharp.SheetOpts
   field Side Side
   field Single Size
@@ -5596,6 +5607,28 @@ enum CuiSharp.TextureFormat
 enum CuiSharp.Theme
   Dark
   Light
+struct CuiSharp.ThemeStyle
+  Shadow GetShadow(Elevation, Int32)
+  Single GetHeading(Int32)
+  Void SetHeading(Int32, Single)
+  Void SetShadow(Elevation, Int32, Shadow)
+  property Color Item { get; set; }
+  property Color ToneInfo { get; set; }
+  property Color ToneRose { get; set; }
+  property Color ToneTeal { get; set; }
+  property Color ToneViolet { get; set; }
+  property Single ControlLg { get; set; }
+  property Single ControlMd { get; set; }
+  property Single ControlSm { get; set; }
+  property Single FontScale { get; set; }
+  property Single Motion { get; set; }
+  property Single RadiusControl { get; set; }
+  property Single RadiusPanel { get; set; }
+  property Single RadiusSurface { get; set; }
+  property Single TextBody { get; set; }
+  property Single TextLg { get; set; }
+  property Single TextSm { get; set; }
+  property Single TextXs { get; set; }
 struct CuiSharp.TickerItem
   ctor(String, String, Single, Boolean)
   field Boolean LowerIsBetter
@@ -5960,6 +5993,7 @@ struct CuiSharp.Ui
   property Single DeltaTime { get; }
   property Single DpiScale { get; }
   property Theme Theme { get; set; }
+  property ThemeStyle Style { get; }
   property UInt32 LastId { get; }
   property UInt64 FrameCount { get; }
   property ValueTuple<Single, Single> MousePosition { get; }

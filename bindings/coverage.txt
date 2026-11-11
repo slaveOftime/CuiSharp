@@ -152,7 +152,7 @@ MANUAL cui_set_theme: The `ui.Theme` setter (Ui.Frame.cs) sits next to `ui.Accen
 MANUAL cui_get_theme_mode: `ui.Theme` getter (Ui.Frame.cs).
 MANUAL cui_set_accent: The `ui.Accent` setter (Ui.Frame.cs) sits next to `ui.Theme`; the rest of the Theme section stays excluded.
 MANUAL cui_get_accent: `ui.Accent` getter (Ui.Frame.cs).
-MANUAL cui_theme_get: `ui.TokenColor` and `CuiSurface`/`CuiApp` own the theme pointer; the raw struct stays internal.
+MANUAL cui_theme_get: `ui.Style` (Ui.Style.cs) hands out a ThemeStyle over this pointer for the tokens an app may retune, and `ui.TokenColor` (Ui.Frame.cs) reads one of them; the raw NativeTheme stays internal to those two.
 MANUAL cui_set_reduced_motion: `ui.SetReducedMotion(bool)` (Ui.Frame.cs).
 MANUAL cui_color_of: `ui.ColorOf(color)` (Ui.Frame.cs) resolves a token to channels the frame is drawing with.
 MANUAL cui_set_strings: `ui.SetLocalization(table)` (Ui/Ui.Localization.cs): CUI keeps the pointer and reads it every frame, so the `Localization` class owns the unmanaged table and the surface keeps the instance alive.
