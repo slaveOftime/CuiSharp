@@ -48,7 +48,7 @@ public static class HeadlessLoop
 
     private static readonly string[] Commands =
     [
-        "tree", "print", "layout", "find", "click", "type", "key", "focus", "move", "wheel", "frame", "pulse", "faults", "png", "quit",
+        "tree", "print", "layout", "find", "click", "type", "key", "focus", "move", "wheel", "frame", "pulse", "wait", "waittext", "faults", "png", "quit",
     ];
 
     /// <summary>True when this process was asked to run without a window.</summary>
@@ -194,6 +194,8 @@ public static class HeadlessLoop
         "wheel" => Wheel(app, argument),
         "frame" => Frame(app, argument),
         "pulse" => Pulse(app, argument),
+        "wait" => WaitCommand(app, argument),
+        "waittext" => WaitText(app, argument),
         "faults" => app.Faults.Count == 0 ? "" : string.Join("\n", app.Faults),
         "png" => SavePng(app, argument),
         _ => throw new InvalidOperationException($"Unknown command \"{command}\". Known: {string.Join(", ", Commands)}."),
@@ -217,6 +219,80 @@ public static class HeadlessLoop
         if (frames < 1) throw new ArgumentException($"pulse needs a count of at least 1, not {frames}.");
         app.Frame(frames);
         return $"{frames} heap {GC.GetTotalMemory(false)}";
+    }
+
+    /// <summary>The window a wait gets when its command does not name one, in seconds.</summary>
+    private const double DefaultWaitSeconds = 10;
+
+    /// <summary>
+    /// The longest wait this protocol serves. A wait binds the answer deadline of the client on
+    /// the other end, so the trust boundary needs a ceiling as well as a floor.
+    /// </summary>
+    private const double MaxWaitSeconds = 3600;
+
+    /// <summary>
+    /// Draws real frames until one marks itself ready (<c>ui.MarkReady</c>). The answer is the
+    /// frame that proved the wait right; a miss is an error that names what never happened.
+    /// </summary>
+    private static string WaitCommand(HeadlessApp app, string argument)
+    {
+        double seconds = argument.Length == 0 ? DefaultWaitSeconds : ParseWaitSeconds(argument);
+        HeadlessApp.WaitOutcome outcome = app.WaitReady(TimeSpan.FromSeconds(seconds));
+        if (!outcome.Satisfied)
+        {
+            throw new InvalidOperationException(
+                $"No frame marked itself ready within {seconds}s ({outcome.Frames} frames drawn). " +
+                "The app declares readiness with ui.MarkReady() once its data is complete.");
+        }
+
+        return app.Print();
+    }
+
+    /// <summary>
+    /// Draws real frames until one draws the given text or query. The timeout is the command's
+    /// first token by contract and the query is everything after it, verbatim: text with spaces,
+    /// unicode, or a numeric tail (<c>waittext 5 共 3 items</c>) is never mistaken for a number.
+    /// </summary>
+    private static string WaitText(HeadlessApp app, string argument)
+    {
+        int space = argument.IndexOf(' ', StringComparison.Ordinal);
+        if (space < 0)
+        {
+            throw new ArgumentException(
+                "waittext needs a timeout in seconds and a query: `waittext 5 Button \"Save\"`.",
+                nameof(argument));
+        }
+
+        double seconds = ParseWaitSeconds(argument[..space]);
+        string query = argument[(space + 1)..];
+        if (query.Trim().Length == 0) throw new ArgumentException("waittext needs a query after the timeout.", nameof(argument));
+
+        HeadlessApp.WaitOutcome outcome = app.WaitFor(query, TimeSpan.FromSeconds(seconds));
+        if (!outcome.Satisfied)
+        {
+            throw new InvalidOperationException(
+                $"No frame drew \"{query}\" within {seconds}s ({outcome.Frames} frames drawn). " +
+                $"The last frame drew:\n{app.Print()}");
+        }
+
+        return app.Print();
+    }
+
+    /// <summary>
+    /// A wait window in seconds. <c>TryParse</c> accepts NaN and Infinity, and neither bounds a
+    /// wait anyone could observe, so only finite positive numbers up to the ceiling pass.
+    /// </summary>
+    private static double ParseWaitSeconds(string token)
+    {
+        if (!double.TryParse(token, NumberStyles.Float, CultureInfo.InvariantCulture, out double seconds)
+            || !double.IsFinite(seconds) || seconds <= 0 || seconds > MaxWaitSeconds)
+        {
+            throw new ArgumentException(
+                $"wait needs a finite number of seconds between 0 and {MaxWaitSeconds:0}, not \"{token}\".",
+                nameof(token));
+        }
+
+        return seconds;
     }
 
     private static string Click(HeadlessApp app, string argument)

@@ -39,6 +39,8 @@ internal static class Cli
           wheel <x> <y> <dy> [dx]  scroll at a point, in wheel notches (negative dy goes down)
           frame [count]       draw more frames, then print the tree
           pulse [count]       draw frames without printing the tree (answers: count, heap bytes)
+          wait [seconds]      keep drawing until a frame marks itself ready (ui.MarkReady)
+          waittext <s> <text> keep drawing until a frame draws this text or query
           faults              what the app threw while drawing, if anything
           png <path>          save the last frame as a PNG
 
@@ -55,6 +57,13 @@ internal static class Cli
               --frames <count>  draw this many frames before the command
           -s, --stdin           read commands from stdin and print each answer, one process
           -q, --quiet           only print the payload
+              --wait ready      precondition: draw until a frame marks itself ready (ui.MarkReady)
+              --wait-text <text> precondition: draw until a frame draws this text or query
+              --wait-timeout <s> wait window for the two above, in seconds (default 10, max 3600)
+
+        A wait is a precondition, not a command: `dotnet cui png out.png --wait ready` screenshots
+        the frame that proved the app ready, and an unsatisfied wait ends the run with exit=1
+        before the command is sent. `--wait ready` alone waits and then prints the tree.
 
         Anything after `--` goes to the app.
         """;
@@ -84,7 +93,8 @@ internal static class Cli
             // the app's diagnostics, and the protocol on stdout stays clean.
             using HeadlessClient client = HeadlessClient.Start(
                 host, hostArgs, echo: options.Quiet ? null : error.WriteLine);
-            if (options.Frames > 0) client.Send($"frame {options.Frames}");
+
+            if (!PassPreconditions(client, options, error)) return 1;
 
             if (options.Streaming) return Relay(client, input, output, error);
 
@@ -93,7 +103,7 @@ internal static class Cli
             if (TryReadDwell(options.Line, out double seconds))
                 return Dwell(client, output, error, seconds) ? 0 : 1;
 
-            Answer answer = client.Send(options.Line);
+            Answer answer = Ask(client, options.Line);
             if (!answer.Ok)
             {
                 error.WriteLine(answer.Payload);
@@ -111,10 +121,49 @@ internal static class Cli
     }
 
     /// <summary>
-    /// Feeds commands from stdin to one app process, so a session of ten commands pays for one
-    /// startup instead of ten. Answers go to stdout in order.
+    /// Draws and waits through everything that must be true before the command runs: the
+    /// <c>--frames</c> draw, then the wait gate. A refused precondition is a real answer with a
+    /// real reason, and it ends the run — the command, the gate behind it, and a whole relayed
+    /// session would otherwise act on frames the app never drew, and a tool that reads an error
+    /// and carries on can finish a lie with exit 0. Internal so a fake server can prove the
+    /// stop without an app to refuse.
     /// </summary>
-    private static int Relay(HeadlessClient client, TextReader? input, TextWriter output, TextWriter error)
+    internal static bool PassPreconditions(HeadlessClient client, Options options, TextWriter error)
+    {
+        if (options.Frames > 0)
+        {
+            Answer drawn = Ask(client, $"frame {options.Frames}");
+            if (!drawn.Ok)
+            {
+                error.WriteLine(drawn.Payload);
+                return false;
+            }
+        }
+
+        // A wait is a precondition, like --frames, not the command: the app must reach the
+        // state before the command acts on it. A miss ends the run with exit=1 and the command
+        // is never sent; a satisfied wait stays out of the way — its payload is discarded
+        // because the command's own answer is the payload. In a --stdin session the gate passes
+        // first, before any line is relayed.
+        if (options.WaitLine is { } gate)
+        {
+            Answer waited = Ask(client, gate);
+            if (!waited.Ok)
+            {
+                error.WriteLine(waited.Payload);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Feeds commands from stdin to one app process, so a session of ten commands pays for one
+    /// startup instead of ten. Answers go to stdout in order. Internal so a fake server can
+    /// stand behind the session and show a relayed wait gets the deadline its grammar asks for.
+    /// </summary>
+    internal static int Relay(HeadlessClient client, TextReader? input, TextWriter output, TextWriter error)
     {
         TextReader source = input ?? Console.In;
         while (source.ReadLine() is { } line)
@@ -126,7 +175,7 @@ internal static class Cli
                 continue;
             }
 
-            Answer answer = client.Send(line.Trim());
+            Answer answer = Ask(client, line.Trim());
             if (!answer.Ok)
             {
                 error.WriteLine(answer.Payload);
@@ -207,6 +256,50 @@ internal static class Cli
     }
 
     /// <summary>
+    /// Room on top of a wait command's own timeout before the client stops listening: the wait
+    /// answers within its timeout, and the slack covers the real frames drawn around it.
+    /// </summary>
+    private static readonly TimeSpan WaitAnswerSlack = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// Sends one command with the answer deadline its own grammar asks for. A direct
+    /// <c>wait 60</c> answers no later than its sixty seconds, and a client fixed at the
+    /// default deadline would give up on an app that is answering exactly as promised.
+    /// </summary>
+    private static Answer Ask(HeadlessClient client, string line) =>
+        client.Send(line, answerTimeout: AnswerTimeoutFor(line));
+
+    /// <summary>
+    /// The answer deadline a command line needs, or null for the default. Only <c>wait</c> and
+    /// <c>waittext</c> wait on something, and only their first timeout token is read — the query
+    /// after it is user text and never a number. A malformed or impossible wait gets the
+    /// default, because the app answers one immediately, with the reason.
+    /// </summary>
+    internal static TimeSpan? AnswerTimeoutFor(string line)
+    {
+        string[] words = line.Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        string? token = words.Length > 0
+            ? words[0].ToLowerInvariant() switch
+            {
+                // `wait` alone takes the app's own default window, which the default covers; a
+                // `waittext` without a query is answered with its usage immediately.
+                "wait" => words.Length > 1 ? words[1] : "",
+                "waittext" => words.Length > 2 ? words[1] : null,
+                _ => null,
+            }
+            : null;
+
+        if (token is null
+            || !double.TryParse(token, NumberStyles.Float, CultureInfo.InvariantCulture, out double seconds)
+            || !double.IsFinite(seconds) || seconds <= 0 || seconds > Options.MaxWaitSeconds)
+        {
+            return null;
+        }
+
+        return TimeSpan.FromSeconds(seconds) + WaitAnswerSlack;
+    }
+
+    /// <summary>
     /// What the tool was asked for. Parsing is separate from running so that flag handling is
     /// testable without spawning a process.
     /// </summary>
@@ -243,11 +336,33 @@ internal static class Cli
         /// <summary>The line the app receives: its command and the argument.</summary>
         internal string Line => Argument.Length == 0 ? Command : $"{Command} {Argument}";
 
+        /// <summary>The wait window the caller asked for, in seconds; 0 when nothing waits.</summary>
+        internal double WaitSeconds { get; init; }
+
+        /// <summary>
+        /// The gate line sent to the app before the command, or null when nothing waits. A wait
+        /// is a precondition like <see cref="Frames"/>, never the command itself: the command
+        /// keeps <see cref="Line"/> and its answer keeps the payload.
+        /// </summary>
+        internal string? WaitLine { get; init; }
+
+        /// <summary>The window a wait gets when no --wait-timeout narrows it, in seconds.</summary>
+        internal const double DefaultWaitSeconds = 10;
+
+        /// <summary>
+        /// The longest wait the tool will set. A wait bounds the client's answer deadline
+        /// downstream, and a number near <see cref="TimeSpan.MaxValue"/> would overflow it; a
+        /// wait measured in hours is not a wait, it is a hung app with extra steps.
+        /// </summary>
+        internal const double MaxWaitSeconds = 3600;
+
         internal static Options Parse(string[] args)
         {
             if (args.Length == 0) return new Options { Help = true };
 
             string? project = null, host = null, framework = null;
+            string? wait = null, waitText = null;
+            double? waitTimeout = null;
             var appArgs = new List<string>();
             var words = new List<string>();
             int frames = 0;
@@ -271,7 +386,16 @@ internal static class Cli
                         framework = Value(args, ref i);
                         break;
                     case "--frames":
-                        frames = int.Parse(Value(args, ref i), CultureInfo.InvariantCulture);
+                        frames = ParseFrames(Value(args, ref i));
+                        break;
+                    case "--wait":
+                        wait = Value(args, ref i);
+                        break;
+                    case "--wait-text":
+                        waitText = Value(args, ref i);
+                        break;
+                    case "--wait-timeout":
+                        waitTimeout = ParseWaitTimeout(Value(args, ref i));
                         break;
                     case "-q" or "--quiet":
                         quiet = true;
@@ -296,20 +420,78 @@ internal static class Cli
                 }
             }
 
+            // A wait is a precondition, so it composes with any command instead of replacing
+            // one. The gate line carries an explicit timeout and the query verbatim after it,
+            // so text with spaces, unicode or a numeric tail reaches the app exactly as typed.
+            bool waiting = wait is not null || waitText is not null;
+            if (wait is not null && !wait.Equals("ready", StringComparison.OrdinalIgnoreCase))
+                throw new ToolException($"--wait needs \"ready\", not \"{wait}\".");
+            if (wait is not null && waitText is not null)
+                throw new ToolException("Choose one wait: --wait ready or --wait-text <text>, not both.");
+            if (waitTimeout is not null && !waiting)
+                throw new ToolException("--wait-timeout needs --wait or --wait-text to bound.");
+
+            double waitSeconds = waitTimeout ?? DefaultWaitSeconds;
+            string? waitLine = null;
+            if (waiting)
+            {
+                string seconds = waitSeconds.ToString("R", CultureInfo.InvariantCulture);
+                waitLine = waitText is not null ? $"waittext {seconds} {waitText}" : $"wait {seconds}";
+            }
+
+            // A wait with no command still has to answer with something: the tree the wait
+            // waited for is the smallest honest payload.
+            string command = words.Count > 0
+                ? words[0]
+                : waiting && !streaming ? "tree" : "";
+            string argument = words.Count > 1 ? string.Join(' ', words.Skip(1)) : "";
+
             return new Options
             {
-                Command = words.Count > 0 ? words[0] : "",
-                Argument = words.Count > 1 ? string.Join(' ', words.Skip(1)) : "",
+                Command = command,
+                Argument = argument,
                 Frames = frames,
                 Quiet = quiet,
                 Streaming = streaming,
                 NoBuild = noBuild,
-                Help = help || (words.Count == 0 && !streaming),
+                Help = help || (words.Count == 0 && !streaming && !waiting),
                 Project = project,
                 Host = host,
                 Framework = framework,
                 AppArgs = [.. appArgs],
+                WaitSeconds = waiting ? waitSeconds : 0,
+                WaitLine = waitLine,
             };
+        }
+
+        /// <summary>
+        /// A frame count the app can draw. A bare int.Parse threw FormatException and
+        /// OverflowException at the user for a typo that deserves a sentence, and a negative
+        /// count drew nothing while claiming otherwise.
+        /// </summary>
+        private static int ParseFrames(string value)
+        {
+            if (!int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out int frames) || frames < 0)
+                throw new ToolException($"--frames needs a count of at least 0, not \"{value}\".");
+
+            return frames;
+        }
+
+        /// <summary>
+        /// A wait window the tool can honour. TryParse accepts NaN and Infinity, and neither is
+        /// a bound anyone could wait by; the ceiling keeps the deadline arithmetic downstream
+        /// finite. Every typo here is an exit=1, not a crash.
+        /// </summary>
+        private static double ParseWaitTimeout(string value)
+        {
+            if (!double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double seconds)
+                || !double.IsFinite(seconds) || seconds <= 0 || seconds > MaxWaitSeconds)
+            {
+                throw new ToolException(
+                    $"--wait-timeout needs a finite number of seconds between 0 and {MaxWaitSeconds:0}, not \"{value}\".");
+            }
+
+            return seconds;
         }
 
         private static string Value(string[] args, ref int index)

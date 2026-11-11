@@ -677,6 +677,7 @@ class CuiSharp.CuiSurface
   Void Type(UiText)
   property Boolean FileDragActive { get; }
   property Boolean Incremental { get; set; }
+  property Boolean LastFrameReady { get; }
   property Boolean RecordWidgets { get; set; }
   property FrameSample LastFrame { get; set; }
   property IReadOnlyList<Exception> Faults { get; }
@@ -1467,6 +1468,8 @@ class CuiSharp.Hosting.HeadlessApp
   String SavePng(String, Boolean)
   String ToString()
   Void Dispose()
+  WaitOutcome WaitFor(String, TimeSpan, CancellationToken)
+  WaitOutcome WaitReady(TimeSpan, CancellationToken)
   WidgetTarget Find(String)
   WidgetTarget Find(String, String)
   WidgetTarget FindButton(String)
@@ -1474,6 +1477,7 @@ class CuiSharp.Hosting.HeadlessApp
   WidgetTarget FindInput(String)
   WidgetTarget FindItem(String, Int32)
   property Boolean Animating { get; }
+  property Boolean Ready { get; }
   property Component Root { get; }
   property CuiSurface Surface { get; }
   property IReadOnlyList<SemanticWidget> Widgets { get; }
@@ -1484,6 +1488,11 @@ class CuiSharp.Hosting.HeadlessApp
   property SemanticNode Tree { get; }
   static HeadlessApp Start(Component, Int32, Int32, Single, Theme, Accent)
   static HeadlessApp Start(DrawFn, Int32, Int32, Single, Theme, Accent)
+struct CuiSharp.Hosting.HeadlessApp+WaitOutcome
+  String ToString()
+  property Boolean Satisfied { get; }
+  property Int32 Frames { get; }
+  property TimeSpan Elapsed { get; }
 class CuiSharp.Hosting.HeadlessLoop
   field String EnvironmentVariable
   property IReadOnlyList<String> Known { get; }
@@ -5954,6 +5963,7 @@ struct CuiSharp.Ui
   Void Icon(UiText, Single, Color)
   Void LineChart(UiText, ReadOnlySpan<Single>, ChartOpts, Color)
   Void LineChart(UiText, Series[], ChartOpts)
+  Void MarkReady()
   Void PopClip()
   Void PushClip(RectF)
   Void ReorderBegin(UiText, Int32[])

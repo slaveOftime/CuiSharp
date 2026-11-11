@@ -98,6 +98,19 @@ public sealed unsafe partial class CuiSurface : IDisposable
     public FrameSample LastFrame { get; private set; }
 
     /// <summary>
+    /// Whether the latest completed frame declared its app data complete with
+    /// <see cref="Ui.MarkReady"/>.
+    /// </summary>
+    /// <remarks>
+    /// Readiness belongs to the frame, not to the app: a frame that goes back to loading is not
+    /// ready however ready its predecessor was, and this says nothing about the headless banner
+    /// (which only proves the channel is open) or about an animation settling. While a frame is
+    /// drawing — including in its deferred paint phase — this is still the previous completed
+    /// frame's verdict; the frame being drawn publishes its own only once its paint is done.
+    /// </remarks>
+    public bool LastFrameReady => _frame.LastFrameReady;
+
+    /// <summary>
     /// Exceptions a component threw while this surface drew. A component's error
     /// boundary keeps the frame going, which would otherwise make a broken page look
     /// like a passing render test; assert <c>Assert.Empty(surface.Faults)</c>.
@@ -199,6 +212,11 @@ public sealed unsafe partial class CuiSurface : IDisposable
             _recorderBelow = null;
             _current = _previous;
             _previous = null;
+
+            // Readiness is published here, last, rather than at MarkReady or before CUI paints:
+            // the deferred canvas painters run inside EndFrame and may mark the frame they paint,
+            // and until this line a reader still sees the previous completed frame's verdict.
+            _frame.LastFrameReady = _frame.FrameReady;
         }
     }
 
