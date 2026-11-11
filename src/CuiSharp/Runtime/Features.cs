@@ -23,13 +23,4 @@ internal static class Features
     /// </summary>
     [FeatureSwitchDefinition("CuiSharp.Headless")]
     internal static bool Headless => !AppContext.TryGetSwitch("CuiSharp.Headless", out bool on) || on;
-
-    /// <summary>
-    /// Live attach: a tool on the same machine drives the real window a human is looking at,
-    /// over local IPC. Compiled in by default, but a running app listens only when it asked to
-    /// be driven (<c>CUISHARP_LIVE=1</c>, <c>--live</c>, or <see cref="CuiAppOptions.LiveAttach"/>)
-    /// — nothing listens on its own. Turning the switch off removes the channel from the binary.
-    /// </summary>
-    [FeatureSwitchDefinition("CuiSharp.Live")]
-    internal static bool Live => !AppContext.TryGetSwitch("CuiSharp.Live", out bool on) || on;
 }

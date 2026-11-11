@@ -60,14 +60,6 @@ public sealed record CuiAppOptions
     /// here.
     /// </summary>
     public Action<CuiWindow>? WindowCreated { get; set; }
-
-    /// <summary>
-    /// Let a tool on the same machine drive this window while a human watches it
-    /// (<see cref="Hosting.LiveSession"/>). Off by default and never automatic: an app is only
-    /// driven when it says so here, or with <c>CUISHARP_LIVE=1</c> / <c>--live</c>. Windows-only
-    /// for now; asking for it elsewhere fails rather than silently doing nothing.
-    /// </summary>
-    public bool LiveAttach { get; set; }
 }
 
 /// <summary>
@@ -260,19 +252,6 @@ public sealed unsafe class CuiApp : IDisposable
         // the caller's loop that is blocked, so the plan's rule is that a real
         // window runs through Run.
         var state = new RunState(options, draw);
-        // Keep the opt-in branch inside the feature gate, rather than storing the gate in a
-        // local: AOT's dependency scanner must discard the entire IPC construction path.
-        if (Features.Live)
-        {
-            if (options.LiveAttach || Hosting.LiveSession.Requested(args))
-            {
-                if (!OperatingSystem.IsWindows())
-                    throw new NotSupportedException("Live attach is Windows-only for now. Run without live attach on this platform.");
-                // The message window belongs to the thread about to enter CUI's native loop.
-                state.Live = new Hosting.LiveSession(options, state.Frame);
-            }
-        }
-
         GCHandle handle = GCHandle.Alloc(state);
         try
         {
@@ -304,7 +283,6 @@ public sealed unsafe class CuiApp : IDisposable
         }
         finally
         {
-            if (Features.Live) state.Live?.Dispose();
             LiveResize.Uninstall(state.WindowHandle);
             state.Window?.Release();
             handle.Free();
@@ -319,28 +297,21 @@ public sealed unsafe class CuiApp : IDisposable
         internal readonly UiFrameState Frame = new();
         internal nint WindowHandle;
         internal CuiWindow? Window;
-        internal Hosting.LiveSession? Live;
 
         /// <summary>
         /// Publishes the window on the first frame. The app loop keeps its <c>cui_app*</c> private,
         /// so this is where it comes back: the window it made carries that pointer as its user data.
         /// </summary>
-        internal void Hooking(nint ui)
+        internal void Hooking()
         {
             if (Window is not null || !OperatingSystem.IsWindows()) return;
             nint app = Win32.AppOf(Win32.FindCuiWindow());
-            if (app == 0)
-            {
-                if (Features.Live && Live is not null)
-                    throw new InvalidOperationException("Live attach could not recover the native CUI window on the UI thread.");
-                return;
-            }
+            if (app == 0) return;
 
             WindowHandle = Native.AppNativeWindow(app);
             Window = new CuiWindow(app) { FileDialog = Options.FileDialog };
             LiveResize.Install(WindowHandle, Options.NoVsync);
             Options.WindowCreated?.Invoke(Window);
-            if (Features.Live) Live?.Bind(app, ui, WindowHandle);
         }
     }
 
@@ -353,24 +324,14 @@ public sealed unsafe class CuiApp : IDisposable
         var state = (RunState)GCHandle.FromIntPtr((nint)user).Target!;
 
         // The window exists before the first frame draws: hand it over, and make resizing fast.
-        state.Hooking(ui);
+        state.Hooking();
 
         // The previous frame has been presented by now, so its painters and the
         // arena that holds this frame's argument strings can be reused.
         state.Frame.Reset();
         Utf8.BeginFrame();
         state.Frame.SyncLocalization(ui);
-        if (Features.Live) state.Live?.EnterFrame();
-        try
-        {
-            state.Draw(new Ui(ui, state.Frame));
-        }
-        finally
-        {
-            // A live capture is reading this frame's labels out of the arena the line above will
-            // reset on the next callback, so its copies are taken now, before that happens.
-            if (Features.Live) state.Live?.SealFrame();
-        }
+        state.Draw(new Ui(ui, state.Frame));
     }
 
     private static NativeAppDesc Describe(CuiAppOptions options) => new()

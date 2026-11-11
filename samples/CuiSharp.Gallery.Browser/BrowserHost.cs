@@ -2,90 +2,30 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
 using CuiSharp;
-using CuiSharp.Interop;
 
 [assembly: SupportedOSPlatform("browser")]
 
 namespace CuiSharp.Gallery.Browser;
 
 /// <summary>Runs the real gallery on a windowless CUI surface and presents its pixels to the browser.</summary>
-public static unsafe partial class BrowserHost
+public static partial class BrowserHost
 {
     private static CuiSurface? _surface;
     private static GalleryApp? _gallery;
-    private static byte[]? _pixels;
+    private static byte[] _pixels = [];
     private static GCHandle _pixelPin;
     private static int _pixelAddress;
     private static double _lastTimestamp;
     private static bool _forcePresent = true;
     private static bool _stopped;
     private static string? _failure;
-    private static bool _gpu;
 
-    /// <summary>Creates the surface for the renderer the page chose. Safe to call again to switch.</summary>
-    [JSExport]
-    public static void Initialize(bool useGpu)
+    internal static void Initialize()
     {
-        _gallery?.Dispose();
-        _surface?.Dispose();
-        if (_pixelPin.IsAllocated) _pixelPin.Free();
-        _pixels = null;
-        _pixelAddress = 0;
-        _failure = null;
-        _stopped = false;
-        _lastTimestamp = 0;
-        _forcePresent = true;
-
-        _gpu = useGpu;
-        _surface = useGpu
-            ? CuiSurface.CreateGpu(1, 1, GpuTextures(), theme: Theme.Light, accent: Accent.Violet)
-            : CuiSurface.Create(1, 1, theme: Theme.Light, accent: Accent.Violet);
-        if (!useGpu) _surface.Incremental = true;
+        _surface = CuiSurface.Create(1, 1, theme: Theme.Light, accent: Accent.Violet);
+        _surface.Incremental = true;
         _gallery = new GalleryApp();
     }
-
-    /// <summary>
-    /// The texture interface CUI calls for its font atlas and any image a page draws; the
-    /// implementations live in main.js and own the GL texture objects — the same arrangement
-    /// CUI's own web host (web_host.c) uses for its WebGL2 renderer.
-    /// </summary>
-    private static unsafe NativeRendererIface GpuTextures() => new()
-    {
-        User = 0,
-        TextureCreate = (nint)(delegate* unmanaged[Cdecl]<void*, int, int, int, void*, nuint>)&TextureCreateThunk,
-        TextureUpdate = (nint)(delegate* unmanaged[Cdecl]<void*, nuint, int, int, int, int, void*, int, void>)&TextureUpdateThunk,
-        TextureDestroy = (nint)(delegate* unmanaged[Cdecl]<void*, nuint, void>)&TextureDestroyThunk,
-    };
-
-    [UnmanagedCallersOnly(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
-    private static nuint TextureCreateThunk(void* user, int w, int h, int fmt, void* pixels)
-    {
-        _ = user;
-        return (nuint)TextureCreate(w, h, fmt, (nint)pixels);
-    }
-
-    [UnmanagedCallersOnly(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
-    private static void TextureUpdateThunk(void* user, nuint texture, int x, int y, int w, int h, void* pixels, int stride)
-    {
-        _ = user;
-        TextureUpdate((int)texture, x, y, w, h, (nint)pixels, stride);
-    }
-
-    [UnmanagedCallersOnly(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
-    private static void TextureDestroyThunk(void* user, nuint texture)
-    {
-        _ = user;
-        TextureDestroy((int)texture);
-    }
-
-    [JSImport("textures.create", "main.js")]
-    private static partial int TextureCreate(int width, int height, int format, nint pixels);
-
-    [JSImport("textures.update", "main.js")]
-    private static partial void TextureUpdate(int texture, int x, int y, int width, int height, nint pixels, int stride);
-
-    [JSImport("textures.destroy", "main.js")]
-    private static partial void TextureDestroy(int texture);
 
     /// <summary>Builds, rasterizes, and presents one frame; called by the browser's animation loop.</summary>
     [JSExport]
@@ -105,38 +45,27 @@ public static unsafe partial class BrowserHost
             surface.BeginFrame(delta);
             gallery.Frame(surface.Ui);
             surface.EndFrame();
+            surface.Render(_pixels, PixelFormat.Rgba);
 
-            if (_gpu)
+            RectF? damage = surface.LastDamage;
+            int x = 0, y = 0, dirtyWidth = 0, dirtyHeight = 0;
+            if (_forcePresent)
             {
-                // GPU mode: present the draw data pointer to JS, which draws it with WebGL2.
-                // No CPU rasterization, no pixel buffer copy. The viewport is inside the draw
-                // data, so JS needs nothing but the pointer.
-                PresentGpu(surface.GetDrawData());
+                dirtyWidth = surface.PixelWidth;
+                dirtyHeight = surface.PixelHeight;
             }
-            else
+            else if (damage is { } rect && rect.W > 0 && rect.H > 0)
             {
-                surface.Render(_pixels!, PixelFormat.Rgba);
+                x = (int)rect.X;
+                y = (int)rect.Y;
+                dirtyWidth = (int)rect.W;
+                dirtyHeight = (int)rect.H;
+            }
 
-                RectF? damage = surface.LastDamage;
-                int x = 0, y = 0, dirtyWidth = 0, dirtyHeight = 0;
-                if (_forcePresent)
-                {
-                    dirtyWidth = surface.PixelWidth;
-                    dirtyHeight = surface.PixelHeight;
-                }
-                else if (damage is { } rect && rect.W > 0 && rect.H > 0)
-                {
-                    x = (int)rect.X;
-                    y = (int)rect.Y;
-                    dirtyWidth = (int)rect.W;
-                    dirtyHeight = (int)rect.H;
-                }
-
-                if (dirtyWidth > 0 && dirtyHeight > 0)
-                {
-                    Present(_pixelAddress, surface.PixelWidth, surface.PixelHeight, x, y, dirtyWidth, dirtyHeight);
-                    _forcePresent = false;
-                }
+            if (dirtyWidth > 0 && dirtyHeight > 0)
+            {
+                Present(_pixelAddress, surface.PixelWidth, surface.PixelHeight, x, y, dirtyWidth, dirtyHeight);
+                _forcePresent = false;
             }
 
             if (surface.Faults.Count != 0)
@@ -161,16 +90,13 @@ public static unsafe partial class BrowserHost
         scale = float.IsFinite(scale) && scale > 0 ? scale : 1;
         surface.Resize(width, height, scale);
 
-        if (!_gpu)
+        int length = checked(surface.PixelWidth * surface.PixelHeight * 4);
+        if (_pixels.Length != length)
         {
-            int length = checked(surface.PixelWidth * surface.PixelHeight * 4);
-            if (_pixels is null || _pixels.Length != length)
-            {
-                if (_pixelPin.IsAllocated) _pixelPin.Free();
-                _pixels = new byte[length];
-                _pixelPin = GCHandle.Alloc(_pixels, GCHandleType.Pinned);
-                _pixelAddress = checked((int)_pixelPin.AddrOfPinnedObject());
-            }
+            if (_pixelPin.IsAllocated) _pixelPin.Free();
+            _pixels = new byte[length];
+            _pixelPin = GCHandle.Alloc(_pixels, GCHandleType.Pinned);
+            _pixelAddress = checked((int)_pixelPin.AddrOfPinnedObject());
         }
 
         _forcePresent = true;
@@ -228,15 +154,12 @@ public static unsafe partial class BrowserHost
         _surface?.Dispose();
         _surface = null;
         if (_pixelPin.IsAllocated) _pixelPin.Free();
-        _pixels = null;
+        _pixels = [];
         _pixelAddress = 0;
     }
 
     [JSImport("canvas.present", "main.js")]
     private static partial void Present(int pixelAddress, int width, int height, int x, int y, int dirtyWidth, int dirtyHeight);
-
-    [JSImport("canvas.presentGpu", "main.js")]
-    private static partial void PresentGpu(nint drawData);
 
     private static Key MapKey(string code)
     {

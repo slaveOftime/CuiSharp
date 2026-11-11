@@ -87,7 +87,7 @@ unzip -l artifacts/packages/CuiSharp.Templates.*.nupkg | head -20
 |---|---|
 | `CuiSharp` | `lib/net10.0/CuiSharp.dll`, each RID's `runtimes/<rid>/native/` files, `runtimes/native-provenance.txt` (revision, compiler, ABI, hashes — see [native-abi.md](../skills/cui-dotnet/native-abi.md)), `analyzers/dotnet/cs/CuiSharp.Analyzers.dll`, `analyzers/dotnet/cs/CuiSharp.CodeFixes.dll`, `build/CuiSharp.targets`, `README.md` |
 | `CuiSharp.Testing` | `lib/net10.0/CuiSharp.Testing.dll` and a dependency on `CuiSharp` |
-| `CuiSharp.Tools` | a `DotnetToolSettings.xml` with `CommandName=dotnet-cui` |
+| `CuiSharp.Tools` | a `DotnetToolSettings.xml` with `CommandName=cui` |
 | `CuiSharp.Templates` | `content/CuiSharp.App/…` including the app, its tests and `AGENTS.md` |
 
 `dotnet pack` warns when no native artifacts are found, because a managed-only package installs
@@ -117,7 +117,7 @@ Then the template, from the same local feed:
 dotnet new install <repo>/artifacts/packages/CuiSharp.Templates.*.nupkg
 dotnet new cui-app -n FreshApp && cd FreshApp && dotnet test
 dotnet tool install --add-source <repo>/artifacts/packages -g CuiSharp.Tools
-dotnet cui tree --project CuiSharp.App --no-build
+cui tree --project CuiSharp.App --no-build
 ```
 
 ## 7. Publish
@@ -141,5 +141,5 @@ dotnet nuget push "artifacts/packages/*.nupkg" -s https://api.nuget.org/v3/index
 ## 8. After
 
 - Check the NuGet page renders the README and the version is listed.
-- `dotnet tool update -g CuiSharp.Tools` on a clean machine and run `dotnet cui tree` once.
+- `dotnet tool update -g CuiSharp.Tools` on a clean machine and run `cui tree` once.
 - Record the numbers the gates printed in the release notes, next to the version.

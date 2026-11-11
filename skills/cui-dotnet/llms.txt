@@ -389,7 +389,6 @@ Hand-written, because the wrapper needs state a C call cannot carry; they are pa
 - `ui.LoadImage(...)` — hand-written in `Ui/Ui.Images.cs`
 - `ui.LogView(...)` — hand-written in `Ui/Ui.Log.cs`
 - `ui.MakeId(...)` — hand-written in `Ui/Ui.Draw.cs`
-- `ui.MarkReady(...)` — hand-written in `Ui/Ui.Frame.cs`
 - `ui.MeasureText(...)` — hand-written in `Ui/Ui.Frame.cs`
 - `ui.MouseClicked(...)` — hand-written in `Ui/Ui.Frame.cs`
 - `ui.MouseDown(...)` — hand-written in `Ui/Ui.Frame.cs`

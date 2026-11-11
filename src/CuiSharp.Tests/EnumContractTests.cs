@@ -1,6 +1,3 @@
-using System.Threading.Tasks;
-using CuiSharp;
-
 namespace CuiSharp.Tests;
 
 /// <summary>
@@ -101,29 +98,6 @@ public class EnumContractTests
         Assert.Equal(4, (int)Mods.Alt);
         Assert.Equal(8, (int)Mods.Super);
         Assert.Equal(Mods.Ctrl, Mods.Primary);
-    }
-
-    [Fact]
-    public void CuiTaskStatusCoexistsWithBclTaskStatus()
-    {
-        // CuiSharp.TaskStatus used to collide with System.Threading.Tasks.TaskStatus:
-        // with both usings in scope, an unqualified TaskStatus was ambiguous. The
-        // binding is renamed CuiTaskStatus, so both names resolve unqualified here.
-        // This file's own namespace would hide the old collision (the enclosing
-        // CuiSharp namespace wins over a using), so UiCompilerTests pins the external
-        // consumer's CS0104; what is pinned here is the ABI and the types staying apart.
-        Assert.NotEqual(typeof(CuiTaskStatus), typeof(TaskStatus));
-
-        // cui_task_status: the ABI numbers the C side casts to.
-        Assert.Equal(0, (int)CuiTaskStatus.Pending);
-        Assert.Equal(1, (int)CuiTaskStatus.Running);
-        Assert.Equal(2, (int)CuiTaskStatus.Done);
-        Assert.Equal(3, (int)CuiTaskStatus.Failed);
-        Assert.Equal(4, (int)CuiTaskStatus.Skipped);
-
-        // The BCL enum keeps its own, different numbering (Canceled = 6, not in CUI).
-        Assert.Equal(0, (int)TaskStatus.Created);
-        Assert.Equal(6, (int)TaskStatus.Canceled);
     }
 
     [Fact]

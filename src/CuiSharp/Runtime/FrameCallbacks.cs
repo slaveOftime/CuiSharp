@@ -119,34 +119,14 @@ internal static unsafe class FrameCallbacks
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     internal static nint TreeLabelThunk(void* user, int node)
     {
-        var live = Features.Live ? Hosting.LiveSession.CurrentThread : null;
-        live?.EnterCallback();
-        try
-        {
-            Holder? holder = HolderOf(user);
-            return holder?.Function is Func<int, string?> label ? Text(holder, label(node)) : 0;
-        }
-        finally
-        {
-            live?.ExitCallback();
-        }
+        Holder? holder = HolderOf(user);
+        return holder?.Function is Func<int, string?> label ? Text(holder, label(node)) : 0;
     }
 
     /// <summary>The tree sorter's <c>int (*cmp)(void *user, int a, int b)</c>.</summary>
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-    internal static int TreeCompareThunk(void* user, int a, int b)
-    {
-        var live = Features.Live ? Hosting.LiveSession.CurrentThread : null;
-        live?.EnterCallback();
-        try
-        {
-            return HolderOf(user)?.Function is Comparison<int> compare ? compare(a, b) : 0;
-        }
-        finally
-        {
-            live?.ExitCallback();
-        }
-    }
+    internal static int TreeCompareThunk(void* user, int a, int b) =>
+        HolderOf(user)?.Function is Comparison<int> compare ? compare(a, b) : 0;
 
     /// <summary>
     /// <c>void (*fn)(cui_ctx *, void *)</c>: the disposer for a per-id state block. The block
@@ -160,16 +140,7 @@ internal static unsafe class FrameCallbacks
         if (data == null) return;
         nint user = *(nint*)data;
         if (user == 0) return;
-        var live = Features.Live ? Hosting.LiveSession.ForContext(ui) : null;
-        live?.EnterCallback();
-        try
-        {
-            if (HolderOf((void*)user)?.Function is Action onFree) onFree();
-        }
-        finally
-        {
-            live?.ExitCallback();
-        }
+        if (HolderOf((void*)user)?.Function is Action onFree) onFree();
     }
 
     /// <summary>The static function pointer a label hook needs.</summary>

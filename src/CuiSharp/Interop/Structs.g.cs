@@ -2541,7 +2541,7 @@ public unsafe struct NativeToolCallOpts
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
     /// <summary>cui_task_status (offset 4)</summary>
-    public CuiTaskStatus Status;
+    public TaskStatus Status;
     /// <summary>const char * (offset 8)</summary>
     public nint Icon;
     /// <summary>const char * (offset 16)</summary>
@@ -2563,7 +2563,7 @@ public unsafe struct NativePlanStep
     /// <summary>const char * (offset 8)</summary>
     public nint Detail;
     /// <summary>cui_task_status (offset 16)</summary>
-    public CuiTaskStatus Status;
+    public TaskStatus Status;
 }
 
 /// <summary>cui_agent_plan_opts, 16 bytes.</summary>
@@ -2583,7 +2583,7 @@ public unsafe struct NativeAgentStatusOpts
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
     /// <summary>cui_task_status (offset 4)</summary>
-    public CuiTaskStatus Status;
+    public TaskStatus Status;
     /// <summary>float (offset 8)</summary>
     public float Seconds;
     /// <summary>const char * (offset 16)</summary>

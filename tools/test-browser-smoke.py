@@ -79,7 +79,7 @@ def evaluate(ws, expression: str, command_id: int, deadline: float, errors: list
     return None, command_id
 
 
-def run(site: Path, timeout_seconds: float, expect_renderer: str) -> str:
+def run(site: Path, timeout_seconds: float) -> None:
     site = site.resolve()
     if not (site / "index.html").is_file():
         raise FileNotFoundError(f"No index.html in published site: {site}")
@@ -151,29 +151,18 @@ def run(site: Path, timeout_seconds: float, expect_renderer: str) -> str:
 
         send("Runtime.enable")
         send("Page.enable")
-        url = base_url + "?page=2&smoke=1"
-        if expect_renderer == "2d":
-            url += "&renderer=software"
-        send("Page.navigate", {"url": url})
+        send("Page.navigate", {"url": base_url + "?page=2&smoke=1"})
 
         expression = """(() => {
           const canvas = document.querySelector('#surface');
           const status = document.querySelector('#status')?.textContent ?? '';
-          const kind = document.documentElement.dataset.renderer;
-          if (!kind || !canvas || !canvas.width || !canvas.height) return JSON.stringify({status, nonBackground: 0});
-          let data;
-          if (kind === '2d') data = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
-          else {
-            const gl = canvas.getContext('webgl2');
-            if (!gl) return JSON.stringify({status, nonBackground: -1, error: 'no webgl2 context'});
-            data = new Uint8Array(canvas.width * canvas.height * 4);
-            gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, data);
-          }
+          if (!canvas || !canvas.width || !canvas.height) return JSON.stringify({status, nonBackground: 0});
+          const data = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
           let nonBackground = 0;
           for (let i = 0; i < data.length; i += 32) {
             if (data[i] !== 248 || data[i + 1] !== 248 || data[i + 2] !== 248) nonBackground++;
           }
-          return JSON.stringify({status, width: canvas.width, height: canvas.height, nonBackground, renderer: kind});
+          return JSON.stringify({status, width: canvas.width, height: canvas.height, nonBackground});
         })()"""
 
         deadline = time.monotonic() + timeout_seconds
@@ -191,21 +180,12 @@ def run(site: Path, timeout_seconds: float, expect_renderer: str) -> str:
                 if "BROWSER-SMOKE-OK" in status:
                     if result.get("nonBackground", 0) < 1000:
                         raise RuntimeError(f"smoke marker reported but canvas was blank: {result}")
-                    # The marker only proves a frame was drawn and input arrived; without this
-                    # the test would pass on the software fallback while the GPU path was
-                    # broken, which is the one thing it cannot notice from the pixels.
-                    renderer = result.get("renderer", "")
-                    if renderer != expect_renderer:
-                        raise RuntimeError(
-                            f"the page rendered with {renderer!r}, expected {expect_renderer!r}: {result}"
-                        )
                     print(
                         "BROWSER-WASM-SMOKE PASS "
                         f"{result.get('width')}x{result.get('height')} "
-                        f"renderer={renderer} "
                         f"nonBackgroundSamples={result.get('nonBackground')}"
                     )
-                    return renderer
+                    break
             if errors:
                 raise RuntimeError("browser error: " + " | ".join(errors[-5:]))
             time.sleep(0.15)
@@ -240,15 +220,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("site", type=Path, help="the published wwwroot directory")
     parser.add_argument("--timeout", type=float, default=45)
-    parser.add_argument(
-        "--renderer",
-        choices=["webgl2", "2d"],
-        default="webgl2",
-        help="the renderer the page must report having used (default: webgl2, the page's default)",
-    )
     args = parser.parse_args()
     try:
-        run(args.site, args.timeout, args.renderer)
+        run(args.site, args.timeout)
         return 0
     except Exception as error:
         print(f"BROWSER-WASM-SMOKE FAIL: {error}", file=sys.stderr)

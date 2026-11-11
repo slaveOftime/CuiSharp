@@ -28,21 +28,6 @@ internal sealed class UiFrameState
     internal readonly TextFieldPool Text = new();
 
     /// <summary>
-    /// Whether the frame drawing right now has called <c>Ui.MarkReady</c>. Cleared at every
-    /// <see cref="Reset"/>, so a frame that goes back to loading is not ready on the strength of
-    /// an earlier frame's mark.
-    /// </summary>
-    internal bool FrameReady;
-
-    /// <summary>
-    /// Whether the latest completed frame was ready. Published at the very end of
-    /// <c>EndFrame</c> — after CUI's deferred painters and the recorder are done — so a mark
-    /// made from a painter counts for the frame being painted, and mid-frame a reader still
-    /// sees the previous completed frame's verdict.
-    /// </summary>
-    internal bool LastFrameReady;
-
-    /// <summary>
     /// The name table this surface published. Kept for two reasons: it is what keeps the table's
     /// unmanaged block alive while CUI holds the pointer, and it is the one that is asked for the
     /// new block when a name changed.
@@ -113,14 +98,11 @@ internal sealed class UiFrameState
         Localization = null;
         LocalizationBlock = 0;
         _localizationClear = false;
-        FrameReady = false;
-        LastFrameReady = false;
         FreeRetired();
     }
 
     internal void Reset()
     {
-        FrameReady = false;
         Painters.Clear();
         ReorderOrder = null;
         unsafe { ReorderStorage = null; }

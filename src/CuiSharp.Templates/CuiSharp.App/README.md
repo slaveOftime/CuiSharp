@@ -218,7 +218,7 @@ The app is inspectable and clickable as it runs, which is what makes it workable
 agent as well as a person:
 
 ```sh
-dotnet tool install -g CuiSharp.Tools    # exposes `dotnet cui`
+dotnet tool install -g CuiSharp.Tools
 dotnet cui tree --project CuiSharp.App    # the controls of the last frame, nested
 dotnet cui click Dark                     # a control, by the label the tree printed
 dotnet cui png shot.png                   # the frame as a PNG

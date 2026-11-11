@@ -16,15 +16,13 @@ public unsafe ref struct LayoutScope : IDisposable
     /// <param name="end">The native call that closes this container, e.g. <c>&amp;Native.BoxEnd</c>.</param>
     /// <param name="name">The wrapper that opened it, for a recorded tree.</param>
     /// <param name="id">The name the app gave it, if any: only a named container is a node.</param>
-    /// <param name="nativeId">The id CUI returned for this container, when its begin reports one.</param>
-    /// <param name="deriveNamedId">True when CUI derives the id purely from the name (cui_make_id) but returns void.</param>
-    internal LayoutScope(nint ui, delegate*<nint, void> end, string name, string? id = null, uint? nativeId = null, bool deriveNamedId = false)
+    internal LayoutScope(nint ui, delegate*<nint, void> end, string name, string? id = null)
     {
         _ui = ui;
         _end = end;
         // Recorded widgets are a tree, and the tree is the nesting the app wrote: a widget
         // drawn inside this container is one level deeper than the container itself.
-        WidgetRecorder.Push(ui, name, id, nativeId, deriveNamedId);
+        WidgetRecorder.Push(ui, name, id);
     }
 
     /// <param name="ui">The frame the container belongs to.</param>
@@ -32,12 +30,11 @@ public unsafe ref struct LayoutScope : IDisposable
     /// <param name="name">The wrapper that opened it, for a recorded tree.</param>
     /// <param name="id">The markup id the app gave it: the name a test finds it by.</param>
     /// <param name="nativeId">Explicit id for a container that sets last_id only when it closes.</param>
-    /// <param name="deriveNamedId">Use the same name-derived id as native rather than last_id.</param>
-    internal LayoutScope(nint ui, delegate*<nint, void> end, string name, UiText id, uint? nativeId = null, bool deriveNamedId = false)
+    internal LayoutScope(nint ui, delegate*<nint, void> end, string name, UiText id, uint? nativeId = null)
     {
         _ui = ui;
         _end = end;
-        WidgetRecorder.Push(ui, name, id, nativeId, deriveNamedId);
+        WidgetRecorder.Push(ui, name, id, nativeId);
     }
 
     /// <summary>Closes this container. Disposing the same instance again does nothing.</summary>
@@ -56,16 +53,16 @@ public unsafe ref struct OpenScope : IDisposable
 {
     private LayoutScope _scope;
 
-    internal OpenScope(nint ui, delegate*<nint, void> end, string name, string? id, bool open, uint? nativeId = null, bool deriveNamedId = false)
+    internal OpenScope(nint ui, delegate*<nint, void> end, string name, string? id, bool open)
     {
         Open = open;
-        _scope = open ? new LayoutScope(ui, end, name, id, nativeId, deriveNamedId) : default;
+        _scope = open ? new LayoutScope(ui, end, name, id) : default;
     }
 
-    internal OpenScope(nint ui, delegate*<nint, void> end, string name, UiText id, bool open, uint? nativeId = null, bool deriveNamedId = false)
+    internal OpenScope(nint ui, delegate*<nint, void> end, string name, UiText id, bool open, uint? nativeId = null)
     {
         Open = open;
-        _scope = open ? new LayoutScope(ui, end, name, id, nativeId, deriveNamedId) : default;
+        _scope = open ? new LayoutScope(ui, end, name, id, nativeId) : default;
     }
 
     /// <summary>Whether the native container opened and its body should be drawn.</summary>

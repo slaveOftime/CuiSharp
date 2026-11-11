@@ -36,7 +36,6 @@ product: `dotnet run` keeps the headless channel and the framework's exception m
 |---|---|---|
 | `CuiSharpSizeProfile` | `true` for an AOT publish | the diagnostic switches below, as a set |
 | `CuiSharpHeadless` | `false` for an AOT publish, `true` otherwise | the protocol `dotnet cui` drives an app with |
-| `CuiSharpLive` | `false` for an AOT publish, `true` otherwise | the Windows live named-pipe channel; runtime opt-in is still required |
 | `CuiSharpVerboseErrors` | `false` | keeps framework exception messages and stack traces |
 
 The set also turns `DebuggerSupport` off, which drops the debug header an AOT binary otherwise
@@ -70,9 +69,6 @@ by a few hundred bytes; the mini template sets the properties that keep that pub
 
 `dotnet cui` passes `-p:CuiSharpHeadless=true` to the builds it runs itself, and says so when a
 **published** app has no channel: publishing one for a tool to inspect needs the same property.
-For live-window attach, publish with `-p:CuiSharpLive=true`, then enable the listener at runtime
-with `--live`, `CUISHARP_LIVE=1`, or `CuiAppOptions.LiveAttach`. Both IPC channels are excluded
-from an ordinary AOT publish; merely not opening a listener does not let the trimmer remove it.
 
 ## What a feature costs
 

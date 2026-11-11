@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using CuiSharp.Interop;
 
 namespace CuiSharp.Hosting;
@@ -118,155 +117,6 @@ public class HeadlessApp : IDisposable
 
     /// <summary>Exceptions a component threw while drawing; an empty list is a healthy frame.</summary>
     public IReadOnlyList<string> Faults => _faults;
-
-    /// <summary>
-    /// Whether the latest completed frame declared its data ready with
-    /// <see cref="Ui.MarkReady"/>. A frame that did not mark itself is not ready, whatever the
-    /// frame before it claimed.
-    /// </summary>
-    public bool Ready => _surface.LastFrameReady;
-
-    /// <summary>
-    /// The gap between the frames of a bounded wait. Frames are free but not instant, and a wait
-    /// that never sleeps turns into a busy spin between real draws; a few milliseconds keeps the
-    /// core honest without making a satisfied wait slow.
-    /// </summary>
-    private static readonly TimeSpan WaitPace = TimeSpan.FromMilliseconds(2);
-
-    /// <summary>
-    /// Draws real frames until one completes that called <see cref="Ui.MarkReady"/>, or until
-    /// <paramref name="timeout"/> has passed on the wall clock. Every frame drains completed
-    /// background work first, so data that arrives on a pool thread becomes visible on the frame
-    /// that draws after it — which is what a wait is for. The latest completed frame may answer
-    /// without another one being drawn: a wait that needs no frames reports <see cref="WaitOutcome.Frames"/>
-    /// of 0 — and a window already spent when the first frame would have started is a miss that
-    /// drew nothing. A draw cannot be interrupted, but a condition that turns true only after the
-    /// window has passed is reported as a miss, not as a late success.
-    /// </summary>
-    /// <param name="timeout">How long to keep drawing. Must be finite and positive.</param>
-    /// <param name="cancellationToken">
-    /// Ends the wait early: it is asked before anything draws, after every draw (ahead of the
-    /// frame's own verdict), and after pacing before the next frame begins.
-    /// </param>
-    public WaitOutcome WaitReady(TimeSpan timeout, CancellationToken cancellationToken = default) =>
-        Wait(() => Ready, timeout, cancellationToken);
-
-    /// <summary>
-    /// Draws real frames until one draws a control that answers <paramref name="query"/> (the
-    /// same vocabulary as <see cref="Find(string)"/>), or until <paramref name="timeout"/> passes.
-    /// The latest completed frame is asked first, so a wait for what is already on screen draws
-    /// no frames at all.
-    /// </summary>
-    /// <param name="query">The label, kind-and-label or path to wait for, taken verbatim.</param>
-    /// <param name="timeout">How long to keep drawing. Must be finite and positive.</param>
-    /// <param name="cancellationToken">
-    /// Ends the wait early: it is asked before anything draws, after every draw (ahead of the
-    /// frame's own verdict), and after pacing before the next frame begins.
-    /// </param>
-    public WaitOutcome WaitFor(string query, TimeSpan timeout, CancellationToken cancellationToken = default)
-    {
-        ArgumentException.ThrowIfNullOrEmpty(query);
-        return Wait(() => TryFind(query, out _), timeout, cancellationToken);
-    }
-
-    /// <summary>
-    /// The wait both public waits share: ask the completed frame, then draw, look, stop by the
-    /// clock. The condition is read only between completed frames, so it never observes a
-    /// half-drawn frame, and nothing here touches a <see cref="Ui"/> from another thread —
-    /// background results arrive because the next frame drains them, not because this loop polls
-    /// them.
-    /// </summary>
-    private WaitOutcome Wait(Func<bool> condition, TimeSpan timeout, CancellationToken cancellationToken)
-    {
-        // The clock starts before the first look: asking the latest completed frame is real
-        // work, and a window spent by it is a miss that drew nothing — never a zero-frame success.
-        var clock = Stopwatch.StartNew();
-        return Wait(condition, timeout, cancellationToken, () => clock.Elapsed, Thread.Sleep);
-    }
-
-    /// <summary>
-    /// The loop with its clock and its pacing handed to it. The public waits read the wall clock
-    /// and sleep for real; a test hands the same loop a clock and a pace it controls, so the
-    /// instant a pace lands on the deadline — cancellation inside it included — is staged rather
-    /// than raced. Nothing else differs: the token is asked before every frame and before an
-    /// expired window is reported, and the deadline is asked before every frame, the loop's
-    /// first included.
-    /// </summary>
-    internal WaitOutcome Wait(
-        Func<bool> condition,
-        TimeSpan timeout,
-        CancellationToken cancellationToken,
-        Func<TimeSpan> elapsed,
-        Action<TimeSpan> pace)
-    {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(timeout, TimeSpan.Zero);
-
-        // The token first: a wait that is already abandoned must not draw even one frame.
-        cancellationToken.ThrowIfCancellationRequested();
-
-        // A frame already completed may answer without another being drawn; the window still
-        // governs, so a look that spent it reports a miss, not a zero-frame success.
-        if (condition()) return new WaitOutcome(elapsed() < timeout, 0, elapsed());
-
-        int frames = 0;
-        while (true)
-        {
-            // Both bounds are asked before every frame, this loop's first included: an
-            // abandoned wait draws nothing, and neither does one whose window passed while the
-            // last verdict was believed or a pace was being taken. The token is asked first,
-            // so a cancellation that arrived during the final pace outranks a clock that
-            // expired in the same instant.
-            cancellationToken.ThrowIfCancellationRequested();
-            TimeSpan spent = elapsed();
-            if (spent >= timeout) return new WaitOutcome(false, frames, spent);
-
-            Frame();
-            frames++;
-
-            // The token is asked before the frame's verdict is believed: a callback that
-            // abandoned the wait and marked ready in the same breath has abandoned it.
-            cancellationToken.ThrowIfCancellationRequested();
-
-            bool satisfied = condition();
-            spent = elapsed();
-
-            // A synchronous draw cannot be interrupted, but an answer that turns true only
-            // after the window has passed is a miss, not a success reported after expiry.
-            if (satisfied) return new WaitOutcome(spent < timeout, frames, spent);
-
-            // Pace toward the next frame without pacing past the deadline; the loop head then
-            // asks the token before it reports the spent window, and draws nothing.
-            TimeSpan remaining = timeout - spent;
-            if (remaining > TimeSpan.Zero) pace(remaining < WaitPace ? remaining : WaitPace);
-        }
-    }
-
-    /// <summary>What a bounded wait cost: whether the frame arrived, and how much it took.</summary>
-    public readonly struct WaitOutcome
-    {
-        internal WaitOutcome(bool satisfied, int frames, TimeSpan elapsed)
-        {
-            Satisfied = satisfied;
-            Frames = frames;
-            Elapsed = elapsed;
-        }
-
-        /// <summary>Whether a frame answering the wait appeared within the timeout.</summary>
-        public bool Satisfied { get; }
-
-        /// <summary>How many real frames the app drew while waiting; 0 when the completed frame
-        /// answered, or when the window was through before the wait's first frame.</summary>
-        public int Frames { get; }
-
-        /// <summary>The wall clock spent drawing them.</summary>
-        public TimeSpan Elapsed { get; }
-
-        /// <inheritdoc />
-        public override string ToString() => Satisfied
-            ? $"satisfied after {Frames} frames in {Elapsed.TotalSeconds:0.###}s"
-            : $"not satisfied after {Frames} frames in {Elapsed.TotalSeconds:0.###}s";
-    }
 
     /// <summary>The component being drawn, if this app draws one.</summary>
     public Component? Root => _root;
@@ -629,12 +479,6 @@ public class HeadlessApp : IDisposable
 
     /// <summary>The last frame's tree as text, which is also what <see cref="ToString"/> gives.</summary>
     public string Print(bool rects = false) => Tree.Print(rects);
-
-    /// <summary>
-    /// The <see cref="LayoutFormatter"/> view of the last frame: verified rectangles, observed
-    /// bounds labelled as the lower bounds they are, and unknown extents named as unknowns.
-    /// </summary>
-    public string PrintLayout() => LayoutFormatter.Print(Tree);
 
     /// <inheritdoc />
     public override string ToString() => Print();

@@ -4,7 +4,7 @@ Every user-visible change, newest first. Pre-1.0 the minor number carries new su
 carries fixes. The section for a tag is what the GitHub release publishes, so the two cannot say
 different things.
 
-## [0.4.0] — unreleased
+## [0.4.0] — 2026-11-11
 
 The gallery now draws everything CUI ships, and a published binary carries only what it uses.
 

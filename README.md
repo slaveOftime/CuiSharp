@@ -213,7 +213,7 @@ nested loops and while/do loops need explicit keys. The other rules still requir
 ```sh
 dotnet add package CuiSharp              # library + analyzers + cui.dll/cui.lib
 dotnet add package CuiSharp.Testing      # tests only
-dotnet tool install -g CuiSharp.Tools    # exposes `dotnet cui`
+dotnet tool install -g CuiSharp.Tools    # the `cui` command
 ```
 
 ```xml

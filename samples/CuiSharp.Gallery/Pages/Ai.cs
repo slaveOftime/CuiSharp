@@ -75,7 +75,7 @@ internal sealed partial class GalleryApp
                 {
                     Icon = Icons.Globe,
                     Detail = "immediate mode gui performance",
-                    Status = CuiTaskStatus.Done,
+                    Status = TaskStatus.Done,
                     Seconds = 1.4f,
                     Input = """{"query": "immediate mode gui performance", "limit": 5}""",
                     Output = """{"results": [{"title": "Immediate mode GUIs", "url": "https://fieldnotes.dev/immediate-mode"}], "took_ms": 1380}""",
@@ -84,10 +84,10 @@ internal sealed partial class GalleryApp
                 {
                     Icon = Icons.FileText,
                     Detail = "quarterly-report.pdf",
-                    Status = _aiBusy ? CuiTaskStatus.Running : CuiTaskStatus.Done,
+                    Status = _aiBusy ? TaskStatus.Running : TaskStatus.Done,
                     Seconds = _aiBusy ? elapsed : 2.1f,
                 });
-                if (_aiBusy) ui.AgentStatus("Reading quarterly-report.pdf", new AgentStatusOpts { Status = CuiTaskStatus.Running, Seconds = elapsed });
+                if (_aiBusy) ui.AgentStatus("Reading quarterly-report.pdf", new AgentStatusOpts { Status = TaskStatus.Running, Seconds = elapsed });
                 ui.Typewriter("answer",
                     "They do very little work per frame: the interface is rebuilt from your data, laid out once and drawn in a " +
                     "handful of batches, so there is no tree of objects to keep in sync. Text is the expensive part, which is " +
@@ -144,11 +144,11 @@ internal sealed partial class GalleryApp
             using (ui.Column(new Box { Width = Size.Grow(1), Gap = 14 }))
             {
                 Section(ui, "Agent plan", "Steps and their status.");
-                _aiSteps[0] = new PlanStep("Search for sources", "3 results", CuiTaskStatus.Done);
-                _aiSteps[1] = new PlanStep("Read the attached report", _aiBusy ? "Page 12 of 40" : "40 pages", _aiBusy ? CuiTaskStatus.Running : CuiTaskStatus.Done);
-                _aiSteps[2] = new PlanStep("Compare the numbers with last quarter", null, _aiBusy ? CuiTaskStatus.Pending : CuiTaskStatus.Done);
-                _aiSteps[3] = new PlanStep("Draft the summary", null, _aiBusy ? CuiTaskStatus.Pending : CuiTaskStatus.Running);
-                _aiSteps[4] = new PlanStep("Check the citations", null, CuiTaskStatus.Pending);
+                _aiSteps[0] = new PlanStep("Search for sources", "3 results", TaskStatus.Done);
+                _aiSteps[1] = new PlanStep("Read the attached report", _aiBusy ? "Page 12 of 40" : "40 pages", _aiBusy ? TaskStatus.Running : TaskStatus.Done);
+                _aiSteps[2] = new PlanStep("Compare the numbers with last quarter", null, _aiBusy ? TaskStatus.Pending : TaskStatus.Done);
+                _aiSteps[3] = new PlanStep("Draft the summary", null, _aiBusy ? TaskStatus.Pending : TaskStatus.Running);
+                _aiSteps[4] = new PlanStep("Check the citations", null, TaskStatus.Pending);
                 ui.AgentPlan("plan", _aiSteps, new AgentPlanOpts { Title = "Research plan" });
 
                 Section(ui, "Voice", "Idle, listening, thinking and speaking.");

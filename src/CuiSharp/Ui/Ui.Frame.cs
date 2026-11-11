@@ -24,25 +24,6 @@ public unsafe ref partial struct Ui
     /// <summary>Device pixels per logical point for the window this frame draws into.</summary>
     public float DpiScale => Native.DpiScale(Handle);
 
-    // ---- readiness ---------------------------------------------------------
-
-    /// <summary>
-    /// Declares that this frame shows complete, current app data. This is what
-    /// <c>dotnet cui --wait ready</c> waits for: readiness is a property of the frame that marks
-    /// it, so the next frame starts unready and a screen that goes back to loading is never seen
-    /// as ready on the strength of an older mark.
-    /// </summary>
-    /// <remarks>
-    /// Mark it in the branch that decides the frame has drawn everything it was waiting for.
-    /// This is not the headless banner, which only says the channel is open, and not an animation
-    /// settling — it is the app's own claim about its own data.
-    /// </remarks>
-    /// <example><code>
-    /// ui.Label(page.Data);
-    /// if (page.IsLoaded) ui.MarkReady();
-    /// </code></example>
-    public void MarkReady() => _frame.FrameReady = true;
-
     // ---- pointer and keyboard ---------------------------------------------
 
     /// <summary>Pointer position in points, top-left origin.</summary>

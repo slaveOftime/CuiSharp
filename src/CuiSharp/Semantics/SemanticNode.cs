@@ -22,9 +22,7 @@ public sealed class SemanticNode
 {
     private readonly List<SemanticNode> _children = [];
 
-    private SemanticNode(
-        string kind, string text, RectF rect, int depth, SemanticNode? parent, uint id = 0,
-        bool hasOwnRect = false, bool detached = false, int layer = 0)
+    private SemanticNode(string kind, string text, RectF rect, int depth, SemanticNode? parent, uint id = 0)
     {
         Kind = kind;
         Text = text;
@@ -32,9 +30,6 @@ public sealed class SemanticNode
         Depth = depth;
         Parent = parent;
         Id = id;
-        HasOwnRect = hasOwnRect;
-        Detached = detached;
-        Layer = layer;
     }
 
     /// <summary>The wrapper that drew it: <c>Button</c>, <c>Input</c>, <c>Card</c>.</summary>
@@ -60,28 +55,6 @@ public sealed class SemanticNode
     /// the widget derived for that item. Unrelated to the label, so it survives translation.
     /// </summary>
     public uint Id { get; }
-
-    /// <summary>
-    /// True when the recorded id is one CUI laid this very widget out under, so its rect is its
-    /// own. False means the id may belong to whatever was drawn before it: the rect is a hint,
-    /// not a fact. This is geometry provenance, unrelated to how queries rank the node.
-    /// </summary>
-    public bool HasOwnRect { get; }
-
-    /// <summary>
-    /// True when CUI draws this node on a floating layer of its own — a dialog, popover, menu,
-    /// tooltip, toast or tour. The tree keeps it where the app drew it, but its geometry belongs
-    /// to its own layer and says nothing about the bounds of its nesting ancestors.
-    /// </summary>
-    public bool Detached { get; }
-
-    /// <summary>
-    /// The native layout layer this node was drawn on: 0 for the frame's own flow, one higher
-    /// for every floating scope enclosing it. An unnamed floating scope records no node, so
-    /// this is how its contents stay attributed to their own layer even while the tree keeps
-    /// them where the app drew them.
-    /// </summary>
-    internal int Layer { get; }
 
     /// <summary>True when the app drew something inside it, so it can be a parent.</summary>
     public bool IsContainer { get; private set; }
@@ -268,15 +241,11 @@ public sealed class SemanticNode
 
             if (!entry.IsContainer)
             {
-                open[^1]._children.Add(new SemanticNode(
-                    entry.Kind, entry.Text, entry.Rect, entry.Depth, open[^1], entry.Id,
-                    entry.HasOwnRect, entry.Detached, entry.Layer));
+                open[^1]._children.Add(new SemanticNode(entry.Kind, entry.Text, entry.Rect, entry.Depth, open[^1], entry.Id));
                 continue;
             }
 
-            var container = new SemanticNode(
-                entry.Kind, entry.Text, entry.Rect, entry.Depth, open[^1], entry.Id,
-                entry.HasOwnRect, entry.Detached, entry.Layer)
+            var container = new SemanticNode(entry.Kind, entry.Text, entry.Rect, entry.Depth, open[^1], entry.Id)
             {
                 IsContainer = true,
             };

@@ -101,40 +101,23 @@ public unsafe ref partial struct Ui
 
     private void ChartOne(UiText id, ReadOnlySpan<float> values, ChartOpts o, Color color, bool line)
     {
-        // An invalid mode is a caller error, not an empty-feed state: check it before the
-        // empty shortcut so a bogus mode cannot ride the "draws nothing" path.
-        if (o.Normalize != NormalizeMode.None) ChartNormalizer.ValidateMode(o.Normalize);
-
         // An empty span is a normal state (a feed that has not arrived yet) and it
         // must draw nothing: passing it on would give the chart a zero-length series.
         if (values.IsEmpty) return;
-
-        // Normalization validates and measures the whole clipped source before decimation
-        // (a decimated-away NaN must not evade validation) and scales the retained arena
-        // points after it, so the cost tracks the source once and the scale once.
-        float baseline = o.Normalize == NormalizeMode.None
-            ? 0f
-            : ChartNormalizer.ValidateAndFindBaseline(values);
 
         int maxPoints = o.MaxPoints > 0 ? o.MaxPoints : Math.Max(64, (int)(ViewportSize().X * 2));
         int buckets = Math.Max(1, maxPoints / 2);
         int capacity = SeriesDecimator.RequiredCapacity(buckets);
 
-        // Decimation needs the bucket capacity; a pass-through needs exactly its own
-        // length. Reserving the smaller of the two and writing the larger walked past
-        // the block whenever a pass-through count exceeded an odd maxPoints' capacity.
-        bool decimate = values.Length > maxPoints;
         int count;
-        float* block = Utf8.AllocFrame<float>(Math.Max(1, decimate ? capacity : values.Length));
-        if (decimate)
+        float* block = Utf8.AllocFrame<float>(Math.Max(1, Math.Min(values.Length, capacity)));
+        if (values.Length > maxPoints)
             count = SeriesDecimator.Decimate(values, new Span<float>(block, capacity), buckets);
         else
         {
             count = values.Length;
             values.CopyTo(new Span<float>(block, count));
         }
-        if (o.Normalize != NormalizeMode.None)
-            ChartNormalizer.Scale(new Span<float>(block, count), baseline, o.Normalize);
 
         var native = (NativeSeries*)Arena(sizeof(NativeSeries));
         native[0] = new NativeSeries
@@ -155,9 +138,6 @@ public unsafe ref partial struct Ui
 
     private void Chart(UiText id, Series[] series, ChartOpts o, bool line)
     {
-        // Same rule as ChartOne: an invalid mode fails even when every series is empty.
-        if (o.Normalize != NormalizeMode.None) ChartNormalizer.ValidateMode(o.Normalize);
-
         int maxPoints = o.MaxPoints > 0 ? o.MaxPoints : Math.Max(64, (int)(ViewportSize().X * 2));
         int buckets = Math.Max(1, maxPoints / 2);
         int capacity = SeriesDecimator.RequiredCapacity(buckets);
@@ -173,23 +153,12 @@ public unsafe ref partial struct Ui
                 : default;
             if (values.IsEmpty) { native[i] = default; continue; }
 
-            // Baseline and validation see the Count-clipped source, before decimation
-            // hides anything; the scale below sees only the retained arena points.
-            float baseline = o.Normalize == NormalizeMode.None
-                ? 0f
-                : ChartNormalizer.ValidateAndFindBaseline(values);
-
             int count = values.Length;
-            // Exact length for a pass-through, bucket capacity only when decimating;
-            // see ChartOne for what mixing the two did to the arena's neighbors.
-            bool decimate = count > maxPoints;
-            float* block = Utf8.AllocFrame<float>(Math.Max(1, decimate ? capacity : count));
-            if (decimate)
+            float* block = Utf8.AllocFrame<float>(Math.Max(1, Math.Min(count, capacity)));
+            if (count > maxPoints)
                 count = SeriesDecimator.Decimate(values, new Span<float>(block, capacity), buckets);
             else
                 values.CopyTo(new Span<float>(block, count));
-            if (o.Normalize != NormalizeMode.None)
-                ChartNormalizer.Scale(new Span<float>(block, count), baseline, o.Normalize);
 
             native[i] = new NativeSeries
             {
@@ -207,14 +176,6 @@ public unsafe ref partial struct Ui
 
     public void DonutChart(UiText id, float[] values, string[]? labels = null, ChartOpts o = default)
     {
-        // Slices are the values themselves; there is no series-vs-baseline relation a
-        // normalization could mean. Fail loudly rather than draw an unnormalized donut
-        // that the caller believes is rebased.
-        if (o.Normalize != NormalizeMode.None)
-            throw new ArgumentException(
-                "Normalize scales line and bar series against a baseline; a donut's slices are its values - use it with LineChart or BarChart only",
-                nameof(o));
-
         o.Labels = labels;
         var opts = o.ToNative();
         Native.DonutChart(Handle, Utf8.Get(id), (nint)FloatBlock(values), opts.Labels, values.Length, in opts);

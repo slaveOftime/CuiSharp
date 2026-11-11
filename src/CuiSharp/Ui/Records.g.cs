@@ -3638,9 +3638,9 @@ public unsafe partial struct PlanStep
     /// <summary>const char * detail</summary>
     public string? Detail;
     /// <summary>cui_task_status status</summary>
-    public CuiTaskStatus Status;
+    public TaskStatus Status;
 
-    public PlanStep(string? Title, string? Detail = null, CuiTaskStatus Status = default) { this.Title = Title; this.Detail = Detail; this.Status = Status; }
+    public PlanStep(string? Title, string? Detail = null, TaskStatus Status = default) { this.Title = Title; this.Detail = Detail; this.Status = Status; }
 
     internal readonly NativePlanStep ToNative() => new()
     {

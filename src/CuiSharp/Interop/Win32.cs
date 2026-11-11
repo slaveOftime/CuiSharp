@@ -11,18 +11,12 @@ internal static unsafe partial class Win32
     internal const int SwMinimize = 6;
     internal const int SwRestore = 9;
 
-    internal const uint WmDestroy = 0x0002;
     internal const uint WmSize = 0x0005;
-    internal const uint WmTimer = 0x0113;
     internal const uint WmPaint = 0x000F;
     internal const uint WmClose = 0x0010;
     internal const uint WmNcDestroy = 0x0082;
-    internal const uint WmApp = 0x8000;
     internal const uint WmEnterSizeMove = 0x0231;
     internal const uint WmExitSizeMove = 0x0232;
-
-    /// <summary>The parent that makes a window message-only: it exists to receive messages, not to show.</summary>
-    internal static readonly nint HWNDMessage = -3;
 
     private const int GwlWndProc = -4;
     private const int GwlUserData = -21;
@@ -150,76 +144,6 @@ internal static unsafe partial class Win32
         int length = GetClassName(hwnd, name, 64);
         return length == 9 && new ReadOnlySpan<char>(name, 9).SequenceEqual("CUIWindow");
     }
-
-    /// <summary>WNDCLASSW, with the two string fields as raw pointers the caller keeps alive across the call.</summary>
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct WndClass
-    {
-        internal uint Style;
-        internal nint WndProc;
-        internal int CbClsExtra;
-        internal int CbWndExtra;
-        internal nint Instance;
-        internal nint Icon;
-        internal nint Cursor;
-        internal nint Background;
-        internal nint MenuName;
-        internal nint ClassName;
-    }
-
-    /// <summary>ATOM RegisterClassW(const WNDCLASSW*).</summary>
-    [LibraryImport("user32.dll", EntryPoint = "RegisterClassW", SetLastError = true)]
-    internal static partial ushort RegisterClass(in WndClass wc);
-
-    /// <summary>HWND CreateWindowExW(...).</summary>
-    [LibraryImport("user32.dll", EntryPoint = "CreateWindowExW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
-    internal static partial nint CreateWindowEx(
-        int exStyle, string className, string windowName, int style,
-        int x, int y, int width, int height,
-        nint parent, nint menu, nint instance, nint param);
-
-    /// <summary>UINT_PTR SetTimer(HWND, UINT_PTR, UINT, TIMERPROC): NULL proc posts WM_TIMER to the window procedure.</summary>
-    [LibraryImport("user32.dll", EntryPoint = "SetTimer")]
-    internal static partial nint SetTimer(nint hwnd, nint eventId, uint elapsedMs, nint proc);
-
-    /// <summary>BOOL KillTimer(HWND, UINT_PTR).</summary>
-    [LibraryImport("user32.dll", EntryPoint = "KillTimer")]
-    internal static partial int KillTimer(nint hwnd, nint eventId);
-
-    /// <summary>BOOL DestroyWindow(HWND).</summary>
-    [LibraryImport("user32.dll", EntryPoint = "DestroyWindow")]
-    internal static partial int DestroyWindow(nint hwnd);
-
-    /// <summary>MSG, the subset a pump loop reads.</summary>
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct Msg
-    {
-        internal nint Hwnd;
-        internal uint Message;
-        internal nint WParam;
-        internal nint LParam;
-        internal uint Time;
-        internal int PtX;
-        internal int PtY;
-    }
-
-    internal const uint PmRemove = 1;
-
-    /// <summary>BOOL PeekMessageW(MSG*, HWND, UINT, UINT, UINT).</summary>
-    [LibraryImport("user32.dll", EntryPoint = "PeekMessageW")]
-    internal static partial int PeekMessage(out Msg msg, nint hwnd, uint min, uint max, uint remove);
-
-    /// <summary>LRESULT DispatchMessageW(const MSG*).</summary>
-    [LibraryImport("user32.dll", EntryPoint = "DispatchMessageW")]
-    internal static partial nint DispatchMessage(in Msg msg);
-
-    /// <summary>LRESULT DefWindowProcW(HWND, UINT, WPARAM, LPARAM).</summary>
-    [LibraryImport("user32.dll", EntryPoint = "DefWindowProcW")]
-    internal static partial nint DefWindowProc(nint hwnd, uint message, nint wparam, nint lparam);
-
-    /// <summary>BOOL UnregisterClassW(LPCWSTR, HINSTANCE).</summary>
-    [LibraryImport("user32.dll", EntryPoint = "UnregisterClassW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
-    internal static partial int UnregisterClass(string className, nint instance);
 
     /// <summary>Replaces the window procedure, returning the one CUI installed.</summary>
     internal static nint HookWindowProc(nint hwnd, nint replacement) =>

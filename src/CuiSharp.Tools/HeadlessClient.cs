@@ -36,19 +36,17 @@ internal sealed class HeadlessClient : IDisposable
     internal const int MaxLineBytes = 4096;
 
     private readonly Process? _process;
-    private readonly bool _ownsProcess;
     private readonly Stream _out;
     private readonly Stream _in;
     private readonly TailBuffer _errors = new();
 
-    private HeadlessClient(Process? process, bool ownsProcess, Stream output, Stream input, Action<string>? echo)
+    private HeadlessClient(Process? process, Stream output, Stream input, Action<string>? echo)
     {
         Noise = echo;
         _process = process;
-        _ownsProcess = ownsProcess;
         _out = output;
         _in = input;
-        if (process is null || !ownsProcess) return;
+        if (process is null) return;
 
         process.ErrorDataReceived += (_, e) =>
         {
@@ -98,10 +96,6 @@ internal sealed class HeadlessClient : IDisposable
             RedirectStandardError = true,
             UseShellExecute = false,
             StandardInputEncoding = new UTF8Encoding(false),
-            // The app's stderr is diagnostics a person must be able to read, and on Windows the
-            // console code page would mangle a non-English message into question marks. stdout
-            // stays raw bytes: that is the protocol, and its byte counts are the contract.
-            StandardErrorEncoding = new UTF8Encoding(false),
         };
         foreach (string argument in arguments) info.ArgumentList.Add(argument);
         info.Environment[CuiSharpEnvironmentVariable] = "1";
@@ -109,7 +103,6 @@ internal sealed class HeadlessClient : IDisposable
         Process process = Process.Start(info) ?? throw new ToolException($"Could not start {host}.");
         var client = new HeadlessClient(
             process,
-            ownsProcess: true,
             process.StandardOutput.BaseStream,
             process.StandardInput.BaseStream,
             echo);
@@ -127,7 +120,7 @@ internal sealed class HeadlessClient : IDisposable
 
     /// <summary>
     /// A client over streams instead of a child process: what the protocol's own tests speak, and
-    /// what an embedder or live named-pipe session uses.
+    /// what an embedder driving a channel of its own can use.
     /// </summary>
     internal static HeadlessClient Attach(
         Stream output,
@@ -135,10 +128,9 @@ internal sealed class HeadlessClient : IDisposable
         Action<string>? echo = null,
         TimeSpan? readyTimeout = null,
         TimeSpan? answerTimeout = null,
-        Process? process = null,
         CancellationToken cancellation = default)
     {
-        var client = new HeadlessClient(process, ownsProcess: false, output, input, echo)
+        var client = new HeadlessClient(null, output, input, echo)
         {
             ReadyTimeout = readyTimeout ?? TimeSpan.FromSeconds(60),
             AnswerTimeout = answerTimeout ?? TimeSpan.FromMinutes(1),
@@ -156,7 +148,7 @@ internal sealed class HeadlessClient : IDisposable
         var skipped = new StringBuilder();
         while (true)
         {
-            string line = ReadLine(timeout.Token, Waiting.Ready, ReadyTimeout);
+            string line = ReadLine(timeout.Token, Waiting.Ready);
             if (line.StartsWith("CUI-READY ", StringComparison.Ordinal))
             {
                 string[] parts = line.Split(' ');
@@ -204,44 +196,33 @@ internal sealed class HeadlessClient : IDisposable
         }
     }
 
-    /// <summary>
-    /// Sends one command and reads its answer.
-    /// </summary>
-    /// <param name="answerTimeout">
-    /// A deadline for this one answer, for a caller that knows the command waits on something:
-    /// <c>wait</c> answers no later than its own timeout, so the client has to listen past it.
-    /// Null keeps <see cref="AnswerTimeout"/>, whose minute says a plain frame that long is a
-    /// deadlock. The deadline governs every read of the answer — header, payload and delimiter —
-    /// and a timeout names it, so the message says which wait ran out rather than quoting a
-    /// default the command never had.
-    /// </param>
-    internal Answer Send(string command, CancellationToken cancellation = default, TimeSpan? answerTimeout = null)
+    /// <summary>Sends one command and reads its answer.</summary>
+    internal Answer Send(string command, CancellationToken cancellation = default)
     {
         byte[] bytes = Encoding.UTF8.GetBytes(command + "\n");
         _in.Write(bytes);
         _in.Flush();
 
-        TimeSpan deadline = answerTimeout ?? AnswerTimeout;
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
-        timeout.CancelAfter(deadline);
-        string header = ReadHeader(timeout.Token, deadline);
+        timeout.CancelAfter(AnswerTimeout);
+        string header = ReadHeader(timeout.Token);
         // The status is in the header, not in whether it parsed: CUI-ERR is a well-formed answer
         // that says the command failed, and reading it as success prints an error to stdout and
         // exits 0, which no script can tell from a good run.
         TryParseHeader(header, out bool ok, out int length);
-        string payload = ReadExactly(length, timeout.Token, deadline);
+        string payload = ReadExactly(length, timeout.Token);
         // The answer ends with a newline so a person reading the raw stream sees one answer per
         // block; consume it or the next header would look empty.
-        ReadLine(timeout.Token, Waiting.Answer, deadline);
+        ReadLine(timeout.Token, Waiting.Answer);
         return new Answer(ok, payload);
     }
 
     /// <summary>
     /// Reads until a line looks like a header, skipping anything else the app printed.
     /// </summary>
-    private string ReadHeader(CancellationToken token, TimeSpan deadline)
+    private string ReadHeader(CancellationToken token)
     {
-        for (string line = ReadLine(token, Waiting.Answer, deadline); ; line = ReadLine(token, Waiting.Answer, deadline))
+        for (string line = ReadLine(token, Waiting.Answer); ; line = ReadLine(token, Waiting.Answer))
         {
             if (IsHeader(line)) return line;
             Relay(line);
@@ -288,7 +269,7 @@ internal sealed class HeadlessClient : IDisposable
         Answer,
     }
 
-    private string ReadLine(CancellationToken token, Waiting waiting, TimeSpan deadline)
+    private string ReadLine(CancellationToken token, Waiting waiting)
     {
         var line = new List<byte>(128);
         var one = new byte[1];
@@ -304,7 +285,7 @@ internal sealed class HeadlessClient : IDisposable
             }
             catch (OperationCanceledException)
             {
-                throw Timeout(waiting, deadline);
+                throw Timeout(waiting);
             }
 
             if (read == 0) throw new ToolException($"The app closed its output.{Tail()}");
@@ -330,26 +311,21 @@ internal sealed class HeadlessClient : IDisposable
         }
     }
 
-    /// <summary>
-    /// Why the read gave up, naming the deadline that actually ran out — the readiness window
-    /// for the banner, the command's own deadline for an answer, whatever that deadline was
-    /// when the caller bought a longer one.
-    /// </summary>
-    private ToolException Timeout(Waiting waiting, TimeSpan deadline) => waiting switch
+    private ToolException Timeout(Waiting waiting) => waiting switch
     {
         // The most likely cause of a missing banner is a binary the headless channel was never
         // built into: the package trims it out of a self-contained AOT publish (docs/SIZE.md), so
         // a published app has to ask for it back before this tool can say anything about it.
         Waiting.Ready => new ToolException(
-            $"The app was not ready after {deadline.TotalSeconds:0}s: it never printed CUI-READY.{Tail()}" +
+            $"The app was not ready after {ReadyTimeout.TotalSeconds:0}s: it never printed CUI-READY.{Tail()}" +
             Environment.NewLine +
             "A published app carries the headless channel only when it was published for it: " +
             "add -p:CuiSharpHeadless=true to the publish. `dotnet cui` passes it for the builds it runs itself."),
         _ => new ToolException(
-            $"The app did not answer within {deadline.TotalSeconds:0.###}s.{Tail()}"),
+            $"The app did not answer within {AnswerTimeout.TotalSeconds:0}s.{Tail()}"),
     };
 
-    private string ReadExactly(int length, CancellationToken token, TimeSpan deadline)
+    private string ReadExactly(int length, CancellationToken token)
     {
         var payload = new byte[length];
         int offset = 0;
@@ -363,7 +339,7 @@ internal sealed class HeadlessClient : IDisposable
             }
             catch (OperationCanceledException)
             {
-                throw Timeout(Waiting.Answer, deadline);
+                throw Timeout(Waiting.Answer);
             }
 
             if (read == 0) throw new ToolException($"The app closed its output mid-answer.{Tail()}");
@@ -383,10 +359,9 @@ internal sealed class HeadlessClient : IDisposable
     /// <inheritdoc />
     public void Dispose()
     {
-        if (_process is not { } process || !_ownsProcess)
+        if (_process is not { } process)
         {
             _out.Dispose();
-            _process?.Dispose();
             return;
         }
 

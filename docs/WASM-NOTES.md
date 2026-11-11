@@ -134,27 +134,6 @@ measured:
 | Overview | 0.76–1.04 ms | 2.0–2.7 ms | 16.7 / 16.7–16.8 ms |
 | More charts (index 23) | 1.24–2.92 ms | 2.2–5.7 ms | 16.7 / 16.7–16.8 ms |
 
-### WebGL2 rendering
-
-The browser host now defaults to a WebGL2 renderer: `CuiSurface.CreateGpu` hands the surface's
-`cui_draw_data` to a JS port of CUI's own WebGL2 renderer (`web/site/js/gl.js`), with CUI's font
-atlas and image textures uploaded through `[UnmanagedCallersOnly]` thunks into
-`textures.create/update/destroy` in `main.js` — the same arrangement as CUI's `web_host.c`. Under
-headless Chrome's SwiftShader (`--disable-gpu`) at 1240x820, 180-frame windows measured:
-
-| Page | GPU mean | GPU p95 | software mean | software p95 |
-|---|---:|---:|---:|---:|
-| Overview | 1.49 ms | 2.70 ms | 1.43 ms | 2.50 ms |
-| More charts (index 23) | 1.26 ms | 1.80 ms | 1.81 ms | 4.70 ms |
-
-Already at parity or better on an emulated GPU; the chart-heavy page gains the most because the
-shader does the shadow blur the software renderer spends CPU on. WebGPU was evaluated and rejected
-for now: headless Chrome reports no adapter even without `--disable-gpu`, so the CI smoke test
-could not exercise it, and CUI upstream ships no WebGPU renderer to lean on. The JS interface
-(`presentGpu(dd, w, h)`) is renderer-agnostic if that changes. Two wasm32 struct facts the JS side
-must keep respecting: pointers are 4 bytes (`cui_draw_data` is 40 bytes, `cui_draw_cmd` 28), and
-`cui_texture_format` is `R8=1, RGBA8=4`.
-
 The first window was slower while the interpreter and page warmed up (up to 3.9 ms p95 on Overview
 and 5.5 ms p95 on More charts). The measured rAF intervals remained at 60 Hz. Add `?perf=1` to
 report timings; the normal page emits no per-frame logs.
