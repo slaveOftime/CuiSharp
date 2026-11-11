@@ -12,22 +12,29 @@ namespace CuiSharp;
 /// What CUI does not expose, this does not invent. A true content extent lives in CUI's private
 /// per-id scroll state and a wheel-scrolled widget reports an unbounded sentinel there, so a
 /// scrolled or virtualized node prints <c>extent:UNKNOWN</c> instead of a child union pretending
-/// to be an extent. A widget recorded by text alone (a heading, a label) is laid out under no id
-/// of its own, so its rectangle is not verified and its bounds are excluded from every union.
-/// An unnamed container has no native id at all and cannot appear.
+/// to be an extent. A rect is printed as fact only where the recorder proved the id is the
+/// widget's own (<see cref="SemanticNode.HasOwnRect"/>): a widget recorded by text alone, or by
+/// whatever id the previous call happened to leave behind, prints <c>[rect:unverified]</c> and
+/// counts for nothing. An unnamed container has no native id at all and cannot appear.
 /// </para>
 /// <para>
 /// Observed bounds are written <c>union≥</c>: they are the union of the verified recorded rects
-/// inside a node, a lower bound on what the node actually holds, not the layout's content extent.
+/// a node's own native layout layer holds, a lower bound on what the node actually holds, not
+/// the layout's content extent. A floating widget — a dialog, popover, menu, tooltip, toast or
+/// tour — is drawn on a layer of its own, marked <c>(floating)</c>, kept in the tree exactly
+/// where the app drew it, and never counted into the bounds of the containers it is nested
+/// under; an unnamed floating scope leaves no node of its own, but its contents still carry
+/// the layer they were drawn on.
 /// </para>
 /// </remarks>
 public static class LayoutFormatter
 {
     /// <summary>The warning line every layout view carries, so no line below it reads as more than it is.</summary>
     public const string Header =
-        "layout: rects exist only for ids CUI lays out; unnamed/id-0 containers and text-only "
-        + "widgets have no verified rect; union≥ is a lower bound of recorded rects, not a "
-        + "content extent; scrolled/virtualized extents are UNKNOWN (CUI keeps them private).";
+        "layout: rects exist only for ids CUI lays out; unnamed/id-0 containers and widgets "
+        + "without a proven own id print [rect:unverified]; union≥ is a lower bound of recorded "
+        + "rects, not a content extent; scrolled/virtualized extents are UNKNOWN (CUI keeps them "
+        + "private); floating layers (dialogs, popovers, toasts, ...) sit outside their container.";
 
     /// <summary>
     /// The wrappers CUI keeps its content scrolled behind: the rect is the viewport, the real
@@ -61,6 +68,10 @@ public static class LayoutFormatter
         {
             sb.Append(' ', indent * 2).Append(Label(node));
 
+            // A floating widget is drawn on a layer of its own: say so where it prints, so its
+            // rect and its absence from the ancestors' bounds both read as deliberate.
+            if (node.Detached) sb.Append(" (floating)");
+
             // The frame root is not a widget: it never asked for a rect.
             if (node.Parent is not null)
                 sb.Append(' ').Append(HasVerifiedRect(node) ? $"[{node.Rect}]" : RectDoubt(node));
@@ -81,24 +92,33 @@ public static class LayoutFormatter
     }
 
     /// <summary>
-    /// True when the id this node was recorded under is the widget's own: CUI laid it out under
-    /// that id and only that widget's rect can be there. A text-only widget records under
-    /// whatever id the last action set, which makes its rect someone else's.
+    /// True when the recorder proved the id this node was recorded under is the widget's own —
+    /// the id CUI laid it out under — and CUI actually gave that id a rectangle this frame.
+    /// Nothing else counts: not the kind's rank in a query, not a label that looks trustworthy.
     /// </summary>
     private static bool HasVerifiedRect(SemanticNode node) =>
-        node.Id != 0 && !SemanticNode.IsStatic(node.Kind);
+        node.Id != 0 && node.HasOwnRect && node.Rect.W > 0 && node.Rect.H > 0;
 
     private static string RectDoubt(SemanticNode node) =>
         node.Id == 0 ? "[rect:none]" : "[rect:unverified]";
 
-    /// <summary>The union of the verified rects of everything below this node, or null if none has one.</summary>
+    /// <summary>
+    /// The union of the verified rects of everything this node's own layout layer holds, or null
+    /// if none has one. A floating descendant — marked or not — is not its content: CUI lays
+    /// that subtree out on a layer of its own, anchored wherever it belongs, and an unnamed
+    /// floating scope leaves no node to mark, so the layer the recorder stamped on each entry
+    /// is what keeps those rects out of these bounds and out of any OVERFLOW.
+    /// </summary>
     private static RectF? ObservedBounds(SemanticNode node)
     {
         RectF? acc = null;
-        foreach (SemanticNode descendant in node.Descendants())
+        foreach (SemanticNode child in node.Children)
         {
-            if (!HasVerifiedRect(descendant)) continue;
-            acc = acc is { } current ? Expand(current, descendant.Rect) : descendant.Rect;
+            if (child.Detached || child.Layer != node.Layer) continue;
+            if (HasVerifiedRect(child))
+                acc = acc is { } current ? Expand(current, child.Rect) : child.Rect;
+            if (ObservedBounds(child) is { } inner)
+                acc = acc is { } wider ? Expand(wider, inner) : inner;
         }
 
         return acc;

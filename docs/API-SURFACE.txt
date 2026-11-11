@@ -5297,6 +5297,8 @@ class CuiSharp.SemanticNode
   SemanticNode Find(String)
   String Print(Boolean)
   String ToString()
+  property Boolean Detached { get; }
+  property Boolean HasOwnRect { get; }
   property Boolean IsContainer { get; set; }
   property IReadOnlyList<SemanticNode> Children { get; }
   property Int32 Depth { get; }
@@ -5309,6 +5311,8 @@ class CuiSharp.SemanticNode
 struct CuiSharp.SemanticWidget
   Boolean Contains(Single, Single)
   String ToString()
+  field Boolean Detached
+  field Boolean HasOwnRect
   field Boolean IsContainer
   field Int32 Depth
   field RectF Rect
