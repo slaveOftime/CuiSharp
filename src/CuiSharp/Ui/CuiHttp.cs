@@ -65,7 +65,7 @@ public static unsafe class CuiHttp
         fixed (NativeKvPair* source = native)
         {
             Utf8.WriteFixed(url, text, capacity);
-            return Native.UrlSetParams((nint)text, (ulong)capacity, (nint)source, pairs.Length) == 0
+            return Native.UrlSetParams((nint)text, (nuint)capacity, (nint)source, pairs.Length) == 0
                 ? null
                 : Utf8.ReadFixed(text, capacity);
         }

@@ -222,7 +222,7 @@ public static unsafe partial class Native
 
     /// <summary>cui_font_load_memory</summary>
     [LibraryImport("cui", EntryPoint = "cui_font_load_memory")]
-    public static partial Font FontLoadMemory(nint ui, nint data, ulong size, byte copy);
+    public static partial Font FontLoadMemory(nint ui, nint data, nuint size, byte copy);
 
     /// <summary>cui_font_load_file</summary>
     [LibraryImport("cui", EntryPoint = "cui_font_load_file")]
@@ -426,15 +426,15 @@ public static unsafe partial class Native
 
     /// <summary>cui_input_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_input_ex")]
-    public static partial int Input(nint ui, nint id, nint buf, ulong cap, in NativeInputOpts opts);
+    public static partial int Input(nint ui, nint id, nint buf, nuint cap, in NativeInputOpts opts);
 
     /// <summary>cui_textarea_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_textarea_ex")]
-    public static partial int Textarea(nint ui, nint id, nint buf, ulong cap, in NativeInputOpts opts);
+    public static partial int Textarea(nint ui, nint id, nint buf, nuint cap, in NativeInputOpts opts);
 
     /// <summary>cui_search_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_search_ex")]
-    public static partial int Search(nint ui, nint id, nint buf, ulong cap, in NativeInputOpts opts);
+    public static partial int Search(nint ui, nint id, nint buf, nuint cap, in NativeInputOpts opts);
 
     /// <summary>cui_number_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_number_ex")]
@@ -694,27 +694,27 @@ public static unsafe partial class Native
 
     /// <summary>cui_image_create</summary>
     [LibraryImport("cui", EntryPoint = "cui_image_create")]
-    public static partial ulong ImageCreate(nint ui, int w, int h, nint rgba);
+    public static partial nuint ImageCreate(nint ui, int w, int h, nint rgba);
 
     /// <summary>cui_image_load</summary>
     [LibraryImport("cui", EntryPoint = "cui_image_load")]
-    public static partial ulong ImageLoad(nint ui, nint path, ref int w, ref int h);
+    public static partial nuint ImageLoad(nint ui, nint path, ref int w, ref int h);
 
     /// <summary>cui_image_destroy</summary>
     [LibraryImport("cui", EntryPoint = "cui_image_destroy")]
-    public static partial void ImageDestroy(nint ui, ulong tex);
+    public static partial void ImageDestroy(nint ui, nuint tex);
 
     /// <summary>cui_image_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_image_ex")]
-    public static partial void Image(nint ui, ulong tex, in NativeImageOpts opts);
+    public static partial void Image(nint ui, nuint tex, in NativeImageOpts opts);
 
     /// <summary>cui_image_viewer_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_image_viewer_ex")]
-    public static partial byte ImageViewer(nint ui, nint id, ulong tex, int imageW, int imageH, ref NativeImageView view, in NativeImageViewerOpts opts);
+    public static partial byte ImageViewer(nint ui, nint id, nuint tex, int imageW, int imageH, ref NativeImageView view, in NativeImageViewerOpts opts);
 
     /// <summary>cui_cropper_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_cropper_ex")]
-    public static partial byte Cropper(nint ui, nint id, ulong tex, int imageW, int imageH, ref NativeRect crop, in NativeCropperOpts opts);
+    public static partial byte Cropper(nint ui, nint id, nuint tex, int imageW, int imageH, ref NativeRect crop, in NativeCropperOpts opts);
 
     /// <summary>cui_command_palette</summary>
     [LibraryImport("cui", EntryPoint = "cui_command_palette")]
@@ -726,7 +726,7 @@ public static unsafe partial class Native
 
     /// <summary>cui_tag_input_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_tag_input_ex")]
-    public static partial byte TagInput(nint ui, nint id, nint buf, ulong cap, in NativeTagOpts opts);
+    public static partial byte TagInput(nint ui, nint id, nint buf, nuint cap, in NativeTagOpts opts);
 
     /// <summary>cui_otp_input</summary>
     [LibraryImport("cui", EntryPoint = "cui_otp_input")]
@@ -842,11 +842,11 @@ public static unsafe partial class Native
 
     /// <summary>cui_data_grid_cell_edit</summary>
     [LibraryImport("cui", EntryPoint = "cui_data_grid_cell_edit")]
-    public static partial byte DataGridCellEdit(nint ui, nint buf, ulong cap);
+    public static partial byte DataGridCellEdit(nint ui, nint buf, nuint cap);
 
     /// <summary>cui_data_grid_edit</summary>
     [LibraryImport("cui", EntryPoint = "cui_data_grid_edit")]
-    public static partial byte DataGridEdit(nint ui, nint buf, ulong cap);
+    public static partial byte DataGridEdit(nint ui, nint buf, nuint cap);
 
     /// <summary>cui_data_grid_end</summary>
     [LibraryImport("cui", EntryPoint = "cui_data_grid_end")]
@@ -858,7 +858,7 @@ public static unsafe partial class Native
 
     /// <summary>cui_filter_bar</summary>
     [LibraryImport("cui", EntryPoint = "cui_filter_bar")]
-    public static partial byte FilterBar(nint ui, nint id, nint fields, int count, ref uint selected, nint search, ulong searchCap);
+    public static partial byte FilterBar(nint ui, nint id, nint fields, int count, ref uint selected, nint search, nuint searchCap);
 
     /// <summary>cui_tree_table_begin_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_tree_table_begin_ex")]
@@ -898,15 +898,15 @@ public static unsafe partial class Native
 
     /// <summary>cui_fs_list</summary>
     [LibraryImport("cui", EntryPoint = "cui_fs_list")]
-    public static partial int FsList(nint user, nint path, ref NativeFileEntry @out, int cap, nint names, ulong namesCap, byte hidden);
+    public static partial int FsList(nint user, nint path, ref NativeFileEntry @out, int cap, nint names, nuint namesCap, byte hidden);
 
     /// <summary>cui_file_browser_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_file_browser_ex")]
-    public static partial NativeFileBrowserResult FileBrowser(nint ui, nint id, nint path, ulong pathCap, in NativeFileBrowserOpts opts);
+    public static partial NativeFileBrowserResult FileBrowser(nint ui, nint id, nint path, nuint pathCap, in NativeFileBrowserOpts opts);
 
     /// <summary>cui_file_picker_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_file_picker_ex")]
-    public static partial byte FilePicker(nint ui, nint id, nint open, nint @out, ulong outCap, in NativeFilePickerOpts opts);
+    public static partial byte FilePicker(nint ui, nint id, nint open, nint @out, nuint outCap, in NativeFilePickerOpts opts);
 
     /// <summary>cui_code_block_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_code_block_ex")]
@@ -926,7 +926,7 @@ public static unsafe partial class Native
 
     /// <summary>cui_code_editor_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_code_editor_ex")]
-    public static partial NativeCodeEditorResult CodeEditor(nint ui, nint id, nint buf, ulong cap, in NativeCodeEditorOpts opts);
+    public static partial NativeCodeEditorResult CodeEditor(nint ui, nint id, nint buf, nuint cap, in NativeCodeEditorOpts opts);
 
     /// <summary>cui_code_editor_goto</summary>
     [LibraryImport("cui", EntryPoint = "cui_code_editor_goto")]
@@ -950,7 +950,7 @@ public static unsafe partial class Native
 
     /// <summary>cui_diff_compute</summary>
     [LibraryImport("cui", EntryPoint = "cui_diff_compute")]
-    public static partial int DiffCompute(nint oldText, ulong oldLen, nint newText, ulong newLen, uint flags, nint hunks, int cap, nint stats);
+    public static partial int DiffCompute(nint oldText, nuint oldLen, nint newText, nuint newLen, uint flags, nint hunks, int cap, nint stats);
 
     /// <summary>cui_diff_words</summary>
     [LibraryImport("cui", EntryPoint = "cui_diff_words")]
@@ -994,7 +994,7 @@ public static unsafe partial class Native
 
     /// <summary>cui_image_compare_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_image_compare_ex")]
-    public static partial byte ImageCompare(nint ui, nint id, ulong before, ulong after, ref float pos, in NativeCompareOpts opts);
+    public static partial byte ImageCompare(nint ui, nint id, nuint before, nuint after, ref float pos, in NativeCompareOpts opts);
 
     /// <summary>cui_card_stack_begin</summary>
     [LibraryImport("cui", EntryPoint = "cui_card_stack_begin")]
@@ -1186,7 +1186,7 @@ public static unsafe partial class Native
 
     /// <summary>cui_chat_composer_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_chat_composer_ex")]
-    public static partial int ChatComposer(nint ui, nint id, nint buf, ulong cap, in NativeComposerOpts opts);
+    public static partial int ChatComposer(nint ui, nint id, nint buf, nuint cap, in NativeComposerOpts opts);
 
     /// <summary>cui_voice_orb_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_voice_orb_ex")]
@@ -1346,11 +1346,11 @@ public static unsafe partial class Native
 
     /// <summary>cui_avatar_upload</summary>
     [LibraryImport("cui", EntryPoint = "cui_avatar_upload")]
-    public static partial int AvatarUpload(nint ui, nint id, nint name, ref ulong image, float size);
+    public static partial int AvatarUpload(nint ui, nint id, nint name, ref nuint image, float size);
 
     /// <summary>cui_inline_edit_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_inline_edit_ex")]
-    public static partial int InlineEdit(nint ui, nint id, nint buf, ulong cap, in NativeInlineEditOpts opts);
+    public static partial int InlineEdit(nint ui, nint id, nint buf, nuint cap, in NativeInlineEditOpts opts);
 
     /// <summary>cui_scrub_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_scrub_ex")]
@@ -1502,7 +1502,7 @@ public static unsafe partial class Native
 
     /// <summary>cui_dock_save</summary>
     [LibraryImport("cui", EntryPoint = "cui_dock_save")]
-    public static partial ulong DockSave(nint ui, nint id, nint buf, ulong cap);
+    public static partial nuint DockSave(nint ui, nint id, nint buf, nuint cap);
 
     /// <summary>cui_dock_load</summary>
     [LibraryImport("cui", EntryPoint = "cui_dock_load")]
@@ -1530,7 +1530,7 @@ public static unsafe partial class Native
 
     /// <summary>cui_prop_text_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_prop_text_ex")]
-    public static partial byte PropText(nint ui, nint label, nint buf, ulong cap, in NativePropOpts opts);
+    public static partial byte PropText(nint ui, nint label, nint buf, nuint cap, in NativePropOpts opts);
 
     /// <summary>cui_prop_bool_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_prop_bool_ex")]
@@ -1550,7 +1550,7 @@ public static unsafe partial class Native
 
     /// <summary>cui_log_init</summary>
     [LibraryImport("cui", EntryPoint = "cui_log_init")]
-    public static partial void LogInit(ref NativeLogBuffer buf, nint lines, int lineCap, nint text, ulong textCap);
+    public static partial void LogInit(ref NativeLogBuffer buf, nint lines, int lineCap, nint text, nuint textCap);
 
     /// <summary>cui_log_appendv</summary>
     [LibraryImport("cui", EntryPoint = "cui_log_appendv")]
@@ -1574,7 +1574,7 @@ public static unsafe partial class Native
 
     /// <summary>cui_terminal_init</summary>
     [LibraryImport("cui", EntryPoint = "cui_terminal_init")]
-    public static partial void TerminalInit(ref NativeTerminalBuffer t, nint text, ulong textCap, nint lines, int lineCap);
+    public static partial void TerminalInit(ref NativeTerminalBuffer t, nint text, nuint textCap, nint lines, int lineCap);
 
     /// <summary>cui_terminal_write</summary>
     [LibraryImport("cui", EntryPoint = "cui_terminal_write")]
@@ -1594,7 +1594,7 @@ public static unsafe partial class Native
 
     /// <summary>cui_emoji_font_load_memory</summary>
     [LibraryImport("cui", EntryPoint = "cui_emoji_font_load_memory")]
-    public static partial byte EmojiFontLoadMemory(nint ui, nint data, ulong size, byte copy);
+    public static partial byte EmojiFontLoadMemory(nint ui, nint data, nuint size, byte copy);
 
     /// <summary>cui_emoji_font_load_system</summary>
     [LibraryImport("cui", EntryPoint = "cui_emoji_font_load_system")]
@@ -1618,11 +1618,11 @@ public static unsafe partial class Native
 
     /// <summary>cui_hex_view_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_hex_view_ex")]
-    public static partial NativeHexResult HexView(nint ui, nint id, nint data, ulong size, ref NativeHexSelection sel, in NativeHexViewOpts opts);
+    public static partial NativeHexResult HexView(nint ui, nint id, nint data, nuint size, ref NativeHexSelection sel, in NativeHexViewOpts opts);
 
     /// <summary>cui_hex_view_goto</summary>
     [LibraryImport("cui", EntryPoint = "cui_hex_view_goto")]
-    public static partial void HexViewGoto(nint ui, nint id, ulong offset);
+    public static partial void HexViewGoto(nint ui, nint id, nuint offset);
 
     /// <summary>cui_flame_graph_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_flame_graph_ex")]
@@ -1678,7 +1678,7 @@ public static unsafe partial class Native
 
     /// <summary>cui_query_text</summary>
     [LibraryImport("cui", EntryPoint = "cui_query_text")]
-    public static partial ulong QueryText(nint fields, int fieldCount, nint nodes, int count, nint @out, ulong cap);
+    public static partial nuint QueryText(nint fields, int fieldCount, nint nodes, int count, nint @out, nuint cap);
 
     /// <summary>cui_query_match</summary>
     [LibraryImport("cui", EntryPoint = "cui_query_match")]
@@ -1686,7 +1686,7 @@ public static unsafe partial class Native
 
     /// <summary>cui_schedule_picker_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_schedule_picker_ex")]
-    public static partial NativeScheduleResult SchedulePicker(nint ui, nint id, nint cron, ulong cap, in NativeScheduleOpts opts);
+    public static partial NativeScheduleResult SchedulePicker(nint ui, nint id, nint cron, nuint cap, in NativeScheduleOpts opts);
 
     /// <summary>cui_cron_next</summary>
     [LibraryImport("cui", EntryPoint = "cui_cron_next")]
@@ -1726,7 +1726,7 @@ public static unsafe partial class Native
 
     /// <summary>cui_regex_tester_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_regex_tester_ex")]
-    public static partial NativeRegexTesterResult RegexTester(nint ui, nint id, nint pattern, ulong patternCap, nint text, ulong textCap, in NativeRegexTesterOpts opts);
+    public static partial NativeRegexTesterResult RegexTester(nint ui, nint id, nint pattern, nuint patternCap, nint text, nuint textCap, in NativeRegexTesterOpts opts);
 
     /// <summary>cui_test_explorer_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_test_explorer_ex")]
@@ -1738,7 +1738,7 @@ public static unsafe partial class Native
 
     /// <summary>cui_request_bar_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_request_bar_ex")]
-    public static partial NativeRequestBarResult RequestBar(nint ui, nint id, ref int method, nint url, ulong cap, in NativeRequestBarOpts opts);
+    public static partial NativeRequestBarResult RequestBar(nint ui, nint id, ref int method, nint url, nuint cap, in NativeRequestBarOpts opts);
 
     /// <summary>cui_response_status</summary>
     [LibraryImport("cui", EntryPoint = "cui_response_status")]
@@ -1758,7 +1758,7 @@ public static unsafe partial class Native
 
     /// <summary>cui_url_set_params</summary>
     [LibraryImport("cui", EntryPoint = "cui_url_set_params")]
-    public static partial byte UrlSetParams(nint url, ulong cap, nint pairs, int count);
+    public static partial byte UrlSetParams(nint url, nuint cap, nint pairs, int count);
 
     /// <summary>cui_uptime_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_uptime_ex")]
@@ -1830,7 +1830,7 @@ public static unsafe partial class Native
 
     /// <summary>cui_draw_image</summary>
     [LibraryImport("cui", EntryPoint = "cui_draw_image")]
-    public static partial void DrawImage(nint ui, ulong tex, NativeRect r, NativeRect uv, NativeCorners radius, NativeColor tint);
+    public static partial void DrawImage(nint ui, nuint tex, NativeRect r, NativeRect uv, NativeCorners radius, NativeColor tint);
 
     /// <summary>cui_push_clip</summary>
     [LibraryImport("cui", EntryPoint = "cui_push_clip")]
@@ -1842,11 +1842,11 @@ public static unsafe partial class Native
 
     /// <summary>cui_canvas</summary>
     [LibraryImport("cui", EntryPoint = "cui_canvas")]
-    public static partial NativeCanvasResult Canvas(nint ui, nint id, NativeSize width, NativeSize height, nint paint, nint user, ulong userSize);
+    public static partial NativeCanvasResult Canvas(nint ui, nint id, NativeSize width, NativeSize height, nint paint, nint user, nuint userSize);
 
     /// <summary>cui_state</summary>
     [LibraryImport("cui", EntryPoint = "cui_state")]
-    public static partial nint State(nint ui, uint id, ulong size);
+    public static partial nint State(nint ui, uint id, nuint size);
 
     /// <summary>cui_state_on_free</summary>
     [LibraryImport("cui", EntryPoint = "cui_state_on_free")]
@@ -1914,7 +1914,7 @@ public static unsafe partial class Native
 
     /// <summary>cui_app_file_dialog</summary>
     [LibraryImport("cui", EntryPoint = "cui_app_file_dialog")]
-    public static partial byte AppFileDialog(nint app, in NativeFileDialogOpts opts, nint @out, ulong cap);
+    public static partial byte AppFileDialog(nint app, in NativeFileDialogOpts opts, nint @out, nuint cap);
 
     /// <summary>cui_app_open_url</summary>
     [LibraryImport("cui", EntryPoint = "cui_app_open_url")]

@@ -40,7 +40,7 @@ C `cui_api_explorer_opts`.
 C `cui_avatar_opts`.
 
 - `Size`: float (default `Size`)
-- `Image`: ulong (default `Image`)
+- `Image`: ulong (default `(nuint)(Image)`)
 - `Status`: string? (default `Utf8.Get(Status)`)
 - `Square`: bool (default `(byte)(Square ? 1 : 0)`)
 
@@ -229,7 +229,7 @@ C `cui_chat_opts`.
 - `Status`: string? (default `Utf8.Get(Status)`)
 - `Grouped`: bool (default `(byte)(Grouped ? 1 : 0)`)
 - `LastInGroup`: bool (default `(byte)(LastInGroup ? 1 : 0)`)
-- `Avatar`: ulong (default `Avatar`)
+- `Avatar`: ulong (default `(nuint)(Avatar)`)
 - `Markdown`: bool (default `(byte)(Markdown ? 1 : 0)`)
 
 ## `CheckOpts`
@@ -1605,7 +1605,7 @@ C `cui_user_menu_opts`.
 
 - `Detail`: string? (default `Utf8.Get(Detail)`)
 - `Status`: string? (default `Utf8.Get(Status)`)
-- `Avatar`: ulong (default `Avatar`)
+- `Avatar`: ulong (default `(nuint)(Avatar)`)
 - `Compact`: bool (default `(byte)(Compact ? 1 : 0)`)
 - `Placement`: Placement (default `Placement`)
 - `Width`: float (default `Width`)

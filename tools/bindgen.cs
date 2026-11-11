@@ -1076,7 +1076,7 @@ public static CXType Strip(CXType type)
         // An incomplete record (cui_ctx, cui_sw_renderer) is an opaque handle.
         if (inner.kind == CXTypeKind.CXType_Record) return "nint";
 
-        string primitive = Value(inner);
+        string primitive = Value(pointee);
         if (primitive is "sbyte" or "byte" or "void") return "nint";
 
         return isConst ? $"in {primitive}" : $"ref {primitive}";
@@ -1091,10 +1091,12 @@ public static CXType Strip(CXType type)
     /// <summary>A non-pointer value: a primitive, a struct or an enum.</summary>
     public string Value(CXType type)
     {
-        // Typedef'd enums (cui_font) lose their name when canonicalised.
+        // Typedef'd enums (cui_font) lose their name when canonicalised; size_t is
+        // pointer-sized (32-bit on wasm32, 64-bit on desktop), not fixed 64-bit ulong.
         string spelling = clang.getTypeSpelling(type).ToString();
         if (enumNames.TryGetValue(spelling, out string? spelledEnum)) return spelledEnum;
         if (structNames.TryGetValue(spelling, out string? spelledStruct)) return spelledStruct;
+        if (spelling is "size_t" or "const size_t" or "uintptr_t" or "const uintptr_t" or "cui_texture" or "const cui_texture") return "nuint";
 
         var t = Strip(type);
         switch (t.kind)
@@ -1985,11 +1987,14 @@ sealed class Idiomatic
     private static string FriendlyValue(CType type, string raw) => type.Kind == "Bool" ? "bool" : raw switch
     {
         "NativeSize" => "Size", "NativeColor" => "Color", "NativeDate" => "Date", "NativeRect" => "RectF",
+        "nuint" => "ulong",
         _ => raw,
     };
 
     private static string ToNativeValue(CType type, string value) => type.Kind == "Bool" ? $"(byte)({value} ? 1 : 0)"
-        : type.Spelling is "cui_size" or "cui_color" or "cui_date" or "cui_rect" ? $"UiMarshal.ToNative({value})" : value;
+        : type.Spelling is "cui_size" or "cui_color" or "cui_date" or "cui_rect" ? $"UiMarshal.ToNative({value})"
+        : type.Spelling is "size_t" or "const size_t" or "uintptr_t" or "const uintptr_t" or "cui_texture" or "const cui_texture" ? $"(nuint)({value})"
+        : value;
 
     private static void Summary(StringBuilder sb, string text, string indent = "") =>
         sb.AppendLine($"{indent}/// <summary>{System.Security.SecurityElement.Escape(text)}</summary>");
@@ -2058,6 +2063,7 @@ sealed class Idiomatic
                 else if (f.Type == "string[]?") sb.AppendLine($"        Assert.Equal(\"one\", Marshal.PtrToStringUTF8(((nint*){at})[0]));\n        Assert.Equal(\"two\", Marshal.PtrToStringUTF8(((nint*){at})[1]));");
                 else if (f.Type == "float[]?") sb.AppendLine($"        Assert.Equal(3f, ((float*){at})[0]);\n        Assert.Equal(7f, ((float*){at})[1]);");
                 else if (f.Type.EndsWith("[]?", StringComparison.Ordinal)) sb.AppendLine($"        Assert.NotEqual((nint)0, {at});");
+                else if (f.Native.CsType == "nuint") sb.AppendLine($"        Assert.Equal((nuint)value.{f.Name}, {at});");
                 else sb.AppendLine($"        Assert.Equal(value.{f.Name}, {at});");
             }
             sb.AppendLine($"        var zero = default({option.Name}).ToNative({args});");
@@ -2484,6 +2490,14 @@ sealed class Idiomatic
                         arguments.Add("ref *" + local);
                         writeBack.Add($"{name} = *{local};");
                     }
+                }
+                else if (type == "nuint")
+                {
+                    type = "ulong";
+                    string local = "__" + name.TrimStart('@');
+                    prepare.Add($"nuint {local} = (nuint){name};");
+                    arguments.Add(mode + local);
+                    if (mode != "in ") writeBack.Add($"{name} = {local};");
                 }
                 else
                 {
@@ -3067,6 +3081,17 @@ static class BindgenChecks
         Check("C typedef, qualifiers and comments survive the IR", box.Fields.Any(f => f.Doc.Contains("identity", StringComparison.Ordinal))
             && api.Structs.Single(s => s.CName == "cui_text_opts").Fields.Single(f => f.CName == "font").CsType == "Font"
             && api.Functions.Single(f => f.CName == "cui_box_begin").Params.Single(p => p.CName == "opts").Type.Element!.IsConst);
+        string nativeInterop = Emit.Native(api);
+        string nativeStructs = Emit.Structs(api);
+        string generatedRecords = first.Records();
+        Check("size_t and uintptr_t use native-width ABI slots",
+            api.Functions.Single(f => f.CName == "cui_input_ex").Params.Single(p => p.CName == "cap").CsType == "nuint"
+            && api.Functions.Single(f => f.CName == "cui_avatar_upload").Params.Single(p => p.CName == "image").CsType == "ref nuint"
+            && api.Functions.Single(f => f.CName == "cui_image_create").CsReturn == "nuint"
+            && nativeInterop.Contains("nint buf, nuint cap", StringComparison.Ordinal)
+            && nativeStructs.Contains("public nuint FontAtlas;", StringComparison.Ordinal)
+            && generatedRecords.Contains("public ulong Offset;", StringComparison.Ordinal)
+            && generatedRecords.Contains("Offset = (nuint)(Offset)", StringComparison.Ordinal));
         Check("optional injected state emits a null-pointer overload", modules["DataDisplay"]
             .Contains("public OpenScope Table(UiText id, ReadOnlySpan<TableColumn> columns, TableOpts o = default)", StringComparison.Ordinal)
             && modules["DataDisplay"].Contains("o.ToNative(0)", StringComparison.Ordinal)

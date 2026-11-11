@@ -1,18 +1,32 @@
-# The 2026-11-11 feasibility probe (kept for reproduction)
+# Direct P/Invoke feasibility probe
 
-`cui-wasm-ok` was produced by a stock `dotnet new blazorwasm` app plus:
+This replaces the earlier `cui_sym`/JS-delegate experiment. That bridge is not needed.
 
-| File | Role |
-|---|---|
-| `cui_glue.c` | the `cui_sym` pointer table, compiled into the module via `NativeFileReference` |
-| `Probe.cs` | `[JSInvokable]` entry + `GetDelegateForFunctionPointer` call of `cui_sw_create/destroy` |
-| `boot-bridge.js.txt` | JS that walks `getDotnetRuntime(0).Module` and hands pointers to C# after boot |
+## Reproduce
 
-Build: `libcui.a` from `src/cui_*.c` + `render/cui_render_sw.c` with the workload's
-emsdk 6.0.2; csproj `Microsoft.NET.Sdk.BlazorWebAssembly`,
-`<RunAOTCompilation>true</RunAOTCompilation>`,
-`<NativeFileReference Include="libcui.a" />`, `<NativeFileReference Include="cui_glue.c" />`,
-`<EmccExportedFunction Include="_cui_sym" />`. Serve `dist/wwwroot`, run headless
-Chrome (`--remote-debugging-port`), read the DOM — see ../WASM-NOTES.md for the
-full findings and traps (underscore in EmccExportedFunction, `__Internal` and
-`dlopen` unsupported, AOT required for the ilc pinvoke pass even if unused).
+1. Install the `wasm-tools` and `wasm-experimental` workloads for a .NET SDK with the browser
+   template (`wasmbrowser`).
+2. Create the stock `dotnet new wasmbrowser` project. Link `Program.cs` from this directory, add a
+   project reference to `src/CuiSharp/CuiSharp.csproj`, and add the Emscripten-built software
+   archive as:
+
+   ```xml
+   <NativeFileReference Include="path/to/libcui.a" />
+   ```
+
+3. Build the archive with the Emscripten version paired with that SDK's browser runtime pack. Do not
+   hand-build or patch the pinned `native/CUI` submodule.
+4. Keep the stock browser entry point, which calls `dotnet.create()` and `runMain()`. Publish, serve
+   `wwwroot` over HTTP, and check the browser console for `CUI-DIRECT-PINVOKE-OK`.
+
+`Program.cs` intentionally avoids scopes: it proves that normal `CuiSharp` `LibraryImport("cui")`
+methods link and call directly, while scope pointer dispatch has its own AOT issue. For the
+reproduced full-gallery and scope results, plus measured bundle sizes, see
+[WASM-NOTES.md](../WASM-NOTES.md).
+
+## Expected evidence
+
+The publish-generated `obj/.../wasm/for-publish/pinvoke-table.h` has the CUI imports registered
+under `"cui"`; `NativeFileReference` supplies the implementations. `CuiSurface.Create`, direct
+widgets, `EndFrame`, and `Render` execute in Chrome. No `cui_sym`, `DllImportResolver`, Blazor,
+`JSExport`, or bridge C file is involved.
