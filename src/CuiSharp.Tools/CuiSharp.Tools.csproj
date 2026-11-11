@@ -30,6 +30,15 @@
     <InternalsVisibleTo Include="CuiSharp.Tests" />
   </ItemGroup>
   <ItemGroup>
+    <!--
+      The offline API catalog, embedded as data. `dotnet cui api` and `dotnet cui icons` read
+      these bytes and nothing else: no reference to the CuiSharp assembly, no reflection, no
+      file lookup, no native library. The exporter (tools/export-api.cs) owns the file; this
+      project only carries it, which is why the logical name is fixed here and in ApiCatalog.
+    -->
+    <EmbeddedResource Include="..\..\skills\cui-dotnet\api\catalog.json" LogicalName="CuiSharp.Tools.api-catalog.json" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 

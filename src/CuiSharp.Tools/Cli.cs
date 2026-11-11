@@ -12,6 +12,11 @@ namespace CuiSharp.Tools;
 /// headless protocol the framework serves. What you see is the frame the app really draws, with
 /// its own services, its own data and its own bugs.
 /// </para>
+/// <para>
+/// Two commands answer from the API catalog embedded in this assembly — <c>api</c> and
+/// <c>icons</c>. They discover no project, build nothing, start no app and load no native
+/// library, so they work in any directory, before any app exists.
+/// </para>
 /// <code>
 /// dotnet cui tree                     # what the first frame drew, nested
 /// dotnet cui click Save               # click a control, print the frame that reacted
@@ -21,6 +26,8 @@ namespace CuiSharp.Tools;
 /// dotnet cui tree --project app.cs    # a file-based app
 /// dotnet cui tree --app bin/App.exe   # a published build, not a rebuild
 /// dotnet cui tree -- --page=2         # arguments for the app itself
+/// dotnet cui api ChartOpts            # one declaration, offline, from the embedded catalog
+/// dotnet cui icons chart              # every icon whose name contains "chart"
 /// </code>
 /// </remarks>
 internal static class Cli
@@ -49,6 +56,13 @@ internal static class Cli
                               line: wall and cpu milliseconds, frames, fps, and the app's
                               heap, working-set and private bytes
 
+        Commands answered offline, from the API catalog inside this tool:
+          api <name>          one declaration: `api ChartOpts`, `api Ui.LineChart`, `api Button`.
+                              An exact answer exits 0; an ambiguous or unknown one names the
+                              qualified or nearest names and exits nonzero.
+          icons [filter]      every icon constant: name, code point, and the literal to paste.
+          Both take --json for machine-readable output; neither builds, launches or loads anything.
+
         Options:
           -p, --project <path>  the app to run: a directory, a .csproj, or a file-based .cs
                                 app. Default: here
@@ -73,6 +87,13 @@ internal static class Cli
     {
         try
         {
+            // `api` and `icons` come first, before anything touches a project: the question
+            // they answer ("what is ChartOpts?") is legal in a directory with no app, and the
+            // answer is the catalog embedded in this assembly — no discovery, no build, no
+            // child process, no native library. The detection itself reads only argv.
+            if (TryReadCatalogCommand(args, out CatalogRequest catalog))
+                return AnswerCatalog(catalog, output, error);
+
             Options options = Options.Parse(args);
             if (options.Help)
             {
@@ -118,6 +139,202 @@ internal static class Cli
             error.WriteLine(failure.Message);
             return 1;
         }
+    }
+
+    /// <summary>
+    /// The catalog the CLI answers from, read once from this assembly's own resources.
+    /// A broken or missing resource is a packaging fault, so it says so once and stays said:
+    /// <see cref="ToolException"/> reaches <see cref="Run"/>'s handler, which prints the
+    /// sentence and exits 1 rather than crashing on a raw <see cref="InvalidDataException"/>.
+    /// </summary>
+    private static readonly Lazy<ApiCatalog> EmbeddedCatalog = new(() =>
+    {
+        try
+        {
+            return ApiCatalog.LoadEmbedded();
+        }
+        catch (InvalidDataException broken)
+        {
+            throw new ToolException(broken.Message);
+        }
+    });
+
+    /// <summary>An offline catalog request: which command, what was asked about, and how to print it.</summary>
+    internal sealed record CatalogRequest(string Command, string Term, bool Json, bool Help);
+
+    /// <summary>
+    /// Recognises <c>api &lt;name&gt;</c> and <c>icons [filter]</c> among the raw arguments.
+    /// The first positional word decides everything: if it is neither command the call falls
+    /// through to the normal app-driven flow untouched — every flag complaint this scan
+    /// noticed stays unvoiced, because the ordinary parser owns those arguments and a
+    /// dash-prefixed <c>--wait-text</c> value is legal there. Only once the command word
+    /// proves this is a catalog call are a held-back unknown flag or missing value named.
+    /// App-scoped flags are accepted and ignored so one wrapper script can pass the same
+    /// flags to every command. <c>-h</c>/<c>--help</c> ask for usage anywhere; a bare
+    /// <c>help</c> does so only before the command, because after one it is data — the icon
+    /// filter of `icons help`, the lookup term of `api help`. A value-taking flag consumes
+    /// exactly the word <see cref="Options.Parse"/> would consume, dash or not — the scan's
+    /// position may never diverge from the parser's, or the command word itself lands in the
+    /// wrong slot — and complains, catalog-only, when that word is really another flag. The one
+    /// option whose value the parser judges only at the end — <c>--wait</c>, last occurrence
+    /// wins — is stored rather than checked where it is read, so a value the caller overwrote
+    /// is not a mistake here either.
+    /// </summary>
+    internal static bool TryReadCatalogCommand(string[] args, out CatalogRequest request)
+    {
+        request = null!;
+        string? command = null;
+        var words = new List<string>();
+        bool json = false, help = false;
+        // The first mistake the scan cannot ignore, held in escrow until the command word
+        // says whether this is even the scan's business: `tree --wait-text -loading` names a
+        // legal value in the ordinary flow, so the scan may note the oddity and keep walking,
+        // but it may only speak for `api` and `icons`.
+        string? complaint = null;
+        // The wait the parser ends up judging: it takes every occurrence but checks only the
+        // surviving value, after the whole line, so the scan keeps that same value instead of
+        // condemning one the line already replaced.
+        string? wait = null;
+
+        for (int i = 0; i < args.Length; i++)
+        {
+            string arg = args[i];
+            // Everything after `--` belongs to an app this command never starts.
+            if (arg == "--") break;
+            switch (arg)
+            {
+                case "-h" or "--help":
+                    help = true;
+                    break;
+                // A bare `help` means help only until the command is named; after `api` or
+                // `icons` it is a word like any other, so `icons help` can find CircleHelp.
+                case "help" when command is null:
+                    help = true;
+                    break;
+                case "--json":
+                    json = true;
+                    break;
+                // Flags that mean nothing to a catalog answer but must not derail one:
+                // a script that appends `-q` or `--no-build` to every cui call stays one script.
+                case "-q" or "--quiet" or "-s" or "--stdin" or "--no-build":
+                    break;
+                case "-p" or "--project" or "--app" or "--framework" or "--frames"
+                    or "--wait" or "--wait-text" or "--wait-timeout":
+                    // Consume exactly what the ordinary parser consumes: its Value() takes
+                    // the word after the flag, dash or not, so `--wait-text --app tree` has
+                    // command `tree` there and must have command `tree` here — a scan whose
+                    // position diverges misclassifies the line and answers a catalog error
+                    // for an ordinary app run. When that consumed word is really the next
+                    // flag (`--frames --json` lost its number), note the mistake; the note is
+                    // voiced only for a catalog command.
+                    if (i + 1 >= args.Length)
+                    {
+                        complaint ??= $"{arg} needs a value.";
+                    }
+                    else
+                    {
+                        // A consumed word that is not a legal value — the next flag, or a
+                        // `--wait-timeout abc` the parser would refuse — is the same class
+                        // of catalog-only complaint: checked with the parser's own validators
+                        // so the sentence matches what it would say for an ordinary command.
+                        string value = args[i + 1];
+                        // `--wait` is the one option the parser does not judge where it reads
+                        // it: each occurrence overwrites the last and only the surviving value
+                        // is checked, after the line. Keep that value and check it below, so a
+                        // word the caller already replaced is not a mistake here either.
+                        if (arg == "--wait") wait = value;
+                        else complaint ??= value.StartsWith('-')
+                            ? $"{arg} needs a value."
+                            : ValueComplaint(arg, value);
+                        i++;
+                    }
+                    break;
+                default:
+                    if (arg.StartsWith('-'))
+                    {
+                        // Likewise escrowed: for a non-catalog command the ordinary parser
+                        // is the one that calls this unknown, in its own words.
+                        complaint ??= $"Unknown option \"{arg}\". Use `--` to pass it to the app.";
+                        break;
+                    }
+
+                    if (command is null) command = arg;
+                    else words.Add(arg);
+                    break;
+            }
+        }
+
+        if (command is not ("api" or "icons")) return false;
+        // Judged where the parser judges it — after the line, on the surviving value — and
+        // after whatever the loop itself already found, which is the parser's own precedence.
+        if (wait is { } kind && !kind.Equals("ready", StringComparison.OrdinalIgnoreCase))
+            complaint ??= $"--wait needs \"ready\", not \"{kind}\".";
+        if (complaint is { } mistake) throw new ToolException(mistake);
+        request = new CatalogRequest(command, string.Join(' ', words), json, help);
+        return true;
+    }
+
+    /// <summary>
+    /// Why the ordinary parser would refuse this value, in its own words, by calling its own
+    /// validators — or null when it would take it. The catalog scan owns no second grammar of
+    /// numbers; it borrows this one. <c>--wait</c> is absent on purpose: the parser checks its
+    /// kind after the whole line, on the last value, which is where the scan checks it too.
+    /// </summary>
+    private static string? ValueComplaint(string option, string value) => option switch
+    {
+        "--frames" => Check(() => Options.ParseFrames(value)),
+        "--wait-timeout" => Check(() => Options.ParseWaitTimeout(value)),
+        _ => null,
+    };
+
+    /// <summary>
+    /// Runs one of the parser's validators, turning its refusal into the complaint text —
+    /// the scan borrows the parser's grammar wholesale, wording included.
+    /// </summary>
+    private static string? Check(Func<object> validator)
+    {
+        try
+        {
+            validator();
+            return null;
+        }
+        catch (ToolException problem)
+        {
+            return problem.Message;
+        }
+    }
+
+    /// <summary>
+    /// Answers a catalog request from the embedded JSON. The answer is the payload and always
+    /// goes to stdout — including an unknown or ambiguous one, whose lines are the explanation;
+    /// the exit code is the signal, so a script never has to merge streams to read a failure.
+    /// Exact answers exit 0; a filter that hit nothing and a name that is not there exit 1;
+    /// an <c>api</c> with no term is a usage error and exits 2, the code this CLI already
+    /// spends on "you asked for nothing".
+    /// </summary>
+    private static int AnswerCatalog(CatalogRequest request, TextWriter output, TextWriter error)
+    {
+        if (request.Help)
+        {
+            output.WriteLine(Usage);
+            return 0;
+        }
+
+        if (request.Command == "api" && request.Term.Length == 0)
+        {
+            error.WriteLine(
+                "`api` needs a name to look up: `dotnet cui api ChartOpts`, `dotnet cui api Ui.LineChart`, "
+                + "or `dotnet cui icons` for the glyph list.");
+            return 2;
+        }
+
+        ApiCatalog catalog = EmbeddedCatalog.Value;
+        CatalogResult answer = request.Command == "icons"
+            ? catalog.IconsResult(request.Term.Length == 0 ? null : request.Term)
+            : catalog.Query(request.Term);
+
+        output.WriteLine(request.Json ? answer.RenderJson() : answer.Render());
+        return answer.IsExact ? 0 : 1;
     }
 
     /// <summary>
@@ -469,7 +686,7 @@ internal static class Cli
         /// OverflowException at the user for a typo that deserves a sentence, and a negative
         /// count drew nothing while claiming otherwise.
         /// </summary>
-        private static int ParseFrames(string value)
+        internal static int ParseFrames(string value)
         {
             if (!int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out int frames) || frames < 0)
                 throw new ToolException($"--frames needs a count of at least 0, not \"{value}\".");
@@ -482,7 +699,7 @@ internal static class Cli
         /// a bound anyone could wait by; the ceiling keeps the deadline arithmetic downstream
         /// finite. Every typo here is an exit=1, not a crash.
         /// </summary>
-        private static double ParseWaitTimeout(string value)
+        internal static double ParseWaitTimeout(string value)
         {
             if (!double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double seconds)
                 || !double.IsFinite(seconds) || seconds <= 0 || seconds > MaxWaitSeconds)

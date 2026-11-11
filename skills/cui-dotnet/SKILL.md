@@ -612,7 +612,10 @@ dialog is modal, a dropzone returns the paths it received.
 - **Icons** — 168 constants generated from `cui_icons.h`: `Icons.Check`, `Icons.Plus`, `Icons.Search`, …
 
 Each generated component has one line of documentation with its exact signature in `llms.txt`, and a
-per-section page under `api/`.
+per-section page under `api/`. To look one up without opening a file, `dotnet cui api <name>` prints
+the live declarations of `ChartOpts`, `Ui.LineChart`, or a bare member name from the catalog packaged
+with the tool (`--json` for machine output), and `dotnet cui icons [filter]` lists every glyph with
+its code point. Both answer offline from `api/catalog.json`: no app, no build, no native library.
 
 ## Files
 
@@ -625,6 +628,7 @@ Everything below is in this folder, beside this guide; nothing here points outsi
 | option structs and their fields | `api/Options.md` |
 | records used as array items | `api/Records.md` |
 | the whole API paged, one file per section | `api/` |
+| every declaration as data, for offline lookup | `api/catalog.json` (`dotnet cui api <name> --json`) |
 | what each widget does, and its keyboard | `widgets.md`, `widgets-more.md` |
 | hosting: components, mutations, DI | `hosting.md` |
 | which RIDs the package carries, and the glibc floor | `native-abi.md` |

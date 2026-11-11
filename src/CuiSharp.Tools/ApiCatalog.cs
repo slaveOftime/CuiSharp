@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Text;
 using System.Text.Json;
 
@@ -110,6 +111,27 @@ internal sealed class ApiCatalog
 
             return new ApiCatalog(schema, version, types);
         }
+    }
+
+    /// <summary>The logical name the tools assembly embeds the checked-in catalog under.</summary>
+    internal const string EmbeddedResourceName = "CuiSharp.Tools.api-catalog.json";
+
+    /// <summary>
+    /// Reads the catalog this assembly embedded at build time. This is the CLI's only catalog
+    /// source: no file lookup, no project discovery, no reflection over CuiSharp, no native
+    /// library — the bytes travelled inside the tool package, so `dotnet cui api` answers in a
+    /// directory that holds no app at all.
+    /// </summary>
+    internal static ApiCatalog LoadEmbedded()
+    {
+        using Stream? data = typeof(ApiCatalog).Assembly.GetManifestResourceStream(EmbeddedResourceName);
+        if (data is null)
+            throw new ToolException(
+                $"this build of cui carries no embedded API catalog (resource \"{EmbeddedResourceName}\"); " +
+                "the CuiSharp.Tools package is broken — reinstall it.");
+
+        using var reader = new StreamReader(data);
+        return Load(reader.ReadToEnd());
     }
 
     private static InvalidDataException Bad(string path, string what) =>
@@ -274,10 +296,18 @@ internal sealed class ApiCatalog
     /// The icon index straight off the constant fields: name, private-use code point, and the
     /// literal to paste. The filter matches anywhere in the name, empty shows all.
     /// </summary>
-    internal IReadOnlyList<string> Icons(string? filter)
+    internal IReadOnlyList<string> Icons(string? filter) => IconsResult(filter).Lines;
+
+    /// <summary>
+    /// The icon index as a result with a match state, so the CLI can answer a filter that hit
+    /// nothing with a nonzero exit: "no icon matches" is a mistake worth naming, not a page of
+    /// near-miss glyphs ending in exit 0 that a script reads as success.
+    /// </summary>
+    internal CatalogResult IconsResult(string? filter)
     {
         CatalogType? icons = types.FirstOrDefault(t => Equal(t.Name, "CuiSharp.Icons"));
-        if (icons is null) return ["the catalog has no icon constants."];
+        if (icons is null)
+            return CatalogResult.Answer(CatalogMatch.Unknown, "icons", ["the catalog has no icon constants."]);
 
         var lines = new List<string>();
         foreach (CatalogMember member in icons.Members.Where(m => m.Kind == "constant"))
@@ -288,11 +318,24 @@ internal sealed class ApiCatalog
                 : "?";
             string literal = member.Value is { Length: > 0 } g && g.Length == 1
                 ? $"\"\\u{(int)g[0]:X4}\""
-                : JsonSerializer.Serialize(member.Value ?? "");
+                : JsonString(member.Value ?? "");
             lines.Add($"{member.Name,-28} {codepoint}  {literal}");
         }
 
-        return lines.Count > 0 ? lines : [$"no icon matches \"{filter}\". `cui icons` lists them all."];
+        return lines.Count > 0
+            ? CatalogResult.Answer(CatalogMatch.Exact, filter ?? "icons", lines)
+            : CatalogResult.Answer(CatalogMatch.Unknown, filter ?? "", [$"no icon matches \"{filter}\". `cui icons` lists them all."]);
+    }
+
+    /// <summary>
+    /// One JSON string literal, written the same reflection-free way as every other byte of
+    /// JSON this class emits — the icon fallback is the only string it ever quotes.
+    /// </summary>
+    private static string JsonString(string value)
+    {
+        var buffer = new ArrayBufferWriter<byte>();
+        using (var writer = new Utf8JsonWriter(buffer)) writer.WriteStringValue(value);
+        return Encoding.UTF8.GetString(buffer.WrittenSpan);
     }
 
     private List<string> Candidates(string clean)
@@ -405,20 +448,41 @@ internal sealed class CatalogResult
 
     internal string Render() => string.Join('\n', Lines);
 
+    /// <summary>
+    /// The machine-readable answer, written with <see cref="Utf8JsonWriter"/> rather than
+    /// <c>JsonSerializer</c>: the writer needs no contract resolver, so <c>--json</c> keeps
+    /// answering in a runtime that has disabled reflection-based serialization, which is the
+    /// configuration a statically linked, AOT-published host runs under.
+    /// </summary>
     internal string RenderJson()
     {
-        var sb = new StringBuilder("{ \"match\": ")
-            .Append(JsonSerializer.Serialize(Match.ToString().ToLowerInvariant()))
-            .Append(", \"term\": ").Append(JsonSerializer.Serialize(Term))
-            .Append(", \"lines\": [").Append(string.Join(", ", Lines.Select(s => JsonSerializer.Serialize(s))))
-            .Append("], \"suggestions\": [").Append(string.Join(", ", Suggestions.Select(s => JsonSerializer.Serialize(s))))
-            .Append("] }");
-        return sb.ToString();
+        var buffer = new ArrayBufferWriter<byte>();
+        using (var writer = new Utf8JsonWriter(buffer))
+        {
+            writer.WriteStartObject();
+            writer.WriteString("match", Match.ToString().ToLowerInvariant());
+            writer.WriteString("term", Term);
+            WriteArray(writer, "lines", Lines);
+            WriteArray(writer, "suggestions", Suggestions);
+            writer.WriteEndObject();
+        }
+
+        return Encoding.UTF8.GetString(buffer.WrittenSpan);
+
+        static void WriteArray(Utf8JsonWriter writer, string name, IReadOnlyList<string> values)
+        {
+            writer.WriteStartArray(name);
+            foreach (string value in values) writer.WriteStringValue(value);
+            writer.WriteEndArray();
+        }
     }
 
     internal static CatalogResult Exact(string term, IReadOnlyList<string> lines) => new(CatalogMatch.Exact, term, lines, []);
 
     internal static CatalogResult Ambiguous(string term, IReadOnlyList<string> candidates) => new(CatalogMatch.Ambiguous, term, candidates, []);
+
+    /// <summary>A result whose lines are the whole answer — the icon index needs no suggestions of its own.</summary>
+    internal static CatalogResult Answer(CatalogMatch match, string term, IReadOnlyList<string> lines) => new(match, term, lines, []);
 
     /// <summary>
     /// Unknown is never dead air: the explanation is the answer even when no name is close,

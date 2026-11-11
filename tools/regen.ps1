@@ -81,6 +81,9 @@ try {
         'src/CuiSharp.Tests/Abi.g.cs'
         'src/CuiSharp.Tests/OptionMappings.g.cs'
         'skills/cui-dotnet/llms.txt'
+        # The managed-API catalog is generated too - by the exporter below, from the built
+        # assembly - so a hand-edited or stale copy fails -NoDiff like stale code.
+        'skills/cui-dotnet/api/catalog.json'
     ) + @($staged | ForEach-Object { 'skills/cui-dotnet/' + $_.To })
 
     function Get-GeneratedHash {
@@ -132,6 +135,23 @@ try {
     Write-Host 'bindgen: contract checks (isolated IR/config copies)'
     & dotnet run (Join-Path $root 'tools/bindgen.cs') -- --self-test
     if ($LASTEXITCODE -ne 0) { throw 'bindgen contract checks failed' }
+
+    # The catalog is generated from the built library, not from the headers: build the core
+    # first, export from it, and only then build the solution - so the tool's embedded
+    # resource and the packed skills path see the catalog of the API that was just built.
+    Write-Host 'export-api: build the core for the catalog'
+    & dotnet build (Join-Path $root 'src/CuiSharp/CuiSharp.csproj') -c Release -warnaserror
+    if ($LASTEXITCODE -ne 0) { throw 'core build for the API catalog failed' }
+
+    if ($NoDiff) {
+        Write-Host 'export-api: --check'
+        & dotnet run (Join-Path $root 'tools/export-api.cs') -- --check
+        if ($LASTEXITCODE -ne 0) { throw 'api catalog is stale: regenerate with `dotnet run tools/export-api.cs`' }
+    } else {
+        Write-Host 'export-api: write the catalog'
+        & dotnet run (Join-Path $root 'tools/export-api.cs')
+        if ($LASTEXITCODE -ne 0) { throw 'api catalog export failed' }
+    }
 
     Write-Host 'build + test'
     & dotnet build (Join-Path $root 'CuiSharp.slnx') -c Release -warnaserror
