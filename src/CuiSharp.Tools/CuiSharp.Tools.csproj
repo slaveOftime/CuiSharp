@@ -4,8 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>CuiSharp.Tools</RootNamespace>
-    <!-- Never `cui`: the native library this tool drives is cui.dll. The command name is
-         what makes it `dotnet cui`, and that is set by ToolCommandName below. -->
+    <!-- Never an assembly named `cui`: the native library this tool drives is cui.dll. -->
     <AssemblyName>CuiSharp.Tools</AssemblyName>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -15,7 +14,11 @@
          in Directory.Build.props, so it has to be turned back on here. -->
     <IsPackable>true</IsPackable>
     <PackAsTool>true</PackAsTool>
-    <ToolCommandName>cui</ToolCommandName>
+    <!-- `dotnet cui tree` works because the dotnet CLI dispatches the verb by running a
+         `dotnet-cui` program from the tool's install directory, so the command must be named
+         `dotnet-cui`; ToolCommandName `cui` installed only `cui` and `dotnet cui` was never
+         resolved. The shim is literally `dotnet-cui(.exe)` on every OS. -->
+    <ToolCommandName>dotnet-cui</ToolCommandName>
     <PackageId>CuiSharp.Tools</PackageId>
     <Title>CuiSharp.Tools - drive a CuiSharp app from the command line</Title>
     <Description>Screenshot a CuiSharp app, print the controls of its last frame, and click or type into it - without a window, an agent or a test project.</Description>

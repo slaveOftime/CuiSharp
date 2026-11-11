@@ -18,6 +18,7 @@ namespace CuiSharp.Tools;
 /// dotnet cui type Milk                # type into the focused field
 /// dotnet cui png shot.png             # the frame as a PNG
 /// dotnet cui tree --project src/App   # another app
+/// dotnet cui tree --project app.cs    # a file-based app
 /// dotnet cui tree --app bin/App.exe   # a published build, not a rebuild
 /// dotnet cui tree -- --page=2         # arguments for the app itself
 /// </code>
@@ -47,7 +48,8 @@ internal static class Cli
                               heap, working-set and private bytes
 
         Options:
-          -p, --project <path>  the app to run (a project file or its directory). Default: here
+          -p, --project <path>  the app to run: a directory, a .csproj, or a file-based .cs
+                                app. Default: here
               --app <exe>       run a published build instead of building
               --framework <tfm> the target framework, when the project has more than one
               --frames <count>  draw this many frames before the command
@@ -74,7 +76,9 @@ internal static class Cli
                 ? (exe, options.AppArgs)
                 : AppLocator.Resolve(options.Project, options.NoBuild, error, new(Framework: options.Framework)) is { } assembly
                     ? ("dotnet", [assembly, .. options.AppArgs])
-                    : throw new ToolException($"No .NET app found at \"{options.Project ?? Directory.GetCurrentDirectory()}\".");
+                    : throw new ToolException(
+                        $"No app found at \"{options.Project ?? Directory.GetCurrentDirectory()}\": " +
+                        "no .csproj and no file-based .cs app there.");
 
             // The app's own output is the app's own business: it goes where a shell would send
             // the app's diagnostics, and the protocol on stdout stays clean.

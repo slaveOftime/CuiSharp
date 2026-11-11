@@ -12,7 +12,9 @@
       1. pack CuiSharp and CuiSharp.Templates into a temporary folder
       2. install the template, `dotnet new cui-app`, and point the app at that folder
       3. build, test, and (unless -NoPublish) publish a NativeAOT single file
-      4. generate cui-mini, run its named .cs file and check its button through the headless protocol
+      4. generate cui-mini, run its named .cs file and check its button through the headless protocol,
+         then drive the same .cs file through the built tool, and install the packed tool into an
+         isolated --tool-path folder to check the command name it ships
       5. on Windows, observe the file-based app's native window and close it
 
     -Keep leaves the generated app and packages in place for inspection.
@@ -195,6 +197,33 @@ internal static class AnalyzerProbe
     $lines = ($tree -split "`n" | Select-Object -Skip 1 -First 4 | ForEach-Object { $_.Trim() })
     Write-Host ('    ' + ($lines -join ' / ')) -ForegroundColor Green
 
+    # The packaged command must be `dotnet-cui`: `dotnet cui <verb>` works by the dotnet CLI
+    # running a program named dotnet-cui, so a pack that ships `cui` leaves the documented verb
+    # unresolved. Isolated: a local pack, an install into $work, and a PATH prepend that is
+    # undone right after — nothing global is touched.
+    Step 'checking the installed tool package'
+    & dotnet pack (Join-Path $PSScriptRoot '../src/CuiSharp.Tools/CuiSharp.Tools.csproj') -c $Configuration -o $packages -p:Version=$version | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw 'packing CuiSharp.Tools failed' }
+    $toolPath = Join-Path $work 'installed-tool'
+    & dotnet tool install CuiSharp.Tools --version $version --tool-path $toolPath --add-source $packages | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw 'installing CuiSharp.Tools into the isolated tool path failed' }
+    $shimName = if ($IsWindows) { 'dotnet-cui.exe' } else { 'dotnet-cui' }
+    $shim = Join-Path $toolPath $shimName
+    if (-not (Test-Path $shim)) {
+        throw "the installed tool must ship a $shimName command; found: $((Get-ChildItem $toolPath).Name -join ', ')"
+    }
+    $shimHelp = (& $shim --help | Out-String)
+    if ($LASTEXITCODE -ne 0 -or $shimHelp -notmatch 'dotnet cui <command>') { throw "the installed command did not print its usage: $shimHelp" }
+    $savedPath = $env:PATH
+    try {
+        $env:PATH = "$toolPath$([System.IO.Path]::PathSeparator)$savedPath"
+        $dispatchHelp = (& dotnet cui --help | Out-String)
+        if ($LASTEXITCODE -ne 0 -or $dispatchHelp -notmatch 'dotnet cui <command>') {
+            throw "dotnet cui did not dispatch to the installed tool: $dispatchHelp"
+        }
+    } finally { $env:PATH = $savedPath }
+    Write-Host "    $shimName installed, and dotnet cui resolves through it" -ForegroundColor Green
+
     Step 'generating and running a file-based app'
     $defaultMini = Join-Path $work 'demo1'
     & dotnet new cui-mini -o $defaultMini | Out-Null
@@ -245,6 +274,34 @@ internal static class AnalyzerProbe
     finally {
         if (-not $mini.HasExited) { $mini.Kill($true); $mini.WaitForExit() }
         $mini.Dispose()
+    }
+
+    # The template's other promise: `dotnet cui` drives that same file with no csproj anywhere.
+    # This is the whole tool path on a file-based app — Release build through the SDK's file
+    # handling, a headless launch, one command — checked on the app the template actually ships.
+    Step 'driving the file-based app with dotnet cui'
+    $fileToolInfo = [System.Diagnostics.ProcessStartInfo]::new($cui)
+    foreach ($argument in @('tree', '--project', (Join-Path $miniApp $miniFile), '--frames', '2')) { $fileToolInfo.ArgumentList.Add($argument) }
+    $fileToolInfo.UseShellExecute = $false
+    $fileToolInfo.RedirectStandardOutput = $true
+    $fileToolInfo.RedirectStandardError = $true
+    $fileToolInfo.StandardOutputEncoding = [System.Text.UTF8Encoding]::new($false, $true)
+    $fileTool = [System.Diagnostics.Process]::Start($fileToolInfo)
+    try {
+        $stdout = $fileTool.StandardOutput.ReadToEndAsync()
+        $stderr = $fileTool.StandardError.ReadToEndAsync()
+        if (-not $fileTool.WaitForExit(300000)) { throw 'dotnet cui tree on the file-based app timed out after 5 minutes' }
+        $tree = $stdout.GetAwaiter().GetResult()
+        $errors = $stderr.GetAwaiter().GetResult()
+        if ($fileTool.ExitCode -ne 0) { throw "dotnet cui tree on $miniFile failed: $errors" }
+        if ($tree -notmatch 'Frame' -or $tree -notmatch 'Increment') {
+            throw "dotnet cui did not see the file-based app's button: $tree"
+        }
+        Write-Host "    dotnet cui built and drove $miniFile without a project file" -ForegroundColor Green
+    }
+    finally {
+        if (-not $fileTool.HasExited) { $fileTool.Kill($true); $fileTool.WaitForExit() }
+        $fileTool.Dispose()
     }
 
     # The template's promise is one binary, and a publish that leaves a .pdb beside it is how that
