@@ -298,6 +298,9 @@ struct CuiSharp.CarouselOpts
   field Single AutoAdvance
   field Single Gap
   field Single Height
+class CuiSharp.ChartNormalizer
+  static Int32 Normalize(ReadOnlySpan<Single>, Span<Single>, NormalizeMode)
+  static Single FindBaseline(ReadOnlySpan<Single>)
 struct CuiSharp.ChartOpts
   field Boolean Area
   field Boolean NoGrid
@@ -4849,6 +4852,10 @@ struct CuiSharp.NodeView
   field Single X
   field Single Y
   field Single Zoom
+enum CuiSharp.NormalizeMode
+  Index100
+  None
+  Percent
 struct CuiSharp.NowPlayingOpts
   field Boolean Compact
   field Size Width
