@@ -253,6 +253,12 @@
       "clicked": true,
       "why": "The bool return reports clicked, not openness; cui_card_begin always opens its layout container."
     },
+    "cui_scroll_begin": {
+      "end": "cui_scroll_end",
+      "clicked": false,
+      "deriveNamedId": true,
+      "why": "cui_scroll_begin returns void although it derives a named area's id as cui_make_id(id); the recorder recomputes that pure hash only while recording, so a named Scroll reports its own rect instead of the last widget's."
+    },
     "cui_kanban_column_begin_ex": {
       "end": "cui_kanban_column_end",
       "clicked": true,

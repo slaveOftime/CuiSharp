@@ -18,7 +18,7 @@ public static unsafe class LayoutUiExtensions
         {
             var __opts = o.ToNative();
             var __result = Native.BoxBegin(ui.Handle, in __opts);
-            return new LayoutScope(ui.Handle, &Native.BoxEnd, "Box", o.Id);
+            return new LayoutScope(ui.Handle, &Native.BoxEnd, "Box", o.Id, nativeId: __result);
         }
 
         /// <summary>cui_row_begin</summary>
@@ -26,7 +26,7 @@ public static unsafe class LayoutUiExtensions
         {
             var __opts = o.ToNative();
             var __result = Native.RowBegin(ui.Handle, in __opts);
-            return new LayoutScope(ui.Handle, &Native.BoxEnd, "Row", o.Id);
+            return new LayoutScope(ui.Handle, &Native.BoxEnd, "Row", o.Id, nativeId: __result);
         }
 
         /// <summary>cui_column_begin</summary>
@@ -34,7 +34,7 @@ public static unsafe class LayoutUiExtensions
         {
             var __opts = o.ToNative();
             var __result = Native.ColumnBegin(ui.Handle, in __opts);
-            return new LayoutScope(ui.Handle, &Native.BoxEnd, "Column", o.Id);
+            return new LayoutScope(ui.Handle, &Native.BoxEnd, "Column", o.Id, nativeId: __result);
         }
 
         /// <summary>cui_spacer</summary>
@@ -76,7 +76,7 @@ public static unsafe class LayoutUiExtensions
         {
             var __opts = o.ToNative();
             Native.ScrollBegin(ui.Handle, in __opts);
-            return new LayoutScope(ui.Handle, &Native.ScrollEnd, "Scroll", o.Id);
+            return new LayoutScope(ui.Handle, &Native.ScrollEnd, "Scroll", o.Id, deriveNamedId: true);
         }
 
         /// <summary>cui_scroll_to</summary>

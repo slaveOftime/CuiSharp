@@ -121,12 +121,17 @@ public static class WidgetRecorder
     }
 
     /// <summary>A container opened; the widgets drawn from here on sit inside it.</summary>
+    /// <remarks>
+    /// <paramref name="nativeId"/> is the id CUI returned for this container when its begin
+    /// reports one; <paramref name="deriveNamedId"/> marks a container whose id CUI derives
+    /// purely from the name (cui_make_id) although its begin returns void.
+    /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static void Push(nint ui, string kind, string? id)
+    internal static void Push(nint ui, string kind, string? id, uint? nativeId = null, bool deriveNamedId = false)
     {
         FrameRecorder? frame = _current;
         if (frame is null) return;
-        frame.Push(ui, kind, id);
+        frame.Push(ui, kind, id, nativeId, deriveNamedId);
     }
 
     /// <summary>A container opened under a markup id, which is the name most of them take.</summary>
@@ -258,9 +263,19 @@ internal sealed class FrameRecorder
         _controls.Clear();
     }
 
-    internal void Push(nint ui, string kind, string? id)
+    internal void Push(nint ui, string kind, string? id, uint? nativeId = null, bool deriveNamedId = false)
     {
-        if (!string.IsNullOrEmpty(id)) Add(ui, kind, default, 0, id, container: true);
+        if (!string.IsNullOrEmpty(id))
+        {
+            // The container's own native id when its begin reported one (a box - even an
+            // explicit 0 there stays 0, so no stale last_id is ever borrowed), else the pure
+            // cui_make_id of the app's name when that is how CUI derives it (a named scroll),
+            // else the last_id the container set for itself.
+            uint native = nativeId ?? (deriveNamedId
+                ? Native.MakeId(ui, Utf8.Get(id))
+                : Native.LastId(ui));
+            _pending.Add(new Pending(kind, default, 0, id, native, _depth, container: true));
+        }
         _depth++;
     }
 
