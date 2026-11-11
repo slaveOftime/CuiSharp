@@ -56,13 +56,16 @@ way:
 | minimal app | 1 498 112 | 1 165 312 (−22.2%) |
 | gallery, 28 pages | 2 581 504 | 2 292 736 (−11.2%) |
 | `dotnet new cui-app`, published | — | 2 244 608 |
-| `dotnet new cui-mini`, published | — | 1 163 776 |
+| `dotnet new cui-mini`, published | — | 1 163 264 |
 
 Nearly all of it is the headless channel: `System.IO`, `Console`, `Encoding` and the reflection
 over an enum the command lexer reads arrive with it, and a switch only removes them when the
 trimmer knows the answer at build time. The rest is `StackTraceSupport` and
 `UseSystemResourceKeys`, which rewrite framework exception messages, plus telemetry and
 hot-reload metadata that a shipped app never reads.
+
+The two template rows carry the app's own name and version inside the executable, so `-n` moves them
+by a few hundred bytes; the mini template sets the properties that keep that publish to one file.
 
 `dotnet cui` passes `-p:CuiSharpHeadless=true` to the builds it runs itself, and says so when a
 **published** app has no channel: publishing one for a tool to inspect needs the same property.

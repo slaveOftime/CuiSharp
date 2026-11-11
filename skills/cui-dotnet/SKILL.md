@@ -35,8 +35,11 @@ draw again. Conditional UI is an `if`; a list is a `for`.
 ## A whole app
 
 For a file-based C# app: install `CuiSharp.Templates`, then `dotnet new cui-mini -n demo1`
-and `dotnet run demo1.cs`. This creates only `demo1.cs` in the current directory, without a new
-folder. Add `-o <folder>` only for a separate output directory.
+and `dotnet run demo1.cs` — a JIT build of one file, so a second or two. This creates only
+`demo1.cs` in the current directory, without a new folder. Add `-o <folder>` only for a separate
+output directory. `dotnet publish demo1.cs -c Release -o .` turns it into one native binary beside
+the source, about 1.1 MB, needing no .NET on the machine that runs it; the generated file sets the
+properties that do that, explained in its header.
 The generated file uses `#:package CuiSharp@*`; pass
 `--CuiSharpVersion <version>` to the template to pin it. Use `cui-app` instead for a solution with
 components, services and tests.
@@ -559,8 +562,10 @@ vocabulary, and the defaults are right for most apps:
 
 `OptimizationPreference=Size` and `InvariantGlobalization=true` are the app's call, not the
 package's: the first slows your own arithmetic, the second changes how a culture formats. Both
-templates set them, and a file-based app sets them with `#:property`. What each switch is worth,
-and what a widget costs: `docs/SIZE.md` in the CuiSharp repository.
+templates set them, and a file-based app sets them with `#:property`, together with
+`DebugType=none` and `StripSymbols=true` — without the first of those a publish leaves a 6 MB `.pdb`
+next to the exe. What each switch is worth, and what a widget costs: `docs/SIZE.md` in the CuiSharp
+repository.
 
 ## Widget behaviour
 

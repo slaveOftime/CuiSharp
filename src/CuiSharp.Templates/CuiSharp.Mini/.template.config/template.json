@@ -5,7 +5,7 @@
   "identity": "CuiSharp.Mini",
   "name": "CuiSharp file-based app",
   "shortName": "cui-mini",
-  "description": "A file-based C# app: dotnet run <name>.cs opens a native window, with no project or solution.",
+  "description": "A file-based C# app: dotnet run <name>.cs opens a native window with no project or solution, and dotnet publish makes it one small native binary.",
   "tags": {
     "language": "C#",
     "type": "item"

@@ -28,9 +28,12 @@ A published binary carries only what it uses, and the package decides that for y
   −2 048 B for the gallery. The end function is now taken in the wrapper that opened the container,
   so a widget is reachable exactly when it is used. No API change; `LayoutScope` and `OpenScope`
   are still what a `using` closes.
-- **`dotnet new cui-mini`** sets `OptimizationPreference=Size` and `InvariantGlobalization=true` in
-  the generated file with `#:property`, the two switches a file-based app cannot inherit from a
-  project file. Its published single file is 1 163 776 B.
+- **`dotnet new cui-mini`** ships a single binary by default. The generated file sets
+  `PublishAot`, `OptimizationPreference=Size`, `InvariantGlobalization=true`, `StripSymbols` and
+  `DebugType=none` with `#:property` — the switches a file-based app has no project file to inherit
+  them from — so `dotnet publish demo1.cs -c Release -o .` leaves **one** file of about 1.1 MB
+  beside the source instead of an exe and a 6 MB `.pdb`. Its header says how to run it in a second
+  (a JIT build of one file) and how to publish it.
 - **`dotnet cui` says what to do** when a published app never prints its banner, instead of only
   reporting that it waited.
 - **A size budget per app shape.** `tools/size-report.ps1` measures five shapes (a table, a chart,

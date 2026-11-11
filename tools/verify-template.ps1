@@ -247,6 +247,23 @@ internal static class AnalyzerProbe
         $mini.Dispose()
     }
 
+    # The template's promise is one binary, and a publish that leaves a .pdb beside it is how that
+    # breaks quietly: the app still runs, and the folder has two things in it. DebugType=none is
+    # what suppresses the native symbols on every platform: .pdb, .dbg or .dSYM.
+    if (-not $NoPublish) {
+        Step 'publishing the file-based app as one file'
+        $miniPublish = Join-Path $miniApp 'publish'
+        $miniExe = if ($IsWindows) { "$miniName.exe" } else { $miniName }
+        & dotnet publish (Join-Path $miniApp $miniFile) -c $Configuration -o $miniPublish --nologo | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw 'the file-based app does not publish' }
+
+        $published = @(Get-ChildItem $miniPublish -File)
+        if ($published.Count -ne 1 -or $published[0].Name -cne $miniExe) {
+            throw "a publish of $miniFile must leave exactly one file, $miniExe; found: $($published.Name -join ', ')"
+        }
+        Write-Host ("    one file, {0:N0} B: {1}" -f $published[0].Length, $miniExe) -ForegroundColor Green
+    }
+
     if ($IsWindows) {
         Step 'observing the file-based app window'
         if (-not ('CuiMiniWindowProbe' -as [type])) {

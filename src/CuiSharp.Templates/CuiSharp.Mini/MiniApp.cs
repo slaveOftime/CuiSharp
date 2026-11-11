@@ -1,11 +1,30 @@
 #:package CuiSharp@__CUISHARP_VERSION__
 
-// A published single file is the whole product here, so the two switches that decide its size are
-// set where a file-based app can set them: smaller native code, and no ICU tables for a demo that
-// formats numbers the invariant way. The app template ('dotnet new cui-app') does the same in its
-// project file, with the same reasoning.
+// This file is the whole app: no project, no solution, nothing to set up.
+//
+// Start it
+//   dotnet run MiniApp.cs
+//   A JIT build of this one file, so the window is up in a second or two, and in a quarter of a
+//   second once it has been built. Nothing is compiled ahead of time, and there is no project or
+//   solution to keep in step.
+//
+// Ship it
+//   dotnet publish MiniApp.cs -c Release -o .
+//   One native executable, MiniApp.exe, beside this file — about 1.1 MB, nothing else in the
+//   folder, and no .NET runtime on the machine that runs it. Without -o it lands in
+//   artifacts/MiniApp/ instead, which keeps the source folder clean.
+//   A publish also trims the binary, and that includes the channel `dotnet cui` drives an app
+//   with: add -p:CuiSharpHeadless=true if a tool should inspect the published exe.
+//
+// The five properties below are what makes that binary small: no ICU tables (this app formats the
+// invariant way), size rather than speed in the generated code, and no debug symbols — that last
+// pair is the difference between one file and an exe next to a six-megabyte .pdb.
+// 'dotnet new cui-app' sets the same ones in its project file, for the same reasons.
+#:property PublishAot=true
 #:property OptimizationPreference=Size
 #:property InvariantGlobalization=true
+#:property StripSymbols=true
+#:property DebugType=none
 
 using CuiSharp;
 
