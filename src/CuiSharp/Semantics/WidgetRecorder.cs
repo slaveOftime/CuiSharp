@@ -136,11 +136,11 @@ public static class WidgetRecorder
 
     /// <summary>A container opened under a markup id, which is the name most of them take.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static void Push(nint ui, string kind, UiText id, uint? nativeId = null)
+    internal static void Push(nint ui, string kind, UiText id, uint? nativeId = null, bool deriveNamedId = false)
     {
         FrameRecorder? frame = _current;
         if (frame is null) return;
-        frame.Push(ui, kind, id, nativeId);
+        frame.Push(ui, kind, id, nativeId, deriveNamedId);
     }
 
     /// <summary>
@@ -279,11 +279,14 @@ internal sealed class FrameRecorder
         _depth++;
     }
 
-    internal void Push(nint ui, string kind, UiText id, uint? nativeId = null)
+    internal void Push(nint ui, string kind, UiText id, uint? nativeId = null, bool deriveNamedId = false)
     {
         nint pointer = id.GetPointer(out int length);
         if (length > 0)
-            _pending.Add(new Pending(kind, pointer, length, null, nativeId ?? Native.LastId(ui), _depth, container: true));
+        {
+            uint native = nativeId ?? (deriveNamedId ? Native.MakeId(ui, pointer) : Native.LastId(ui));
+            _pending.Add(new Pending(kind, pointer, length, null, native, _depth, container: true));
+        }
         _depth++;
     }
 

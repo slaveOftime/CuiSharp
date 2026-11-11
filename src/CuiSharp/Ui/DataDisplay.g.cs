@@ -72,7 +72,7 @@ public static unsafe class DataDisplayUiExtensions
             Native.VirtualListBegin(ui.Handle, Utf8.Get(id), count, rowHeight, UiMarshal.ToNative(height), ref __first, ref __last);
             first = __first;
             last = __last;
-            return new LayoutScope(ui.Handle, &Native.VirtualListEnd, "VirtualList", id);
+            return new LayoutScope(ui.Handle, &Native.VirtualListEnd, "VirtualList", id, deriveNamedId: true);
         }
 
         /// <summary>cui_table_begin_ex</summary>

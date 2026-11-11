@@ -53,7 +53,7 @@ public static class LayoutFormatter
     {
         ArgumentNullException.ThrowIfNull(frame);
         var sb = new StringBuilder();
-        sb.AppendLine(Header);
+        sb.Append(Header).Append('\n');
         Walk(frame, 0);
         return sb.ToString().TrimEnd('\n');
 
@@ -69,7 +69,11 @@ public static class LayoutFormatter
                 sb.Append(" extent:UNKNOWN(scrolled or virtualized content is not exposed)");
 
             if (node.Children.Count > 0 && ObservedBounds(node) is { } bounds)
+            {
                 sb.Append(" union≥[").Append(bounds).Append("] (lower-bound, recorded rects)");
+                if (HasVerifiedRect(node) && Exceeds(bounds, node.Rect))
+                    sb.Append(" OVERFLOW(observed bounds)");
+            }
 
             sb.Append('\n');
             foreach (SemanticNode child in node.Children) Walk(child, indent + 1);
@@ -99,6 +103,11 @@ public static class LayoutFormatter
 
         return acc;
     }
+
+    private static bool Exceeds(RectF content, RectF box) =>
+        content.X < box.X - 0.5f || content.Y < box.Y - 0.5f
+        || content.X + content.W > box.X + box.W + 0.5f
+        || content.Y + content.H > box.Y + box.H + 0.5f;
 
     private static RectF Expand(RectF a, RectF b)
     {

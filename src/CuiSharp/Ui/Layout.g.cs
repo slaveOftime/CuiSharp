@@ -94,7 +94,7 @@ public static unsafe class LayoutUiExtensions
             var __opts = o.ToNative();
             Native.SplitBegin(ui.Handle, Utf8.Get(id), ref *__ratio, in __opts);
             ratio = *__ratio;
-            return new LayoutScope(ui.Handle, &Native.SplitEnd, "Split", id);
+            return new LayoutScope(ui.Handle, &Native.SplitEnd, "Split", id, deriveNamedId: true);
         }
 
         /// <summary>cui_split_next</summary>

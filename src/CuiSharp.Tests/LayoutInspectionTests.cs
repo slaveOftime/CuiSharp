@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using CuiSharp.Hosting;
 using CuiSharp.Testing;
 
@@ -134,14 +135,78 @@ public class LayoutInspectionTests
         Assert.Contains("extent:UNKNOWN", answer, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void NamedVirtualAndSplitContainersDoNotBorrowThePreviousWidgetsRectangle()
+    {
+        uint rowsId = 0, panesId = 0;
+        float ratio = 0.5f;
+        using var app = TestApp.Start(ui =>
+        {
+            ui.Button("before");
+            using (ui.Id(42))
+            {
+                rowsId = ui.MakeId("rows");
+                using (ui.VirtualList("rows", 50, 24, Size.Px(100), out int first, out int last))
+                    for (int i = first; i < last; i++) ui.ListItem($"row {i}");
+                panesId = ui.MakeId("panes");
+                using (ui.Split("panes", ref ratio, new SplitOpts { Height = Size.Px(80) }))
+                {
+                    ui.Button("Left");
+                    ui.SplitNext();
+                    ui.Button("Right");
+                }
+            }
+        }, 400, 400);
+
+        SemanticNode rows = app.Tree.Find("rows");
+        SemanticNode panes = app.Tree.Find("panes");
+        Assert.Equal(rowsId, rows.Id);
+        Assert.Equal(panesId, panes.Id);
+        Assert.NotEqual(app.Tree.Find("before").Id, rows.Id);
+        Assert.Equal(100, rows.Rect.H);
+        Assert.Equal(80, panes.Rect.H);
+        Assert.True(panes.Rect.W > 240);
+    }
+
+    [Fact]
+    public void ObservedChildrenBeyondAFixedContainerAreMarkedAsOverflow()
+    {
+        using var app = TestApp.Start(ui =>
+        {
+            using (ui.Column(new Box { Id = "clip", Height = Size.Px(40), Clip = true }))
+            {
+                ui.Button("A");
+                ui.Gap(24);
+                ui.Button("B");
+            }
+        }, 300, 200);
+        string line = Assert.Single(LayoutLines(app), l => l.Contains("Column \"clip\"", StringComparison.Ordinal));
+        Assert.Contains("OVERFLOW(observed bounds)", line, StringComparison.Ordinal);
+        Assert.True(app.Tree.Find("B").Rect.Y + app.Tree.Find("B").Rect.H > app.Tree.Find("clip").Rect.Y + 40);
+    }
+
+    [Fact]
+    public void AUnicodeLayoutPayloadRoundTripsExactlyByItsByteCount()
+    {
+        using var app = TestApp.Start(ui =>
+        {
+            using (ui.Column(new Box { Id = "布局" })) ui.Button("保存");
+        }, 300, 200);
+        Assert.Equal(app.PrintLayout(), Wire(app, "layout"));
+    }
+
     /// <summary>One command down the headless protocol, the answer payload back — the loop's own wire.</summary>
     private static string Wire(HeadlessApp app, string command)
     {
         var output = new StringWriter();
         HeadlessLoop.Run(app, new StringReader(command + "\nquit\n"), output);
-        string wire = output.ToString();
-        string[] lines = wire.ReplaceLineEndings("\n").Split('\n');
-        int length = int.Parse(lines[1]["CUI-OK ".Length..], CultureInfo.InvariantCulture);
-        return string.Join('\n', lines[2..])[..length];
+        byte[] wire = Encoding.UTF8.GetBytes(output.ToString());
+        int bannerEnd = Array.IndexOf(wire, (byte)'\n');
+        int headerEnd = Array.IndexOf(wire, (byte)'\n', bannerEnd + 1);
+        string header = Encoding.UTF8.GetString(wire, bannerEnd + 1, headerEnd - bannerEnd - 1);
+        Assert.StartsWith("CUI-OK ", header, StringComparison.Ordinal);
+        int length = int.Parse(header["CUI-OK ".Length..], CultureInfo.InvariantCulture);
+        Assert.Equal((byte)'\n', wire[headerEnd + 1 + length]);
+        return Encoding.UTF8.GetString(wire, headerEnd + 1, length);
     }
 }

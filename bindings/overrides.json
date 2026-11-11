@@ -259,6 +259,18 @@
       "deriveNamedId": true,
       "why": "cui_scroll_begin returns void although it derives a named area's id as cui_make_id(id); the recorder recomputes that pure hash only while recording, so a named Scroll reports its own rect instead of the last widget's."
     },
+    "cui_virtual_list_begin": {
+      "end": "cui_virtual_list_end",
+      "clicked": false,
+      "deriveNamedId": true,
+      "why": "The viewport is laid out under cui_make_id(id), but begin returns void and does not set last_id; the recorder derives that same id without changing native identity."
+    },
+    "cui_split_begin": {
+      "end": "cui_split_end",
+      "clicked": false,
+      "deriveNamedId": true,
+      "why": "The split container uses cui_make_id(id) without setting last_id; derive its own recorded id rather than borrow the preceding widget's rectangle."
+    },
     "cui_kanban_column_begin_ex": {
       "end": "cui_kanban_column_end",
       "clicked": true,

@@ -2574,7 +2574,7 @@ sealed class Idiomatic
         // recomputes that hash only while recording, so an idle frame calls nothing new.
         string nativeId = !namedByMarkup && widget.Native.ReturnType.Spelling == "cui_id"
             ? $", nativeId: {result}"
-            : !namedByMarkup && _overrides.Scopes.TryGetValue(widget.Native.CName, out var scope) && scope.DeriveNamedId
+            : _overrides.Scopes.TryGetValue(widget.Native.CName, out var scope) && scope.DeriveNamedId
                 ? ", deriveNamedId: true"
                 : "";
         return $"new {scopeReturn}(ui.Handle, &Native.{widget.End!.CsName}, \"{widget.Name}\", {id}{extra}{nativeId})";
