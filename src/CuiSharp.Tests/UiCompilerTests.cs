@@ -106,6 +106,36 @@ public class UiCompilerTests
     }
 
     /// <summary>
+    /// Issue #10: the old CuiSharp.TaskStatus made an unqualified TaskStatus ambiguous with
+    /// System.Threading.Tasks.TaskStatus for every consumer that used both namespaces. Renamed
+    /// CuiTaskStatus, both resolve unqualified in one consumer file; restoring the old name
+    /// would make this snippet fail with CS0104 before either member could even be read.
+    /// </summary>
+    [Fact]
+    public void BothTaskStatusTypesResolveUnqualifiedInAConsumer()
+    {
+        // An unrelated namespace on purpose: inside CuiSharp's own hierarchy the enclosing
+        // namespace finds CuiSharp.TaskStatus before any using, so it hides the ambiguity
+        // instead of reporting it - a consumer is where the collision was observable.
+        var errors = Compile("""
+            namespace Consumer
+            {
+                class Page
+                {
+                    void Draw(Ui ui)
+                    {
+                        var bcl = TaskStatus.Canceled;
+                        ui.AgentStatus("working", new AgentStatusOpts { Status = CuiTaskStatus.Running });
+                        ui.AgentPlan("plan", [new PlanStep("read", null, CuiTaskStatus.Done)]);
+                        if (bcl == TaskStatus.RanToCompletion) ui.Text("done");
+                    }
+                }
+            }
+            """);
+        Assert.Empty(errors);
+    }
+
+    /// <summary>
     /// The published guide's own snippets, compiled. A reader pastes them, so a wrong shape in
     /// SKILL.md is a build error in someone else's project — and nothing else in the suite reads
     /// the examples as code.

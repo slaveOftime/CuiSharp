@@ -109,6 +109,9 @@ public class EnumContractTests
         // CuiSharp.TaskStatus used to collide with System.Threading.Tasks.TaskStatus:
         // with both usings in scope, an unqualified TaskStatus was ambiguous. The
         // binding is renamed CuiTaskStatus, so both names resolve unqualified here.
+        // This file's own namespace would hide the old collision (the enclosing
+        // CuiSharp namespace wins over a using), so UiCompilerTests pins the external
+        // consumer's CS0104; what is pinned here is the ABI and the types staying apart.
         Assert.NotEqual(typeof(CuiTaskStatus), typeof(TaskStatus));
 
         // cui_task_status: the ABI numbers the C side casts to.
