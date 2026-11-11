@@ -30,4 +30,14 @@ in [ARCHITECTURE.md](ARCHITECTURE.md). Every item here passes the same gates as 
   NSAccessibility. The semantic tree is the foundation to build on, not a substitute.
 - **One window per app.** CUI creates one window; multi-window is an upstream question.
 - **IME coverage** beyond what upstream implements.
+- **Chart time axes and gaps.** The managed `NormalizeMode` is a y-value transform; CUI still spaces
+  line/bar points uniformly by index and has no explicit gap segments. True timestamps, irregular
+  calendars, aligned hover/labels and NaN-gap semantics need native API and renderer work upstream.
+- **Complete layout introspection.** `cui layout` can report verified named rectangles and
+  lower-bound unions, but CUI exposes neither id-0 container rectangles nor authoritative
+  scroll/content extents. A read-only layout walk and scroll-info API belong upstream.
+- **Safe live-window control.** A managed window-session prototype cannot prove callbacks are at a
+  safe frame boundary during nested modal/deferred-paint pumps, nor reliably cancel input during
+  native teardown. This needs an upstream post-at-frame-boundary/wake and destroy-lifecycle hook;
+  do not ship the current prototype as a supported tool.
 - **macOS signing and notarization** for a distributed `.app`.

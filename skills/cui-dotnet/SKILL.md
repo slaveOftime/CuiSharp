@@ -292,6 +292,13 @@ about 12 µs — the same as a thousand.
 for you — `LineChart`/`BarChart` collapse anything longer than `ChartOpts.MaxPoints` (default: twice
 the viewport width) into min/max pairs in the frame arena — so pass the whole feed.
 
+`ChartOpts.Normalize` rebases each line/bar series to its own first finite non-zero sample:
+`NormalizeMode.Index100` makes that point 100; `NormalizeMode.Percent` makes it 0. A negative
+baseline is allowed (and reverses the direction). The setting applies to `LineChart` and
+`BarChart`; `DonutChart` shares the options type but rejects normalization. When normalization is
+enabled, NaN/infinity and all-zero series are errors — **NaN is not a gap marker**. CUI spaces
+points uniformly by index, not by time; `Labels` are positional, and this is not a timestamp axis.
+
 ```csharp
 private readonly float[] _window = new float[SeriesDecimator.RequiredCapacity(400)];
 private readonly Series[] _series = [new Series { Values = _window }];

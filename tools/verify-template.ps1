@@ -242,6 +242,17 @@ internal static class AnalyzerProbe
     if ($generated.Count -ne 1 -or $generated[0].Name -cne $miniFile) {
         throw "cui-mini must generate exactly one file named $miniFile"
     }
+    # Deterministic non-ASCII label: the tool's strict UTF-8 decoder below must observe these
+    # exact characters; this check never silently skips because a sample page happened to be ASCII.
+    $miniPath = Join-Path $miniApp $miniFile
+    $miniSource = [System.IO.File]::ReadAllText($miniPath)
+    $asciiHeading = 'ui.Heading("MiniApp", 1);'
+    if (-not $miniSource.Contains($asciiHeading, [StringComparison]::Ordinal)) {
+        throw "the generated mini no longer contains the expected heading: $miniPath"
+    }
+    $miniSource = $miniSource.Replace($asciiHeading, 'ui.Heading("保存", 1);')
+    [System.IO.File]::WriteAllText($miniPath, $miniSource, [System.Text.UTF8Encoding]::new($false))
+
     Copy-Item (Join-Path $app 'NuGet.config') (Join-Path $miniApp 'NuGet.config')
 
     $psi = [System.Diagnostics.ProcessStartInfo]::new('dotnet')
@@ -280,12 +291,15 @@ internal static class AnalyzerProbe
     # This is the whole tool path on a file-based app — Release build through the SDK's file
     # handling, a headless launch, one command — checked on the app the template actually ships.
     Step 'driving the file-based app with dotnet cui'
-    $fileToolInfo = [System.Diagnostics.ProcessStartInfo]::new($cui)
-    foreach ($argument in @('tree', '--project', (Join-Path $miniApp $miniFile), '--frames', '2')) { $fileToolInfo.ArgumentList.Add($argument) }
+    $fileToolInfo = [System.Diagnostics.ProcessStartInfo]::new('dotnet')
+    $fileToolInfo.WorkingDirectory = $miniApp
+    foreach ($argument in @('cui', 'tree', '--project', $miniFile, '--frames', '2')) { $fileToolInfo.ArgumentList.Add($argument) }
     $fileToolInfo.UseShellExecute = $false
     $fileToolInfo.RedirectStandardOutput = $true
     $fileToolInfo.RedirectStandardError = $true
     $fileToolInfo.StandardOutputEncoding = [System.Text.UTF8Encoding]::new($false, $true)
+    $fileToolInfo.StandardErrorEncoding = [System.Text.UTF8Encoding]::new($false, $true)
+    $fileToolInfo.Environment['PATH'] = "$toolPath$([System.IO.Path]::PathSeparator)$env:PATH"
     $fileTool = [System.Diagnostics.Process]::Start($fileToolInfo)
     try {
         $stdout = $fileTool.StandardOutput.ReadToEndAsync()
@@ -294,14 +308,42 @@ internal static class AnalyzerProbe
         $tree = $stdout.GetAwaiter().GetResult()
         $errors = $stderr.GetAwaiter().GetResult()
         if ($fileTool.ExitCode -ne 0) { throw "dotnet cui tree on $miniFile failed: $errors" }
-        if ($tree -notmatch 'Frame' -or $tree -notmatch 'Increment') {
-            throw "dotnet cui did not see the file-based app's button: $tree"
+        if ($tree -notmatch 'Frame' -or $tree -notmatch 'Increment' -or -not $tree.Contains('保存')) {
+            throw "the installed dotnet cui did not build and render the file-based app as UTF-8: $tree"
         }
-        Write-Host "    dotnet cui built and drove $miniFile without a project file" -ForegroundColor Green
+        Write-Host "    installed dotnet cui built and drove $miniFile; Unicode label round-tripped as UTF-8" -ForegroundColor Green
     }
     finally {
         if (-not $fileTool.HasExited) { $fileTool.Kill($true); $fileTool.WaitForExit() }
         $fileTool.Dispose()
+    }
+
+    # Redirected diagnostics are UTF-8 too. A non-existent filename that itself contains
+    # non-ASCII text checks stderr independently from the successful Unicode tree payload.
+    $badToolInfo = [System.Diagnostics.ProcessStartInfo]::new('dotnet')
+    $badToolInfo.WorkingDirectory = $miniApp
+    foreach ($argument in @('cui', 'tree', '--project', '不存在.cs')) { $badToolInfo.ArgumentList.Add($argument) }
+    $badToolInfo.UseShellExecute = $false
+    $badToolInfo.RedirectStandardOutput = $true
+    $badToolInfo.RedirectStandardError = $true
+    $badToolInfo.StandardOutputEncoding = [System.Text.UTF8Encoding]::new($false, $true)
+    $badToolInfo.StandardErrorEncoding = [System.Text.UTF8Encoding]::new($false, $true)
+    $badToolInfo.Environment['PATH'] = "$toolPath$([System.IO.Path]::PathSeparator)$env:PATH"
+    $badTool = [System.Diagnostics.Process]::Start($badToolInfo)
+    try {
+        $badOut = $badTool.StandardOutput.ReadToEndAsync()
+        $badErr = $badTool.StandardError.ReadToEndAsync()
+        if (-not $badTool.WaitForExit(60000)) { throw 'dotnet cui diagnostic smoke timed out' }
+        $diagnostic = $badErr.GetAwaiter().GetResult()
+        $null = $badOut.GetAwaiter().GetResult()
+        if ($badTool.ExitCode -ne 1 -or -not $diagnostic.Contains('不存在.cs')) {
+            throw "installed dotnet cui did not preserve the UTF-8 diagnostic: $diagnostic"
+        }
+        Write-Host '    installed tool stderr round-tripped UTF-8 diagnostics' -ForegroundColor Green
+    }
+    finally {
+        if (-not $badTool.HasExited) { $badTool.Kill($true); $badTool.WaitForExit() }
+        $badTool.Dispose()
     }
 
     # The template's promise is one binary, and a publish that leaves a .pdb beside it is how that

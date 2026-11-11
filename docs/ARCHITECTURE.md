@@ -268,5 +268,5 @@ timeout says which wait it gave up on — the banner or the answer.
 |---|---|---|
 | `CuiSharp` | the library, each RID's `runtimes/<rid>/native/` files, `runtimes/native-provenance.txt`, analyzers and IDE fixes, build targets | AOT links the RID's static archive through `build/CuiSharp.targets`; the RID is matched exactly and a missing archive is an error, not a warning |
 | `CuiSharp.Testing` | `TestApp` (a `HeadlessApp` under the name a test wants) | test-only dependency |
-| `CuiSharp.Tools` | `dotnet cui` | `PackAsTool`, `ToolCommandName=cui` |
+| `CuiSharp.Tools` | `dotnet cui` | `PackAsTool`, `ToolCommandName=dotnet-cui` |
 | `CuiSharp.Templates` | `dotnet new cui-app`, `dotnet new cui-mini` | a solution (app + tests + `AGENTS.md`) or a file-based app named with `-n` in the current directory (optional `-o`), with a package directive |
