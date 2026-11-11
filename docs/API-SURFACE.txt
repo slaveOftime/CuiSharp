@@ -116,6 +116,7 @@ struct CuiSharp.AvatarOpts
   field String Status
   field UInt64 Image
 struct CuiSharp.BadgeOpts
+  ctor(Tone)
   field Boolean Dot
   field Boolean Solid
   field ControlSize Size
@@ -154,6 +155,7 @@ class CuiSharp.BlameUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
   BlameResult Blame(UiText, ReadOnlySpan<String>, ReadOnlySpan<Int32>, ReadOnlySpan<BlameCommit>, BlameOpts)
 class CuiSharp.BlameUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4+<M>$D152016828D0F2CB0A8B78500F4F70D3
 struct CuiSharp.Box
+  ctor(Single, Single, Align, Size, Size)
   field Align Align
   field Boolean Clip
   field Boolean ScrollX
@@ -269,6 +271,7 @@ class CuiSharp.CaptureUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
   Void SignatureClear(UiText)
 class CuiSharp.CaptureUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4+<M>$D152016828D0F2CB0A8B78500F4F70D3
 struct CuiSharp.Card
+  ctor(Single, Single, Dir, Size, Size)
   field Align Align
   field Boolean Hoverable
   field Boolean Muted
@@ -5565,6 +5568,7 @@ struct CuiSharp.TextMetrics
   field Single LineHeight
   field Single Width
 struct CuiSharp.TextOpts
+  ctor(Single, Color)
   field Boolean NoWrap
   field Boolean Selectable
   field Boolean Tabular
