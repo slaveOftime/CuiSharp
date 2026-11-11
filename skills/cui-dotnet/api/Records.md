@@ -442,7 +442,7 @@ Value types for the widgets that take an array of items.
 
 - `Title`: string?
 - `Detail`: string?
-- `Status`: TaskStatus
+- `Status`: CuiTaskStatus
 
 ## `PresenceUser`
 

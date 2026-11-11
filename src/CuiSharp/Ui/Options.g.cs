@@ -2398,7 +2398,7 @@ public partial struct ReasoningOpts
 public partial struct ToolCallOpts
 {
     /// <summary>cui_task_status status</summary>
-    public TaskStatus Status;
+    public CuiTaskStatus Status;
     /// <summary>const char * icon</summary>
     public string? Icon;
     /// <summary>const char * detail</summary>
@@ -2439,7 +2439,7 @@ public partial struct AgentPlanOpts
 public partial struct AgentStatusOpts
 {
     /// <summary>cui_task_status status</summary>
-    public TaskStatus Status;
+    public CuiTaskStatus Status;
     /// <summary>float seconds</summary>
     public float Seconds;
     /// <summary>const char * icon</summary>

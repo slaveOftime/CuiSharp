@@ -11,9 +11,9 @@ enum CuiSharp.Accent
 struct CuiSharp.AgentPlanOpts
   field String Title
 struct CuiSharp.AgentStatusOpts
+  field CuiTaskStatus Status
   field Single Seconds
   field String Icon
-  field TaskStatus Status
 class CuiSharp.AiInterfacesUiExtensions
   static Boolean Citation(Ui, Int32, in Source)
   static Boolean ModelPicker(Ui, UiText, ReadOnlySpan<Model>, ref Int32, ModelPickerOpts)
@@ -685,6 +685,12 @@ class CuiSharp.CuiSurface
   property Single Scale { get; }
   property Ui Ui { get; }
   static CuiSurface Create(Int32, Int32, Single, Int32, Theme, Accent)
+enum CuiSharp.CuiTaskStatus
+  Done
+  Failed
+  Pending
+  Running
+  Skipped
 class CuiSharp.CuiTree
   static Int32 Sort(TreeNode[], Int32, Comparison<Int32>, String)
 class CuiSharp.CuiWindow
@@ -2236,10 +2242,10 @@ struct CuiSharp.Interop.NativeAgentPlanOpts
   field Int32 Sentinel
   field IntPtr Title
 struct CuiSharp.Interop.NativeAgentStatusOpts
+  field CuiTaskStatus Status
   field Int32 Sentinel
   field IntPtr Icon
   field Single Seconds
-  field TaskStatus Status
 struct CuiSharp.Interop.NativeAlertOpts
   field Byte Dismissible
   field Int32 Sentinel
@@ -3420,9 +3426,9 @@ struct CuiSharp.Interop.NativePipelineResult
   field Int32 Clicked
   field Int32 Hovered
 struct CuiSharp.Interop.NativePlanStep
+  field CuiTaskStatus Status
   field IntPtr Detail
   field IntPtr Title
-  field TaskStatus Status
 struct CuiSharp.Interop.NativePlatformIface
   field IntPtr DrawEmoji
   field IntPtr GetClipboard
@@ -4043,13 +4049,13 @@ struct CuiSharp.Interop.NativeToggleGroupOpts
   field Int32 Sentinel
   field IntPtr Icons
 struct CuiSharp.Interop.NativeToolCallOpts
+  field CuiTaskStatus Status
   field Int32 Sentinel
   field IntPtr Detail
   field IntPtr Icon
   field IntPtr Input
   field IntPtr Output
   field Single Seconds
-  field TaskStatus Status
 struct CuiSharp.Interop.NativeToolOpts
   field Byte Disabled
   field Int32 Sentinel
@@ -4934,10 +4940,10 @@ enum CuiSharp.Placement
   TopEnd
   TopStart
 struct CuiSharp.PlanStep
-  ctor(String, String, TaskStatus)
+  ctor(String, String, CuiTaskStatus)
+  field CuiTaskStatus Status
   field String Detail
   field String Title
-  field TaskStatus Status
 class CuiSharp.PlanningUiExtensions
   static Boolean Kanban(Ui, UiText, out KanbanMove, DrawFn)
   static Int32 Gantt(Ui, UiText, Span<GanttTask>, Date, Int32, GanttOpts)
@@ -5467,12 +5473,6 @@ struct CuiSharp.TagOpts
   field Size Width
   field String Label
   field String Placeholder
-enum CuiSharp.TaskStatus
-  Done
-  Failed
-  Pending
-  Running
-  Skipped
 class CuiSharp.Terminal
   Void Clear()
   Void Dispose()
@@ -5739,12 +5739,12 @@ enum CuiSharp.Tone
   Violet
   Warning
 struct CuiSharp.ToolCallOpts
+  field CuiTaskStatus Status
   field Single Seconds
   field String Detail
   field String Icon
   field String Input
   field String Output
-  field TaskStatus Status
 struct CuiSharp.ToolOpts
   field Boolean Disabled
   field String Label

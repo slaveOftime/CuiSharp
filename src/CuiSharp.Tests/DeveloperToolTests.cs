@@ -1,3 +1,5 @@
+using System.Threading.Tasks;
+
 namespace CuiSharp.Tests;
 
 /// <summary>
@@ -87,6 +89,35 @@ public class DeveloperToolTests
         Assert.Equal(-1, graphSelected);
         Assert.Equal(0, commitSelected);
         Assert.Equal(-1, pipelineSelected);
+    }
+
+    [Fact]
+    public void AgentWidgetsRenderWithUnambiguousTaskStatusTypes()
+    {
+        // The plan/status widgets take CuiTaskStatus by name: the rename from TaskStatus
+        // removed the collision with System.Threading.Tasks.TaskStatus, so this file uses
+        // both types unqualified (the BCL one below, the CUI one in the steps) and draws a
+        // real frame. EnumContractTests pins the old ambiguity itself; reverting the rename
+        // would stop either file from compiling.
+        if (!OperatingSystem.IsWindows()) return;
+
+        using var surface = CuiSurface.Create(Width, Height);
+        var steps = new PlanStep[]
+        {
+            new("Fetch sources", "3 results", CuiTaskStatus.Done),
+            new("Draft the summary", null, CuiTaskStatus.Running),
+            new("Check the citations", null, CuiTaskStatus.Pending),
+        };
+
+        var pixels = Frame(surface, ui =>
+        {
+            Assert.Equal(-1, ui.AgentPlan("plan", steps));
+            ui.AgentStatus("Reading report.pdf", new AgentStatusOpts { Status = CuiTaskStatus.Running, Seconds = 3 });
+            // The BCL enum still resolves unqualified beside the renamed CUI one.
+            Assert.Equal(6, (int)TaskStatus.Canceled);
+        });
+
+        Assert.Contains(pixels, b => b != 0);
     }
 
     [Fact]

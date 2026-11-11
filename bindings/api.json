@@ -12074,7 +12074,7 @@
         {
           "CName": "status",
           "CsName": "Status",
-          "CsType": "TaskStatus",
+          "CsType": "CuiTaskStatus",
           "CType": "cui_task_status",
           "Offset": 4,
           "Type": {
@@ -12207,7 +12207,7 @@
         {
           "CName": "status",
           "CsName": "Status",
-          "CsType": "TaskStatus",
+          "CsType": "CuiTaskStatus",
           "CType": "cui_task_status",
           "Offset": 16,
           "Type": {
@@ -12274,7 +12274,7 @@
         {
           "CName": "status",
           "CsName": "Status",
-          "CsType": "TaskStatus",
+          "CsType": "CuiTaskStatus",
           "CType": "cui_task_status",
           "Offset": 4,
           "Type": {
@@ -25514,7 +25514,7 @@
     },
     {
       "CName": "cui_task_status",
-      "CsName": "TaskStatus",
+      "CsName": "CuiTaskStatus",
       "Values": [
         {
           "CName": "CUI_TASK_PENDING",

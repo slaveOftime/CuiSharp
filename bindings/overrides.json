@@ -5,7 +5,8 @@
     "cui_size_kind": "SizeKind",
     "cui_renderer_kind": "Renderer",
     "cui_sw_format": "SwFormat",
-    "cui_token": "Token"
+    "cui_token": "Token",
+    "cui_task_status": "CuiTaskStatus"
   },
   "memberRenames": {
     "CUI_RENDERER_OPENGL": "OpenGL"
