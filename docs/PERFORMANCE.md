@@ -102,14 +102,26 @@ What the table says:
 - **The cpu column is flat by construction**: the dwell keeps one core busy drawing, so every
   page burns ~3 000 cpu-ms per 3 000 wall-ms. It becomes a signal only when a page cannot keep
   a core fed — none today.
-- **ws and priv climb across the walk, not per page**: the file browser's terminal buffers, the
-  dev-tools pages' data and the media page's scene textures are built when a page is first
-  visited and stay. The visible steps are Tools (+21 MB, the terminal and viewer buffers) and
-  Social and media (+4 MB, the scene textures). The whole twenty-eight-page walk holds 62 MB
-  private, 83 MB working set.
-- **No per-page heap column on purpose.** A sampled managed heap is a gen0 sawtooth; what the
-  frames allocate between samples is the interesting number, and that is pinned at **0 B** by
-  `FrameLifecycleTests`, not here.
+- **ws and priv climb across the walk, not per page**: the steps are Tools (+21 MB) and Social
+  and media (+4 MB), both one-time native state. Walking the same twenty-eight pages a second time
+  in the same process adds **2.6 MB** (62.5 → 65.1), so nothing accumulates — the first walk is the
+  process meeting each page for the first time.
+- **The 21 MB at Tools is the colour-emoji font**, and it is the only large one. CUI draws emoji
+  from the system font, and the first emoji anywhere in the app loads `seguiemj.ttf`: 12.3 MB on
+  disk, kept whole in memory because it carries outlines rather than bitmap strikes, plus copies
+  of its 7.1 MB `COLR` and 0.25 MB `CPAL` tables. Three emoji at 32 px in an otherwise empty
+  headless process take private bytes from 13.3 to 34.2 MB; a new pixel size adds an atlas (1 MB
+  up to 40 px, 4 MB above). Nothing else on the page is visible at that scale: the terminal's ring
+  buffer is 32 KB of native memory, the log's 16 KB, and the file browser lists two dozen entries.
+- **The +4 MB at Social and media is its scene textures, and it is freed on the way out**: Planning
+  is 2.5 MB lower, and the dips on earlier pages (Overlays −3.5 MB) are the same thing — CUI
+  releasing textures the scene no longer shows.
+- **The managed heap is flat, and it is in the CSV.** Across two walks `heap` stays between 6.9 and
+  18.6 MB with no trend: the gen0 sawtooth, not growth. Private bytes rising against a flat heap
+  are native by definition — and .NET keeps freed gen2 segments committed until something asks it
+  for them, which is why a .NET process' private bytes never fall back as fast as its live data
+  does. What a *frame* allocates is pinned at **0 B** by `FrameLifecycleTests`; that, not a sampled
+  heap, is the number worth a column.
 
 ```sh
 pwsh tools/page-costs.ps1                      # the whole walk, 3 s per page
