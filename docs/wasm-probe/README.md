@@ -11,7 +11,7 @@ This replaces the earlier `cui_sym`/JS-delegate experiment. That bridge is not n
    archive as:
 
    ```xml
-   <NativeFileReference Include="path/to/libcui.a" />
+   <NativeFileReference Include="path/to/cui.a" />
    ```
 
 3. Build the archive with the Emscripten version paired with that SDK's browser runtime pack. Do not
@@ -27,6 +27,7 @@ reproduced full-gallery and scope results, plus measured bundle sizes, see
 ## Expected evidence
 
 The publish-generated `obj/.../wasm/for-publish/pinvoke-table.h` has the CUI imports registered
-under `"cui"`; `NativeFileReference` supplies the implementations. `CuiSurface.Create`, direct
-widgets, `EndFrame`, and `Render` execute in Chrome. No `cui_sym`, `DllImportResolver`, Blazor,
-`JSExport`, or bridge C file is involved.
+under `"cui"`; `NativeFileReference` supplies the implementations. Its archive filename must be
+`cui.a`: the SDK derives the P/Invoke module name from the basename, and `libcui.a` registers
+`libcui`, not `cui`. `CuiSurface.Create`, direct widgets, `EndFrame`, and `Render` execute in Chrome.
+No `cui_sym`, `DllImportResolver`, Blazor, `JSExport`, or bridge C file is involved.

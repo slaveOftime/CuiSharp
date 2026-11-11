@@ -248,6 +248,9 @@ pwsh native/build-native.ps1     # or ./native/build-native.sh
 dotnet run --project samples/CuiSharp.Gallery
 ```
 
+The browser-hosted gallery and GitHub Pages build are documented in
+[`samples/CuiSharp.Gallery.Browser/README.md`](samples/CuiSharp.Gallery.Browser/README.md).
+
 ```
 src/CuiSharp/            the library: Interop (generated), Ui, Runtime, Semantics, Hosting, Charting
 src/CuiSharp.Analyzers/  CUI001-CUI008, packed into CuiSharp
@@ -255,9 +258,12 @@ src/CuiSharp.CodeFixes/  IDE quick fixes, packed beside the analyzers
 src/CuiSharp.Testing/    TestApp: drive a component without a window
 src/CuiSharp.Tools/      dotnet cui
 src/CuiSharp.Templates/  dotnet new cui-app / cui-mini
-samples/CuiSharp.Gallery/ twenty-eight pages, one file per page
-native/                  the CUI submodule and the two build scripts
-tools/                   bindgen.cs, regen.ps1, verify-template.ps1, snapshots.ps1, page-costs.ps1
+samples/CuiSharp.Gallery/           twenty-eight pages, one file per page
+samples/CuiSharp.Gallery.Browser/   the same gallery on a software canvas in WebAssembly
+native/                              the CUI submodule and the two build scripts
+tools/                               bindgen.cs, regen.ps1, verify-template.ps1,
+                                     build-cui-wasm.ps1, test-browser-smoke.py,
+                                     snapshots.ps1, page-costs.ps1
 bindings/                api.json (generated), overrides.json (inputs), coverage.txt (report)
 docs/                    PLAN (remaining work), ARCHITECTURE (rules), PERFORMANCE, RELEASING,
                          API-SURFACE.txt, images/gallery/

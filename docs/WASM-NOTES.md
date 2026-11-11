@@ -5,10 +5,12 @@ not settled product documentation.
 
 ## Current verdict
 
-**The managed-to-native bridge is not the blocker.** A stock .NET browser app can call CUI directly
-through the SDK-generated `LibraryImport("cui")` P/Invoke table when `libcui.a` is a
-`NativeFileReference`. No `cui_sym`, generated delegate table, Blazor, JS interop, or C# binding
-mode is needed for ordinary CUI calls.
+**The managed-to-native bridge is not the blocker.** A stock .NET browser app calls CUI directly
+through the SDK-generated `LibraryImport("cui")` P/Invoke table when `cui.a` is a
+`NativeFileReference`. The filename matters: the SDK derives the P/Invoke module name from the
+archive basename; `libcui.a` registers `libcui` and fails to resolve imports named `cui`. There is no
+`cui_sym` or delegate bridge. The canvas host uses one synchronous JS import for presentation, not
+for CUI calls.
 
 **The actual AOT blocker is `LayoutScope`/`OpenScope`.** Their disposal stores a function pointer to
 a generated `LibraryImport` method and calls it indirectly. Under the browser AOT runtime that
@@ -20,21 +22,24 @@ still needs a full validation before adoption.
 
 ## What is verified
 
-- **CUI builds from pristine C sources.** The .NET 11 RC workload's Emscripten 6.0.2 compiled the
-  CUI core, software renderer, GL renderer, and dialog source. The archive is about 1.6 MB before
-  link-time dead stripping. No `native/CUI` edits or custom libc are needed. A software-only
-  archive built with `-Oz`, function/data sections, and no GL renderer was about 1.4 MB.
-- **CUI runs in the browser.** `NativeFileReference(libcui.a)` causes the WASM SDK to generate the
-  `cui` entries in `pinvoke-table.h`; direct calls to `CuiSurface.Create`, draw functions,
-  `EndFrame`, and `Render` work in headless Chrome. I reproduced this with both .NET 10 and .NET 11
-  workloads. The .NET 10 AOT test ran using its Emscripten 3.1.56 pack with `-O0` to work around a
-  local `wasm-opt` option mismatch; the optimized .NET 10 publish still needs a clean CI check.
-- **The full gallery draws under both interpreters.** A standalone browser app linked the current
-  gallery sources, selected each of its 28 pages, drew each into a `CuiSurface`, then rasterized the
-  last frame. Chrome reported `GALLERY-28-PAGES-OK faults=0 cmds=13 nonBackground=38092` under the
-  .NET 11 RC3 `-Oz` build. The same test passed under .NET 10.0.14 with `-O0` (the local optimized
-  toolchain issue below). This is a C# + CUI render proof, not yet a canvas host or an AOT-ready
-  Pages bundle.
+- **CUI builds from pristine C sources.** `tools/build-cui-wasm.ps1` selects the Emscripten pack
+  paired with the target SDK. With .NET 10.0.403 / Emscripten 3.1.56 it compiles 54 C sources into
+  a software-only `artifacts/wasm/cui.a` of 1,450,548 bytes, with function/data sections for linker
+  dead stripping. The GL renderer, desktop app layer, and dialogs are omitted. No `native/CUI`
+  edits or custom libc are needed.
+- **Direct P/Invoke and optimized .NET 10 work.** `NativeFileReference(artifacts/wasm/cui.a)`
+  registers module `cui`; the full browser sample's publish table contains 318 CUI imports under
+  that name. Naming the archive `libcui.a` instead registers `libcui` and fails at the first call
+  with `ManagedError: cui`.
+  Compiling the archive with the Emscripten 6 pack and linking it with the .NET 10 / Emscripten 3
+  pack also failed in `wasm-opt` (`Unknown option --enable-bulk-memory-opt`); the matching 3.1.56
+  archive publishes with Release `-Oz` and runs in Chrome.
+- **The full gallery and browser host run under the interpreter.**
+  `samples/CuiSharp.Gallery.Browser` links the real 28-page gallery and presents it to a canvas. A
+  separate all-pages loop reported `GALLERY-28-PAGES-OK faults=0` with the .NET 10.0.403 optimized
+  build. Headless Chrome screenshots show the rendered Overview and Buttons pages; a click changes
+  the selected page, and an input smoke types `Browser Input` into the gallery's Full name field.
+  The checked-in `tools/test-browser-smoke.py` exercises this against the published output.
 - **AOT direct calls work; AOT scope disposal does not.** In Chrome, no-scope `Heading`, `Text`,
   `Button`, and the `CuiSurface` lifecycle worked under AOT. The same test inside
   `using (ui.Column(...))` threw `RuntimeError: null function` exactly on scope disposal, in both
@@ -47,15 +52,15 @@ still needs a full validation before adoption.
   generated scope. Do not replace this with one switch that names every end function unless the
   size cost is measured and accepted: that would undermine the existing reachability design.
 
-The earlier `WASM-NOTES.md` claim that direct P/Invoke resolution was broken, and the committed
-`cui_sym` bridge probe, were false conclusions from an incomplete probe. They are superseded here;
-the bridge artifacts have been removed from `docs/wasm-probe/` and replaced with the direct-call
-reproduction.
+The earlier conclusion that direct P/Invoke resolution was broken, and the committed `cui_sym`
+bridge probe, were false conclusions from an incomplete probe. They are superseded here; the bridge
+artifacts have been removed from `docs/wasm-probe/` and replaced with the direct-call reproduction.
 
 ## Size and dependency evidence
 
-A **non-AOT** .NET 11 browser app using the current 28-page gallery, `CuiSharp`, invariant
-culture/timezone, the size profile, the software-only CUI archive, and Release `-Oz` produced:
+An earlier standalone **non-AOT** .NET 11 browser app using the current 28-page gallery,
+`CuiSharp`, invariant culture/timezone, the size profile, the software-only CUI archive, and Release
+`-Oz` produced:
 
 | Measure | Bytes |
 |---|---:|
@@ -69,8 +74,24 @@ browser baseline built with the same SDK had a 1,220,836-byte `dotnet.native.was
 build's native module was 2,070,463 bytes. This gives an initial, measurable native-link delta of
 about 850 KB raw. An Emscripten link with `--print-gc-sections` reported 167 unused CUI code/data
 sections removed for this gallery. That confirms dead stripping works, but the counts are sections,
-not functions; preserve the map/GC output in the final size gate before claiming any finer-grained
-widget savings.
+not functions.
+
+The current `samples/CuiSharp.Gallery.Browser` candidate, published for `net10.0` with the matching
+.NET 10.0.403 / Emscripten 3.1.56 workload, `PublishTrimmed`, and `-Oz`, produced:
+
+| Measure | Bytes |
+|---|---:|
+| raw `.wasm` assets, combined | 3,503,646 |
+| `.gz` assets, combined | 1,639,204 |
+| `.br` sidecars, combined | 1,360,793 |
+| largest gzip asset, `dotnet.native.wasm.gz` | 952,149 |
+| Pages tree after dropping sidecars (with `.nojekyll`) | 3,973,466 |
+
+The checked-in Pages workflow builds this tree, strips the redundant compression sidecars, and runs
+`tools/test-browser-smoke.py` against the exact deploy tree before upload. The smoke verifies
+non-background canvas pixels and exercises pointer focus, Ctrl+A, and text insertion into the real
+Full name field. The site has not yet been deployed, so its own edge response headers remain
+unverified.
 
 For comparison only, the full-gallery **AOT** publish emitted 3,142,651 bytes of `.gz` assets and
 2,300,270 bytes of `.br` assets. It is not a valid candidate bundle yet: scope disposal crashes at
@@ -91,65 +112,67 @@ this path. Those uses were removed; the later bundle no longer contains `System.
 (`wasmbrowser`), not Blazor, and needs no third-party JS or managed package for the frame host.
 This is the right starting point for a small bundle.
 
-### Browser frame cost (before canvas presentation)
+### Browser frame cost
 
-On the .NET 11 RC3 interpreter, headless Chrome, 1240x820, one reused pixel buffer, 8 warm-up frames
-and 80 measured frames, each sample included `BeginFrame` → draw the real gallery page → `EndFrame`
-→ software `Render`:
+An earlier .NET 11 RC3 interpreter probe measured only C# and software rasterization at 1240x820,
+with one reused buffer, 8 warm-up frames and 80 measured frames per sample. Each sample included
+`BeginFrame` → draw the real gallery page → `EndFrame` → software `Render`:
 
 | Gallery page | `Incremental=false` mean / p95 | `Incremental=true` mean / p95 |
 |---|---:|---:|
 | Overview | 9.35 / 12.50 ms | 1.71 / 2.50 ms |
 | More charts (index 23, page 24 of 28) | 12.11 / 16.80 ms | 3.95 / 6.00 ms |
 
-Damage tracking is therefore the first performance lever, not AOT or a GPU rewrite. These are not
-full host numbers: they exclude requestAnimationFrame scheduling, JavaScript interop, and
-`putImageData`. The browser host must measure those too. The buffer was reused, but no DOM canvas
-was presented in this probe.
+Those isolated numbers showed damage tracking is the first performance lever, not AOT or a GPU
+rewrite. The actual .NET 10 browser host now measures `BrowserHost.Frame` synchronously, including
+managed/CUI work, software render, the JS import, and canvas `putImageData`; rAF intervals are
+reported separately. In headless Chrome at a 1240x820 window, 180-frame windows after warm-up
+measured:
 
-## First-principles implementation plan
+| Page | steady frame mean | frame p95 | rAF interval p50 / p95 |
+|---|---:|---:|---:|
+| Overview | 0.76–1.04 ms | 2.0–2.7 ms | 16.7 / 16.7–16.8 ms |
+| More charts (index 23) | 1.24–2.92 ms | 2.2–5.7 ms | 16.7 / 16.7–16.8 ms |
 
-1. **Keep direct P/Invoke and the size fixes already in this worktree.** Link a locally built,
-   software-only `libcui.a` through `NativeFileReference`; let the WASM SDK provide the import table.
-   Keep JS out of the CUI call path. `size_t`/`uintptr_t`/`cui_texture` use `nuint` in native
-   signatures (the wasm32 ABI is 32-bit), while the friendly image/offset API keeps its intended
-   `ulong` surface and converts at the boundary. The generator self-test pins that mapping.
-2. **Start with the interpreter, not AOT.** Real-gallery frames with incremental raster already fit
-   a 60 Hz budget before canvas presentation, and the current compressed artifact is about half the
-   AOT test bundle. This avoids both the scope-pointer AOT trap and unnecessary code size. AOT is an
-   optional follow-up, not a goal in itself.
-3. **Build a browser host with no framework dependency.** Add
-   `samples/CuiSharp.Gallery.Browser` using the stock `wasmbrowser` template and link the existing
-   gallery source. A single `requestAnimationFrame` loop drives `CuiSurface.BeginFrame`, the gallery
-   draw, `EndFrame`, and software render. Start with one persistent pinned RGBA buffer and one
-   synchronous JS canvas present per frame; forward pointer, keyboard, text, scroll, and resize
-   input to CUI. Then profile before considering WebGL.
-4. **Make the pixels cheap and prove input.** Use `CuiSurface.Incremental` from the start and
-   `LastDamage` for a dirty-rectangle canvas update if it is correct. Do not send pixels through JSON,
-   allocate an `ImageData` every frame, or copy the full buffer unnecessarily. Measure the actual
-   1240x820 `requestAnimationFrame` loop including the JS/Canvas leg; add a visual/pixel assertion
-   and input interaction smoke. Consider WebGL2 only if the measured software path misses target.
-5. **Keep an AOT escape hatch.** If browser measurements demand AOT, generate one Cdecl
-   `[UnmanagedCallersOnly]` thunk per scope-ending import and pass that thunk from the wrapper
-   (plus the two hand-written scope callers in `Ui.DataGrid.cs` and `Ui.Overlays.cs`); its
-   body directly calls `Native.<End>(ui)`. The `BoxEnd` prototype works and preserves a statically
-   visible, per-end path. Test every generated scope, callbacks, and all pages; compare payload and
-   frame time before choosing AOT. Avoid one global switch naming all endings unless its link-size
-   cost is measured and accepted.
-6. **Budget and deploy.** Fix/verify optimized .NET 10 workload behavior on the intended runner,
-   capture raw size and actual GitHub Pages transfer headers, strip unused `.gz`/`.br` sidecars,
-   emit only the deploy tree, then wire `actions/upload-pages-artifact` and
-   `actions/deploy-pages`. Keep `native/CUI` pristine.
+The first window was slower while the interpreter and page warmed up (up to 3.9 ms p95 on Overview
+and 5.5 ms p95 on More charts). The measured rAF intervals remained at 60 Hz. Add `?perf=1` to
+report timings; the normal page emits no per-frame logs.
 
-## Current risks / unverified
+## Implementation state and remaining work
 
-- .NET 10 is the library's supported target. This host's .NET 10.0.14 WebAssembly workload has a
-  local `wasm-opt` mismatch: default Release `-Oz` fails with `Unknown option --enable-bulk-memory-opt`,
-  while `-O0` publishes and works. The .NET 11 RC3 `-Oz` path works. Verify optimized .NET 10 on the
-  intended GitHub runner rather than silently shipping `-O0`.
-- The C# renderer has a Chrome frame-time measurement, but no actual HTML canvas presentation or
-  `requestAnimationFrame` benchmark exists yet. The 0.83 ms native Windows software-raster figure in
-  `docs/PERFORMANCE.md` is not a browser/WASM measurement.
-- Gallery controls that model local files, OS dialogs, or external windows need a browser-specific
-  behavior review. `CuiSurface` already avoids the desktop window/app layer; it does not make the
-  browser have a local filesystem or native file picker.
+### Done and verified locally
+
+- Direct `LibraryImport("cui")` with a correctly named `cui.a`; no symbol bridge.
+- `nuint` native-width bindings for `size_t`, `uintptr_t`, and `cui_texture`; public `ulong`
+  texture/offset APIs convert at the boundary.
+- A clean .NET 10.0.403 / Emscripten 3.1.56 software-only archive build. Cross-linking an archive
+  from the .NET 11 Emscripten 6 pack into the .NET 10 pack caused the `wasm-opt` feature-option
+  error; using the matching workload pack resolves it. `-O0` is not required.
+- `samples/CuiSharp.Gallery.Browser`: real gallery sources, interpreter, `CuiSurface.Incremental`,
+  one pinned RGBA framebuffer, one no-copy `ImageData` view, dirty-rectangle `putImageData`, rAF,
+  and pointer/wheel/keyboard/text/paste/focus/resize input.
+- `tools/test-browser-smoke.py`: serves the actual deploy tree and verifies canvas pixels plus a
+  synthetic pointer → Ctrl+A → text-entry interaction. Verified locally in headless Chrome; the
+  Full name field changes to “Browser Input”.
+- The clean candidate is about 1.64 MB combined gzip / 1.36 MB Brotli for `_framework` WASM assets.
+  The deploy tree is about 3.97 MB raw after removing redundant `.gz`/`.br` sidecars.
+- End-to-end headless Chrome measurements include `BrowserHost.Frame` and the canvas update. The
+  Overview and More charts pages stayed under 5.7 ms p95 after warm-up, with rAF p95 around 16.8 ms.
+- `.github/workflows/pages.yml` builds on Windows with the matching .NET 10 workload, strips
+  sidecars, smoke-tests the deploy tree, uploads the Pages artifact, and deploys on `main`.
+
+### Remaining
+
+1. Let the GitHub Actions Pages workflow run on `main`; confirm the repository's Pages source and
+   deploy permissions, then inspect the deployed app under the repository subpath. Verify its real
+   `_framework/*.wasm` response headers and browser console; only an existing CUI Pages asset has
+   been checked for edge compression so far.
+2. Keep the interpreter as the shipped configuration. AOT is optional: its scope-end function
+   pointer still traps. If later profiling justifies AOT's larger payload, generate and test one
+   Cdecl `[UnmanagedCallersOnly]` thunk per generated scope end and cover the hand-written callers
+   in `Ui.DataGrid.cs` and `Ui.Overlays.cs` too.
+3. Review gallery features that imply local files, native file pickers, or external windows. The
+   browser host deliberately does not claim those desktop capabilities.
+
+The Pages build script currently targets a Windows x64 runner so it uses the workload's own
+Emscripten, Binaryen, Node, and Python pack versions. `native/CUI` remains untouched.
