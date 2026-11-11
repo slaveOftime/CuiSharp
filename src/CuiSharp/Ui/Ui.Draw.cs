@@ -212,7 +212,7 @@ public unsafe ref partial struct Ui
     /// <param name="tint">Multiplied into the pixels, so a white texture can take any colour.</param>
     /// <param name="radius">Corner radius, for a rounded or circular crop.</param>
     public void DrawImage(ulong texture, RectF destination, RectF uv, Color tint, float radius = 0) =>
-        Native.DrawImage(Handle, texture, Nr(destination), Nr(uv), Corners(radius), Nc(tint));
+        Native.DrawImage(Handle, (nuint)texture, Nr(destination), Nr(uv), Corners(radius), Nc(tint));
 
     /// <summary>Draws the whole texture into <paramref name="destination"/>.</summary>
     public void DrawImage(ulong texture, RectF destination, Color tint, float radius = 0) =>

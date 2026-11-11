@@ -148,7 +148,13 @@ internal sealed unsafe class TextFieldPool
     /// <summary>Frees every buffer. For tests and shutdown.</summary>
     internal void Clear()
     {
-        foreach (uint id in _slots.Keys.ToArray()) Remove(id);
+        foreach (var (_, slot) in _slots)
+        {
+            NativeMemory.Free(slot.Buffer);
+            slot.Buffer = null;
+        }
+
+        _slots.Clear();
         _frame = 0;
     }
 }

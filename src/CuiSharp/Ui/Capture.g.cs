@@ -41,7 +41,9 @@ public static unsafe class CaptureUiExtensions
         /// <summary>Avatar upload: a round avatar that takes a dropped image, with a camera badge on hover. Returns 1 when *image changed, -1 when clicked (browse), 0 otherwise. A dropped image is loaded with cui_image_load.</summary>
         public int AvatarUpload(UiText id, UiText name, ref ulong image, float size)
         {
-            var __result = Native.AvatarUpload(ui.Handle, Utf8.Get(id), Utf8.Get(name), ref image, size);
+            nuint __image = (nuint)image;
+            var __result = Native.AvatarUpload(ui.Handle, Utf8.Get(id), Utf8.Get(name), ref __image, size);
+            image = __image;
             WidgetRecorder.Note(ui.Handle, "AvatarUpload", id);
             return __result;
         }

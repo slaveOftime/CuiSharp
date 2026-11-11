@@ -2001,8 +2001,8 @@ public unsafe partial struct HexRange
 
     internal readonly NativeHexRange ToNative() => new()
     {
-        Offset = Offset,
-        Length = Length,
+        Offset = (nuint)(Offset),
+        Length = (nuint)(Length),
         Tone = Tone,
         Label = Utf8.Get(Label),
     };
@@ -2443,7 +2443,7 @@ public unsafe partial struct PresenceUser
     {
         Name = Utf8.Get(Name),
         Color = UiMarshal.ToNative(Color),
-        Avatar = Avatar,
+        Avatar = (nuint)(Avatar),
         Idle = (byte)(Idle ? 1 : 0),
     };
 
@@ -2666,7 +2666,7 @@ public unsafe partial struct NowPlayingState
     {
         Title = Utf8.Get(Title),
         Artist = Utf8.Get(Artist),
-        Art = Art,
+        Art = (nuint)(Art),
         ArtColor = UiMarshal.ToNative(ArtColor),
         Position = Position,
         Duration = Duration,
@@ -2708,9 +2708,9 @@ public unsafe partial struct HexSelection
 
     internal readonly NativeHexSelection ToNative() => new()
     {
-        Start = Start,
-        Length = Length,
-        Cursor = Cursor,
+        Start = (nuint)(Start),
+        Length = (nuint)(Length),
+        Cursor = (nuint)(Cursor),
     };
 
     /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
@@ -4103,8 +4103,8 @@ public unsafe partial struct HexResult
         Selection = Selection.ToNative(),
         SelectionChanged = (byte)(SelectionChanged ? 1 : 0),
         Edited = (byte)(Edited ? 1 : 0),
-        EditOffset = EditOffset,
-        EditLength = EditLength,
+        EditOffset = (nuint)(EditOffset),
+        EditLength = (nuint)(EditLength),
         Hovered = Hovered,
         Copied = (byte)(Copied ? 1 : 0),
     };

@@ -307,10 +307,8 @@ public sealed unsafe partial class CuiSurface : IDisposable
         get
         {
             ObjectDisposedException.ThrowIf(_ctx == 0, this);
-            var dd = (byte*)Native.GetDrawData(_ctx);
-            // cui_draw_data: vertices ptr, int count, indices ptr, int count,
-            // commands ptr, int count, ... -> command_count is the 6th field.
-            return dd == null ? 0 : *(int*)(dd + (sizeof(void*) * 2) + 8 + (sizeof(void*) * 2) + 8 + sizeof(void*));
+            var dd = (NativeDrawData*)Native.GetDrawData(_ctx);
+            return dd == null ? 0 : dd->CommandCount;
         }
     }
 

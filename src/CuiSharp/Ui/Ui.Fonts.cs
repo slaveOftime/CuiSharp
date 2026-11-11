@@ -24,7 +24,7 @@ public static unsafe class FontUiExtensions
         /// pointer, so the memory has to outlive the app.
         /// </param>
         public Font LoadFont(ReadOnlySpan<byte> data, bool copy = true) =>
-            Native.FontLoadMemory(ui.Handle, UiMarshal.Values<byte>(data), (ulong)data.Length, (byte)(copy ? 1 : 0));
+            Native.FontLoadMemory(ui.Handle, UiMarshal.Values<byte>(data), (nuint)data.Length, (byte)(copy ? 1 : 0));
 
         /// <summary>Makes <paramref name="font"/> the face every widget using <paramref name="role"/> draws with.</summary>
         /// <example><code>

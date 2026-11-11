@@ -142,7 +142,7 @@ public static unsafe class DataDisplayUiExtensions
         public void Image(ulong tex, ImageOpts o = default)
         {
             var __opts = o.ToNative();
-            Native.Image(ui.Handle, tex, in __opts);
+            Native.Image(ui.Handle, (nuint)(tex), in __opts);
         }
 
         /// <summary>Returns true when the view changed.</summary>
@@ -150,7 +150,7 @@ public static unsafe class DataDisplayUiExtensions
         {
             var __view = view.ToNative();
             var __opts = o.ToNative();
-            var __result = Native.ImageViewer(ui.Handle, Utf8.Get(id), tex, imageW, imageH, ref __view, in __opts);
+            var __result = Native.ImageViewer(ui.Handle, Utf8.Get(id), (nuint)(tex), imageW, imageH, ref __view, in __opts);
             view = ImageView.FromNative(__view);
             WidgetRecorder.Note(ui.Handle, "ImageViewer", id);
             return __result != 0;
@@ -161,7 +161,7 @@ public static unsafe class DataDisplayUiExtensions
         {
             var __crop = UiMarshal.ToNative(crop);
             var __opts = o.ToNative();
-            var __result = Native.Cropper(ui.Handle, Utf8.Get(id), tex, imageW, imageH, ref __crop, in __opts);
+            var __result = Native.Cropper(ui.Handle, Utf8.Get(id), (nuint)(tex), imageW, imageH, ref __crop, in __opts);
             crop = UiMarshal.FromNative(__crop);
             WidgetRecorder.Note(ui.Handle, "Cropper", id);
             return __result != 0;
