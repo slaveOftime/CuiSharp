@@ -20,6 +20,7 @@ Settled. Reopening one is a design change, not a refactor.
 | D7 | No runtime reflection, no assembly scanning, no interceptors. Every call path is statically visible so NativeAOT can trim it. |
 | D8 | **A packaged native library declares the ABI it was built against.** Windows x64/ARM64 is `/MT` MSVC, Linux x64/ARM64 is glibc 2.31 built inside `debian:11`, `osx-arm64` targets macOS 12. `native/build-native.sh` fails rather than emit a `libcui.so` that needs more, and the Linux build runs inside that image so it cannot inherit a newer floor; the package records the revision, compiler and hashes it shipped (`runtimes/native-provenance.txt`), and `build/CuiSharp.targets` matches the RID exactly and errors when the archive for it is missing. See [native-abi.md](../skills/cui-dotnet/native-abi.md). |
 | D9 | **Window behaviour the framework needs is a hook over CUI's own window procedure, not a native patch.** A drag on Windows makes Win32 send `WM_SIZE` per mouse sample and then a `WM_PAINT` that invalidates the whole client area, and CUI draws in both, inside the modal loop, with vsync on: one mouse step cost two frames and two display waits. `Hosting/LiveResize` subclasses the window procedure (the one place Windows lets a framework intervene), lets the coalesced paint draw once, and stops waiting for the display for the length of the drag — driving CUI's own live-frame path rather than replacing it. The same hook is where the window handle is recovered for `CuiWindow`, because the app loop keeps its `cui_app*` private and the window's user data holds it. A fix that needed `native/CUI/` would be upstream's, per D2. |
+| D10 | **A published binary is a product, and the package decides what goes in it.** `build/CuiSharp.Size.targets` applies the switches that decide size (`CuiSharpSizeProfile`, `CuiSharpHeadless`, `CuiSharpVerboseErrors`) to a self-contained AOT publish and to nothing else, because that is the only build whose size matters: `dotnet run` keeps the headless channel and the framework's exception messages. `PublishAot` alone is not the signal — the file-based app shape sets it for `dotnet run` too. Measured in [SIZE.md](SIZE.md), which is what a size decision has to cite. |
 
 ## Layout
 
@@ -44,7 +45,7 @@ samples/CuiSharp.Gallery/     twenty-eight pages of every component, one file pe
 native/                       submodule + the two build scripts
 tools/                        bindgen.cs, regen.ps1, verify-template.ps1, api-surface.ps1, snapshots.ps1
 bindings/                     api.json (generated IR), overrides.json (inputs), coverage.txt (report)
-docs/                         maintainer notes: PLAN, ARCHITECTURE, PERFORMANCE, RELEASING, images/
+docs/                         maintainer notes: PLAN, ARCHITECTURE, PERFORMANCE, SIZE, RELEASING, images/
 skills/cui-dotnet/            what an app needs: SKILL.md, llms.txt, api/*.md, widgets, hosting, ABI
 ```
 
@@ -60,8 +61,8 @@ native/CUI/include/cui/*.h
      Interop/Enums.g.cs             enums, shared C prefixes removed
      Interop/Constants.g.cs         anonymous-enum values
      Ui/Options.g.cs                friendly option structs + allocation-free ToNative()
-     Ui/<Section>.g.cs              one `extension(Ui ui)` block per header section
-     Ui/ScopeEnds.g.cs              which native end-call closes which begin-call
+     Ui/<Section>.g.cs              one `extension(Ui ui)` block per header section; a
+                                    container's wrapper carries its own end function
      Ui/Records.g.cs                array item types (Choice, TableColumn, ...)
      Icons.g.cs                     embedded glyphs
      Tests/Abi.g.cs                 sizeof and every field offset, asserted
@@ -116,6 +117,14 @@ Forwarding managed fields or stack locals at begin would leave native with dangl
   `using` balances them even when the body throws. `GridScope` is the conditional scope with
   end-of-body write-back; the scope analyzers treat it like `OpenScope`. Every `OpenScope` also has a callback overload
   that runs the body only when it is open.
+- **A scope carries the function that closes it, not its kind.** The wrapper that opened the
+  container takes the address of its own end function (`new LayoutScope(ui.Handle, &Native.BoxEnd,
+  …)`), and `Dispose` calls through it. A `ScopeKind` enum and one `Close` switch naming all 39
+  end functions is the obvious design and was the first one: it made every app root every
+  container's end function and the translation unit behind it, so an app with one box linked
+  `cui_pickers` and `cui_dock` unasked. Reachability is the rule everywhere else in the binding
+  (D5, D7), and this is what it costs at the one place the framework chooses a call target at
+  runtime. Measured in [SIZE.md](SIZE.md).
 - `UiText` accepts `string`, `ReadOnlySpan<byte>` and interpolated strings; the handler formats
   with `IUtf8SpanFormattable` straight into the frame arena, grows on demand, never truncates, and
   allocates nothing per frame.
@@ -242,8 +251,11 @@ would need a stateful daemon belongs in the testing driver, not here.
 
 An app opts in by running headless (`CUISHARP_HEADLESS=1` or `--headless`). `CuiApp.Run` is the only
 place that decides, and a hosted app reaches it with its host's draw callback, so a tool drives the
-same frame a window would. The feature is a `[FeatureSwitchDefinition]`, so a binary that does not
-want the channel can trim it out with `CuiSharp.Headless=false`.
+same frame a window would. The feature is a `[FeatureSwitchDefinition]`, and the package compiles it
+out of a self-contained AOT publish (`CuiSharpHeadless=false`, see [SIZE.md](SIZE.md)) because the
+channel and the IO stack behind it are a fifth of a small binary. `dotnet cui` passes
+`-p:CuiSharpHeadless=true` to the builds it runs, so the tool works on an app that never thought
+about it; a published app that a tool should inspect is published with the same property.
 
 Both ends are bounded, because a protocol is a trust boundary: a command line over 64 KiB is
 answered as an error instead of read, an answer over 16 MiB is refused with its size, the client

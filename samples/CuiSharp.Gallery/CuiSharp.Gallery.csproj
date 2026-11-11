@@ -62,9 +62,8 @@
     <StripSymbols>true</StripSymbols>
     <DebugType>none</DebugType>
     <DebugSymbols>false</DebugSymbols>
-    <DebuggerSupport>false</DebuggerSupport>
-    <IlcGenerateStackTraceData>false</IlcGenerateStackTraceData>
-    <IlcDisableReflection>true</IlcDisableReflection>
+    <!-- Not DebuggerSupport, StackTraceSupport or the ILC switches: the package's size profile owns
+         those, and a copy here would only disagree with it the day it changes. -->
     <!-- Keep the publish folder to exactly one file. -->
     <AllowedReferenceRelatedFileExtensions>.none</AllowedReferenceRelatedFileExtensions>
   </PropertyGroup>

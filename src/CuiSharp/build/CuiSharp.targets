@@ -17,7 +17,12 @@
     * A NativeAOT publish that cannot find its archive is an error, not a
       warning. The publish would otherwise succeed, delete the shared library on
       the way out, and ship a binary that cannot start.
+
+    What a published binary *contains* is the package's business too, so the size profile is
+    imported from CuiSharp.Size.targets rather than left to the app.
   -->
+
+  <Import Project="$(MSBuildThisFileDirectory)CuiSharp.Size.targets" />
 
   <PropertyGroup>
     <_CuiSharpNativeWin>$(MSBuildThisFileDirectory)../runtimes/win-x64/native/</_CuiSharpNativeWin>

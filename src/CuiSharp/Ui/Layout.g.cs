@@ -18,7 +18,7 @@ public static unsafe class LayoutUiExtensions
         {
             var __opts = o.ToNative();
             var __result = Native.BoxBegin(ui.Handle, in __opts);
-            return new LayoutScope(ui.Handle, ScopeKind.Box, "Box", o.Id);
+            return new LayoutScope(ui.Handle, &Native.BoxEnd, "Box", o.Id);
         }
 
         /// <summary>cui_row_begin</summary>
@@ -26,7 +26,7 @@ public static unsafe class LayoutUiExtensions
         {
             var __opts = o.ToNative();
             var __result = Native.RowBegin(ui.Handle, in __opts);
-            return new LayoutScope(ui.Handle, ScopeKind.Box, "Row", o.Id);
+            return new LayoutScope(ui.Handle, &Native.BoxEnd, "Row", o.Id);
         }
 
         /// <summary>cui_column_begin</summary>
@@ -34,7 +34,7 @@ public static unsafe class LayoutUiExtensions
         {
             var __opts = o.ToNative();
             var __result = Native.ColumnBegin(ui.Handle, in __opts);
-            return new LayoutScope(ui.Handle, ScopeKind.Box, "Column", o.Id);
+            return new LayoutScope(ui.Handle, &Native.BoxEnd, "Column", o.Id);
         }
 
         /// <summary>cui_spacer</summary>
@@ -60,7 +60,7 @@ public static unsafe class LayoutUiExtensions
         {
             var __opts = o.ToNative();
             var __result = Native.CardBegin(ui.Handle, in __opts);
-            return new LayoutScope(ui.Handle, ScopeKind.Card, "Card", o.Id);
+            return new LayoutScope(ui.Handle, &Native.CardEnd, "Card", o.Id);
         }
 
         /// <summary>Always opens the container; clicked reports its interaction result.</summary>
@@ -68,7 +68,7 @@ public static unsafe class LayoutUiExtensions
         {
             var __opts = o.ToNative();
             clicked = Native.CardBegin(ui.Handle, in __opts) != 0;
-            return new LayoutScope(ui.Handle, ScopeKind.Card, "Card", o.Id);
+            return new LayoutScope(ui.Handle, &Native.CardEnd, "Card", o.Id);
         }
 
         /// <summary>cui_scroll_begin</summary>
@@ -76,7 +76,7 @@ public static unsafe class LayoutUiExtensions
         {
             var __opts = o.ToNative();
             Native.ScrollBegin(ui.Handle, in __opts);
-            return new LayoutScope(ui.Handle, ScopeKind.Scroll, "Scroll", o.Id);
+            return new LayoutScope(ui.Handle, &Native.ScrollEnd, "Scroll", o.Id);
         }
 
         /// <summary>cui_scroll_to</summary>
@@ -94,7 +94,7 @@ public static unsafe class LayoutUiExtensions
             var __opts = o.ToNative();
             Native.SplitBegin(ui.Handle, Utf8.Get(id), ref *__ratio, in __opts);
             ratio = *__ratio;
-            return new LayoutScope(ui.Handle, ScopeKind.Split, "Split", id);
+            return new LayoutScope(ui.Handle, &Native.SplitEnd, "Split", id);
         }
 
         /// <summary>cui_split_next</summary>

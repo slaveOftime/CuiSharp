@@ -105,7 +105,7 @@ public static unsafe class StatefulDataGridUiExtensions
                 rowCount, ref state.First, ref state.Last, in opts) != 0;
             // Header sort, select-all and keyboard navigation run in DataGridBegin, before rows draw.
             GridScope.CopyBack(state, state.Selected, selection, sort, cursor, anchor, rowCount);
-            return new GridScope(new OpenScope(ui.Handle, ScopeKind.DataGrid, "DataGrid", id, open, nativeId),
+            return new GridScope(new OpenScope(ui.Handle, &Native.DataGridEnd, "DataGrid", id, open, nativeId),
                 state, selection, sort, cursor, anchor, rowCount);
         }
 

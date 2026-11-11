@@ -30,14 +30,15 @@ either ceiling: the size check runs on every pull request, and the frame check o
 CI → Run workflow → **budget**) because a shared runner is too noisy to fail one. That on-demand job
 reports its numbers in the run summary and warns instead of failing: a hosted runner measured 1.69 ms
 where the reference machine measures 0.82 ms, so the script itself is the gate when it is run on the
-machine the budget came from.
+machine the budget came from. The same script checks the app shapes in [SIZE.md](SIZE.md): the floor
+on every pull request, every shape in the on-demand job.
 
 | | Value | Where it is enforced |
 |---|---|---|
 | Gallery frame, 1240x820, software raster | **0.83 ms** mean (p50 0.69, p95 1.16, p99 1.39) | budget 0.90 ms, `--fps 900` |
 | Build only (a GPU would rasterize) | 0.02 ms | same run |
 | Managed allocation per frame | **0 B** | `FrameLifecycleTests`, `NewComponentTests` |
-| Gallery AOT executable, win-x64 | 3 167 232 B | budget 3.2 MB |
+| Gallery AOT executable, win-x64 | **2 862 592 B** | budget 2.95 MB |
 | A million virtual list rows | ~12 µs | `--scale` |
 | A million chart points, undecimated | 45.9 ms | why decimation exists |
 | A million chart points, decimated to 800 | 0.018 ms | same |
@@ -46,10 +47,17 @@ machine the budget came from.
 The executable grew from 2 141 184 B to 2 579 456 B with CUI 1.3, and the growth is upstream's: the
 twenty components it added are about 5 000 lines of new C (`cui_devtools.c`, `cui_devpanels.c`,
 `cui_devviews.c`, `cui_graph.c`, `cui_regex.c`) compiled into the same library. The frame time did not
-move, because a page still draws only the widgets on it. The ceiling moved with the binary rather
-than the other way round, and it is a round number above the measurement, so the next regression still
-fails the gate. `Localization` added 1 536 B on top of that, and no measurable frame time: it costs
-one null test per frame, and a published table is compared slot by slot only when one is attached.
+move, because a page still draws only the widgets on it. `Localization` added 1 536 B on top of that,
+and no measurable frame time: it costs one null test per frame, and a published table is compared
+slot by slot only when one is attached. So the growth was not in the widgets an app does not use —
+`/OPT:REF` drops those — it was in what every app carries. 0.4.0 takes 288 768 B of it back: the
+headless channel and the framework diagnostics a shipped app never reads are compiled out of a
+self-contained publish, and a container's end function is now reached through the wrapper that
+opened it instead of a table that named all of them. The ceiling moved with the binary rather than
+the other way round, and it is a round number above the measurement, so the next regression still
+fails the gate.
+
+What is inside the executable, and what each widget family costs: [SIZE.md](SIZE.md).
 
 ## Gallery, page by page
 

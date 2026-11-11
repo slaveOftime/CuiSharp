@@ -38,7 +38,7 @@ public static unsafe class PlanningUiExtensions
         {
             var __opts = o.ToNative();
             var __result = Native.KanbanColumnBegin(ui.Handle, Utf8.Get(title), cardCount, in __opts);
-            return new LayoutScope(ui.Handle, ScopeKind.KanbanColumn, "KanbanColumn", title);
+            return new LayoutScope(ui.Handle, &Native.KanbanColumnEnd, "KanbanColumn", title);
         }
 
         /// <summary>Always opens the container; clicked reports its interaction result.</summary>
@@ -46,21 +46,21 @@ public static unsafe class PlanningUiExtensions
         {
             var __opts = o.ToNative();
             clicked = Native.KanbanColumnBegin(ui.Handle, Utf8.Get(title), cardCount, in __opts) != 0;
-            return new LayoutScope(ui.Handle, ScopeKind.KanbanColumn, "KanbanColumn", title);
+            return new LayoutScope(ui.Handle, &Native.KanbanColumnEnd, "KanbanColumn", title);
         }
 
         /// <summary>cui_kanban_card_begin</summary>
         public LayoutScope KanbanCard(int cardId)
         {
             var __result = Native.KanbanCardBegin(ui.Handle, cardId);
-            return new LayoutScope(ui.Handle, ScopeKind.KanbanCard, "KanbanCard", null);
+            return new LayoutScope(ui.Handle, &Native.KanbanCardEnd, "KanbanCard", null);
         }
 
         /// <summary>Always opens the container; clicked reports its interaction result.</summary>
         public LayoutScope KanbanCard(int cardId, out bool clicked)
         {
             clicked = Native.KanbanCardBegin(ui.Handle, cardId) != 0;
-            return new LayoutScope(ui.Handle, ScopeKind.KanbanCard, "KanbanCard", null);
+            return new LayoutScope(ui.Handle, &Native.KanbanCardEnd, "KanbanCard", null);
         }
 
         /// <summary>* left to right in any interface: see cui__keep_ltr</summary>

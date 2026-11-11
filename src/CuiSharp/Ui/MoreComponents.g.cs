@@ -28,7 +28,7 @@ public static unsafe class MoreComponentsUiExtensions
         public LayoutScope ButtonGroup()
         {
             Native.ButtonGroupBegin(ui.Handle);
-            return new LayoutScope(ui.Handle, ScopeKind.ButtonGroup, "ButtonGroup", null);
+            return new LayoutScope(ui.Handle, &Native.ButtonGroupEnd, "ButtonGroup", null);
         }
 
         /// <summary>Icon button that copies text to the clipboard and confirms with a check.</summary>

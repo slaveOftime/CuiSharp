@@ -27,14 +27,16 @@ For a quick experiment, generate a file-based C# app (no project or solution):
 
 ```sh
 dotnet new cui-mini -n demo1
-dotnet run demo1.cs
+dotnet run demo1.cs                        # a JIT build of one file: a second or two
+dotnet publish demo1.cs -c Release -o .    # one native binary beside it, no .NET to install
 ```
 
 `-n demo1` creates only `demo1.cs` in the current directory, without a new folder. Add `-o <folder>`
-only when you want a separate output directory. The file starts with `#:package CuiSharp@*`,
-resolving the latest stable package. Use
-`--CuiSharpVersion 0.3.1` when generating to pin a version. Its counter and theme switch use the
-same frame API as a full app; `CUISHARP_HEADLESS=1` runs it without a window for automation.
+only when you want a separate output directory. The generated file carries the properties that make
+that publish one file of about 1.1 MB, and says so at the top. It starts with
+`#:package CuiSharp@*`, resolving the latest stable package; use `--CuiSharpVersion 0.3.1` when
+generating to pin a version. Its counter and theme switch use the same frame API as a full app;
+`CUISHARP_HEADLESS=1` runs it without a window for automation.
 
 Also `dotnet add package CuiSharp` for an existing project. Requires the .NET 10 SDK.
 
@@ -73,7 +75,8 @@ or holding them across an `await`. Nothing can outlive the frame, so nothing can
 | **A million rows** | Lists virtualize (~12 µs); charts decimate long feeds for free (`ChartOpts.MaxPoints`). |
 | **Hot reload** | The frame loop is managed, so `dotnet watch` patches your UI between frames. |
 
-Numbers, method and caveats: [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
+Numbers, method and caveats: [docs/PERFORMANCE.md](docs/PERFORMANCE.md). What is in the published
+executable, and what each widget costs: [docs/SIZE.md](docs/SIZE.md).
 
 ## What it looks like
 

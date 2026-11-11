@@ -18,7 +18,7 @@ public static unsafe class AppChromeMenuBarToolbarStatusBarDocumentTabsUiExtensi
         {
             var __opts = o.ToNative();
             Native.MenuBarBegin(ui.Handle, Utf8.Get(id), in __opts);
-            return new LayoutScope(ui.Handle, ScopeKind.MenuBar, "MenuBar", id);
+            return new LayoutScope(ui.Handle, &Native.MenuBarEnd, "MenuBar", id);
         }
 
         /// <summary>cui_menu_bar_menu_begin</summary>
@@ -26,7 +26,7 @@ public static unsafe class AppChromeMenuBarToolbarStatusBarDocumentTabsUiExtensi
         {
             var __opts = o.ToNative();
             var __result = Native.MenuBarMenuBegin(ui.Handle, Utf8.Get(label), in __opts);
-            return new OpenScope(ui.Handle, ScopeKind.MenuBarMenu, "MenuBarMenu", label, __result != 0);
+            return new OpenScope(ui.Handle, &Native.MenuBarMenuEnd, "MenuBarMenu", label, __result != 0);
         }
 
         /// <summary>Draws the body only when the container opens, and closes it on exceptions.</summary>
@@ -42,7 +42,7 @@ public static unsafe class AppChromeMenuBarToolbarStatusBarDocumentTabsUiExtensi
         {
             var __opts = o.ToNative();
             Native.ToolbarBegin(ui.Handle, Utf8.Get(id), in __opts);
-            return new LayoutScope(ui.Handle, ScopeKind.Toolbar, "Toolbar", id);
+            return new LayoutScope(ui.Handle, &Native.ToolbarEnd, "Toolbar", id);
         }
 
         /// <summary>cui_toolbar_button_ex</summary>
@@ -73,7 +73,7 @@ public static unsafe class AppChromeMenuBarToolbarStatusBarDocumentTabsUiExtensi
         {
             var __opts = o.ToNative();
             Native.StatusBarBegin(ui.Handle, Utf8.Get(id), in __opts);
-            return new LayoutScope(ui.Handle, ScopeKind.StatusBar, "StatusBar", id);
+            return new LayoutScope(ui.Handle, &Native.StatusBarEnd, "StatusBar", id);
         }
 
         /// <summary>cui_status_bar_spacer</summary>

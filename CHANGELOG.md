@@ -4,9 +4,9 @@ Every user-visible change, newest first. Pre-1.0 the minor number carries new su
 carries fixes. The section for a tag is what the GitHub release publishes, so the two cannot say
 different things.
 
-## [Unreleased]
+## [0.4.0] — unreleased
 
-The gallery now draws everything CUI ships, and the wheel reached the headless protocol.
+The gallery now draws everything CUI ships, and a published binary carries only what it uses.
 
 ### Added
 
@@ -41,6 +41,40 @@ The gallery now draws everything CUI ships, and the wheel reached the headless p
 - **`ui.ChatMessage(text, opts)`** is the usual call: the markdown result is an optional `ref`, so
   a plain bubble no longer needs a throwaway local. `ui.InlineEdit(id, ref text)` gets the same
   treatment from a default buffer size.
+
+### Changed
+
+- **A size profile in the package.** `build/CuiSharp.Size.targets` compiles the headless channel and
+  the framework diagnostics a shipped app never reads out of a **self-contained AOT publish**: the
+  smallest app goes from 1 498 112 B to 1 165 312 B (−22.2%) and the gallery from 3 167 232 B to
+  2 862 592 B (−9.6%), counting the fix in the third bullet. Migration: nothing to do, unless a
+  published exe is driven by a tool — publish it with `-p:CuiSharpHeadless=true`, which is what
+  `dotnet cui` now passes to the builds it runs itself. `dotnet run` is untouched: a build that is
+  not a self-contained publish keeps the channel and the framework's exception messages.
+- **`CuiSharpSizeProfile=false`** turns the whole set off; **`CuiSharpVerboseErrors=true`** keeps
+  exception messages and stack traces while leaving the rest on. `DebuggerSupport` is off in a
+  published binary too, and is not part of `CuiSharpVerboseErrors`: that property is about what an
+  exception says, not about whether one can be stepped through on a machine that is not the user's.
+  All three are properties, not API, and the measured values are in [docs/SIZE.md](docs/SIZE.md).
+- **A container no longer links every other container.** `LayoutScope.Dispose` used to call one
+  `switch` naming all 39 `*_end` functions, so an app that opened a box also linked the end
+  functions (and translation units) of pickers, docking and the rest: −24 064 B for the smallest
+  app. The end function is now taken in the wrapper that opened the container,
+  so a widget is reachable exactly when it is used. No API change; `LayoutScope` and `OpenScope`
+  are still what a `using` closes.
+- **`dotnet new cui-mini`** ships a single binary by default. The generated file sets
+  `PublishAot`, `OptimizationPreference=Size`, `InvariantGlobalization=true`, `StripSymbols` and
+  `DebugType=none` with `#:property` — the switches a file-based app has no project file to inherit
+  them from — so `dotnet publish demo1.cs -c Release -o .` leaves **one** file of about 1.1 MB
+  beside the source instead of an exe and a 6 MB `.pdb`. Its header says how to run it in a second
+  (a JIT build of one file) and how to publish it.
+- **`dotnet cui` says what to do** when a published app never prints its banner, instead of only
+  reporting that it waited.
+- **A size budget per app shape.** `tools/size-report.ps1` measures five shapes (a table, a chart,
+  form controls, Markdown and code) and `tools/budget-check.ps1 -SizeCsv` compares them with the
+  ceilings in [docs/SIZE.md](docs/SIZE.md), so the next CUI release that grows the floor fails a
+  check instead of arriving in a release note. Every pull request measures the floor and the
+  gallery; the on-demand `budget` job measures every shape with `-RequireAll`.
 
 ### Fixed
 

@@ -20,7 +20,7 @@ public static unsafe class NodeEditorUiExtensions
             var __opts = o.ToNative();
             var __result = Native.NodeEditorBegin(ui.Handle, Utf8.Get(id), ref __view, in __opts);
             view = NodeView.FromNative(__view);
-            return new OpenScope(ui.Handle, ScopeKind.NodeEditor, "NodeEditor", id, __result != 0);
+            return new OpenScope(ui.Handle, &Native.NodeEditorEnd, "NodeEditor", id, __result != 0);
         }
 
         /// <summary>Draws the body only when the container opens, and closes it on exceptions.</summary>
@@ -36,7 +36,7 @@ public static unsafe class NodeEditorUiExtensions
         {
             var __opts = o.ToNative();
             var __result = Native.NodeBegin(ui.Handle, nodeId, ref x, ref y, Utf8.Get(title), in __opts);
-            return new OpenScope(ui.Handle, ScopeKind.Node, "Node", title, __result != 0);
+            return new OpenScope(ui.Handle, &Native.NodeEnd, "Node", title, __result != 0);
         }
 
         /// <summary>Draws the body only when the container opens, and closes it on exceptions.</summary>
@@ -69,7 +69,7 @@ public static unsafe class NodeEditorUiExtensions
         public LayoutScope NodeContent()
         {
             Native.NodeContentBegin(ui.Handle);
-            return new LayoutScope(ui.Handle, ScopeKind.NodeContent, "NodeContent", null);
+            return new LayoutScope(ui.Handle, &Native.NodeContentEnd, "NodeContent", null);
         }
 
         /// <summary>A link from an output pin to an input pin. Returns true while it is selected.</summary>

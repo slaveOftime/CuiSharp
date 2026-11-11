@@ -1,0 +1,64 @@
+<Project>
+
+  <!--
+    What a published binary contains, as opposed to what the API offers.
+
+    Numbers and method: docs/SIZE.md. The short version is that a published CuiSharp app is 72%
+    .NET runtime and framework, 24% CUI native and 4% this library's own code, so the bytes worth
+    arguing about are the ones the runtime adds when a feature is compiled in and nobody calls it.
+    Two of those are here: the headless channel (about 180 KB of managed code and the IO stack
+    behind it) and the framework diagnostics a shipped app never reads.
+
+    Every switch is applied only where it pays — a self-contained AOT publish, which is the one
+    build whose size is a product — and each one can be overridden, because an app that has
+    measured its own binary knows better than this file:
+
+      CuiSharpSizeProfile=true|false   the whole diagnostic set; on for an AOT publish
+      CuiSharpHeadless=true|false      the protocol `dotnet cui` drives an app with
+      CuiSharpVerboseErrors=true       keep framework exception messages and stack traces
+
+    A build that is not a self-contained AOT publish keeps the headless channel and its exception
+    messages: there is no size budget to serve, and running the app headless is how a person
+    checks a frame. `PublishAot` alone is not that signal — the file-based app shape sets it for
+    `dotnet run` too, and compiling the channel out there would take the protocol away from the
+    shortest way of trying an app.
+  -->
+
+  <PropertyGroup>
+    <_CuiSharpSized Condition="'$(PublishAot)' == 'true' And '$(RuntimeIdentifier)' != ''">true</_CuiSharpSized>
+    <CuiSharpSizeProfile Condition="'$(CuiSharpSizeProfile)' == '' And '$(_CuiSharpSized)' == 'true'">true</CuiSharpSizeProfile>
+    <CuiSharpHeadless Condition="'$(CuiSharpHeadless)' == '' And '$(_CuiSharpSized)' == 'true'">false</CuiSharpHeadless>
+    <CuiSharpHeadless Condition="'$(CuiSharpHeadless)' == ''">true</CuiSharpHeadless>
+    <CuiSharpVerboseErrors Condition="'$(CuiSharpVerboseErrors)' == ''">false</CuiSharpVerboseErrors>
+  </PropertyGroup>
+
+  <!--
+    The headless channel is a feature switch, so the trimmer can delete it when the answer is
+    settled at build time. Trim="true" is what makes it a constant rather than a runtime lookup;
+    it also writes the runtimeconfig entry, so a JIT build answers the same way.
+  -->
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="CuiSharp.Headless" Value="$(CuiSharpHeadless)" Trim="true" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(CuiSharpSizeProfile)' == 'true'">
+    <!--
+      The two a debugging session would miss. CuiSharpVerboseErrors is the app saying it would
+      rather read `Argument out of range` than `Arg_ResourceKey`, and see where it came from.
+    -->
+    <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == '' And '$(CuiSharpVerboseErrors)' != 'true'">true</UseSystemResourceKeys>
+    <StackTraceSupport Condition="'$(StackTraceSupport)' == '' And '$(CuiSharpVerboseErrors)' != 'true'">false</StackTraceSupport>
+
+    <!-- No debugger attaches to a shipped binary, and the debug header it exports is bytes on every
+         platform. Not part of CuiSharpVerboseErrors: that is about what an exception says, not
+         about whether one can be stepped through on a machine that is not the user's. -->
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == ''">false</DebuggerSupport>
+
+    <!-- Telemetry, hot-reload metadata and a distributed-tracing Activity per HTTP request: an
+         app that wants one of these asks for it by setting the switch back. -->
+    <EventSourceSupport Condition="'$(EventSourceSupport)' == ''">false</EventSourceSupport>
+    <MetadataUpdaterSupport Condition="'$(MetadataUpdaterSupport)' == ''">false</MetadataUpdaterSupport>
+    <HttpActivityPropagationSupport Condition="'$(HttpActivityPropagationSupport)' == ''">false</HttpActivityPropagationSupport>
+  </PropertyGroup>
+
+</Project>

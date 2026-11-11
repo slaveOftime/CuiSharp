@@ -290,11 +290,22 @@ jobs:
       - name: Publish
         run: dotnet publish samples/CuiSharp.Gallery -c Release -r ${{ matrix.rid }} -o artifacts/publish
 
-      # The size ceiling is a row in docs/PERFORMANCE.md: cheap to check, and deterministic.
+      # The ceilings are rows in docs/PERFORMANCE.md and docs/SIZE.md: cheap to check, and
+      # deterministic. The gallery catches a component the app actually draws; the floor catches
+      # what every app carries, which is the half that used to grow unnoticed.
       - name: Size budget
         if: matrix.rid == 'win-x64'
         shell: pwsh
         run: pwsh tools/budget-check.ps1 -AotBytes (Get-Item 'artifacts/publish/${{ matrix.exe }}').Length
+
+      # One more AOT publish, against the shipped width. Every shape, with -RequireAll, is the
+      # on-demand 'budget' job: five more publishes are not worth a pull request.
+      - name: Shape budget (floor)
+        if: matrix.rid == 'win-x64'
+        shell: pwsh
+        run: |
+          pwsh tools/size-report.ps1 -Widths shipped -Csv artifacts/size.csv
+          pwsh tools/budget-check.ps1 -SizeCsv artifacts/size.csv
 
       - name: Assert the exe is self-contained
         shell: pwsh
@@ -425,11 +436,29 @@ jobs:
           }
           exit 0
 
+      # Every app shape, unlike the pull-request job: a binary size is deterministic, so this one
+      # does fail the run. docs/SIZE.md holds the ceilings.
+      - name: Every app shape
+        shell: pwsh
+        run: |
+          pwsh tools/size-report.ps1 -All -Widths shipped -Csv size.csv
+          pwsh tools/budget-check.ps1 -SizeCsv size.csv -RequireAll
+          # Thrown, not just left in $LASTEXITCODE: the summary below runs either way, and a person
+          # reading a red run should see why at the point that decides it.
+          if ($LASTEXITCODE -ne 0) { throw 'a shape went over its budget in docs/SIZE.md' }
+          '## App sizes' | Out-File $env:GITHUB_STEP_SUMMARY -Append
+          '| Shape | Width | Bytes |' | Out-File $env:GITHUB_STEP_SUMMARY -Append
+          '|---|---|---|' | Out-File $env:GITHUB_STEP_SUMMARY -Append
+          Import-Csv size.csv | ForEach-Object { "| $($_.Shape) | $($_.Width) | $([long]$_.Bytes) |" } |
+            Out-File $env:GITHUB_STEP_SUMMARY -Append
+
       - uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: benchmark
-          path: benchmark.txt
+          path: |
+            benchmark.txt
+            size.csv
 
   # The package is what users get, so one job meets it the way they do: pack, scaffold from
   # the package, build, test, publish a NativeAOT single file and drive it. The Linux leg links

@@ -20,7 +20,7 @@ public static unsafe class DialogsSheetsToastsAlertsUiExtensions
             var __opts = o.ToNative();
             var __result = Native.DialogBegin(ui.Handle, Utf8.Get(title), (nint)(&__open), in __opts);
             open = __open != 0;
-            return new OpenScope(ui.Handle, ScopeKind.Dialog, "Dialog", title, __result != 0);
+            return new OpenScope(ui.Handle, &Native.DialogEnd, "Dialog", title, __result != 0);
         }
 
         /// <summary>Draws the body only when the container opens, and closes it on exceptions.</summary>
@@ -35,7 +35,7 @@ public static unsafe class DialogsSheetsToastsAlertsUiExtensions
         public LayoutScope DialogFooter()
         {
             Native.DialogFooterBegin(ui.Handle);
-            return new LayoutScope(ui.Handle, ScopeKind.DialogFooter, "DialogFooter", null);
+            return new LayoutScope(ui.Handle, &Native.DialogFooterEnd, "DialogFooter", null);
         }
 
         /// <summary>cui_sheet_begin</summary>
@@ -45,7 +45,7 @@ public static unsafe class DialogsSheetsToastsAlertsUiExtensions
             var __opts = o.ToNative();
             var __result = Native.SheetBegin(ui.Handle, Utf8.Get(title), (nint)(&__open), in __opts);
             open = __open != 0;
-            return new OpenScope(ui.Handle, ScopeKind.Sheet, "Sheet", title, __result != 0);
+            return new OpenScope(ui.Handle, &Native.SheetEnd, "Sheet", title, __result != 0);
         }
 
         /// <summary>Draws the body only when the container opens, and closes it on exceptions.</summary>

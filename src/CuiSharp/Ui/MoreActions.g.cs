@@ -84,7 +84,7 @@ public static unsafe class MoreActionsUiExtensions
         {
             var __opts = o.ToNative();
             var __result = Native.UserMenuBegin(ui.Handle, Utf8.Get(name), in __opts);
-            return new OpenScope(ui.Handle, ScopeKind.UserMenu, "UserMenu", name, __result != 0);
+            return new OpenScope(ui.Handle, &Native.UserMenuEnd, "UserMenu", name, __result != 0);
         }
 
         /// <summary>Draws the body only when the container opens, and closes it on exceptions.</summary>

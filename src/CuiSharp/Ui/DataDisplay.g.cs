@@ -19,7 +19,7 @@ public static unsafe class DataDisplayUiExtensions
             byte __open = (byte)(open ? 1 : 0);
             var __result = Native.AccordionBegin(ui.Handle, Utf8.Get(title), (nint)(&__open));
             open = __open != 0;
-            return new OpenScope(ui.Handle, ScopeKind.Accordion, "Accordion", title, __result != 0);
+            return new OpenScope(ui.Handle, &Native.AccordionEnd, "Accordion", title, __result != 0);
         }
 
         /// <summary>Draws the body only when the container opens, and closes it on exceptions.</summary>
@@ -37,7 +37,7 @@ public static unsafe class DataDisplayUiExtensions
             var __opts = o.ToNative();
             var __result = Native.TreeBegin(ui.Handle, Utf8.Get(label), (nint)(&__open), in __opts);
             open = __open != 0;
-            return new OpenScope(ui.Handle, ScopeKind.Tree, "Tree", label, __result != 0);
+            return new OpenScope(ui.Handle, &Native.TreeEnd, "Tree", label, __result != 0);
         }
 
         /// <summary>Draws the body only when the container opens, and closes it on exceptions.</summary>
@@ -72,7 +72,7 @@ public static unsafe class DataDisplayUiExtensions
             Native.VirtualListBegin(ui.Handle, Utf8.Get(id), count, rowHeight, UiMarshal.ToNative(height), ref __first, ref __last);
             first = __first;
             last = __last;
-            return new LayoutScope(ui.Handle, ScopeKind.VirtualList, "VirtualList", id);
+            return new LayoutScope(ui.Handle, &Native.VirtualListEnd, "VirtualList", id);
         }
 
         /// <summary>cui_table_begin_ex</summary>
@@ -84,7 +84,7 @@ public static unsafe class DataDisplayUiExtensions
             var __opts = o.ToNative((nint)(&__sort));
             var __result = Native.TableBegin(ui.Handle, Utf8.Get(id), (nint)__columns, (int)(columns.Length), in __opts);
             sort = TableSort.FromNative(__sort);
-            return new OpenScope(ui.Handle, ScopeKind.Table, "Table", id, __result != 0);
+            return new OpenScope(ui.Handle, &Native.TableEnd, "Table", id, __result != 0);
         }
 
         /// <summary>Same as the overload with ref sort, but reports nothing back: the state pointer is null, so the widget stores no state the caller could read.</summary>
@@ -94,7 +94,7 @@ public static unsafe class DataDisplayUiExtensions
             for (int i = 0; i < columns.Length; i++) __columns[i] = columns[i].ToNative();
             var __opts = o.ToNative(0);
             var __result = Native.TableBegin(ui.Handle, Utf8.Get(id), (nint)__columns, (int)(columns.Length), in __opts);
-            return new OpenScope(ui.Handle, ScopeKind.Table, "Table", id, __result != 0);
+            return new OpenScope(ui.Handle, &Native.TableEnd, "Table", id, __result != 0);
         }
 
         /// <summary>Draws the body only when the container opens, and closes it on exceptions.</summary>

@@ -47,7 +47,7 @@ public static unsafe class TreeTableAndPathBarUiExtensions
         public OpenScope PathBarMenu(UiText id, ref int segment)
         {
             var __result = Native.PathBarMenuBegin(ui.Handle, Utf8.Get(id), ref segment);
-            return new OpenScope(ui.Handle, ScopeKind.PathBarMenu, "PathBarMenu", id, __result != 0);
+            return new OpenScope(ui.Handle, &Native.PathBarMenuEnd, "PathBarMenu", id, __result != 0);
         }
 
         /// <summary>Draws the body only when the container opens, and closes it on exceptions.</summary>

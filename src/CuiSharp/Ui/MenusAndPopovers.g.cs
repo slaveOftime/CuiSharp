@@ -18,7 +18,7 @@ public static unsafe class MenusAndPopoversUiExtensions
         {
             var __opts = o.ToNative();
             var __result = Native.PopoverBegin(ui.Handle, Utf8.Get(id), in __opts);
-            return new OpenScope(ui.Handle, ScopeKind.Popover, "Popover", id, __result != 0);
+            return new OpenScope(ui.Handle, &Native.PopoverEnd, "Popover", id, __result != 0);
         }
 
         /// <summary>Draws the body only when the container opens, and closes it on exceptions.</summary>
@@ -74,7 +74,7 @@ public static unsafe class MenusAndPopoversUiExtensions
         {
             var __opts = o.ToNative();
             var __result = Native.MenuBegin(ui.Handle, Utf8.Get(label), in __opts);
-            return new OpenScope(ui.Handle, ScopeKind.Menu, "Menu", label, __result != 0);
+            return new OpenScope(ui.Handle, &Native.MenuEnd, "Menu", label, __result != 0);
         }
 
         /// <summary>Draws the body only when the container opens, and closes it on exceptions.</summary>
@@ -89,7 +89,7 @@ public static unsafe class MenusAndPopoversUiExtensions
         public OpenScope ContextMenu(UiText id)
         {
             var __result = Native.ContextMenuBegin(ui.Handle, Utf8.Get(id));
-            return new OpenScope(ui.Handle, ScopeKind.ContextMenu, "ContextMenu", id, __result != 0);
+            return new OpenScope(ui.Handle, &Native.ContextMenuEnd, "ContextMenu", id, __result != 0);
         }
 
         /// <summary>Draws the body only when the container opens, and closes it on exceptions.</summary>
