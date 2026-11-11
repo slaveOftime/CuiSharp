@@ -1,0 +1,28 @@
+<script>
+(function () {
+  function sym(m, name) {
+    var len = m.lengthBytesUTF8(name) + 1;
+    var buf = m._malloc(len);
+    m.stringToUTF8Array(name, m.HEAPU8, buf, len);
+    var p = m._cui_sym(buf);
+    m._free(buf);
+    return p >>> 0;
+  }
+  var tries = 0;
+  var iv = setInterval(function () {
+    tries++;
+    try {
+      var rt = window.getDotnetRuntime(0);
+      if (rt && rt.Module && typeof rt.Module._cui_sym === 'function' && window.DotNet) {
+        var p1 = sym(rt.Module, 'cui_sw_create');
+        var p2 = sym(rt.Module, 'cui_sw_destroy');
+        window.DotNet.invokeMethodAsync('app', 'InitSyms', p1, p2)
+          .then(function () { document.dispatchEvent(new Event('probe-done')); })
+          .catch(function (e) { console.error('invoke err', e); });
+        clearInterval(iv);
+      }
+    } catch (e) { console.error('cui boot err', e); }
+    if (tries > 600) clearInterval(iv);
+  }, 100);
+})();
+</script>
