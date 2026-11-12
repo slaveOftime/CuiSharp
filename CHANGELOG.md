@@ -6,6 +6,13 @@ different things.
 
 ## [Unreleased]
 
+### Added
+
+- **A demo icon in both templates.** `dotnet new cui-app` ships `<Project>.ico` wired in with
+  `ApplicationIcon`, and `dotnet new cui-mini` generates `<name>.cs` plus a matching `<name>.ico`;
+  replacing the file and rebuilding changes the exe icon and, because the CUI window class loads
+  the executable's own icon, the window icon too. The shipped icon is a black square reading CUI.
+
 ### Fixed
 
 - **`dotnet new cui-mini` no longer opens a console window.** The generated file-based app now

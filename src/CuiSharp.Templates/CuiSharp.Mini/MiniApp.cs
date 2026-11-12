@@ -1,6 +1,6 @@
 #:package CuiSharp@__CUISHARP_VERSION__
 
-// This file is the whole app: no project, no solution, nothing to set up.
+// This file and its .ico are the whole app: no project, no solution, nothing to set up.
 //
 // Start it
 //   dotnet run MiniApp.cs
@@ -10,20 +10,22 @@
 //
 // Ship it
 //   dotnet publish MiniApp.cs -c Release -o .
-//   One native executable, MiniApp.exe, beside this file — about 1.1 MB, nothing else in the
-//   folder, and no .NET runtime on the machine that runs it. Without -o it lands in
+//   One native executable, MiniApp.exe, beside this file — about 1.2 MB, just the exe beside
+//   the source, and no .NET runtime on the machine that runs it. Without -o it lands in
 //   artifacts/MiniApp/ instead, which keeps the source folder clean.
 //   A publish also trims the binary, and that includes the channel `dotnet cui` drives an app
 //   with: add -p:CuiSharpHeadless=true if a tool should inspect the published exe.
 //
-// The six properties below: OutputType=WinExe makes the exe a GUI-subsystem binary, so the
-// published app opens its window without a console behind it. The other five make that binary
-// small: no ICU tables (this app formats the invariant way), size rather than speed in the
-// generated code, and no debug symbols — that last pair is the difference between one file and
-// an exe next to a six-megabyte .pdb.
+// The properties below: OutputType=WinExe makes the exe a GUI-subsystem binary, so the
+// published app opens its window without a console behind it; ApplicationIcon embeds the .ico
+// beside this file, so replacing MiniApp.ico with your own and rebuilding changes the exe and
+// window icon. The rest make that binary small: no ICU tables (this app formats the invariant
+// way), size rather than speed in the generated code, and no debug symbols — that last pair is
+// the difference between one file and an exe next to a six-megabyte .pdb.
 // 'dotnet new cui-app' sets the same ones in its project file, for the same reasons.
 #:property PublishAot=true
 #:property OutputType=WinExe
+#:property ApplicationIcon=MiniApp.ico
 #:property OptimizationPreference=Size
 #:property InvariantGlobalization=true
 #:property StripSymbols=true
