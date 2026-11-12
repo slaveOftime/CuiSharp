@@ -55,7 +55,7 @@ way:
 | App | Before the profile | Shipped |
 |---|---|---|
 | minimal app | 1 498 112 | 1 165 312 (−22.2%) |
-| gallery, 29 pages | 3 167 232 | 2 918 400 (−7.9%) |
+| gallery, 29 pages | 3 167 232 | 2 954 752 (−6.7%) |
 | `dotnet new cui-app`, published | — | 2 282 496 |
 | `dotnet new cui-mini`, published | — | 1 198 080 |
 

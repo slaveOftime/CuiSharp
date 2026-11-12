@@ -38,7 +38,7 @@ on every pull request, every shape in the on-demand job.
 | Gallery frame, 1240x820, software raster | **0.83 ms** mean (p50 0.69, p95 1.16, p99 1.39) | budget 0.90 ms, `--fps 900` |
 | Build only (a GPU would rasterize) | 0.02 ms | same run |
 | Managed allocation per frame | **0 B** | `FrameLifecycleTests`, `NewComponentTests` |
-| Gallery AOT executable, win-x64 | **2 918 400 B** | budget 2.95 MB |
+| Gallery AOT executable, win-x64 | **2 954 752 B** | budget 2.95 MB |
 | A million virtual list rows | ~12 µs | `--scale` |
 | A million chart points, undecimated | 45.9 ms | why decimation exists |
 | A million chart points, decimated to 800 | 0.018 ms | same |
@@ -46,7 +46,9 @@ on every pull request, every shape in the on-demand job.
 
 The executable grew again with CUI 1.4, from 2 878 976 B to 2 918 400 B: the five instrument
 components, and the header comments CUI 1.4 wrote for every field of every options struct, which
-reach the gallery as generated documentation. Frame time is unchanged (p50 0.68, p95 1.10, p99
+reach the gallery as generated documentation. It is 2 954 752 B now: the gallery carries its own
+`.ico` from 0.4.1, and the 34 494 B icon is most of the difference. That leaves 4.5 % under
+the budget, so the next component sync has to buy its bytes. Frame time is unchanged (p50 0.68, p95 1.10, p99
 1.33 ms) and a frame still allocates nothing.
 
 The executable grew from 2 141 184 B to 2 579 456 B with CUI 1.3, and the growth is upstream's: the
