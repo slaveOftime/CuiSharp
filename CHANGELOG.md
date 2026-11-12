@@ -4,6 +4,19 @@ Every user-visible change, newest first. Pre-1.0 the minor number carries new su
 carries fixes. The section for a tag is what the GitHub release publishes, so the two cannot say
 different things.
 
+## [Unreleased]
+
+### Fixed
+
+- **A hot reload reaches the screen without touching the window.** An idle CuiSharp window sleeps
+  inside the OS message loop, so an edit applied by `dotnet watch` was live in the process and
+  invisible: the window kept presenting the frame it drew before the edit until the user moved the
+  mouse. The library now registers itself with the runtime's `MetadataUpdateHandler` — `ClearCache`
+  before the delta, `UpdateApplication` once it is live — and wakes the window with a posted message
+  that the win32 backend's wait already listens for. No polling and no idle cost: a window that is
+  neither animating nor reloaded still draws nothing. A backend that cannot be woken from another
+  thread keeps a 500 ms idle cap while `dotnet watch` runs the app.
+
 ## [0.4.0] — 2026-11-12
 
 CUI 1.3.1 → 1.4.0. Four functions, four components, and one option array the generator had never

@@ -510,8 +510,9 @@ evidence behind.
    Do not build a workflow on it: a command costs a process, and a suite of them cannot be rerun by
    anyone else.
 4. **Edit and look, repeatedly.** For a running window, `dotnet watch` in one terminal and edit in
-   the other; the app restarts or reloads and you look at it. That is a human loop — an agent should
-   prefer the test, because a test says pass or fail without anybody looking.
+   the other; the app restarts or reloads, and a reloaded frame is drawn on its own — you do not
+   have to click the window to make it appear. That is a human loop — an agent should prefer the
+   test, because a test says pass or fail without anybody looking.
 
 The rule underneath all four: **one reproduction per task, in a file.** If a check mattered once, it
 belongs in the test suite, not in a shell history.

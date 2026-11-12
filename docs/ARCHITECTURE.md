@@ -229,6 +229,22 @@ loop starts. A process-wide queue — what this used to be — is applied by whi
 first, which can run another thread's callback against the wrong UI and make that frame collect its
 allocations.
 
+Hot reload rides the same sleep, and the runtime does report it. A type named by
+`[assembly: MetadataUpdateHandler]` is called `ClearCache` before a delta is applied and
+`UpdateApplication` once it is live, and that is the notification surface desktop .NET has —
+`MetadataUpdater` itself only applies deltas (`ApplyUpdate`, `IsSupported`) and raises nothing. The
+callback arrives on the thread that applied the delta, so it may touch no `cui_ctx`;
+`Hosting/HotReloadWake` posts `WM_NULL` to the window the loop already recovered instead, which is
+enough because the win32 backend waits on `QS_POSTMESSAGE`: the wait returns, the queue drains, and
+the next frame draws the reloaded code. Nothing polled to find out, and a window that is neither
+animating nor reloaded still draws nothing.
+
+A backend that cannot be woken from another thread keeps the cheaper compromise instead: under
+`dotnet watch`, which marks its children with `DOTNET_WATCH=1`, the window caps its own idle sleep at
+500 ms so an edit lands within half a second. That is the only run that polls, and only on those
+platforms — a plain `dotnet run`, a Release binary and a shipped app keep sleep-until-input. The
+upstream wake API that would retire the fallback is in [PLAN.md](PLAN.md).
+
 ## Native callbacks
 
 A `void (*)(…)` argument crosses into native code from managed code in exactly one way:
