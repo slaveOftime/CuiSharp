@@ -4,9 +4,7 @@ Every user-visible change, newest first. Pre-1.0 the minor number carries new su
 carries fixes. The section for a tag is what the GitHub release publishes, so the two cannot say
 different things.
 
-## [0.4.0] — unreleased
-
-`dotnet cui` answers offline and reads its own command line properly.
+## [Unreleased]
 
 ### Added
 
@@ -18,6 +16,10 @@ different things.
   the documentation does not.
 - **`dotnet cui session`** relays one protocol command per line from stdin against a single build,
   replacing the `--stdin` flag.
+- **A demo icon in both templates.** `dotnet new cui-app` ships `<Project>.ico` wired in with
+  `ApplicationIcon`, and `dotnet new cui-mini` generates `<name>.cs` plus a matching `<name>.ico`;
+  replacing the file and rebuilding changes the exe icon and the icon on the title bar, taskbar
+  button and `Alt+Tab` card. The shipped icon is a black square reading CUI.
 
 ### Changed
 
@@ -37,6 +39,17 @@ different things.
   that the shell would otherwise read as redirection.
 - **`dwell` and `waittext` require their duration**, which the protocol always needed: bare `dwell`
   used to start an app and then fail with an unknown command.
+
+### Fixed
+
+- **The embedded icon reaches the window.** An apphost embeds `ApplicationIcon` as `IDI_APPLICATION`,
+  which Explorer reads off the exe but the CUI window class does not find, so a published app wore
+  the system's generic logo in the title bar and taskbar. `CuiApp` now loads that resource and sends
+  `WM_SETICON` itself when the window opens, small and large, at the system's icon metrics.
+- **`dotnet new cui-mini` no longer opens a console window.** The generated file-based app now
+  sets `#:property OutputType=WinExe`, so `dotnet publish` produces a GUI-subsystem executable
+  like the one `dotnet new cui-app` builds; `tools/verify-template.ps1` reads that subsystem out
+  of the published binary.
 
 ## [0.3.2] — 2026-11-11
 

@@ -16,6 +16,7 @@ internal static unsafe partial class Win32
     internal const uint WmTimer = 0x0113;
     internal const uint WmPaint = 0x000F;
     internal const uint WmClose = 0x0010;
+    internal const uint WmSetIcon = 0x0080;
     internal const uint WmNcDestroy = 0x0082;
     internal const uint WmApp = 0x8000;
     internal const uint WmEnterSizeMove = 0x0231;
@@ -81,6 +82,18 @@ internal static unsafe partial class Win32
     /// <summary>HMODULE GetModuleHandleW(LPCWSTR).</summary>
     [LibraryImport("kernel32.dll", EntryPoint = "GetModuleHandleW", StringMarshalling = StringMarshalling.Utf16)]
     internal static partial nint GetModuleHandle(string? name);
+
+    /// <summary>HICON LoadImageW(HINSTANCE, LPCWSTR, IMAGE_ICON, int, int, UINT).</summary>
+    [LibraryImport("user32.dll", EntryPoint = "LoadImageW", SetLastError = true)]
+    internal static partial nint LoadIcon(nint module, nint name, int imageType, int width, int height, uint flags);
+
+    /// <summary>int GetSystemMetrics(int).</summary>
+    [LibraryImport("user32.dll", EntryPoint = "GetSystemMetrics")]
+    internal static partial int GetSystemMetrics(int index);
+
+    /// <summary>LRESULT SendMessageW(HWND, UINT, WPARAM, LPARAM).</summary>
+    [LibraryImport("user32.dll", EntryPoint = "SendMessageW")]
+    internal static partial nint SendMessage(nint hwnd, uint message, nint wparam, nint lparam);
 
     /// <summary>FARPROC GetProcAddress(HMODULE, LPCSTR).</summary>
     [LibraryImport("kernel32.dll", EntryPoint = "GetProcAddress")]

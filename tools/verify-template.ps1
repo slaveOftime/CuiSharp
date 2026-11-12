@@ -43,6 +43,44 @@ $elapsed = [System.Diagnostics.Stopwatch]::StartNew()
 
 function Step([string] $text) { Write-Host "==> $text" -ForegroundColor Cyan }
 
+# Byte totals of the icon resources of a PE file: RT_ICON (3) pixel data and RT_GROUP_ICON (14)
+# directory. A plain apphost with no ApplicationIcon has no resource directory at all, so both
+# numbers being non-zero can only mean the .ico was embedded. Windows-only caller.
+function Get-PeIconResourceBytes([string] $Path) {
+    $b = [System.IO.File]::ReadAllBytes($Path)
+    $pe = [System.BitConverter]::ToInt32($b, 0x3C)
+    $sections = [System.BitConverter]::ToUInt16($b, $pe + 6)
+    $optional = [System.BitConverter]::ToUInt16($b, $pe + 20)
+    $rsrc = 0
+    for ($i = 0; $i -lt $sections; $i++) {
+        $s = $pe + 24 + $optional + 40 * $i
+        if ([System.Text.Encoding]::ASCII.GetString($b, $s, 6) -eq '.rsrc') {
+            $rsrc = [System.BitConverter]::ToUInt32($b, $s + 20)
+        }
+    }
+    if ($rsrc -eq 0) { return @{ Group = 0; Images = 0 } }
+
+    $group = 0; $images = 0
+    $typeCount = [System.BitConverter]::ToUInt16($b, $rsrc + 14)
+    for ($t = 0; $t -lt $typeCount; $t++) {
+        $id = [System.BitConverter]::ToUInt32($b, $rsrc + 16 + 8 * $t) -band 0xFFFF
+        if ($id -ne 3 -and $id -ne 14) { continue }
+        $nameDir = $rsrc + ([System.BitConverter]::ToUInt32($b, $rsrc + 20 + 8 * $t) -band 0x7FFFFFFF)
+        $nameCount = [System.BitConverter]::ToUInt16($b, $nameDir + 14)
+        for ($n = 0; $n -lt $nameCount; $n++) {
+            $langDir = $rsrc + ([System.BitConverter]::ToUInt32($b, $nameDir + 20 + 8 * $n) -band 0x7FFFFFFF)
+            $langCount = [System.BitConverter]::ToUInt16($b, $langDir + 14)
+            for ($l = 0; $l -lt $langCount; $l++) {
+                $dataChild = [System.BitConverter]::ToUInt32($b, $langDir + 20 + 8 * $l)
+                if ($dataChild -band 0x80000000) { continue }
+                $size = [System.BitConverter]::ToUInt32($b, $rsrc + ($dataChild -band 0x7FFFFFFF) + 4)
+                if ($id -eq 14) { $group += $size } else { $images += $size }
+            }
+        }
+    }
+    return @{ Group = $group; Images = $images }
+}
+
 try {
     New-Item -ItemType Directory -Path $packages -Force | Out-Null
 
@@ -128,6 +166,16 @@ try {
             }
         }
         Write-Host '    no native library left beside the executable' -ForegroundColor Green
+
+        # The template ships an .ico and ApplicationIcon wires it into the apphost; that is how a
+        # user changes the app's icon, so a generated app must actually carry the resource.
+        if ($IsWindows) {
+            $icon = Get-PeIconResourceBytes (Join-Path $app "TodoApp/bin/$Configuration/net10.0/$rid/publish/$exeName")
+            if ($icon.Group -eq 0 -or $icon.Images -lt 20000) {
+                throw "the published TodoApp embeds no application icon (RT_GROUP_ICON $($icon.Group) B, RT_ICON $($icon.Images) B)"
+            }
+            Write-Host ("    application icon embedded: RT_ICON {0:N0} B" -f $icon.Images) -ForegroundColor Green
+        }
     }
 
     # The analyzers ship inside the package, and a package's analyzers are what an app
@@ -291,10 +339,10 @@ internal static class AnalyzerProbe
     $defaultMini = Join-Path $work 'demo1'
     & dotnet new cui-mini -o $defaultMini | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'generating the default mini app failed' }
-    $defaultFiles = @(Get-ChildItem $defaultMini -Recurse -File)
-    if ($defaultFiles.Count -ne 1 -or $defaultFiles[0].Name -cne 'demo1.cs' -or
-        (Get-Content $defaultFiles[0].FullName -First 1) -ne '#:package CuiSharp@*') {
-        throw 'dotnet new cui-mini -o demo1 must generate only demo1.cs referencing CuiSharp@*'
+    $defaultFiles = @(Get-ChildItem $defaultMini -Recurse -File | Sort-Object Name)
+    if ($defaultFiles.Count -ne 2 -or ($defaultFiles.Name -join ',') -cne 'demo1.cs,demo1.ico' -or
+        (Get-Content (Join-Path $defaultMini 'demo1.cs') -First 1) -ne '#:package CuiSharp@*') {
+        throw 'dotnet new cui-mini -o demo1 must generate only demo1.cs and demo1.ico, the cs referencing CuiSharp@*'
     }
     # An explicit -n also names the file and gives the native window a unique title.
     $miniName = 'CuiMini' + [guid]::NewGuid().ToString('N')
@@ -302,8 +350,9 @@ internal static class AnalyzerProbe
     & dotnet new cui-mini -n $miniName -o $miniApp --CuiSharpVersion $version | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'generating the mini app failed' }
     $generated = @(Get-ChildItem $miniApp -Recurse -File)
-    if ($generated.Count -ne 1 -or $generated[0].Name -cne $miniFile) {
-        throw "cui-mini must generate exactly one file named $miniFile"
+    if ($generated.Count -ne 2 -or -not ($generated.Name -ccontains $miniFile) -or
+        -not ($generated.Name -ccontains "$miniName.ico")) {
+        throw "cui-mini must generate exactly $miniFile and $miniName.ico; found: $($generated.Name -join ', ')"
     }
     # Deterministic non-ASCII label: the tool's strict UTF-8 decoder below must observe these
     # exact characters; this check never silently skips because a sample page happened to be ASCII.
@@ -424,6 +473,23 @@ internal static class AnalyzerProbe
             throw "a publish of $miniFile must leave exactly one file, $miniExe; found: $($published.Name -join ', ')"
         }
         Write-Host ("    one file, {0:N0} B: {1}" -f $published[0].Length, $miniExe) -ForegroundColor Green
+
+        # The other half of the promise: launching that one file opens the window with no console
+        # behind it. Whether it does is recorded in the apphost's PE subsystem, so the check reads
+        # the published binary rather than trusting the property list that produced it.
+        if ($IsWindows) {
+            $exeBytes = [System.IO.File]::ReadAllBytes($published[0].FullName)
+            $peOffset = [System.BitConverter]::ToInt32($exeBytes, 0x3C)
+            $subsystem = [System.BitConverter]::ToUInt16($exeBytes, $peOffset + 24 + 68)
+            if ($subsystem -ne 2) {
+                throw "the published $miniExe is PE subsystem $subsystem, not 2 (Windows GUI); running it opens a console window"
+            }
+            $icon = Get-PeIconResourceBytes $published[0].FullName
+            if ($icon.Group -eq 0 -or $icon.Images -lt 20000) {
+                throw "the published $miniExe embeds no application icon (RT_GROUP_ICON $($icon.Group) B, RT_ICON $($icon.Images) B)"
+            }
+            Write-Host ("    GUI-subsystem executable with the application icon embedded (RT_ICON {0:N0} B)" -f $icon.Images) -ForegroundColor Green
+        }
     }
 
     if ($IsWindows) {
@@ -441,6 +507,9 @@ public static class CuiMiniWindowProbe
     public static extern bool IsWindowVisible(IntPtr window);
     [DllImport("user32.dll")]
     public static extern bool PostMessage(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern IntPtr SendMessageTimeout(IntPtr window, uint message, IntPtr wParam, IntPtr lParam,
+        uint flags, uint timeoutMs, out IntPtr result);
 }
 '@
         }
@@ -460,6 +529,23 @@ public static class CuiMiniWindowProbe
             if ($window -eq [IntPtr]::Zero -or -not [CuiMiniWindowProbe]::IsWindowVisible($window)) {
                 if (-not $mini.HasExited) { $mini.Kill($true); $mini.WaitForExit() }
                 throw "dotnet run $miniFile did not open a visible native window: $($stderr.GetAwaiter().GetResult()) $($stdout.GetAwaiter().GetResult())"
+            }
+            # WM_GETICON (0x007F) answers with the window's own icon and with nothing when only the
+            # class icon is in play, so it distinguishes an app that installed ApplicationIcon from
+            # one whose window still wears the system default. The icon goes in on the first frame,
+            # so poll; a handle from another process cannot be dereferenced here, being non-zero is
+            # the whole assertion.
+            $hicon = [IntPtr]::Zero
+            $deadline = [DateTime]::UtcNow.AddSeconds(10)
+            while ([DateTime]::UtcNow -lt $deadline) {
+                $sent = [CuiMiniWindowProbe]::SendMessageTimeout($window, 0x007F, [IntPtr]1, [IntPtr]::Zero, 0x0002, 2000, [ref]$hicon)
+                if ($sent -ne [IntPtr]::Zero -and $hicon -ne [IntPtr]::Zero) { break }
+                $hicon = [IntPtr]::Zero
+                Start-Sleep -Milliseconds 100
+            }
+            if ($hicon -eq [IntPtr]::Zero) {
+                if (-not $mini.HasExited) { $mini.Kill($true); $mini.WaitForExit() }
+                throw 'the mini app window carries no icon: WM_GETICON(ICON_BIG) answered with nothing'
             }
             if (-not [CuiMiniWindowProbe]::PostMessage($window, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero)) {
                 throw 'could not send WM_CLOSE to the mini app window'
