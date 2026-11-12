@@ -36,4 +36,4 @@ Square/round button with only an icon. Give it a tooltip so it has a name.
 public bool Segmented(UiText id, ReadOnlySpan<string> items, ref int index, SegmentedOpts o = default)
 ```
 
-cui_segmented_ex
+Segmented control: a row of options with a gliding highlight.

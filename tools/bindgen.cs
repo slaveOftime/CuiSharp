@@ -49,15 +49,17 @@ var overrides = File.Exists(overridesPath)
     ? JsonSerializer.Deserialize<Overrides>(File.ReadAllText(overridesPath), Json.Options) ?? new Overrides()
     : new Overrides();
 
-// Where CUI documents itself when a header does not: the comment above the definition.
+// Where CUI documents itself when a header does not: the comment above the definition, and the
+// comment it writes beside the declaration instead of above it.
 var sources = ImplementationDocs.Scan(Path.Combine(root, "native", "CUI", "src"));
-
 string[] headers =
 [
     Path.Combine(includeDir, "cui", "cui.h"),
     Path.Combine(includeDir, "cui", "cui_app.h"),
     Path.Combine(includeDir, "cui", "cui_render.h"),
 ];
+
+sources = sources.WithBeside(headers);
 
 var reader = new HeaderReader(includeDir, clangInclude, overrides, sources);
 foreach (string header in headers) reader.Read(header);
@@ -163,6 +165,7 @@ static string StageHeaders(string root)
 sealed class ImplementationDocs
 {
     private readonly Dictionary<string, string> _comments = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> _beside = new(StringComparer.Ordinal);
 
     public static ImplementationDocs Scan(string directory)
     {
@@ -178,8 +181,43 @@ sealed class ImplementationDocs
         return docs;
     }
 
+    /// <summary>
+    /// The comment CUI writes beside a declaration rather than above it:
+    /// <c>CUI_API int cui_breadcrumb(...);   /* returns clicked index or -1 */</c>. libclang only
+    /// attaches a leading comment to the declaration, so this one is read off the source line.
+    /// </summary>
+    public ImplementationDocs WithBeside(IEnumerable<string> headers)
+    {
+        foreach (string header in headers) ReadBeside(File.ReadAllLines(header));
+        return this;
+    }
+
     public string CommentFor(string function) =>
         _comments.TryGetValue(function, out string? text) ? text : "";
+
+    public string BesideFor(string function) =>
+        _beside.TryGetValue(function, out string? text) ? text : "";
+
+    private void ReadBeside(string[] lines)
+    {
+        for (int i = 0; i < lines.Length; i++)
+        {
+            string line = lines[i];
+            if (!line.Contains("CUI_API", StringComparison.Ordinal)) continue;
+
+            // A declaration may wrap; the comment follows the `;` wherever that lands.
+            var text = new StringBuilder(line);
+            for (int j = i; j < Math.Min(lines.Length, i + 6) && !text.ToString().Contains(';', StringComparison.Ordinal); j++)
+                text.Append(' ').Append(lines[j]);
+            if (!text.ToString().Contains(';', StringComparison.Ordinal)) continue;
+
+            Match name = Regex.Match(text.ToString(), @"\b(cui_[a-z0-9_]+)\s*\(");
+            Match comment = Regex.Match(text.ToString(), @";\s*/\*(?<c>.*?)\*/\s*$");
+            if (!name.Success || !comment.Success) continue;
+            if (_beside.ContainsKey(name.Groups[1].Value)) continue;
+            _beside[name.Groups[1].Value] = comment.Groups["c"].Value.Trim();
+        }
+    }
 
     private void Read(string[] lines)
     {
@@ -271,7 +309,7 @@ sealed record Api(
     IconModel[] Icons,
     string[] Skipped);
 
-sealed record StructModel(string CName, string CsName, long Size, HelperType[] Helpers, FieldModel[] Fields);
+sealed record StructModel(string CName, string CsName, long Size, HelperType[] Helpers, FieldModel[] Fields, string Doc);
 
 /// <summary>An [InlineArray] wrapper for a C array of structs, which `fixed` cannot express.</summary>
 sealed record HelperType(string CsName, string ElementType, int Length);
@@ -287,9 +325,9 @@ sealed record FieldModel(
     CType Type,
     string Doc);
 
-sealed record EnumModel(string CName, string CsName, bool IsFlags, EnumValueModel[] Values);
+sealed record EnumModel(string CName, string CsName, bool IsFlags, EnumValueModel[] Values, string Doc);
 
-sealed record EnumValueModel(string CName, string CsName, string Value);
+sealed record EnumValueModel(string CName, string CsName, string Value, string Doc);
 
 sealed record FunctionModel(string CName, string CsName, string CsReturn, ParamModel[] Params, bool NoGcTransition,
     CType ReturnType, string Module, string Doc);
@@ -547,7 +585,7 @@ static class Json
 
 sealed class HeaderReader(string includeDir, string clangInclude, Overrides overrides, ImplementationDocs sources) : IDisposable
 {
-    private readonly List<(string CName, long Size, FieldDecl[] Fields)> _structs = [];
+    private readonly List<(string CName, long Size, FieldDecl[] Fields, string Doc)> _structs = [];
     private readonly List<(string CName, EnumDecl Decl)> _enums = [];
     private readonly List<FunctionDecl> _functions = [];
     private readonly List<ConstantModel> _constants = [];
@@ -633,7 +671,7 @@ sealed class HeaderReader(string includeDir, string clangInclude, Overrides over
                     break;
                 }
 
-                _structs.Add((r.Spelling, r.Handle.Type.SizeOf, [.. r.Fields]));
+                _structs.Add((r.Spelling, r.Handle.Type.SizeOf, [.. r.Fields], Doc(r.Handle)));
                 break;
 
             case FunctionDecl f when f.Spelling.StartsWith("cui_", StringComparison.Ordinal):
@@ -675,7 +713,7 @@ sealed class HeaderReader(string includeDir, string clangInclude, Overrides over
         foreach (var (typedef, alias) in overrides.TypeAliases) enumNames[typedef] = alias.Name;
 
         var structNames = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var (cname, _, _) in _structs)
+        foreach (var (cname, _, _, _) in _structs)
         {
             if (overrides.SkipStructs.Contains(cname)) continue;
             structNames[cname] = overrides.StructRenames.TryGetValue(cname, out string? renamed)
@@ -691,10 +729,10 @@ sealed class HeaderReader(string includeDir, string clangInclude, Overrides over
             .ToArray();
 
         var structs = new List<StructModel>();
-        foreach (var (cname, size, fields) in _structs)
+        foreach (var (cname, size, fields, doc) in _structs)
         {
             if (overrides.SkipStructs.Contains(cname)) continue;
-            structs.Add(ReadStruct(cname, size, fields, mapper));
+            structs.Add(ReadStruct(cname, size, fields, mapper, doc));
         }
 
         return new Api(
@@ -721,7 +759,7 @@ sealed class HeaderReader(string includeDir, string clangInclude, Overrides over
             string shortName = overrides.MemberRenames.TryGetValue(member.Name, out string? rename)
                 ? rename
                 : Names.Identifier(member.Name[prefix.Length..]);
-            values.Add(new EnumValueModel(member.Name, shortName, member.InitVal.ToString()));
+            values.Add(new EnumValueModel(member.Name, shortName, member.InitVal.ToString(), Doc(member.Handle)));
         }
 
         if (overrides.ExtraEnumMembers.TryGetValue(cname, out string[]? extra))
@@ -730,8 +768,8 @@ sealed class HeaderReader(string includeDir, string clangInclude, Overrides over
             {
                 int eq = text.IndexOf('=');
                 var member = eq < 0
-                    ? new EnumValueModel(text, text, "")
-                    : new EnumValueModel(text[..eq].Trim(), text[..eq].Trim(), text[(eq + 1)..].Trim());
+                    ? new EnumValueModel(text, text, "", "")
+                    : new EnumValueModel(text[..eq].Trim(), text[..eq].Trim(), text[(eq + 1)..].Trim(), "");
                 // A named zero is the "nothing set" member of a flags enum: it reads first,
                 // the way Mods and every other C# flag type in the binding declares it.
                 if (member.Value == "0") values.Insert(0, member);
@@ -739,10 +777,10 @@ sealed class HeaderReader(string includeDir, string clangInclude, Overrides over
             }
         }
 
-        return new EnumModel(cname, csName, overrides.FlagsEnums.Contains(cname), [.. values]);
+        return new EnumModel(cname, csName, overrides.FlagsEnums.Contains(cname), [.. values], Doc(decl.Handle));
     }
 
-    private static StructModel ReadStruct(string cname, long size, FieldDecl[] fields, Mapper mapper)
+    private static StructModel ReadStruct(string cname, long size, FieldDecl[] fields, Mapper mapper, string doc)
     {
         string csName = mapper.StructNames[cname];
         var helpers = new List<HelperType>();
@@ -803,7 +841,7 @@ sealed class HeaderReader(string includeDir, string clangInclude, Overrides over
             models.Add(new FieldModel(field.Name, csField, mapper.Field(type), ctype, offset, false, 0, Describe(type), Doc(field.Handle)));
         }
 
-        return new StructModel(cname, csName, size, [.. helpers], [.. models]);
+        return new StructModel(cname, csName, size, [.. helpers], [.. models], doc);
     }
 
     /// <summary>Drops a trailing <c>_ex</c> (the options variant), and nothing else.</summary>
@@ -832,9 +870,9 @@ sealed class HeaderReader(string includeDir, string clangInclude, Overrides over
     /// implements it, and a wrapper whose only documentation is `cui_button_ex` sends a reader into
     /// the C source — so when the declaration says nothing, the definition's own comment is used.
     /// </summary>
-    private static string FirstSentence(string fromHeader, string fromSource, string fromScope)
+    private static string FirstSentence(string fromHeader, string fromBeside, string fromSource, string fromScope)
     {
-        string text = fromHeader.Length > 0 ? fromHeader : fromSource;
+        string text = fromHeader.Length > 0 ? fromHeader : fromBeside.Length > 0 ? fromBeside : fromSource;
         if (text.Length == 0) text = fromScope;
         if (text.Length == 0) return "";
 
@@ -889,7 +927,8 @@ sealed class HeaderReader(string includeDir, string clangInclude, Overrides over
                 parameters,
                 overrides.SuppressGcTransition.Contains(function.Spelling),
                 Describe(function.Handle.ResultType), Module(function.Handle),
-                FirstSentence(Doc(function.Handle), sources.CommentFor(function.Spelling), scopeDoc)));
+                FirstSentence(Doc(function.Handle), sources.BesideFor(function.Spelling),
+                    sources.CommentFor(function.Spelling), scopeDoc)));
         }
 
         return [.. result];
@@ -911,12 +950,42 @@ sealed class HeaderReader(string includeDir, string clangInclude, Overrides over
             clang.isConstQualifiedType(type) != 0 || clang.isConstQualifiedType(canonical) != 0, element);
     }
 
-    private static string Doc(CXCursor cursor)
+    private static string Doc(CXCursor cursor) => CleanComment(clang.Cursor_getRawCommentText(cursor).ToString());
+
+    /// <summary>
+    /// A comment's text with any section title bar removed. CUI separates sections with a ruled
+    /// title bar — <c>---- Terminal ----</c> — and libclang attaches that block to the declaration
+    /// under it, so without this an options struct's summary opens with the ruler.
+    /// </summary>
+    internal static string CleanComment(string raw)
     {
-        string raw = clang.Cursor_getRawCommentText(cursor).ToString();
-        return string.Join(" ", raw.Replace("/*", "").Replace("*/", "")
-            .Split('\n').Select(line => line.Trim().TrimStart('*').Trim()))
-            .Trim();
+        string[] lines = raw.Replace("/*", " ").Replace("*/", " ")
+            .Split(['\n', '\r'], StringSplitOptions.RemoveEmptyEntries)
+            .Select(line => line.Trim().TrimStart('*').Trim())
+            .ToArray();
+
+        // A ruler means the block is a section's title bar, not a sentence about the declaration.
+        bool banner = lines.Any(line => line.Length >= 3 && line.All(c => c is '-' or '=' or '*' or '/' or ' '));
+
+        var kept = new List<string>();
+        foreach (string line in lines)
+        {
+            // The prose ends at the first blank line: what follows is the usage example, which
+            // belongs in the docs page, not in a summary a tooltip shows.
+            if (line.Length == 0) break;
+
+            string text = Regex.Replace(line, @"^(?:[-=]{2,}\s*[^-=]*?\s*[-=]{2,}\s*)+", "").Trim();
+            if (text.Length == 0) continue;
+            if (text.All(c => c is '-' or '=' or '*' or '/' or ' ')) continue;
+            kept.Add(text);
+        }
+
+        string joined = string.Join(" ", kept).Trim();
+
+        // What is left of a banner is the section's name (`Selection controls`), which describes no
+        // declaration and would be a lie above one.
+        return banner && joined.Length < 60 && !joined.Contains('.', StringComparison.Ordinal)
+            && !joined.Contains(':', StringComparison.Ordinal) ? "" : joined;
     }
 
     private static unsafe string Module(CXCursor cursor)
@@ -1193,7 +1262,10 @@ static class Emit
         foreach (var function in api.Functions)
         {
             string parameters = string.Join(", ", function.Params.Select(p => $"{p.CsType} {p.CsName}"));
-            sb.AppendLine($"    /// <summary>{function.CName}</summary>");
+            // The raw layer is where an expert lands when the friendly wrapper is not enough, so it
+            // carries the same sentence rather than only the C name.
+            string rawDoc = Names.OneLine(function.Doc);
+            sb.AppendLine($"    /// <summary>{System.Security.SecurityElement.Escape(rawDoc.Length > 0 ? rawDoc : function.CName)}</summary>");
             sb.AppendLine($"    [LibraryImport(\"cui\", EntryPoint = \"{function.CName}\")]");
             if (function.NoGcTransition) sb.AppendLine("    [SuppressGCTransition]");
             sb.AppendLine($"    public static partial {function.CsReturn} {function.CsName}({parameters});");
@@ -1225,13 +1297,15 @@ static class Emit
                 sb.AppendLine();
             }
 
-            sb.AppendLine($"/// <summary>{str.CName}, {str.Size} bytes.</summary>");
+            string structDoc = Names.OneLine(str.Doc).Length > 0 ? Names.OneLine(str.Doc) : str.CName;
+            sb.AppendLine($"/// <summary>{System.Security.SecurityElement.Escape(structDoc)} ({str.Size} bytes)</summary>");
             sb.AppendLine("[StructLayout(LayoutKind.Sequential)]");
             sb.AppendLine($"public unsafe struct {str.CsName}");
             sb.AppendLine("{");
             foreach (var field in str.Fields)
             {
-                sb.AppendLine($"    /// <summary>{field.CType} (offset {field.Offset})</summary>");
+                string fieldDoc = Names.OneLine(field.Doc).Length > 0 ? Names.OneLine(field.Doc) : field.CType;
+                sb.AppendLine($"    /// <summary>{System.Security.SecurityElement.Escape(fieldDoc)} (offset {field.Offset})</summary>");
                 sb.AppendLine(field.IsFixedBuffer
                     ? $"    public fixed {field.CsType} {field.CsName}[{field.ArrayLength}];"
                     : $"    public {field.CsType} {field.CsName};");
@@ -1251,12 +1325,17 @@ static class Emit
         sb.AppendLine();
         foreach (var e in api.Enums)
         {
-            sb.AppendLine($"/// <summary>{e.CName}</summary>");
+            sb.AppendLine($"/// <summary>{System.Security.SecurityElement.Escape(Names.OneLine(e.Doc).Length > 0 ? Names.OneLine(e.Doc) : e.CName)}</summary>");
             if (e.IsFlags) sb.AppendLine("[System.Flags]");
             sb.AppendLine($"public enum {e.CsName}");
             sb.AppendLine("{");
             foreach (var v in e.Values)
             {
+                // CUI writes the meaning of a constant beside it (`CUI_AXIS_HOURS, /* 12.25 is
+                // 12:15 */`); a dev hovering the member should see that sentence, not the C name.
+                string memberDoc = Names.OneLine(v.Doc);
+                if (memberDoc.Length > 0)
+                    sb.AppendLine($"    /// <summary>{System.Security.SecurityElement.Escape(memberDoc)}</summary>");
                 sb.AppendLine(v.Value.Length == 0 ? $"    {v.CsName}," : $"    {v.CsName} = {v.Value},");
             }
 
@@ -1890,7 +1969,9 @@ sealed class Idiomatic
         sb.AppendLine("using System.Runtime.InteropServices;\nusing CuiSharp.Interop;\n\nnamespace CuiSharp;\n");
         foreach (var record in _records.Values)
         {
-            Summary(sb, record.Native.CName + ". Elements are copied into the frame arena by the wrapper.");
+            string recordDoc = Names.OneLine(record.Native.Doc);
+            Summary(sb, (recordDoc.Length > 0 ? recordDoc + " " : "")
+                + "Elements are copied into the frame arena by the wrapper.");
             sb.AppendLine($"public unsafe partial struct {record.Name}\n{{");
             foreach (var f in record.Fields.Where(f => !f.Hidden))
             {
@@ -2058,7 +2139,13 @@ sealed class Idiomatic
         sb.AppendLine("using CuiSharp.Interop;\n\nnamespace CuiSharp;\n");
         foreach (var option in _options.Values)
         {
-            Summary(sb, option.Native.CName + ". All fields are optional; zero selects native defaults.");
+            // The paragraph above an options struct says what the component is for, which is worth
+            // more than the sentence that the fields are optional.
+            string componentDoc = Names.OneLine(option.Native.Doc);
+            const string Optional = "All fields are optional; zero selects the native default.";
+            Summary(sb, componentDoc.Length == 0 ? option.Native.CName + ". " + Optional
+                : componentDoc.Contains(Optional, StringComparison.Ordinal) ? componentDoc
+                : componentDoc + " " + Optional);
             sb.AppendLine($"public partial struct {option.Name}\n{{");
             foreach (var f in option.Fields.Where(f => !f.Hidden))
             {
@@ -2597,7 +2684,27 @@ sealed class Idiomatic
             if (p.Default is not null) optional = true;
             else if (optional) throw new InvalidOperationException($"Non-trailing default in {function.CName}");
         }
-        return new(function, Names.Pascal(stem), returns, [.. parameters], [.. prepare], [.. arguments], [.. writeBack], end, clicked,
+        // A component's description is written above its options struct, not above the function:
+        // when the declaration says nothing, that sentence is what a reader wants beside the call.
+        // The exception is a struct whose comment describes the struct (`Options for every
+        // container.`), which says nothing about this call.
+        string doc = function.Doc;
+        if (doc.Length == 0)
+        {
+            foreach (var parameter in function.Params)
+            {
+                string? spelling = parameter.Type.Element?.Spelling.Replace("const ", "", StringComparison.Ordinal).Trim();
+                if (spelling is null || !_options.TryGetValue(spelling, out var described)) continue;
+                string candidate = Names.OneLine(described.Native.Doc);
+                if (candidate.Length > 0 && !candidate.StartsWith("Options", StringComparison.OrdinalIgnoreCase))
+                {
+                    doc = candidate;
+                    break;
+                }
+            }
+        }
+
+        return new(function with { Doc = doc }, Names.Pascal(stem), returns, [.. parameters], [.. prepare], [.. arguments], [.. writeBack], end, clicked,
             [.. injectedParams], returnStatement);
     }
 
@@ -2803,7 +2910,7 @@ sealed class Idiomatic
             sb.AppendLine();
             foreach (var w in module.OrderBy(w => w.Name, StringComparer.Ordinal))
             {
-                string summary = w.Native.Doc.Length == 0 ? w.Native.CName : OneLine(w.Native.Doc);
+                string summary = w.Native.Doc.Length == 0 ? w.Native.CName : Names.OneLine(w.Native.Doc);
                 sb.AppendLine($"## `{w.Name}`");
                 sb.AppendLine();
                 sb.AppendLine("```csharp");
@@ -2935,7 +3042,7 @@ sealed class Idiomatic
             string file = DocFileName(module.Key);
             foreach (var w in module.OrderBy(w => w.Name, StringComparer.Ordinal))
             {
-                string summary = w.Native.Doc.Length == 0 ? "" : " — " + OneLine(w.Native.Doc);
+                string summary = w.Native.Doc.Length == 0 ? "" : " — " + Names.OneLine(w.Native.Doc);
                 sb.AppendLine($"- `ui.{w.Name}({Signature(w.Params)})` → `{w.Return}`{summary}  ([{module.Key}](api/{file}.md))");
             }
         }
@@ -2997,9 +3104,6 @@ sealed class Idiomatic
 
     private static string DefaultOf(OptionField field) =>
         field.Expression.Length is 0 || field.Expression == "default" ? "" : $" (default `{field.Expression}`)";
-
-    private static string OneLine(string text) =>
-        Regex.Replace(text.Replace('\n', ' ').Replace('\r', ' '), @"\s+", " ").Trim();
 
     /// <summary>
     /// A container whose end call reports a value. Only the body overload exists: a
@@ -3211,6 +3315,10 @@ static class BindgenChecks
 
 static class Names
 {
+    /// <summary>The comment as one line: a summary is read as a tooltip and grepped by an agent.</summary>
+    internal static string OneLine(string text) =>
+        Regex.Replace(text, @"\s+", " ").Trim();
+
     public static string Pascal(string name)
     {
         if (name.Length == 0) return name;

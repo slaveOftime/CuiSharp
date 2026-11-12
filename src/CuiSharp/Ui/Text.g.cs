@@ -21,42 +21,42 @@ public static unsafe class TextUiExtensions
             WidgetRecorder.Note(ui.Handle, "Text", text);
         }
 
-        /// <summary>cui_heading</summary>
+        /// <summary>1..4</summary>
         public void Heading(UiText text, int level = 2)
         {
             Native.Heading(ui.Handle, Utf8.Get(text), level);
             WidgetRecorder.Note(ui.Handle, "Heading", text);
         }
 
-        /// <summary>cui_label</summary>
+        /// <summary>medium weight</summary>
         public void Label(UiText text)
         {
             Native.Label(ui.Handle, Utf8.Get(text));
             WidgetRecorder.Note(ui.Handle, "Label", text);
         }
 
-        /// <summary>cui_secondary</summary>
+        /// <summary>secondary color</summary>
         public void Secondary(UiText text)
         {
             Native.Secondary(ui.Handle, Utf8.Get(text));
             WidgetRecorder.Note(ui.Handle, "Secondary", text);
         }
 
-        /// <summary>cui_muted</summary>
+        /// <summary>small, muted</summary>
         public void Muted(UiText text)
         {
             Native.Muted(ui.Handle, Utf8.Get(text));
             WidgetRecorder.Note(ui.Handle, "Muted", text);
         }
 
-        /// <summary>cui_code</summary>
+        /// <summary>inline code</summary>
         public void Code(UiText text)
         {
             Native.Code(ui.Handle, Utf8.Get(text));
             WidgetRecorder.Note(ui.Handle, "Code", text);
         }
 
-        /// <summary>* left to right in any interface: see cui__keep_ltr</summary>
+        /// <summary>keyboard keycap, e.g. &quot;Ctrl K&quot;</summary>
         public void Kbd(UiText keys)
         {
             Native.Kbd(ui.Handle, Utf8.Get(keys));

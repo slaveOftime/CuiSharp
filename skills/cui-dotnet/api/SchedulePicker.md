@@ -28,4 +28,4 @@ public string? CronDescribe(UiText cron)
 public ScheduleResult SchedulePicker(UiText id, ref string cron, int cap = 128, ScheduleOpts o = default)
 ```
 
-cui_schedule_picker_ex
+A cron schedule edited the friendly way: every N minutes, hourly at a minute, daily at a time, weekly on chosen days, monthly on a day, or a custom expression. It reads and writes `cron` (five fields: minute hour day month weekday) and shows what it means and when it runs next. Weekday and month names come from cui_set_strings.

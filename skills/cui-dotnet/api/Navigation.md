@@ -20,7 +20,7 @@ protected override void Draw(Ui ui)
 public int Breadcrumb(ReadOnlySpan<string> items)
 ```
 
-cui_breadcrumb
+returns clicked index or -1
 
 ## `NavItem`
 
@@ -28,7 +28,7 @@ cui_breadcrumb
 public bool NavItem(UiText label, NavOpts o = default)
 ```
 
-cui_nav_item_ex
+Sidebar navigation item with a gliding selection highlight shared by all items in the same group.
 
 ## `NavSection`
 
@@ -44,7 +44,7 @@ cui_nav_section
 public bool Pagination(UiText id, ref int page, int pageCount)
 ```
 
-cui_pagination
+page is 0 based
 
 ## `Stepper`
 

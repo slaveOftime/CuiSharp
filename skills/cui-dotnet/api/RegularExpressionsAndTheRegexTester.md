@@ -20,4 +20,4 @@ protected override void Draw(Ui ui)
 public RegexTesterResult RegexTester(UiText id, ref string pattern, int patternCap, ref string text, int textCap, ref RegexFlags flags, RegexTesterOpts o = default)
 ```
 
-cui_regex_tester_ex
+A pattern field with flags over a test text: every match is highlighted in the text and its groups in their own colors, and the list below shows each match with its groups. Errors show under the pattern. Both buffers are yours and edited in place.

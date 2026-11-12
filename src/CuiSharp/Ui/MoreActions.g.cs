@@ -13,7 +13,7 @@ public static unsafe class MoreActionsUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_split_button_ex</summary>
+        /// <summary>Split button: a main action with a menu of related actions on the chevron. Returns 0 when the main part is clicked, 1 + i when menu item i is chosen and -1 otherwise.</summary>
         public int SplitButton(UiText label, ReadOnlySpan<string> items, SplitButtonOpts o = default)
         {
             var __opts = o.ToNative();
@@ -22,7 +22,7 @@ public static unsafe class MoreActionsUiExtensions
             return __result;
         }
 
-        /// <summary>cui_confirm_button_ex</summary>
+        /// <summary>Two step destructive button: the first click morphs it into a confirm state with a countdown, the second click confirms. Returns true once.</summary>
         public bool ConfirmButton(UiText label, ConfirmOpts o = default)
         {
             var __opts = o.ToNative();
@@ -79,7 +79,7 @@ public static unsafe class MoreActionsUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_user_menu_begin</summary>
+        /// <summary>User menu: an avatar, a name and a line of detail that opens a menu of account actions. Put menu items between begin and end.</summary>
         public OpenScope UserMenu(UiText name, UserMenuOpts o = default)
         {
             var __opts = o.ToNative();

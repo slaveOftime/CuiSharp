@@ -20,7 +20,7 @@ protected override void Draw(Ui ui)
 public int InlineEdit(UiText id, ref string buf, int cap = 256, InlineEditOpts o = default)
 ```
 
-cui_inline_edit_ex
+Inline edit: text that turns into a field in place. Click (or Enter when focused) to edit, Enter or clicking away saves, Esc cancels. Returns CUI_CHANGED when an edit is committed.
 
 ## `MoneyInput`
 
@@ -28,7 +28,7 @@ cui_inline_edit_ex
 public bool MoneyInput(UiText id, ref double value, MoneyOpts o = default)
 ```
 
-cui_money_input_ex
+Money field: shows the amount with thousands separators, edits as plain digits, keeps a fixed number of decimals.
 
 ## `Scrub`
 
@@ -36,7 +36,7 @@ cui_money_input_ex
 public bool Scrub(UiText label, ref float value, float min, float max, ScrubOpts o = default)
 ```
 
-cui_scrub_ex
+Scrub field: drag sideways anywhere on it to change the value (Shift for fine steps), or click to type a number. Arrow keys step when focused.
 
 ## `ShortcutLabel`
 

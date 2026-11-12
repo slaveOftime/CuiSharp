@@ -20,7 +20,7 @@ protected override void Draw(Ui ui)
 public bool ConfirmButton(UiText label, ConfirmOpts o = default)
 ```
 
-cui_confirm_button_ex
+Two step destructive button: the first click morphs it into a confirm state with a countdown, the second click confirms. Returns true once.
 
 ## `Reactions`
 
@@ -44,7 +44,7 @@ cui_speed_dial_ex
 public int SplitButton(UiText label, ReadOnlySpan<string> items, SplitButtonOpts o = default)
 ```
 
-cui_split_button_ex
+Split button: a main action with a menu of related actions on the chevron. Returns 0 when the main part is clicked, 1 + i when menu item i is chosen and -1 otherwise.
 
 ## `StatusButton`
 
@@ -84,4 +84,4 @@ Sun and moon icon button that toggles the theme with a morph.
 public OpenScope UserMenu(UiText name, UserMenuOpts o = default)
 ```
 
-cui_user_menu_begin
+User menu: an avatar, a name and a line of detail that opens a menu of account actions. Put menu items between begin and end.

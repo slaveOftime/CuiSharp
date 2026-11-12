@@ -28,7 +28,7 @@ cui_agent_plan_ex
 public void AgentStatus(UiText text, AgentStatusOpts o = default)
 ```
 
-cui_agent_status_ex
+Agent status pill: what the agent is doing right now and for how long.
 
 ## `ChatComposer`
 
@@ -52,7 +52,7 @@ cui_citation
 public void ContextMeter(UiText id, float used, float limit, ContextOpts o = default)
 ```
 
-cui_context_meter_ex
+Context meter: a small ring of how full the context is; hover for a breakdown. It turns amber past 80% and red past 95%.
 
 ## `ModelPicker`
 
@@ -76,7 +76,7 @@ cui_prompt_suggestions_ex
 public OpenScope Reasoning(UiText id, ReasoningOpts o = default)
 ```
 
-cui_reasoning_begin
+Reasoning: a model's thinking. While thinking, the header shimmers and counts the seconds; afterwards it reads "Thought for 12s" and the body folds away. Click the header to open or close it. Put text inside.
 
 ## `ResponseActions`
 

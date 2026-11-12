@@ -13,7 +13,7 @@ public static unsafe class DockingUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_dockspace_begin_ex</summary>
+        /// <summary>Dockspace: an IDE style workspace that lays out your panels in a tree of resizable splits whose leaves hold one or more panels as document tabs. Submit every panel each frame between cui_dockspace_begin and cui_dockspace_end; the dockspace decides where it goes, and a panel&apos;s content is built only while its tab is the one showing:</summary>
         public LayoutScope Dockspace(UiText id, DockspaceOpts o = default)
         {
             var __opts = o.ToNative();
@@ -21,7 +21,7 @@ public static unsafe class DockingUiExtensions
             return new LayoutScope(ui.Handle, &Native.DockspaceEnd, "Dockspace", id);
         }
 
-        /// <summary>cui_dock_panel_begin_ex</summary>
+        /// <summary>Returns true while the panel&apos;s content should be built; then call cui_dock_panel_end.</summary>
         public OpenScope DockPanel(UiText title, ref bool open, DockPanelOpts o = default)
         {
             byte __open = (byte)(open ? 1 : 0);
@@ -57,7 +57,7 @@ public static unsafe class DockingUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_inspector_begin_ex</summary>
+        /// <summary>Property inspector: labelled rows in folding groups, a label column on the left (drag the line between the columns to resize it) and an editor on the right. Every row returns true when its value changed. Groups end at the next group or at cui_inspector_end.</summary>
         public OpenScope Inspector(UiText id, InspectorOpts o = default)
         {
             var __opts = o.ToNative();

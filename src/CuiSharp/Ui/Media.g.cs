@@ -13,7 +13,7 @@ public static unsafe class MediaUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_carousel_begin</summary>
+        /// <summary>Carousel: slides that you swipe, drag, scroll or page with the arrows and dots. Build every slide between begin and end: cui_carousel(ui, &quot;tour&quot;, 4, &amp;index, .height = 220) { for (int k = 0; k &lt; 4; k++) cui_carousel_slide(ui) { ... } }</summary>
         public OpenScope Carousel(UiText id, int count, ref int index, CarouselOpts o = default)
         {
             var __opts = o.ToNative();
@@ -36,7 +36,7 @@ public static unsafe class MediaUiExtensions
             return new LayoutScope(ui.Handle, &Native.CarouselSlideEnd, "CarouselSlide", null);
         }
 
-        /// <summary>cui_image_compare_ex</summary>
+        /// <summary>Before and after: drag the divider to compare two images. *pos is 0..1.</summary>
         public bool ImageCompare(UiText id, ulong before, ulong after, ref float pos, CompareOpts o = default)
         {
             var __opts = o.ToNative();
@@ -45,7 +45,7 @@ public static unsafe class MediaUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_card_stack_begin The end call reports which card in the stack is active, or -1, so the body overload returns it.</summary>
+        /// <summary>Card stack: a deck where the top card can be flicked away left or right. Build `count` cards; card 0 is the top. end returns -1 or 1 on the frame the top card leaves (to the left or right), else 0. The end call reports which card in the stack is active, or -1, so the body overload returns it.</summary>
         public int CardStack(UiText id, int count, DrawFn body, CardStackOpts o = default)
         {
             ArgumentNullException.ThrowIfNull(body);

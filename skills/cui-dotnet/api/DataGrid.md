@@ -20,7 +20,7 @@ protected override void Draw(Ui ui)
 public void DataGridCell()
 ```
 
-cui_data_grid_cell
+next cell; put components inside
 
 ## `DataGridCellEdit`
 
@@ -52,7 +52,7 @@ The same editable text, inside the current cell (after an avatar, say).
 public bool DataGridRow(int row)
 ```
 
-cui_data_grid_row
+true when the row was clicked
 
 ## `TreeCell`
 

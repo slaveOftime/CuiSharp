@@ -31,7 +31,7 @@ public static unsafe class ButtonsUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_segmented_ex</summary>
+        /// <summary>Segmented control: a row of options with a gliding highlight.</summary>
         public bool Segmented(UiText id, ReadOnlySpan<string> items, ref int index, SegmentedOpts o = default)
         {
             if (o.Icons is { } __icons && __icons.Length < items.Length) throw new ArgumentException("Icons must contain at least one entry per item.", nameof(o));

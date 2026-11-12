@@ -8,7 +8,7 @@ using CuiSharp.Interop;
 
 namespace CuiSharp;
 
-/// <summary>cui_box. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Options for every container. All fields are optional. All fields are optional; zero selects the native default.</summary>
 public partial struct Box
 {
     /// <summary>identity for scroll state etc. (defaults to an automatic id)</summary>
@@ -123,7 +123,7 @@ public partial struct Box
     };
 }
 
-/// <summary>cui_card_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Card: a bordered surface with generous padding. All fields are optional; zero selects the native default.</summary>
 public partial struct Card
 {
     /// <summary>identity of the card, for its hover state (defaults to an automatic id)</summary>
@@ -178,7 +178,7 @@ public partial struct Card
     };
 }
 
-/// <summary>cui_scroll_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Scroll area with smooth scrolling and overlay scrollbars. All fields are optional; zero selects the native default.</summary>
 public partial struct ScrollOpts
 {
     /// <summary>const char * id</summary>
@@ -212,7 +212,7 @@ public partial struct ScrollOpts
     };
 }
 
-/// <summary>cui_split_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Resizable split view: two panes with a draggable divider. `ratio` is the size of the first pane in 0..1. Call cui_split_next between the panes. All fields are optional; zero selects the native default.</summary>
 public partial struct SplitOpts
 {
     /// <summary>_Bool vertical</summary>
@@ -237,7 +237,7 @@ public partial struct SplitOpts
     };
 }
 
-/// <summary>cui_text_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_text_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct TextOpts
 {
     /// <summary>default CUI_FONT_BODY (0)</summary>
@@ -277,7 +277,7 @@ public partial struct TextOpts
     };
 }
 
-/// <summary>cui_button_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_button_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct ButtonOpts
 {
     /// <summary>cui_button_variant variant</summary>
@@ -323,7 +323,7 @@ public partial struct ButtonOpts
     };
 }
 
-/// <summary>cui_segmented_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Segmented control: a row of options with a gliding highlight. All fields are optional; zero selects the native default.</summary>
 public partial struct SegmentedOpts
 {
     /// <summary>cui_control_size size</summary>
@@ -342,7 +342,7 @@ public partial struct SegmentedOpts
     };
 }
 
-/// <summary>cui_check_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_check_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct CheckOpts
 {
     /// <summary>const char * description</summary>
@@ -361,7 +361,7 @@ public partial struct CheckOpts
     };
 }
 
-/// <summary>cui_slider_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_slider_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct SliderOpts
 {
     /// <summary>0 = continuous</summary>
@@ -386,7 +386,7 @@ public partial struct SliderOpts
     };
 }
 
-/// <summary>cui_chip_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_chip_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct ChipOpts
 {
     /// <summary>const char * icon</summary>
@@ -402,7 +402,7 @@ public partial struct ChipOpts
     };
 }
 
-/// <summary>cui_input_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_input_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct InputOpts
 {
     /// <summary>label above the field</summary>
@@ -457,7 +457,7 @@ public partial struct InputOpts
     };
 }
 
-/// <summary>cui_number_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_number_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct NumberOpts
 {
     /// <summary>const char * label</summary>
@@ -485,7 +485,7 @@ public partial struct NumberOpts
     };
 }
 
-/// <summary>cui_select_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_select_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct SelectOpts
 {
     /// <summary>const char * label</summary>
@@ -513,7 +513,7 @@ public partial struct SelectOpts
     };
 }
 
-/// <summary>cui_date_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_date_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct DateOpts
 {
     /// <summary>const char * label</summary>
@@ -532,7 +532,7 @@ public partial struct DateOpts
     };
 }
 
-/// <summary>cui_tabs_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_tabs_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct TabsOpts
 {
     /// <summary>cui_tabs_variant variant</summary>
@@ -551,7 +551,7 @@ public partial struct TabsOpts
     };
 }
 
-/// <summary>cui_nav_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Sidebar navigation item with a gliding selection highlight shared by all items in the same group. All fields are optional; zero selects the native default.</summary>
 public partial struct NavOpts
 {
     /// <summary>const char * icon</summary>
@@ -573,7 +573,7 @@ public partial struct NavOpts
     };
 }
 
-/// <summary>cui_popover_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Popover anchored to the previous component. Toggle it with cui_popover_toggle / cui_popover_open. All fields are optional; zero selects the native default.</summary>
 public partial struct PopoverOpts
 {
     /// <summary>cui_placement placement</summary>
@@ -595,7 +595,7 @@ public partial struct PopoverOpts
     };
 }
 
-/// <summary>cui_tour_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_tour_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct TourOpts
 {
     /// <summary>the card, default 300</summary>
@@ -626,7 +626,7 @@ public partial struct TourOpts
     };
 }
 
-/// <summary>cui_menu_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Dropdown menu: a button that opens a menu. Items return true when chosen. All fields are optional; zero selects the native default.</summary>
 public partial struct MenuOpts
 {
     /// <summary>const char * icon</summary>
@@ -651,7 +651,7 @@ public partial struct MenuOpts
     };
 }
 
-/// <summary>cui_menu_item_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_menu_item_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct MenuItemOpts
 {
     /// <summary>const char * icon</summary>
@@ -676,7 +676,7 @@ public partial struct MenuItemOpts
     };
 }
 
-/// <summary>cui_dialog_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_dialog_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct DialogOpts
 {
     /// <summary>const char * description</summary>
@@ -698,7 +698,7 @@ public partial struct DialogOpts
     };
 }
 
-/// <summary>cui_sheet_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_sheet_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct SheetOpts
 {
     /// <summary>cui_side side</summary>
@@ -717,7 +717,7 @@ public partial struct SheetOpts
     };
 }
 
-/// <summary>cui_toast_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_toast_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct ToastOpts
 {
     /// <summary>const char * description</summary>
@@ -742,7 +742,7 @@ public partial struct ToastOpts
     };
 }
 
-/// <summary>cui_alert_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_alert_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct AlertOpts
 {
     /// <summary>const char * description</summary>
@@ -764,7 +764,7 @@ public partial struct AlertOpts
     };
 }
 
-/// <summary>cui_progress_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_progress_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct ProgressOpts
 {
     /// <summary>_Bool indeterminate</summary>
@@ -792,7 +792,7 @@ public partial struct ProgressOpts
     };
 }
 
-/// <summary>cui_badge_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_badge_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct BadgeOpts
 {
     /// <summary>cui_tone tone</summary>
@@ -817,7 +817,7 @@ public partial struct BadgeOpts
     };
 }
 
-/// <summary>cui_avatar_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_avatar_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct AvatarOpts
 {
     /// <summary>float size</summary>
@@ -839,7 +839,7 @@ public partial struct AvatarOpts
     };
 }
 
-/// <summary>cui_empty_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_empty_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct EmptyOpts
 {
     /// <summary>const char * icon</summary>
@@ -858,7 +858,7 @@ public partial struct EmptyOpts
     };
 }
 
-/// <summary>cui_metric_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_metric_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct MetricOpts
 {
     /// <summary>change shown beside the value with a trend arrow, as a percentage (4.2 shows +4.2%); 0 hides it</summary>
@@ -887,7 +887,7 @@ public partial struct MetricOpts
     };
 }
 
-/// <summary>cui_tree_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Tree view node. All fields are optional; zero selects the native default.</summary>
 public partial struct TreeOpts
 {
     /// <summary>const char * icon</summary>
@@ -906,7 +906,7 @@ public partial struct TreeOpts
     };
 }
 
-/// <summary>cui_list_item_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>List item: a selectable row with optional icon, subtitle and trailing text. All fields are optional; zero selects the native default.</summary>
 public partial struct ListItemOpts
 {
     /// <summary>const char * icon</summary>
@@ -931,7 +931,7 @@ public partial struct ListItemOpts
     };
 }
 
-/// <summary>cui_table_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_table_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct TableOpts
 {
     /// <summary>scrolls when set</summary>
@@ -954,7 +954,7 @@ public partial struct TableOpts
     };
 }
 
-/// <summary>cui_chart_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_chart_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct ChartOpts
 {
     /// <summary>cui_size width</summary>
@@ -1006,7 +1006,7 @@ public partial struct ChartOpts
     };
 }
 
-/// <summary>cui_image_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_image_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct ImageOpts
 {
     /// <summary>cui_size width</summary>
@@ -1028,7 +1028,7 @@ public partial struct ImageOpts
     };
 }
 
-/// <summary>cui_image_viewer_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_image_viewer_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct ImageViewerOpts
 {
     /// <summary>default the width it gets and 360</summary>
@@ -1053,7 +1053,7 @@ public partial struct ImageViewerOpts
     };
 }
 
-/// <summary>cui_cropper_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Cropper: a crop rectangle over a picture, in image pixels. Drag inside to move it, drag a corner or an edge to resize it; the outside dims and thirds lines show while you drag. With it focused, the arrows move the crop (Shift for 10 pixels). A zeroed crop starts as the largest centered rectangle of the aspect. All fields are optional; zero selects the native default.</summary>
 public partial struct CropperOpts
 {
     /// <summary>default the width it gets and 360</summary>
@@ -1078,7 +1078,7 @@ public partial struct CropperOpts
     };
 }
 
-/// <summary>cui_radio_cards_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_radio_cards_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct RadioCardsOpts
 {
     /// <summary>cards per row; 0 puts up to 3 choices in one row and more in 2 columns</summary>
@@ -1091,7 +1091,7 @@ public partial struct RadioCardsOpts
     };
 }
 
-/// <summary>cui_tag_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Tag input: tags are stored comma separated in buf. Enter or comma adds the typed tag, Backspace on an empty field removes the last one. All fields are optional; zero selects the native default.</summary>
 public partial struct TagOpts
 {
     /// <summary>const char * label</summary>
@@ -1113,7 +1113,7 @@ public partial struct TagOpts
     };
 }
 
-/// <summary>cui_hold_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Hold to confirm: a destructive action that fills while held and fires when full. Returns true once. All fields are optional; zero selects the native default.</summary>
 public partial struct HoldOpts
 {
     /// <summary>seconds the button must be held before it fires, default 1.2</summary>
@@ -1132,7 +1132,7 @@ public partial struct HoldOpts
     };
 }
 
-/// <summary>cui_timeline_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Activity timeline item. All fields are optional; zero selects the native default.</summary>
 public partial struct TimelineOpts
 {
     /// <summary>muted text at the right of the title, e.g. &quot;2h ago&quot;</summary>
@@ -1157,7 +1157,7 @@ public partial struct TimelineOpts
     };
 }
 
-/// <summary>cui_split_button_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Split button: a main action with a menu of related actions on the chevron. Returns 0 when the main part is clicked, 1 + i when menu item i is chosen and -1 otherwise. All fields are optional; zero selects the native default.</summary>
 public partial struct SplitButtonOpts
 {
     /// <summary>default primary</summary>
@@ -1182,7 +1182,7 @@ public partial struct SplitButtonOpts
     };
 }
 
-/// <summary>cui_toggle_group_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Toggle group: a row of toggles (bold, italic...). values[i] is toggled when item i is clicked; with exclusive set exactly one stays on. Labels become tooltips when icon_only is set. Returns true when a value changed. All fields are optional; zero selects the native default.</summary>
 public partial struct ToggleGroupOpts
 {
     /// <summary>const char *const * icons</summary>
@@ -1204,7 +1204,7 @@ public partial struct ToggleGroupOpts
     };
 }
 
-/// <summary>cui_confirm_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Two step destructive button: the first click morphs it into a confirm state with a countdown, the second click confirms. Returns true once. All fields are optional; zero selects the native default.</summary>
 public partial struct ConfirmOpts
 {
     /// <summary>default &quot;Click to confirm&quot;</summary>
@@ -1229,7 +1229,7 @@ public partial struct ConfirmOpts
     };
 }
 
-/// <summary>cui_status_button_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_status_button_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct StatusButtonOpts
 {
     /// <summary>default label + &quot;...&quot;</summary>
@@ -1257,7 +1257,7 @@ public partial struct StatusButtonOpts
     };
 }
 
-/// <summary>cui_speed_dial_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_speed_dial_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct SpeedDialOpts
 {
     /// <summary>const char * icon</summary>
@@ -1276,7 +1276,7 @@ public partial struct SpeedDialOpts
     };
 }
 
-/// <summary>cui_user_menu_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>User menu: an avatar, a name and a line of detail that opens a menu of account actions. Put menu items between begin and end. All fields are optional; zero selects the native default.</summary>
 public partial struct UserMenuOpts
 {
     /// <summary>second line under the name, e.g. an email address; also in the menu&apos;s header</summary>
@@ -1304,7 +1304,7 @@ public partial struct UserMenuOpts
     };
 }
 
-/// <summary>cui_grid_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_grid_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct GridOpts
 {
     /// <summary>default fill</summary>
@@ -1333,7 +1333,7 @@ public partial struct GridOpts
     };
 }
 
-/// <summary>cui_tree_table_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_tree_table_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct TreeTableOpts
 {
     /// <summary>default fill</summary>
@@ -1362,7 +1362,7 @@ public partial struct TreeTableOpts
     };
 }
 
-/// <summary>cui_path_bar_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Path bar: a breadcrumb for file and scene paths. Segments are clickable, the last one is the current place. Middle segments that do not fit collapse into a &quot;...&quot; menu. With .menus, the chevron after segment k opens a menu you fill with the children of segment k (cui_path_bar_menu_begin). Click the empty part (or the current segment), or press Ctrl+L, to type a path: Enter submits it, Esc or clicking away cancels. All fields are optional; zero selects the native default.</summary>
 public partial struct PathBarOpts
 {
     /// <summary>before the first segment</summary>
@@ -1393,7 +1393,7 @@ public partial struct PathBarOpts
     };
 }
 
-/// <summary>cui_file_browser_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_file_browser_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct FileBrowserOpts
 {
     /// <summary>default fill and 380</summary>
@@ -1430,7 +1430,7 @@ public partial struct FileBrowserOpts
     };
 }
 
-/// <summary>cui_file_picker_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_file_picker_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct FilePickerOpts
 {
     /// <summary>default &quot;Open&quot;, &quot;Save&quot; or &quot;Choose a folder&quot;</summary>
@@ -1463,7 +1463,7 @@ public partial struct FilePickerOpts
     };
 }
 
-/// <summary>cui_code_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Code block with syntax highlighting (lang: &quot;c&quot;, &quot;cpp&quot;, &quot;js&quot;, &quot;ts&quot;, &quot;python&quot;, &quot;rust&quot;, &quot;go&quot;, &quot;json&quot;, &quot;shell&quot;, or &quot;text&quot; for none), line numbers, a title bar and a copy button. Long lines scroll sideways. All fields are optional; zero selects the native default.</summary>
 public partial struct CodeOpts
 {
     /// <summary>&quot;c&quot;, &quot;cpp&quot;, &quot;js&quot;, &quot;ts&quot;, &quot;python&quot;, &quot;rust&quot;, &quot;go&quot;, &quot;json&quot;, &quot;shell&quot; or &quot;text&quot; (no colors); shown in the title bar</summary>
@@ -1497,7 +1497,7 @@ public partial struct CodeOpts
     };
 }
 
-/// <summary>cui_json_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>JSON viewer: a collapsible tree with typed colors and item counts. Returns false when the text is not valid JSON (and shows the error). All fields are optional; zero selects the native default.</summary>
 public partial struct JsonOpts
 {
     /// <summary>levels of the tree that start open, default 2</summary>
@@ -1513,7 +1513,7 @@ public partial struct JsonOpts
     };
 }
 
-/// <summary>cui_markdown_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Markdown view: renders your markdown text (UTF-8) as native content, every frame, without keeping a copy: All fields are optional; zero selects the native default.</summary>
 public partial struct MarkdownOpts
 {
     /// <summary>default fill</summary>
@@ -1544,7 +1544,7 @@ public partial struct MarkdownOpts
     };
 }
 
-/// <summary>cui_code_editor_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_code_editor_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct CodeEditorOpts
 {
     /// <summary>as cui_code_block: &quot;c&quot;, &quot;cpp&quot;, &quot;js&quot;, &quot;ts&quot;, &quot;python&quot;, &quot;rust&quot;, &quot;go&quot;, &quot;json&quot;, &quot;shell&quot;; &quot;text&quot; for none</summary>
@@ -1588,7 +1588,7 @@ public partial struct CodeEditorOpts
     };
 }
 
-/// <summary>cui_diff_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_diff_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct DiffOpts
 {
     /// <summary>cui_diff_mode mode</summary>
@@ -1632,7 +1632,7 @@ public partial struct DiffOpts
     };
 }
 
-/// <summary>cui_chat_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Chat message bubble. Consecutive messages from one person set grouped so they stack tightly and show the avatar once. All fields are optional; zero selects the native default.</summary>
 public partial struct ChatOpts
 {
     /// <summary>right aligned, accent bubble</summary>
@@ -1667,7 +1667,7 @@ public partial struct ChatOpts
     };
 }
 
-/// <summary>cui_comment_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_comment_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct CommentOpts
 {
     /// <summary>muted text after the author&apos;s name, e.g. &quot;2h ago&quot;</summary>
@@ -1691,7 +1691,7 @@ public partial struct CommentOpts
     };
 }
 
-/// <summary>cui_carousel_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Carousel: slides that you swipe, drag, scroll or page with the arrows and dots. Build every slide between begin and end: cui_carousel(ui, &quot;tour&quot;, 4, &amp;index, .height = 220) { for (int k = 0; k &lt; 4; k++) cui_carousel_slide(ui) { ... } } All fields are optional; zero selects the native default.</summary>
 public partial struct CarouselOpts
 {
     /// <summary>float height</summary>
@@ -1719,7 +1719,7 @@ public partial struct CarouselOpts
     };
 }
 
-/// <summary>cui_compare_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Before and after: drag the divider to compare two images. *pos is 0..1. All fields are optional; zero selects the native default.</summary>
 public partial struct CompareOpts
 {
     /// <summary>cui_size width</summary>
@@ -1744,7 +1744,7 @@ public partial struct CompareOpts
     };
 }
 
-/// <summary>cui_card_stack_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Card stack: a deck where the top card can be flicked away left or right. Build `count` cards; card 0 is the top. end returns -1 or 1 on the frame the top card leaves (to the left or right), else 0. All fields are optional; zero selects the native default.</summary>
 public partial struct CardStackOpts
 {
     /// <summary>cui_size width</summary>
@@ -1763,7 +1763,7 @@ public partial struct CardStackOpts
     };
 }
 
-/// <summary>cui_counter_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Odometer: a number whose digits roll to their new values. All fields are optional; zero selects the native default.</summary>
 public partial struct CounterOpts
 {
     /// <summary>const char * format</summary>
@@ -1788,7 +1788,7 @@ public partial struct CounterOpts
     };
 }
 
-/// <summary>cui_ticker_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_ticker_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct TickerOpts
 {
     /// <summary>points per second, default 40</summary>
@@ -1804,7 +1804,7 @@ public partial struct TickerOpts
     };
 }
 
-/// <summary>cui_heatmap_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Heatmap: a rows x cols matrix (values[row * cols + col]) on one hue, light to dark, with a scale below. All fields are optional; zero selects the native default.</summary>
 public partial struct HeatmapOpts
 {
     /// <summary>one label per row, left of the grid; `NULL` for none</summary>
@@ -1838,7 +1838,7 @@ public partial struct HeatmapOpts
     };
 }
 
-/// <summary>cui_calendar_heatmap_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Calendar heatmap: one cell per day from start, weeks as columns, in five levels, with month and weekday labels and a Less / More legend. All fields are optional; zero selects the native default.</summary>
 public partial struct CalendarHeatmapOpts
 {
     /// <summary>size of a day&apos;s square in points, default 11</summary>
@@ -1860,7 +1860,7 @@ public partial struct CalendarHeatmapOpts
     };
 }
 
-/// <summary>cui_treemap_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_treemap_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct TreemapOpts
 {
     /// <summary>cui_size width</summary>
@@ -1879,7 +1879,7 @@ public partial struct TreemapOpts
     };
 }
 
-/// <summary>cui_radar_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Radar chart: series over shared axes (series[i].values[axis]). All fields are optional; zero selects the native default.</summary>
 public partial struct RadarOpts
 {
     /// <summary>float size</summary>
@@ -1901,7 +1901,7 @@ public partial struct RadarOpts
     };
 }
 
-/// <summary>cui_funnel_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Funnel: stages narrowing by value, with the conversion between them. All fields are optional; zero selects the native default.</summary>
 public partial struct FunnelOpts
 {
     /// <summary>cui_size width</summary>
@@ -1923,7 +1923,7 @@ public partial struct FunnelOpts
     };
 }
 
-/// <summary>cui_sankey_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_sankey_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct SankeyOpts
 {
     /// <summary>cui_size width</summary>
@@ -1945,7 +1945,7 @@ public partial struct SankeyOpts
     };
 }
 
-/// <summary>cui_waffle_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Waffle: a 10 x 10 grid of squares split by share, with a legend. All fields are optional; zero selects the native default.</summary>
 public partial struct WaffleOpts
 {
     /// <summary>size of a square in points, default 18</summary>
@@ -1967,7 +1967,7 @@ public partial struct WaffleOpts
     };
 }
 
-/// <summary>cui_split_bar_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Split bar: one bar split into parts, with a legend of values and shares. All fields are optional; zero selects the native default.</summary>
 public partial struct SplitBarOpts
 {
     /// <summary>cui_size width</summary>
@@ -1989,7 +1989,7 @@ public partial struct SplitBarOpts
     };
 }
 
-/// <summary>cui_bar_list_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Bar list: ranked horizontal bars. Rows are keyed by label, so when the values change the bars grow and the rows slide to their new rank. All fields are optional; zero selects the native default.</summary>
 public partial struct BarListOpts
 {
     /// <summary>cui_size width</summary>
@@ -2014,7 +2014,7 @@ public partial struct BarListOpts
     };
 }
 
-/// <summary>cui_rings_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Activity rings: concentric progress rings; values past 1 keep winding. All fields are optional; zero selects the native default.</summary>
 public partial struct RingsOpts
 {
     /// <summary>float size</summary>
@@ -2039,7 +2039,7 @@ public partial struct RingsOpts
     };
 }
 
-/// <summary>cui_scatter_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_scatter_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct ScatterOpts
 {
     /// <summary>cui_size width</summary>
@@ -2070,7 +2070,7 @@ public partial struct ScatterOpts
     };
 }
 
-/// <summary>cui_radial_gauge_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_radial_gauge_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct RadialGaugeOpts
 {
     /// <summary>under the value</summary>
@@ -2111,7 +2111,7 @@ public partial struct RadialGaugeOpts
     };
 }
 
-/// <summary>cui_candlestick_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_candlestick_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct CandlestickOpts
 {
     /// <summary>cui_size width</summary>
@@ -2149,7 +2149,7 @@ public partial struct CandlestickOpts
     };
 }
 
-/// <summary>cui_text_fx_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Motion and text effects All of these respect reduced motion: they show their final state. All fields are optional; zero selects the native default.</summary>
 public partial struct TextFxOpts
 {
     /// <summary>default `CUI_FONT_BODY` (0)</summary>
@@ -2183,7 +2183,7 @@ public partial struct TextFxOpts
     };
 }
 
-/// <summary>cui_gradient_text_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Text painted with a gradient from one color to another; animate makes it drift. All fields are optional; zero selects the native default.</summary>
 public partial struct GradientTextOpts
 {
     /// <summary>default `CUI_FONT_BODY` (0)</summary>
@@ -2211,7 +2211,7 @@ public partial struct GradientTextOpts
     };
 }
 
-/// <summary>cui_spotlight_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Spotlight card: a soft light follows the pointer across the card and lights the nearest stretch of its border. beam sends a light around the edge. All fields are optional; zero selects the native default.</summary>
 public partial struct SpotlightOpts
 {
     /// <summary>cui_size width</summary>
@@ -2239,7 +2239,7 @@ public partial struct SpotlightOpts
     };
 }
 
-/// <summary>cui_loader_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_loader_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct LoaderOpts
 {
     /// <summary>cui_loader_style style</summary>
@@ -2258,7 +2258,7 @@ public partial struct LoaderOpts
     };
 }
 
-/// <summary>cui_dock_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Dock: a row of icons that grow as the pointer passes, with labels and a dot under the running ones. Each item returns true when clicked. All fields are optional; zero selects the native default.</summary>
 public partial struct DockOpts
 {
     /// <summary>float size</summary>
@@ -2274,7 +2274,7 @@ public partial struct DockOpts
     };
 }
 
-/// <summary>cui_dock_item_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_dock_item_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct DockItemOpts
 {
     /// <summary>cui_color color</summary>
@@ -2293,7 +2293,7 @@ public partial struct DockItemOpts
     };
 }
 
-/// <summary>cui_tab_bar_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_tab_bar_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct TabBarOpts
 {
     /// <summary>cui_size width</summary>
@@ -2309,7 +2309,7 @@ public partial struct TabBarOpts
     };
 }
 
-/// <summary>cui_tile_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Control tile: a large toggle with an icon, a label and a state line. All fields are optional; zero selects the native default.</summary>
 public partial struct TileOpts
 {
     /// <summary>const char * icon</summary>
@@ -2334,7 +2334,7 @@ public partial struct TileOpts
     };
 }
 
-/// <summary>cui_waveform_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Waveform: bars from peaks (0..1). With progress, the played part is colored and clicking or dragging seeks; returns true when it did. All fields are optional; zero selects the native default.</summary>
 public partial struct WaveformOpts
 {
     /// <summary>cui_size width</summary>
@@ -2359,7 +2359,7 @@ public partial struct WaveformOpts
     };
 }
 
-/// <summary>cui_now_playing_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_now_playing_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct NowPlayingOpts
 {
     /// <summary>cui_size width</summary>
@@ -2375,7 +2375,7 @@ public partial struct NowPlayingOpts
     };
 }
 
-/// <summary>cui_reasoning_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Reasoning: a model&apos;s thinking. While thinking, the header shimmers and counts the seconds; afterwards it reads &quot;Thought for 12s&quot; and the body folds away. Click the header to open or close it. Put text inside. All fields are optional; zero selects the native default.</summary>
 public partial struct ReasoningOpts
 {
     /// <summary>still thinking: the header shimmers and the body opens; it folds when this turns false</summary>
@@ -2394,7 +2394,7 @@ public partial struct ReasoningOpts
     };
 }
 
-/// <summary>cui_tool_call_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_tool_call_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct ToolCallOpts
 {
     /// <summary>cui_task_status status</summary>
@@ -2422,7 +2422,7 @@ public partial struct ToolCallOpts
     };
 }
 
-/// <summary>cui_agent_plan_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_agent_plan_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct AgentPlanOpts
 {
     /// <summary>heading of the plan, default &quot;Plan&quot;</summary>
@@ -2435,7 +2435,7 @@ public partial struct AgentPlanOpts
     };
 }
 
-/// <summary>cui_agent_status_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Agent status pill: what the agent is doing right now and for how long. All fields are optional; zero selects the native default.</summary>
 public partial struct AgentStatusOpts
 {
     /// <summary>cui_task_status status</summary>
@@ -2454,7 +2454,7 @@ public partial struct AgentStatusOpts
     };
 }
 
-/// <summary>cui_context_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Context meter: a small ring of how full the context is; hover for a breakdown. It turns amber past 80% and red past 95%. All fields are optional; zero selects the native default.</summary>
 public partial struct ContextOpts
 {
     /// <summary>what fills the context (label, amount, color), for the breakdown on hover</summary>
@@ -2471,7 +2471,7 @@ public partial struct ContextOpts
     };
 }
 
-/// <summary>cui_response_actions_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_response_actions_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct ResponseActionsOpts
 {
     /// <summary>the text the copy button copies; `NULL` leaves the button out</summary>
@@ -2491,7 +2491,7 @@ public partial struct ResponseActionsOpts
     };
 }
 
-/// <summary>cui_prompt_suggestions_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_prompt_suggestions_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct PromptSuggestionsOpts
 {
     /// <summary>cards per row, default 2</summary>
@@ -2504,7 +2504,7 @@ public partial struct PromptSuggestionsOpts
     };
 }
 
-/// <summary>cui_model_picker_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_model_picker_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct ModelPickerOpts
 {
     /// <summary>no border or fill on the button until hovered, for use inside another control</summary>
@@ -2520,7 +2520,7 @@ public partial struct ModelPickerOpts
     };
 }
 
-/// <summary>cui_composer_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_composer_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct ComposerOpts
 {
     /// <summary>const char * placeholder</summary>
@@ -2552,7 +2552,7 @@ public partial struct ComposerOpts
     };
 }
 
-/// <summary>cui_voice_orb_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_voice_orb_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct VoiceOrbOpts
 {
     /// <summary>float size</summary>
@@ -2568,7 +2568,7 @@ public partial struct VoiceOrbOpts
     };
 }
 
-/// <summary>cui_kanban_column_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_kanban_column_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct KanbanColumnOpts
 {
     /// <summary>a small dot of this color before the title; unset for none</summary>
@@ -2587,7 +2587,7 @@ public partial struct KanbanColumnOpts
     };
 }
 
-/// <summary>cui_week_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_week_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct WeekOpts
 {
     /// <summary>first hour shown, default 7; set together with `end_hour`</summary>
@@ -2612,7 +2612,7 @@ public partial struct WeekOpts
     };
 }
 
-/// <summary>cui_month_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_month_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct MonthOpts
 {
     /// <summary>0 Monday (default) .. 6 Sunday</summary>
@@ -2641,7 +2641,7 @@ public partial struct MonthOpts
     };
 }
 
-/// <summary>cui_gantt_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_gantt_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct GanttOpts
 {
     /// <summary>points per day, default 30</summary>
@@ -2666,7 +2666,7 @@ public partial struct GanttOpts
     };
 }
 
-/// <summary>cui_hover_card_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Hover card: rich content that appears when the pointer rests on the previous component, and stays while the pointer is over either. All fields are optional; zero selects the native default.</summary>
 public partial struct HoverCardOpts
 {
     /// <summary>cui_placement placement</summary>
@@ -2685,7 +2685,7 @@ public partial struct HoverCardOpts
     };
 }
 
-/// <summary>cui_confirm_popover_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Confirm popover: a small question anchored to the previous component. Open it with cui_popover_open(ui, id). Returns true when confirmed. All fields are optional; zero selects the native default.</summary>
 public partial struct ConfirmPopoverOpts
 {
     /// <summary>the question, in medium weight at the top, e.g. &quot;Delete this file?&quot;</summary>
@@ -2713,7 +2713,7 @@ public partial struct ConfirmPopoverOpts
     };
 }
 
-/// <summary>cui_expandable_text_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Text clamped to a few lines with a fade and Show more / Show less. All fields are optional; zero selects the native default.</summary>
 public partial struct ExpandableTextOpts
 {
     /// <summary>lines shown while collapsed, default 3</summary>
@@ -2735,7 +2735,7 @@ public partial struct ExpandableTextOpts
     };
 }
 
-/// <summary>cui_expandable_card_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Expandable card: a card whose header opens a body with a height spring. All fields are optional; zero selects the native default.</summary>
 public partial struct ExpandableCardOpts
 {
     /// <summary>const char * description</summary>
@@ -2757,7 +2757,7 @@ public partial struct ExpandableCardOpts
     };
 }
 
-/// <summary>cui_banner_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Announcement banner across the top of a view. Collapses smoothly when dismissed (*open becomes false). Returns true when the action is clicked. All fields are optional; zero selects the native default.</summary>
 public partial struct BannerOpts
 {
     /// <summary>cui_tone tone</summary>
@@ -2779,7 +2779,7 @@ public partial struct BannerOpts
     };
 }
 
-/// <summary>cui_countdown_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Countdown: days, hours, minutes and seconds as tiles whose digits roll. All fields are optional; zero selects the native default.</summary>
 public partial struct CountdownOpts
 {
     /// <summary>no days tile; the hours tile counts the days in (49 hours, not 2 days and 1 hour)</summary>
@@ -2795,7 +2795,7 @@ public partial struct CountdownOpts
     };
 }
 
-/// <summary>cui_checklist_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_checklist_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct ChecklistOpts
 {
     /// <summary>heading of the card, default &quot;Get started&quot;</summary>
@@ -2811,7 +2811,7 @@ public partial struct ChecklistOpts
     };
 }
 
-/// <summary>cui_multi_select_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Multi-select: a field with chips for the chosen items and a list with checkboxes (and search). selected[i] is true for chosen items. All fields are optional; zero selects the native default.</summary>
 public partial struct MultiSelectOpts
 {
     /// <summary>const char * label</summary>
@@ -2839,7 +2839,7 @@ public partial struct MultiSelectOpts
     };
 }
 
-/// <summary>cui_date_range_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_date_range_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct DateRangeOpts
 {
     /// <summary>const char * label</summary>
@@ -2861,7 +2861,7 @@ public partial struct DateRangeOpts
     };
 }
 
-/// <summary>cui_time_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Time picker: a field that opens hour and minute columns. hour is 0..23. All fields are optional; zero selects the native default.</summary>
 public partial struct TimeOpts
 {
     /// <summary>const char * label</summary>
@@ -2883,7 +2883,7 @@ public partial struct TimeOpts
     };
 }
 
-/// <summary>cui_wheel_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Wheel picker: a drum of options that you drag, scroll or arrow through. Several side by side make a date or time reel. join_left / join_right square off the selection band so wheels placed side by side share one continuous band. All fields are optional; zero selects the native default.</summary>
 public partial struct WheelOpts
 {
     /// <summary>rows in view, made odd so the selected one sits in the middle; default 5</summary>
@@ -2908,7 +2908,7 @@ public partial struct WheelOpts
     };
 }
 
-/// <summary>cui_ruler_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Ruler slider: a tape measure that slides under a fixed marker, with momentum and snapping to step. All fields are optional; zero selects the native default.</summary>
 public partial struct RulerOpts
 {
     /// <summary>float step</summary>
@@ -2936,7 +2936,7 @@ public partial struct RulerOpts
     };
 }
 
-/// <summary>cui_histogram_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Range slider over a histogram of the data it filters. All fields are optional; zero selects the native default.</summary>
 public partial struct HistogramOpts
 {
     /// <summary>float height</summary>
@@ -2952,7 +2952,7 @@ public partial struct HistogramOpts
     };
 }
 
-/// <summary>cui_knob_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Knob, fader and level meter: the controls of audio, synth and mixer panels. All fields are optional; zero selects the native default.</summary>
 public partial struct KnobOpts
 {
     /// <summary>under the knob; the id when NULL</summary>
@@ -2995,7 +2995,7 @@ public partial struct KnobOpts
     };
 }
 
-/// <summary>cui_fader_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_fader_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct FaderOpts
 {
     /// <summary>under a vertical fader, before a horizontal one; the id when NULL</summary>
@@ -3040,7 +3040,7 @@ public partial struct FaderOpts
     };
 }
 
-/// <summary>cui_level_meter_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Level meter: bars that jump up to each new peak and fall back at `decay` dB per second, with a peak mark that holds for `hold` seconds and a clip light that stays on until clicked. Levels are linear sample peaks (1.0 is 0 dBFS); green runs to -18 dB, amber to -6 dB, red above. All fields are optional; zero selects the native default.</summary>
 public partial struct LevelMeterOpts
 {
     /// <summary>default -60 and +6</summary>
@@ -3077,7 +3077,7 @@ public partial struct LevelMeterOpts
     };
 }
 
-/// <summary>cui_signature_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Signature pad: draw with the mouse or a pen. The strokes are kept for you; read them with cui_signature_points (stroke_ends[i] is one past the last point of stroke i). All fields are optional; zero selects the native default.</summary>
 public partial struct SignatureOpts
 {
     /// <summary>cui_size width</summary>
@@ -3099,7 +3099,7 @@ public partial struct SignatureOpts
     };
 }
 
-/// <summary>cui_dropzone_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Dropzone: drop files from the OS, or click to browse. Returns the number of files dropped on it this frame (read them with cui_dropped_file), -1 when clicked (open a file dialog), 0 otherwise. accept filters by extension, e.g. &quot;png;jpg;pdf&quot;. All fields are optional; zero selects the native default.</summary>
 public partial struct DropzoneOpts
 {
     /// <summary>default &quot;Drop files here&quot;</summary>
@@ -3130,7 +3130,7 @@ public partial struct DropzoneOpts
     };
 }
 
-/// <summary>cui_inline_edit_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Inline edit: text that turns into a field in place. Click (or Enter when focused) to edit, Enter or clicking away saves, Esc cancels. Returns CUI_CHANGED when an edit is committed. All fields are optional; zero selects the native default.</summary>
 public partial struct InlineEditOpts
 {
     /// <summary>font of the text and of the field, default `CUI_FONT_MEDIUM`</summary>
@@ -3152,7 +3152,7 @@ public partial struct InlineEditOpts
     };
 }
 
-/// <summary>cui_scrub_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Scrub field: drag sideways anywhere on it to change the value (Shift for fine steps), or click to type a number. Arrow keys step when focused. All fields are optional; zero selects the native default.</summary>
 public partial struct ScrubOpts
 {
     /// <summary>default (max - min) / 100</summary>
@@ -3177,7 +3177,7 @@ public partial struct ScrubOpts
     };
 }
 
-/// <summary>cui_money_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Money field: shows the amount with thousands separators, edits as plain digits, keeps a fixed number of decimals. All fields are optional; zero selects the native default.</summary>
 public partial struct MoneyOpts
 {
     /// <summary>const char * label</summary>
@@ -3205,7 +3205,7 @@ public partial struct MoneyOpts
     };
 }
 
-/// <summary>cui_shortcut_recorder_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_shortcut_recorder_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct ShortcutRecorderOpts
 {
     /// <summary>const char * placeholder</summary>
@@ -3221,7 +3221,7 @@ public partial struct ShortcutRecorderOpts
     };
 }
 
-/// <summary>cui_node_editor_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_node_editor_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct NodeEditorOpts
 {
     /// <summary>default: fill the width, 440 tall</summary>
@@ -3249,7 +3249,7 @@ public partial struct NodeEditorOpts
     };
 }
 
-/// <summary>cui_node_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>A node at canvas position (*x, *y), updated while it is dragged. Returns true while the node is selected. All fields are optional; zero selects the native default.</summary>
 public partial struct NodeOpts
 {
     /// <summary>width default 184</summary>
@@ -3265,7 +3265,7 @@ public partial struct NodeOpts
     };
 }
 
-/// <summary>cui_pin_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>A row with a pin on the left (input) or right (output). type picks the pin color from the series palette and limits links to pins of the same type (0 connects to anything). Returns true when the pin has a link. All fields are optional; zero selects the native default.</summary>
 public partial struct PinOpts
 {
     /// <summary>0 links to any pin; another number links only to pins of that type and picks their color</summary>
@@ -3278,7 +3278,7 @@ public partial struct PinOpts
     };
 }
 
-/// <summary>cui_menu_bar_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Menu bar: File / Edit / View along the top of a window. Each menu holds the usual menu items (cui_menu_item, cui_menu_separator, cui_menu_label). Once a menu is open, hovering another one switches to it. Alt (on its own) or F10 focuses the bar; arrows move between menus and items, Enter chooses, Esc steps back. Alt + a menu&apos;s mnemonic letter opens it (the first letter of its label unless `mnemonic` says otherwise). All fields are optional; zero selects the native default.</summary>
 public partial struct MenuBarOpts
 {
     /// <summary>_Bool no_border</summary>
@@ -3291,7 +3291,7 @@ public partial struct MenuBarOpts
     };
 }
 
-/// <summary>cui_menu_bar_menu_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>One menu of the bar. Returns true while its items should be built; call cui_menu_bar_menu_end only then. All fields are optional; zero selects the native default.</summary>
 public partial struct MenuBarMenuOpts
 {
     /// <summary>letter that opens the menu with Alt; 0 uses the first letter or digit of the label</summary>
@@ -3310,7 +3310,7 @@ public partial struct MenuBarMenuOpts
     };
 }
 
-/// <summary>cui_toolbar_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Toolbar: a row of compact icon buttons, toggles, separators and small text buttons. Icon only buttons show their tooltip as their name. Items that do not fit collapse, from the end, into a &quot;more&quot; menu; an item chosen there returns true on the next frame. All fields are optional; zero selects the native default.</summary>
 public partial struct ToolbarOpts
 {
     /// <summary>_Bool no_border</summary>
@@ -3323,7 +3323,7 @@ public partial struct ToolbarOpts
     };
 }
 
-/// <summary>cui_tool_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_tool_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct ToolOpts
 {
     /// <summary>text on the button (icon may be NULL); also its name in the overflow menu</summary>
@@ -3346,7 +3346,7 @@ public partial struct ToolOpts
     };
 }
 
-/// <summary>cui_status_bar_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Status bar: a thin bar along the bottom of a window, with a hairline on top and no fill of its own (put it in a box with the background you want). Items go left to right; cui_status_bar_spacer sends the rest to the right edge. All fields are optional; zero selects the native default.</summary>
 public partial struct StatusBarOpts
 {
     /// <summary>_Bool no_border</summary>
@@ -3359,7 +3359,7 @@ public partial struct StatusBarOpts
     };
 }
 
-/// <summary>cui_status_item_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_status_item_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct StatusItemOpts
 {
     /// <summary>const char * icon</summary>
@@ -3381,7 +3381,7 @@ public partial struct StatusItemOpts
     };
 }
 
-/// <summary>cui_status_progress_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>A small progress bar with an optional label. value is 0..1. All fields are optional; zero selects the native default.</summary>
 public partial struct StatusProgressOpts
 {
     /// <summary>const char * label</summary>
@@ -3400,7 +3400,7 @@ public partial struct StatusProgressOpts
     };
 }
 
-/// <summary>cui_doc_tabs_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_doc_tabs_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct DocTabsOpts
 {
     /// <summary>Ctrl+Tab, Ctrl+Shift+Tab, Ctrl+PageUp/Down and Ctrl+W (Cmd+W on macOS) work from anywhere in the window</summary>
@@ -3419,7 +3419,7 @@ public partial struct DocTabsOpts
     };
 }
 
-/// <summary>cui_dockspace_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Dockspace: an IDE style workspace that lays out your panels in a tree of resizable splits whose leaves hold one or more panels as document tabs. Submit every panel each frame between cui_dockspace_begin and cui_dockspace_end; the dockspace decides where it goes, and a panel&apos;s content is built only while its tab is the one showing: All fields are optional; zero selects the native default.</summary>
 public partial struct DockspaceOpts
 {
     /// <summary>first run layout, in the cui_dock_save format</summary>
@@ -3447,7 +3447,7 @@ public partial struct DockspaceOpts
     };
 }
 
-/// <summary>cui_dock_panel_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Returns true while the panel&apos;s content should be built; then call cui_dock_panel_end. All fields are optional; zero selects the native default.</summary>
 public partial struct DockPanelOpts
 {
     /// <summary>const char * icon</summary>
@@ -3463,7 +3463,7 @@ public partial struct DockPanelOpts
     };
 }
 
-/// <summary>cui_inspector_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Property inspector: labelled rows in folding groups, a label column on the left (drag the line between the columns to resize it) and an editor on the right. Every row returns true when its value changed. Groups end at the next group or at cui_inspector_end. All fields are optional; zero selects the native default.</summary>
 public partial struct InspectorOpts
 {
     /// <summary>default fill</summary>
@@ -3479,7 +3479,7 @@ public partial struct InspectorOpts
     };
 }
 
-/// <summary>cui_prop_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_prop_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct PropOpts
 {
     /// <summary>number and vector rows; both 0 = unbounded</summary>
@@ -3516,7 +3516,7 @@ public partial struct PropOpts
     };
 }
 
-/// <summary>cui_log_view_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_log_view_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct LogViewOpts
 {
     /// <summary>default fill</summary>
@@ -3541,7 +3541,7 @@ public partial struct LogViewOpts
     };
 }
 
-/// <summary>cui_terminal_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_terminal_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct TerminalOpts
 {
     /// <summary>default fill</summary>
@@ -3566,7 +3566,7 @@ public partial struct TerminalOpts
     };
 }
 
-/// <summary>cui_emoji_picker_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Emoji picker: search, groups with tabs, recent emoji, skin tones and a preview with the name. Returns the emoji picked this frame (UTF-8, valid until the next frame) or NULL. Put it in a popover to open it from a button. All fields are optional; zero selects the native default.</summary>
 public partial struct EmojiPickerOpts
 {
     /// <summary>default up to 360</summary>
@@ -3609,7 +3609,7 @@ public partial struct EmojiPickerOpts
     };
 }
 
-/// <summary>cui_hex_view_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_hex_view_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct HexViewOpts
 {
     /// <summary>default fill</summary>
@@ -3645,7 +3645,7 @@ public partial struct HexViewOpts
     };
 }
 
-/// <summary>cui_flame_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_flame_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct FlameOpts
 {
     /// <summary>default fill</summary>
@@ -3667,7 +3667,7 @@ public partial struct FlameOpts
     };
 }
 
-/// <summary>cui_curve_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_curve_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct CurveOpts
 {
     /// <summary>plotted range; both 0 = 0..1. Keys stay inside it</summary>
@@ -3717,7 +3717,7 @@ public partial struct CurveOpts
     };
 }
 
-/// <summary>cui_gradient_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_gradient_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct GradientOpts
 {
     /// <summary>default fill</summary>
@@ -3734,7 +3734,7 @@ public partial struct GradientOpts
     };
 }
 
-/// <summary>cui_timeline_editor_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_timeline_editor_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct TimelineEditorOpts
 {
     /// <summary>the sequence in seconds; both 0 = 0..10</summary>
@@ -3779,7 +3779,7 @@ public partial struct TimelineEditorOpts
     };
 }
 
-/// <summary>cui_kv_editor_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_kv_editor_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct KvEditorOpts
 {
     /// <summary>default &quot;Key&quot;</summary>
@@ -3807,7 +3807,7 @@ public partial struct KvEditorOpts
     };
 }
 
-/// <summary>cui_problems_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_problems_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct ProblemsOpts
 {
     /// <summary>cui_size width</summary>
@@ -3826,7 +3826,7 @@ public partial struct ProblemsOpts
     };
 }
 
-/// <summary>cui_pipeline_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_pipeline_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct PipelineOpts
 {
     /// <summary>job shown selected, set on a click</summary>
@@ -3840,7 +3840,7 @@ public partial struct PipelineOpts
     };
 }
 
-/// <summary>cui_query_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_query_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct QueryOpts
 {
     /// <summary>cui_size width</summary>
@@ -3859,7 +3859,7 @@ public partial struct QueryOpts
     };
 }
 
-/// <summary>cui_schedule_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>A cron schedule edited the friendly way: every N minutes, hourly at a minute, daily at a time, weekly on chosen days, monthly on a day, or a custom expression. It reads and writes `cron` (five fields: minute hour day month weekday) and shows what it means and when it runs next. Weekday and month names come from cui_set_strings. All fields are optional; zero selects the native default.</summary>
 public partial struct ScheduleOpts
 {
     /// <summary>cui_size width</summary>
@@ -3881,7 +3881,7 @@ public partial struct ScheduleOpts
     };
 }
 
-/// <summary>cui_keymap_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_keymap_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct KeymapOpts
 {
     /// <summary>cui_size width</summary>
@@ -3902,7 +3902,7 @@ public partial struct KeymapOpts
     };
 }
 
-/// <summary>cui_commit_graph_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_commit_graph_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct CommitGraphOpts
 {
     /// <summary>cui_size width</summary>
@@ -3919,7 +3919,7 @@ public partial struct CommitGraphOpts
     };
 }
 
-/// <summary>cui_graph_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_graph_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct GraphOpts
 {
     /// <summary>cui_size width</summary>
@@ -3939,7 +3939,7 @@ public partial struct GraphOpts
     };
 }
 
-/// <summary>cui_waterfall_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_waterfall_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct WaterfallOpts
 {
     /// <summary>cui_size width</summary>
@@ -3962,7 +3962,7 @@ public partial struct WaterfallOpts
     };
 }
 
-/// <summary>cui_trace_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_trace_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct TraceOpts
 {
     /// <summary>cui_size width</summary>
@@ -3985,7 +3985,7 @@ public partial struct TraceOpts
     };
 }
 
-/// <summary>cui_regex_tester_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>A pattern field with flags over a test text: every match is highlighted in the text and its groups in their own colors, and the list below shows each match with its groups. Errors show under the pattern. Both buffers are yours and edited in place. All fields are optional; zero selects the native default.</summary>
 public partial struct RegexTesterOpts
 {
     /// <summary>cui_size width</summary>
@@ -4002,7 +4002,7 @@ public partial struct RegexTesterOpts
     };
 }
 
-/// <summary>cui_test_explorer_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_test_explorer_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct TestExplorerOpts
 {
     /// <summary>default 320</summary>
@@ -4018,7 +4018,7 @@ public partial struct TestExplorerOpts
     };
 }
 
-/// <summary>cui_stack_trace_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_stack_trace_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct StackTraceOpts
 {
     /// <summary>cui_size width</summary>
@@ -4040,7 +4040,7 @@ public partial struct StackTraceOpts
     };
 }
 
-/// <summary>cui_request_bar_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_request_bar_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct RequestBarOpts
 {
     /// <summary>cui_size width</summary>
@@ -4059,7 +4059,7 @@ public partial struct RequestBarOpts
     };
 }
 
-/// <summary>cui_uptime_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_uptime_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct UptimeOpts
 {
     /// <summary>the date of the last value, for the tooltips</summary>
@@ -4075,7 +4075,7 @@ public partial struct UptimeOpts
     };
 }
 
-/// <summary>cui_time_histogram_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_time_histogram_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct TimeHistogramOpts
 {
     /// <summary>cui_size width</summary>
@@ -4094,7 +4094,7 @@ public partial struct TimeHistogramOpts
     };
 }
 
-/// <summary>cui_coverage_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_coverage_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct CoverageOpts
 {
     /// <summary>percent; default 50 and 80</summary>
@@ -4116,7 +4116,7 @@ public partial struct CoverageOpts
     };
 }
 
-/// <summary>cui_blame_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_blame_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct BlameOpts
 {
     /// <summary>cui_size width</summary>
@@ -4141,7 +4141,7 @@ public partial struct BlameOpts
     };
 }
 
-/// <summary>cui_feature_flags_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_feature_flags_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct FeatureFlagsOpts
 {
     /// <summary>default fits the flags</summary>
@@ -4157,7 +4157,7 @@ public partial struct FeatureFlagsOpts
     };
 }
 
-/// <summary>cui_api_explorer_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_api_explorer_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct ApiExplorerOpts
 {
     /// <summary>cui_size width</summary>
@@ -4174,7 +4174,7 @@ public partial struct ApiExplorerOpts
     };
 }
 
-/// <summary>cui_dot_chart_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_dot_chart_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct DotChartOpts
 {
     /// <summary>cui_size width</summary>
@@ -4233,7 +4233,7 @@ public partial struct DotChartOpts
     };
 }
 
-/// <summary>cui_event_track_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Event track: moments on a time axis, as dots you drag along it. A click on an empty spot adds an event there and a double-click on one removes it. You own the array: the track keeps it sorted, edits it in place and never grows it past `capacity`. All fields are optional; zero selects the native default.</summary>
 public partial struct EventTrackOpts
 {
     /// <summary>cui_size width</summary>
@@ -4268,7 +4268,7 @@ public partial struct EventTrackOpts
     };
 }
 
-/// <summary>cui_readout_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Readout: one figure as an instrument shows it. A small label, the value in the monospaced font with its unit, and a muted line of context under it. All fields are optional; zero selects the native default.</summary>
 public partial struct ReadoutOpts
 {
     /// <summary>after the value, smaller and muted, e.g. &quot;MG&quot;</summary>
@@ -4299,7 +4299,7 @@ public partial struct ReadoutOpts
     };
 }
 
-/// <summary>cui_dot_display_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>Dot-matrix display: text drawn with a 5 by 7 dot font, for clocks, counters and status lines. Printable ASCII, the degree sign and the middle dot have glyphs; anything else is a box. Unlit dots show dimly unless `no_dim` is set. In a box narrower than the text, the dots shrink to fit, or with `marquee` the text scrolls. All fields are optional; zero selects the native default.</summary>
 public partial struct DotDisplayOpts
 {
     /// <summary>distance between dot centers in points, default 4</summary>
@@ -4330,7 +4330,7 @@ public partial struct DotDisplayOpts
     };
 }
 
-/// <summary>cui_file_dialog_opts. All fields are optional; zero selects native defaults.</summary>
+/// <summary>cui_file_dialog_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct FileDialogOpts
 {
     /// <summary>cui_file_dialog_kind kind</summary>

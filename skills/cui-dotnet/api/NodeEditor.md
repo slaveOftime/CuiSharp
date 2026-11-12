@@ -20,7 +20,7 @@ protected override void Draw(Ui ui)
 public OpenScope Node(int nodeId, ref float x, ref float y, UiText title, NodeOpts o = default)
 ```
 
-cui_node_begin_ex
+A node at canvas position (*x, *y), updated while it is dragged. Returns true while the node is selected.
 
 ## `NodeContent`
 
@@ -52,7 +52,7 @@ cui_node_editor_begin_ex
 public bool NodeInput(int pinId, UiText label, PinOpts o = default)
 ```
 
-cui_node_input_ex
+A row with a pin on the left (input) or right (output). type picks the pin color from the series palette and limits links to pins of the same type (0 connects to anything). Returns true when the pin has a link.
 
 ## `NodeLink`
 
@@ -84,4 +84,4 @@ Part of cui_node_link — A link from an output pin to an input pin. Returns tru
 public bool NodeOutput(int pinId, UiText label, PinOpts o = default)
 ```
 
-cui_node_output_ex
+A row with a pin on the left (input) or right (output). type picks the pin color from the series palette and limits links to pins of the same type (0 connects to anything). Returns true when the pin has a link.

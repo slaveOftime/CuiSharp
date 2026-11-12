@@ -13,14 +13,14 @@ public static unsafe class DataGridUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_data_grid_row</summary>
+        /// <summary>true when the row was clicked</summary>
         public bool DataGridRow(int row)
         {
             var __result = Native.DataGridRow(ui.Handle, row);
             return __result != 0;
         }
 
-        /// <summary>cui_data_grid_cell</summary>
+        /// <summary>next cell; put components inside</summary>
         public void DataGridCell()
         {
             Native.DataGridCell(ui.Handle);

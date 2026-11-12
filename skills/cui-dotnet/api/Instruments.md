@@ -20,7 +20,7 @@ protected override void Draw(Ui ui)
 public void DotDisplay(UiText text, DotDisplayOpts o = default)
 ```
 
-cui_dot_display_ex
+Dot-matrix display: text drawn with a 5 by 7 dot font, for clocks, counters and status lines. Printable ASCII, the degree sign and the middle dot have glyphs; anything else is a box. Unlit dots show dimly unless `no_dim` is set. In a box narrower than the text, the dots shrink to fit, or with `marquee` the text scrolls.
 
 ## `EventTrack`
 
@@ -28,7 +28,7 @@ cui_dot_display_ex
 public EventTrackResult EventTrack(UiText id, Span<double> times, ref int count, double min, double max, ref int selected, EventTrackOpts o = default)
 ```
 
-cui_event_track_ex
+Event track: moments on a time axis, as dots you drag along it. A click on an empty spot adds an event there and a double-click on one removes it. You own the array: the track keeps it sorted, edits it in place and never grows it past `capacity`.
 
 ## `Readout`
 
@@ -36,4 +36,4 @@ cui_event_track_ex
 public void Readout(UiText label, UiText value, ReadoutOpts o = default)
 ```
 
-cui_readout_ex
+Readout: one figure as an instrument shows it. A small label, the value in the monospaced font with its unit, and a muted line of context under it.

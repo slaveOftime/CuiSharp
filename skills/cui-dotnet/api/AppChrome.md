@@ -28,7 +28,7 @@ cui_doc_tabs_ex
 public LayoutScope MenuBar(UiText id, MenuBarOpts o = default)
 ```
 
-cui_menu_bar_begin
+Menu bar: File / Edit / View along the top of a window. Each menu holds the usual menu items (cui_menu_item, cui_menu_separator, cui_menu_label). Once a menu is open, hovering another one switches to it. Alt (on its own) or F10 focuses the bar; arrows move between menus and items, Enter chooses, Esc steps back. Alt + a menu's mnemonic letter opens it (the first letter of its label unless `mnemonic` says otherwise).
 
 ## `MenuBarMenu`
 
@@ -36,7 +36,7 @@ cui_menu_bar_begin
 public OpenScope MenuBarMenu(UiText label, MenuBarMenuOpts o = default)
 ```
 
-cui_menu_bar_menu_begin
+One menu of the bar. Returns true while its items should be built; call cui_menu_bar_menu_end only then.
 
 ## `StatusBar`
 
@@ -44,7 +44,7 @@ cui_menu_bar_menu_begin
 public LayoutScope StatusBar(UiText id, StatusBarOpts o = default)
 ```
 
-cui_status_bar_begin
+Status bar: a thin bar along the bottom of a window, with a hairline on top and no fill of its own (put it in a box with the background you want). Items go left to right; cui_status_bar_spacer sends the rest to the right edge.
 
 ## `StatusBarItem`
 
@@ -60,7 +60,7 @@ A small clickable item ("Ln 12, Col 4", "UTF-8"). Returns true when clicked.
 public void StatusBarProgress(float value, StatusProgressOpts o = default)
 ```
 
-cui_status_bar_progress_ex
+A small progress bar with an optional label. value is 0..1.
 
 ## `StatusBarSpacer`
 
@@ -84,7 +84,7 @@ A message; `tone` colors its icon.
 public LayoutScope Toolbar(UiText id, ToolbarOpts o = default)
 ```
 
-cui_toolbar_begin
+Toolbar: a row of compact icon buttons, toggles, separators and small text buttons. Icon only buttons show their tooltip as their name. Items that do not fit collapse, from the end, into a "more" menu; an item chosen there returns true on the next frame.
 
 ## `ToolbarButton`
 
@@ -108,4 +108,4 @@ cui_toolbar_separator
 public void ToolbarSpacer()
 ```
 
-cui_toolbar_spacer
+pushes the following items to the right

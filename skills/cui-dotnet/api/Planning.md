@@ -36,7 +36,7 @@ cui_kanban_begin
 public LayoutScope KanbanCard(int cardId)
 ```
 
-cui_kanban_card_begin
+true when clicked
 
 ## `KanbanColumn`
 
@@ -44,7 +44,7 @@ cui_kanban_card_begin
 public LayoutScope KanbanColumn(UiText title, int cardCount, KanbanColumnOpts o = default)
 ```
 
-cui_kanban_column_begin_ex
+true: "+" clicked
 
 ## `MonthCalendar`
 

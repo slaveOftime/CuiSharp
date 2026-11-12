@@ -27,14 +27,14 @@ public static unsafe class TreeTableAndPathBarUiExtensions
             WidgetRecorder.Note(ui.Handle, "TreeTableName", label);
         }
 
-        /// <summary>cui_tree_table_depth</summary>
+        /// <summary>depth of the current row, 0 at the top</summary>
         public int TreeTableDepth()
         {
             var __result = Native.TreeTableDepth(ui.Handle);
             return __result;
         }
 
-        /// <summary>cui_path_bar_ex</summary>
+        /// <summary>Path bar: a breadcrumb for file and scene paths. Segments are clickable, the last one is the current place. Middle segments that do not fit collapse into a &quot;...&quot; menu. With .menus, the chevron after segment k opens a menu you fill with the children of segment k (cui_path_bar_menu_begin). Click the empty part (or the current segment), or press Ctrl+L, to type a path: Enter submits it, Esc or clicking away cancels.</summary>
         public PathBarResult PathBar(UiText id, ReadOnlySpan<string> segments, PathBarOpts o = default)
         {
             var __opts = o.ToNative();

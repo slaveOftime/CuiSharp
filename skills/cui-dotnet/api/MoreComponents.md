@@ -36,7 +36,7 @@ Icon button that copies text to the clipboard and confirms with a check. Keyboar
 public bool HoldButton(UiText label, HoldOpts o = default)
 ```
 
-cui_hold_button_ex
+Hold to confirm: a destructive action that fills while held and fires when full. Returns true once.
 
 ## `PasswordStrength`
 
@@ -68,4 +68,4 @@ cui_radio_cards_ex
 public void TimelineItem(UiText title, TimelineOpts o = default)
 ```
 
-cui_timeline_item_ex
+Activity timeline item.

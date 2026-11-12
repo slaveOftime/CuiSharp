@@ -11,6 +11,16 @@ had to express.
 
 ### Added
 
+- **CUI's own documentation, wherever it wrote it.** A wrapper used to carry only the sentence above
+  the declaration, so an options field, an enum constant or a function documented *beside* its
+  declaration reached C# with nothing at all. The generator now reads all four places upstream
+  writes in — above the declaration, beside it, above the definition in the C source, and the
+  component's description above its options struct — and the result is in the package's IntelliSense
+  file, not just in the source: 1 200 option and struct fields that said `const char * unit` now say
+  what the field means, 91 wrapped functions gained a sentence (206 down to 118 that have none),
+  every constant that CUI comments on says what it is for (`AxisUnits.Hours`: *hours shown as a time
+  of day*), and options structs open with the component's description instead of `cui_split_opts`.
+  A section title bar is recognised and dropped rather than shown as if it were prose.
 - **The instruments**: a group of components that read like a panel rather than a page.
   `DotChart(id, series, count, opts)` draws values as a grid of dots with the pointer or the arrow
   keys reading the value under them, and takes `ChartAnnotation`s drawn over it as lines,

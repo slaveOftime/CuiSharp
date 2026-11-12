@@ -20,7 +20,7 @@ protected override void Draw(Ui ui)
 public bool ConfirmPopover(UiText id, ConfirmPopoverOpts o = default)
 ```
 
-cui_confirm_popover_ex
+Confirm popover: a small question anchored to the previous component. Open it with cui_popover_open(ui, id). Returns true when confirmed.
 
 ## `ExpandableCard`
 
@@ -28,7 +28,7 @@ cui_confirm_popover_ex
 public OpenScope ExpandableCard(UiText title, ref bool open, ExpandableCardOpts o = default)
 ```
 
-cui_expandable_card_begin
+Expandable card: a card whose header opens a body with a height spring.
 
 ## `ExpandableText`
 
@@ -36,7 +36,7 @@ cui_expandable_card_begin
 public bool ExpandableText(UiText id, UiText text, ExpandableTextOpts o = default)
 ```
 
-cui_expandable_text_ex
+Text clamped to a few lines with a fade and Show more / Show less.
 
 ## `HoverCard`
 
@@ -44,7 +44,7 @@ cui_expandable_text_ex
 public OpenScope HoverCard(UiText id, HoverCardOpts o = default)
 ```
 
-cui_hover_card_begin
+Hover card: rich content that appears when the pointer rests on the previous component, and stays while the pointer is over either.
 
 ## `Toc`
 

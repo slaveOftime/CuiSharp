@@ -20,7 +20,7 @@ protected override void Draw(Ui ui)
 public bool Banner(UiText text, ref bool open, BannerOpts o = default)
 ```
 
-cui_banner_ex
+Announcement banner across the top of a view. Collapses smoothly when dismissed (*open becomes false). Returns true when the action is clicked.
 
 ## `Checklist`
 

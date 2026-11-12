@@ -28,7 +28,7 @@ Avatar upload: a round avatar that takes a dropped image, with a camera badge on
 public int Dropzone(UiText id, DropzoneOpts o = default)
 ```
 
-cui_dropzone_ex
+Dropzone: drop files from the OS, or click to browse. Returns the number of files dropped on it this frame (read them with cui_dropped_file), -1 when clicked (open a file dialog), 0 otherwise. accept filters by extension, e.g. "png;jpg;pdf".
 
 ## `SignatureClear`
 
@@ -44,4 +44,4 @@ cui_signature_clear
 public bool SignaturePad(UiText id, SignatureOpts o = default)
 ```
 
-cui_signature_pad_ex
+Signature pad: draw with the mouse or a pen. The strokes are kept for you; read them with cui_signature_points (stroke_ends[i] is one past the last point of stroke i).

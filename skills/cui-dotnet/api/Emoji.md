@@ -28,7 +28,7 @@ cui_draw_emoji
 public void Emoji(UiText utf8, float size)
 ```
 
-cui_emoji
+one emoji as a component
 
 ## `EmojiFontLoadFile`
 
@@ -36,7 +36,7 @@ cui_emoji
 public bool EmojiFontLoadFile(UiText path)
 ```
 
----- Emoji ---- Color emoji come from an emoji font: the system's (cui_emoji_font_load_system, which the picker calls by itself when nothing is loaded) or one the app ships. Bitmap color fonts (sbix as on macOS, CBDT as on Linux and Android) and layered ones (COLR version 0, as on Windows) are read, as is a plain outline font for one-color emoji. Sequences with skin tones, joined people and flags are looked up through the font's ligatures. Big fonts are read from the file as needed rather than loaded whole. Drawn emoji are kept in one texture and reused.
+Color emoji come from an emoji font: the system's (cui_emoji_font_load_system, which the picker calls by itself when nothing is loaded) or one the app ships. Bitmap color fonts (sbix as on macOS, CBDT as on Linux and Android) and layered ones (COLR version 0, as on Windows) are read, as is a plain outline font for one-color emoji. Sequences with skin tones, joined people and flags are looked up through the font's ligatures. Big fonts are read from the file as needed rather than loaded whole. Drawn emoji are kept in one texture and reused.
 
 ## `EmojiFontLoadMemory`
 
@@ -60,7 +60,7 @@ cui_emoji_font_load_system
 public string? EmojiPicker(UiText id, ref string recent, ref int tone, EmojiPickerOpts o = default)
 ```
 
-cui_emoji_picker_ex
+Emoji picker: search, groups with tabs, recent emoji, skin tones and a preview with the name. Returns the emoji picked this frame (UTF-8, valid until the next frame) or NULL. Put it in a popover to open it from a button.
 
 ## `EmojiSupported`
 
@@ -68,4 +68,4 @@ cui_emoji_picker_ex
 public bool EmojiSupported(UiText utf8)
 ```
 
-cui_emoji_supported
+the font (or platform) can draw it

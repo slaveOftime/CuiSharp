@@ -34,7 +34,7 @@ public static unsafe class PickersUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_time_picker_ex</summary>
+        /// <summary>Time picker: a field that opens hour and minute columns. hour is 0..23.</summary>
         public bool TimePicker(UiText id, ref int hour, ref int minute, TimeOpts o = default)
         {
             var __opts = o.ToNative();
@@ -43,7 +43,7 @@ public static unsafe class PickersUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_wheel_picker_ex</summary>
+        /// <summary>Wheel picker: a drum of options that you drag, scroll or arrow through. Several side by side make a date or time reel. join_left / join_right square off the selection band so wheels placed side by side share one continuous band.</summary>
         public bool WheelPicker(UiText id, ReadOnlySpan<string> items, ref int index, WheelOpts o = default)
         {
             var __opts = o.ToNative();
@@ -60,7 +60,7 @@ public static unsafe class PickersUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_ruler_slider_ex</summary>
+        /// <summary>Ruler slider: a tape measure that slides under a fixed marker, with momentum and snapping to step.</summary>
         public bool RulerSlider(UiText label, ref float value, float min, float max, RulerOpts o = default)
         {
             var __opts = o.ToNative();
@@ -69,7 +69,7 @@ public static unsafe class PickersUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_histogram_slider_ex</summary>
+        /// <summary>Range slider over a histogram of the data it filters.</summary>
         public bool HistogramSlider(UiText label, ReadOnlySpan<float> bins, ref float lo, ref float hi, float min, float max, HistogramOpts o = default)
         {
             var __opts = o.ToNative();
@@ -78,7 +78,7 @@ public static unsafe class PickersUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_knob_ex</summary>
+        /// <summary>Knob, fader and level meter: the controls of audio, synth and mixer panels.</summary>
         public bool Knob(UiText id, ref float value, float min, float max, KnobOpts o = default)
         {
             var __opts = o.ToNative();

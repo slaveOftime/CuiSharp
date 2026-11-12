@@ -20,7 +20,7 @@ protected override void Draw(Ui ui)
 public bool ControlTile(UiText label, ref bool on, TileOpts o = default)
 ```
 
-cui_control_tile_ex
+Control tile: a large toggle with an icon, a label and a state line.
 
 ## `Dock`
 
@@ -28,7 +28,7 @@ cui_control_tile_ex
 public LayoutScope Dock(UiText id, DockOpts o = default)
 ```
 
-cui_dock_begin
+Dock: a row of icons that grow as the pointer passes, with labels and a dot under the running ones. Each item returns true when clicked.
 
 ## `DockItem`
 
@@ -52,7 +52,7 @@ cui_dock_separator
 public void GradientText(UiText text, GradientTextOpts o = default)
 ```
 
-cui_gradient_text_ex
+Text painted with a gradient from one color to another; animate makes it drift.
 
 ## `Loader`
 
@@ -92,7 +92,7 @@ Text with a highlight sweeping across it, for "Thinking..." states.
 public LayoutScope Spotlight(UiText id, SpotlightOpts o = default)
 ```
 
-cui_spotlight_begin
+Spotlight card: a soft light follows the pointer across the card and lights the nearest stretch of its border. beam sends a light around the edge.
 
 ## `TabBar`
 
@@ -124,7 +124,7 @@ Types the text out. When the text grows (streamed tokens) it carries on from whe
 public bool Waveform(UiText id, ReadOnlySpan<float> peaks, ref float progress, WaveformOpts o = default)
 ```
 
-cui_waveform_ex
+Waveform: bars from peaks (0..1). With progress, the played part is colored and clicking or dragging seeks; returns true when it did.
 
 ## `WordRotate`
 

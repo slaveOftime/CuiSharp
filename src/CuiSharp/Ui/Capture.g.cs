@@ -13,7 +13,7 @@ public static unsafe class CaptureUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_signature_pad_ex</summary>
+        /// <summary>Signature pad: draw with the mouse or a pen. The strokes are kept for you; read them with cui_signature_points (stroke_ends[i] is one past the last point of stroke i).</summary>
         public bool SignaturePad(UiText id, SignatureOpts o = default)
         {
             var __opts = o.ToNative();
@@ -29,7 +29,7 @@ public static unsafe class CaptureUiExtensions
             WidgetRecorder.Note(ui.Handle, "SignatureClear", id);
         }
 
-        /// <summary>cui_dropzone_ex</summary>
+        /// <summary>Dropzone: drop files from the OS, or click to browse. Returns the number of files dropped on it this frame (read them with cui_dropped_file), -1 when clicked (open a file dialog), 0 otherwise. accept filters by extension, e.g. &quot;png;jpg;pdf&quot;.</summary>
         public int Dropzone(UiText id, DropzoneOpts o = default)
         {
             var __opts = o.ToNative();

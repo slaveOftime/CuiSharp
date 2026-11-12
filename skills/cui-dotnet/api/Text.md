@@ -20,7 +20,7 @@ protected override void Draw(Ui ui)
 public void Code(UiText text)
 ```
 
-cui_code
+inline code
 
 ## `Heading`
 
@@ -28,7 +28,7 @@ cui_code
 public void Heading(UiText text, int level = 2)
 ```
 
-cui_heading
+1..4
 
 ## `Kbd`
 
@@ -36,7 +36,7 @@ cui_heading
 public void Kbd(UiText keys)
 ```
 
-* left to right in any interface: see cui__keep_ltr
+keyboard keycap, e.g. "Ctrl K"
 
 ## `Label`
 
@@ -44,7 +44,7 @@ public void Kbd(UiText keys)
 public void Label(UiText text)
 ```
 
-cui_label
+medium weight
 
 ## `Link`
 
@@ -60,7 +60,7 @@ cui_link
 public void Muted(UiText text)
 ```
 
-cui_muted
+small, muted
 
 ## `Secondary`
 
@@ -68,7 +68,7 @@ cui_muted
 public void Secondary(UiText text)
 ```
 
-cui_secondary
+secondary color
 
 ## `Text`
 

@@ -13,7 +13,7 @@ public static unsafe class ConversationUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_chat_message_ex</summary>
+        /// <summary>Chat message bubble. Consecutive messages from one person set grouped so they stack tightly and show the avatar once.</summary>
         public void ChatMessage(UiText text, ref MarkdownResult markdownResult, ChatOpts o = default)
         {
             var __markdownResult = markdownResult.ToNative();
@@ -31,14 +31,14 @@ public static unsafe class ConversationUiExtensions
             WidgetRecorder.Note(ui.Handle, "ChatMessage", text);
         }
 
-        /// <summary>cui_chat_divider</summary>
+        /// <summary>&quot;Today&quot;</summary>
         public void ChatDivider(UiText label)
         {
             Native.ChatDivider(ui.Handle, Utf8.Get(label));
             WidgetRecorder.Note(ui.Handle, "ChatDivider", label);
         }
 
-        /// <summary>cui_typing_indicator</summary>
+        /// <summary>bouncing dots</summary>
         public void TypingIndicator(UiText name)
         {
             Native.TypingIndicator(ui.Handle, Utf8.Get(name));

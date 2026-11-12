@@ -39,7 +39,7 @@ public static unsafe class MoreComponentsUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_hold_button_ex</summary>
+        /// <summary>Hold to confirm: a destructive action that fills while held and fires when full. Returns true once.</summary>
         public bool HoldButton(UiText label, HoldOpts o = default)
         {
             var __opts = o.ToNative();
@@ -56,7 +56,7 @@ public static unsafe class MoreComponentsUiExtensions
             return __result;
         }
 
-        /// <summary>cui_timeline_item_ex</summary>
+        /// <summary>Activity timeline item.</summary>
         public void TimelineItem(UiText title, TimelineOpts o = default)
         {
             var __opts = o.ToNative();

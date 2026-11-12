@@ -13,7 +13,7 @@ public static unsafe class RegularExpressionsAndTheRegexTesterUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_regex_tester_ex</summary>
+        /// <summary>A pattern field with flags over a test text: every match is highlighted in the text and its groups in their own colors, and the list below shows each match with its groups. Errors show under the pattern. Both buffers are yours and edited in place.</summary>
         public RegexTesterResult RegexTester(UiText id, ref string pattern, int patternCap, ref string text, int textCap, ref RegexFlags flags, RegexTesterOpts o = default)
         {
             var __patternSlot = ui.RentText(Native.MakeId(ui.Handle, Utf8.Get(id)) ^ 0xb01b029eu, ref pattern, (int)patternCap);

@@ -20,7 +20,7 @@ protected override void Draw(Ui ui)
 public int ActivityRings(UiText id, ReadOnlySpan<VizItem> rings, RingsOpts o = default)
 ```
 
-cui_activity_rings_ex
+Activity rings: concentric progress rings; values past 1 keep winding.
 
 ## `BarList`
 
@@ -28,7 +28,7 @@ cui_activity_rings_ex
 public int BarList(UiText id, ReadOnlySpan<VizItem> items, BarListOpts o = default)
 ```
 
-cui_bar_list_ex
+Bar list: ranked horizontal bars. Rows are keyed by label, so when the values change the bars grow and the rows slide to their new rank.
 
 ## `CalendarHeatmap`
 
@@ -36,7 +36,7 @@ cui_bar_list_ex
 public int CalendarHeatmap(UiText id, Date start, ReadOnlySpan<float> values, CalendarHeatmapOpts o = default)
 ```
 
-cui_calendar_heatmap_ex
+Calendar heatmap: one cell per day from start, weeks as columns, in five levels, with month and weekday labels and a Less / More legend.
 
 ## `Candlestick`
 
@@ -52,7 +52,7 @@ Returns the candle under the crosshair (pointer or keys), or -1.
 public int Funnel(UiText id, ReadOnlySpan<VizItem> stages, FunnelOpts o = default)
 ```
 
-cui_funnel_ex
+Funnel: stages narrowing by value, with the conversion between them.
 
 ## `Heatmap`
 
@@ -60,7 +60,7 @@ cui_funnel_ex
 public int Heatmap(UiText id, ReadOnlySpan<float> values, int rows, int cols, HeatmapOpts o = default)
 ```
 
-cui_heatmap_ex
+Heatmap: a rows x cols matrix (values[row * cols + col]) on one hue, light to dark, with a scale below.
 
 ## `RadarChart`
 
@@ -68,7 +68,7 @@ cui_heatmap_ex
 public int RadarChart(UiText id, ReadOnlySpan<Series> series, ReadOnlySpan<string> axes, RadarOpts o = default)
 ```
 
-cui_radar_chart_ex
+Radar chart: series over shared axes (series[i].values[axis]).
 
 ## `RadialGauge`
 
@@ -100,7 +100,7 @@ cui_scatter_chart_ex
 public int SplitBar(UiText id, ReadOnlySpan<VizItem> items, SplitBarOpts o = default)
 ```
 
-cui_split_bar_ex
+Split bar: one bar split into parts, with a legend of values and shares.
 
 ## `Treemap`
 
@@ -116,4 +116,4 @@ cui_treemap_ex
 public int Waffle(UiText id, ReadOnlySpan<VizItem> items, WaffleOpts o = default)
 ```
 
-cui_waffle_ex
+Waffle: a 10 x 10 grid of squares split by share, with a legend.

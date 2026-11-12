@@ -13,7 +13,7 @@ public static unsafe class MarkdownViewUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_markdown_ex</summary>
+        /// <summary>Markdown view: renders your markdown text (UTF-8) as native content, every frame, without keeping a copy:</summary>
         public MarkdownResult Markdown(UiText id, UiText text, MarkdownOpts o = default)
         {
             var __opts = o.ToNative();

@@ -13,7 +13,7 @@ public static unsafe class EmojiUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>---- Emoji ---- Color emoji come from an emoji font: the system&apos;s (cui_emoji_font_load_system, which the picker calls by itself when nothing is loaded) or one the app ships. Bitmap color fonts (sbix as on macOS, CBDT as on Linux and Android) and layered ones (COLR version 0, as on Windows) are read, as is a plain outline font for one-color emoji. Sequences with skin tones, joined people and flags are looked up through the font&apos;s ligatures. Big fonts are read from the file as needed rather than loaded whole. Drawn emoji are kept in one texture and reused.</summary>
+        /// <summary>Color emoji come from an emoji font: the system&apos;s (cui_emoji_font_load_system, which the picker calls by itself when nothing is loaded) or one the app ships. Bitmap color fonts (sbix as on macOS, CBDT as on Linux and Android) and layered ones (COLR version 0, as on Windows) are read, as is a plain outline font for one-color emoji. Sequences with skin tones, joined people and flags are looked up through the font&apos;s ligatures. Big fonts are read from the file as needed rather than loaded whole. Drawn emoji are kept in one texture and reused.</summary>
         public bool EmojiFontLoadFile(UiText path)
         {
             var __result = Native.EmojiFontLoadFile(ui.Handle, Utf8.Get(path));
@@ -35,7 +35,7 @@ public static unsafe class EmojiUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_emoji_supported</summary>
+        /// <summary>the font (or platform) can draw it</summary>
         public bool EmojiSupported(UiText utf8)
         {
             var __result = Native.EmojiSupported(ui.Handle, Utf8.Get(utf8), -1);
@@ -50,14 +50,14 @@ public static unsafe class EmojiUiExtensions
             WidgetRecorder.Note(ui.Handle, "DrawEmoji", utf8);
         }
 
-        /// <summary>cui_emoji</summary>
+        /// <summary>one emoji as a component</summary>
         public void Emoji(UiText utf8, float size)
         {
             Native.Emoji(ui.Handle, Utf8.Get(utf8), size);
             WidgetRecorder.Note(ui.Handle, "Emoji", utf8);
         }
 
-        /// <summary>cui_emoji_picker_ex</summary>
+        /// <summary>Emoji picker: search, groups with tabs, recent emoji, skin tones and a preview with the name. Returns the emoji picked this frame (UTF-8, valid until the next frame) or NULL. Put it in a popover to open it from a button.</summary>
         public string? EmojiPicker(UiText id, ref string recent, ref int tone, EmojiPickerOpts o = default)
         {
             var __recentSlot = ui.RentText(Native.MakeId(ui.Handle, Utf8.Get(id)) ^ 0xa3514724u, ref recent, 512);

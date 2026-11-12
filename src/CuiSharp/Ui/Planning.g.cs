@@ -33,7 +33,7 @@ public static unsafe class PlanningUiExtensions
             return __scopeResult;
         }
 
-        /// <summary>cui_kanban_column_begin_ex</summary>
+        /// <summary>true: &quot;+&quot; clicked</summary>
         public LayoutScope KanbanColumn(UiText title, int cardCount, KanbanColumnOpts o = default)
         {
             var __opts = o.ToNative();
@@ -49,7 +49,7 @@ public static unsafe class PlanningUiExtensions
             return new LayoutScope(ui.Handle, &Native.KanbanColumnEnd, "KanbanColumn", title);
         }
 
-        /// <summary>cui_kanban_card_begin</summary>
+        /// <summary>true when clicked</summary>
         public LayoutScope KanbanCard(int cardId)
         {
             var __result = Native.KanbanCardBegin(ui.Handle, cardId);

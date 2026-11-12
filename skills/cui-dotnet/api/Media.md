@@ -20,7 +20,7 @@ protected override void Draw(Ui ui)
 public int CardStack(UiText id, int count, CardStackOpts o = default)
 ```
 
-cui_card_stack_begin
+Card stack: a deck where the top card can be flicked away left or right. Build `count` cards; card 0 is the top. end returns -1 or 1 on the frame the top card leaves (to the left or right), else 0.
 
 ## `CardStackItem`
 
@@ -36,7 +36,7 @@ cui_card_stack_item_begin
 public OpenScope Carousel(UiText id, int count, ref int index, CarouselOpts o = default)
 ```
 
-cui_carousel_begin
+Carousel: slides that you swipe, drag, scroll or page with the arrows and dots. Build every slide between begin and end: cui_carousel(ui, "tour", 4, &index, .height = 220) { for (int k = 0; k < 4; k++) cui_carousel_slide(ui) { ... } }
 
 ## `CarouselSlide`
 
@@ -60,7 +60,7 @@ public void Counter(UiText id, double value, CounterOpts o = default)
 public bool ImageCompare(UiText id, ulong before, ulong after, ref float pos, CompareOpts o = default)
 ```
 
-cui_image_compare_ex
+Before and after: drag the divider to compare two images. *pos is 0..1.
 
 ## `Ticker`
 

@@ -88,7 +88,7 @@ The convention table the generator's default rules implement:
 | result flags (`CUI_CHANGED`, …) | `readonly struct` (`InputResult`) when the bits are shared and read one by one |
 | a widget's own event or action word | the `[Flags]` enum or enum it names (`PlayerEvents`, `TourAction`) |
 | `CUI_TONE_DANGER` | `Tone.Danger` |
-| header comment | `/// <summary>` |
+| a comment in the header, beside a declaration, or above the definition | `/// <summary>` |
 
 An array is a `const` pointer, and a widget that writes one value back through a pointer says so
 with a non-const one: `float *pos` is the compare divider, not a list of positions. That is why
@@ -110,6 +110,15 @@ reach into `Interop` for — and, for the tour, mistaking the action for the ste
 Adding a wrapper to the hand-written layer instead of the generator is allowed, but it must be
 recorded in `bindings/overrides.json` as `MANUAL` with the member and the file, because
 `coverage.txt` claims that nothing wraps it otherwise.
+
+**A wrapper's summary is upstream's own sentence, wherever upstream wrote it.** Four places, in
+order: the comment above the declaration, the one beside it (`CUI_API void cui_gap(...);  /* a gap */`,
+which libclang does not attach to the declaration), the comment above the definition in the C source,
+and — for a widget whose function has none — the paragraph above its options struct, because that is
+the component's description. Constant and field comments become enum-member and field summaries the
+same way. A section title bar (`---- Terminal ----`) is not documentation: libclang attaches it to the
+declaration beneath it, so the ruler is stripped rather than shown, and the prose that follows it is
+kept. What stays uncommented is counted in `docs/PLAN.md` rather than filled in by hand.
 
 Record array counts derive only through explicit `recordFieldCounts` overrides identifying
 input-only metadata (`QueryField.Choices`, `ApiEndpoint.Params`, `UptimeService.Days`,

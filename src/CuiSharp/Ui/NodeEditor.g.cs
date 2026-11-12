@@ -31,7 +31,7 @@ public static unsafe class NodeEditorUiExtensions
             if (scope) body(ui);
         }
 
-        /// <summary>cui_node_begin_ex</summary>
+        /// <summary>A node at canvas position (*x, *y), updated while it is dragged. Returns true while the node is selected.</summary>
         public OpenScope Node(int nodeId, ref float x, ref float y, UiText title, NodeOpts o = default)
         {
             var __opts = o.ToNative();
@@ -47,7 +47,7 @@ public static unsafe class NodeEditorUiExtensions
             if (scope) body(ui);
         }
 
-        /// <summary>cui_node_input_ex</summary>
+        /// <summary>A row with a pin on the left (input) or right (output). type picks the pin color from the series palette and limits links to pins of the same type (0 connects to anything). Returns true when the pin has a link.</summary>
         public bool NodeInput(int pinId, UiText label, PinOpts o = default)
         {
             var __opts = o.ToNative();
@@ -56,7 +56,7 @@ public static unsafe class NodeEditorUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_node_output_ex</summary>
+        /// <summary>A row with a pin on the left (input) or right (output). type picks the pin color from the series palette and limits links to pins of the same type (0 connects to anything). Returns true when the pin has a link.</summary>
         public bool NodeOutput(int pinId, UiText label, PinOpts o = default)
         {
             var __opts = o.ToNative();

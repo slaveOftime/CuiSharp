@@ -13,7 +13,7 @@ public static unsafe class MoreFeedbackUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_banner_ex</summary>
+        /// <summary>Announcement banner across the top of a view. Collapses smoothly when dismissed (*open becomes false). Returns true when the action is clicked.</summary>
         public bool Banner(UiText text, ref bool open, BannerOpts o = default)
         {
             byte __open = (byte)(open ? 1 : 0);

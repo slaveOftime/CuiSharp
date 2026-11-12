@@ -9,7 +9,7 @@ using CuiSharp.Interop;
 
 namespace CuiSharp;
 
-/// <summary>cui_event_track_result. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct EventTrackResult
 {
     /// <summary>an event was moved, added or removed this frame</summary>
@@ -53,7 +53,7 @@ public unsafe partial struct EventTrackResult
     };
 }
 
-/// <summary>cui_dot_chart_result. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct DotChartResult
 {
     /// <summary>the sample under the pointer or the keyboard cursor, or -1</summary>
@@ -93,7 +93,7 @@ public unsafe partial struct DotChartResult
     };
 }
 
-/// <summary>cui_chart_annotation. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct ChartAnnotation
 {
     /// <summary>cui_annotation_kind kind</summary>
@@ -141,7 +141,7 @@ public unsafe partial struct ChartAnnotation
     };
 }
 
-/// <summary>cui_trace_view. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct TraceViewState
 {
     /// <summary>visible time range; end &lt;= start fits everything</summary>
@@ -185,7 +185,7 @@ public unsafe partial struct TraceViewState
     };
 }
 
-/// <summary>cui_api_explorer_result. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct ApiExplorerResult
 {
     /// <summary>the selected endpoint, or -1</summary>
@@ -217,7 +217,7 @@ public unsafe partial struct ApiExplorerResult
     };
 }
 
-/// <summary>cui_feature_flags_result. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct FeatureFlagsResult
 {
     /// <summary>changed this frame, or -1</summary>
@@ -249,7 +249,7 @@ public unsafe partial struct FeatureFlagsResult
     };
 }
 
-/// <summary>cui_blame_result. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct BlameResult
 {
     /// <summary>commit whose gutter entry was clicked this frame, or -1</summary>
@@ -281,7 +281,7 @@ public unsafe partial struct BlameResult
     };
 }
 
-/// <summary>cui_coverage_result. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct CoverageResult
 {
     /// <summary>file opened this frame (Enter or a double-click), or -1</summary>
@@ -313,7 +313,7 @@ public unsafe partial struct CoverageResult
     };
 }
 
-/// <summary>cui_time_histogram_result. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct TimeHistogramResult
 {
     /// <summary>`*sel_start` or `*sel_end` changed this frame (a drag, or a click that cleared it)</summary>
@@ -345,7 +345,7 @@ public unsafe partial struct TimeHistogramResult
     };
 }
 
-/// <summary>cui_uptime_result. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct UptimeResult
 {
     /// <summary>under the pointer, or -1</summary>
@@ -377,7 +377,7 @@ public unsafe partial struct UptimeResult
     };
 }
 
-/// <summary>cui_request_bar_result. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct RequestBarResult
 {
     /// <summary>Send was pressed, or Enter in the URL: start the request</summary>
@@ -413,7 +413,7 @@ public unsafe partial struct RequestBarResult
     };
 }
 
-/// <summary>cui_stack_trace_result. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct StackTraceResult
 {
     /// <summary>frame, or -1</summary>
@@ -441,7 +441,7 @@ public unsafe partial struct StackTraceResult
     };
 }
 
-/// <summary>cui_test_explorer_result. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct TestExplorerResult
 {
     /// <summary>items, or -1</summary>
@@ -497,7 +497,7 @@ public unsafe partial struct TestExplorerResult
     };
 }
 
-/// <summary>cui_regex_tester_result. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct RegexTesterResult
 {
     /// <summary>the pattern is valid and matching finished in time</summary>
@@ -533,7 +533,7 @@ public unsafe partial struct RegexTesterResult
     };
 }
 
-/// <summary>cui_trace_result. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct TraceResult
 {
     /// <summary>`*selected` changed this frame (click or keys)</summary>
@@ -569,7 +569,7 @@ public unsafe partial struct TraceResult
     };
 }
 
-/// <summary>cui_waterfall_result. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct WaterfallResult
 {
     /// <summary>request clicked this frame, or -1</summary>
@@ -605,7 +605,7 @@ public unsafe partial struct WaterfallResult
     };
 }
 
-/// <summary>cui_graph_result. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct GraphResult
 {
     /// <summary>node clicked this frame, or -1</summary>
@@ -641,7 +641,7 @@ public unsafe partial struct GraphResult
     };
 }
 
-/// <summary>cui_commit_graph_result. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct CommitGraphResult
 {
     /// <summary>row clicked this frame, or -1</summary>
@@ -677,7 +677,7 @@ public unsafe partial struct CommitGraphResult
     };
 }
 
-/// <summary>cui_keymap_result. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct KeymapResult
 {
     /// <summary>key clicked this frame, or `CUI_KEY_NONE`</summary>
@@ -709,7 +709,7 @@ public unsafe partial struct KeymapResult
     };
 }
 
-/// <summary>cui_schedule_result. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct ScheduleResult
 {
     /// <summary>`cron` was edited this frame</summary>
@@ -745,7 +745,7 @@ public unsafe partial struct ScheduleResult
     };
 }
 
-/// <summary>cui_pipeline_result. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct PipelineResult
 {
     /// <summary>job clicked this frame (or chosen with Enter or Space), or -1</summary>
@@ -777,7 +777,7 @@ public unsafe partial struct PipelineResult
     };
 }
 
-/// <summary>cui_problems_result. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct ProblemsResult
 {
     /// <summary>diagnostic selected, or -1</summary>
@@ -813,7 +813,7 @@ public unsafe partial struct ProblemsResult
     };
 }
 
-/// <summary>cui_text_mark. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Code editor: editable code with the code block&apos;s highlighting, a line number gutter and a monospace grid, for shader editors, script consoles and config files. You own the text: a NUL terminated buffer and its capacity, edited in place. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct TextMark
 {
     /// <summary>int start</summary>
@@ -849,7 +849,7 @@ public unsafe partial struct TextMark
     };
 }
 
-/// <summary>cui_kv_pair. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Rows of key = value pairs: HTTP headers, query parameters, environment variables. You own the array and it is edited in place. The checkbox turns a pair on or off, typing in the empty row at the end adds a pair, the x removes one. Secret values show as dots with an eye to reveal them. A key used twice, or one with a space, is marked. On a phone each key sits above its value. Returns true when anything changed. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct KeyValue
 {
     /// <summary>the name, e.g. &quot;Accept&quot;; edited in place</summary>
@@ -893,7 +893,7 @@ public unsafe partial struct KeyValue
     };
 }
 
-/// <summary>cui_api_param. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Endpoints grouped by tag, each with its method, its path (parameters marked) and its summary; deprecated ones are struck through. A click opens an endpoint&apos;s parameters and a Try it button. A field filters by path or summary. Up and Down move, Enter opens. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct ApiParam
 {
     /// <summary>the parameter&apos;s name, in the code font</summary>
@@ -937,7 +937,7 @@ public unsafe partial struct ApiParam
     };
 }
 
-/// <summary>cui_api_endpoint. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct ApiEndpoint
 {
     /// <summary>&quot;GET&quot;</summary>
@@ -986,7 +986,7 @@ public unsafe partial struct ApiEndpoint
     };
 }
 
-/// <summary>cui_feature_flag. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct FeatureFlag
 {
     /// <summary>the flag&apos;s name, in the code font; the filter field searches it</summary>
@@ -1030,7 +1030,7 @@ public unsafe partial struct FeatureFlag
     };
 }
 
-/// <summary>cui_blame_commit. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Source with who last changed each line: lines from one commit share one gutter entry with its author, age and hash, and a bar at the edge shades newer changes stronger. Hover a gutter entry for the commit&apos;s summary and to mark its lines; click it to get the commit. Only the lines in view are built. On a phone the gutter keeps only the shade and initials. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct BlameCommit
 {
     /// <summary>the commit id; its first 7 characters are shown</summary>
@@ -1070,7 +1070,7 @@ public unsafe partial struct BlameCommit
     };
 }
 
-/// <summary>cui_coverage_file. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Test coverage by folder and file: the files&apos; paths make the tree, each folder sums up what it holds, and folders fold. Line coverage shows as a bar colored by thresholds, with branches and functions beside it. Click a column&apos;s title to sort. Enter or a double-click activates a file. Narrow panels show lines only. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct CoverageFile
 {
     /// <summary>&quot;src/core/layout.c&quot;</summary>
@@ -1122,7 +1122,7 @@ public unsafe partial struct CoverageFile
     };
 }
 
-/// <summary>cui_histogram_series. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Event counts over time, stacked by series (log levels, status classes), as above a log search. Drag across it to select a time range, click to clear. Hover a bar for its time and counts. Times are Unix seconds. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct HistogramSeries
 {
     /// <summary>shown in the legend and in the hover tooltip</summary>
@@ -1158,7 +1158,7 @@ public unsafe partial struct HistogramSeries
     };
 }
 
-/// <summary>cui_uptime_service. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>A status page: each service with its current state, its uptime over the period, and one bar per day colored by availability (gray without data). Hover a bar for its day and uptime. On a narrow panel only the most recent days that fit are shown. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct UptimeService
 {
     /// <summary>shown above the service&apos;s bars</summary>
@@ -1191,7 +1191,7 @@ public unsafe partial struct UptimeService
     };
 }
 
-/// <summary>cui_stack_frame. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>An exception and its call stack: the error&apos;s type and message, then each frame&apos;s function and position. Runs of library frames fold into one row. A frame with source opens to show the lines around it, the failing line marked; the first frame of your own code starts open. A button copies the whole trace as text. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct StackFrame
 {
     /// <summary>name of the function; `NULL` or &quot;&quot; shows as &lt;anonymous&gt;</summary>
@@ -1244,7 +1244,7 @@ public unsafe partial struct StackFrame
     };
 }
 
-/// <summary>cui_test_item. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Test results as a tree: suites fold, each test shows its status and time, and a failure shows its message under it. A suite&apos;s status sums up its tests. The toolbar runs everything, counts results and filters by status and by name. Hover a row for its run button. Only the rows in view are built. Up and Down move, Left and Right fold, Enter activates. Items are in tree order with their depth; the statuses are the pipeline&apos;s. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct TestItem
 {
     /// <summary>name of the suite or test; the toolbar&apos;s field filters by it</summary>
@@ -1288,7 +1288,7 @@ public unsafe partial struct TestItem
     };
 }
 
-/// <summary>cui_trace_marker. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct TraceMarker
 {
     /// <summary>const char * name</summary>
@@ -1324,7 +1324,7 @@ public unsafe partial struct TraceMarker
     };
 }
 
-/// <summary>cui_trace_span. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct TraceSpan
 {
     /// <summary>drawn in the span when it fits, and in its tooltip</summary>
@@ -1372,7 +1372,7 @@ public unsafe partial struct TraceSpan
     };
 }
 
-/// <summary>cui_trace_track. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>A tracing timeline: one lane per thread, process or service, each with its nested spans, on one time ruler, with markers (frames, GC pauses, deploys) drawn across every lane. Wheel zooms around the pointer, Shift+wheel or a drag pans, click selects a span, Shift+drag measures a time range. A lane&apos;s name folds it. Keys: Left and Right step through the selected span&apos;s lane, + and - zoom, F fits, Esc clears. Spans must be sorted by track, depth and start (cui_trace_sort), with no overlap within a depth of a track. Like the flame graph, only what is in view is visited. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct TraceTrack
 {
     /// <summary>the lane&apos;s name, in the column on the left</summary>
@@ -1404,7 +1404,7 @@ public unsafe partial struct TraceTrack
     };
 }
 
-/// <summary>cui_net_request. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>HTTP requests as a table with a timing bar each: queued, DNS, connect, TLS, waiting for the first byte and downloading, on one time scale with the page&apos;s DOMContentLoaded and load lines. Hover a bar for the breakdown. Narrow panels drop the type and size columns. Only the rows in view are built. Up and Down move the selection. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct NetRequest
 {
     /// <summary>path or URL; the last part is shown</summary>
@@ -1460,7 +1460,7 @@ public unsafe partial struct NetRequest
     };
 }
 
-/// <summary>cui_graph_edge. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct GraphEdge
 {
     /// <summary>index of the node the arrow starts at</summary>
@@ -1492,7 +1492,7 @@ public unsafe partial struct GraphEdge
     };
 }
 
-/// <summary>cui_graph_node. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Nodes and directed edges laid out in layers (each edge points to a later layer, cycles are broken), for build targets, packages, services or call graphs. The layout is computed when the graph changes. Wheel zooms, drag pans, click selects; hovering a node lights up what it depends on and what depends on it. F fits the graph. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct GraphNode
 {
     /// <summary>const char * label</summary>
@@ -1528,7 +1528,7 @@ public unsafe partial struct GraphNode
     };
 }
 
-/// <summary>cui_commit. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Version history: the branch lanes drawn beside each commit, newest first, with its message, branch and tag names, author, date and short hash. Each commit names its parents by row (parents come later in the array), so merges and branches draw as lines between lanes. Only the rows in view are built. Up and Down move the selection; Enter or a double-click activates. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct Commit
 {
     /// <summary>the commit id; its first 7 characters are shown</summary>
@@ -1580,7 +1580,7 @@ public unsafe partial struct Commit
     };
 }
 
-/// <summary>cui_query_node. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct QueryNode
 {
     /// <summary>0 for the outer group</summary>
@@ -1632,7 +1632,7 @@ public unsafe partial struct QueryNode
     };
 }
 
-/// <summary>cui_query_field. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct QueryField
 {
     /// <summary>shown in the field select and in the text `cui_query_text` writes</summary>
@@ -1669,7 +1669,7 @@ public unsafe partial struct QueryField
     };
 }
 
-/// <summary>cui_pipeline_job. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct PipelineJob
 {
     /// <summary>shown on the job&apos;s row and in its tooltip</summary>
@@ -1713,7 +1713,7 @@ public unsafe partial struct PipelineJob
     };
 }
 
-/// <summary>cui_diagnostic. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct ProblemItem
 {
     /// <summary>cui_severity severity</summary>
@@ -1765,7 +1765,7 @@ public unsafe partial struct ProblemItem
     };
 }
 
-/// <summary>cui_image_view. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Image viewer: zoom and pan a picture. The wheel (or a pinch, which comes as Ctrl+wheel) zooms around the pointer, dragging pans, double-click switches between fitting the view and 100%. With the viewer focused, + and - zoom, 0 fits, 1 shows actual pixels and the arrows pan. Zoom and pan ease. Keep a cui_image_view to keep the zoom and position (zeroed: fit). Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct ImageView
 {
     /// <summary>screen points per image pixel; 0 fits the image in the view</summary>
@@ -1801,7 +1801,7 @@ public unsafe partial struct ImageView
     };
 }
 
-/// <summary>cui_terminal_result. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct TerminalResult
 {
     /// <summary>the line entered (Enter), already echoed; valid this frame</summary>
@@ -1833,7 +1833,7 @@ public unsafe partial struct TerminalResult
     };
 }
 
-/// <summary>cui_file_browser_result. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct FileBrowserResult
 {
     /// <summary>a file double-clicked or Entered, as a full path; valid this frame</summary>
@@ -1873,7 +1873,7 @@ public unsafe partial struct FileBrowserResult
     };
 }
 
-/// <summary>cui_file_entry. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>File browser and file picker (an open or save dialog drawn by CUI, like the rest of the window; cui_app_file_dialog in cui_app.h opens the system&apos;s own). The browser lists a folder (name, date modified and size; folders first, any column sorts), with back, forward and up, a path bar you can type into, a filter field and a sidebar of places. Double-click or Enter opens a folder or picks a file; Backspace goes up, Alt+Left and Alt+Right go back and forward, F5 reloads, and typing a letter jumps to the next name that starts with it. A folder is read when you enter it (or reload), not every frame, and only the rows in view are built. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct FileEntry
 {
     /// <summary>const char * name</summary>
@@ -1913,7 +1913,7 @@ public unsafe partial struct FileEntry
     };
 }
 
-/// <summary>cui_month_result. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct MonthResult
 {
     /// <summary>clicked event, or -1</summary>
@@ -1953,7 +1953,7 @@ public unsafe partial struct MonthResult
     };
 }
 
-/// <summary>cui_month_event. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Month calendar: a month grid with events. All-day and multi-day events are bars across the days they cover; timed events are a dot, a time and a title. A day with more than fits says &quot;+N more&quot; and opens a list of them. On a narrow screen the cells show colored dots and the selected day&apos;s events are listed under the grid. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct MonthEvent
 {
     /// <summary>shown on the event&apos;s bar, or after the time of a timed event</summary>
@@ -2001,7 +2001,7 @@ public unsafe partial struct MonthEvent
     };
 }
 
-/// <summary>cui_tour_step. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Guided tour: a spotlight on one control at a time, with a card beside it that says what the control does, for onboarding and &quot;what&apos;s new&quot;. The rest of the window dims; the spotlight glides from one control to the next. Call it after the controls it points at, every frame while *step is 0 or more; it sets *step to -1 when the tour ends. Right or Enter go to the next step, Left goes back and Esc ends the tour. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct TourStep
 {
     /// <summary>the control to point at (cui_last_id after it); 0: a card in the middle</summary>
@@ -2041,7 +2041,7 @@ public unsafe partial struct TourStep
     };
 }
 
-/// <summary>cui_candle. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Candlestick chart: open, high, low and close per period with volume under it, for prices. The wheel zooms around the pointer, dragging (or Shift+wheel) pans, a crosshair shows each candle&apos;s values, and the price axis fits the candles in view. Zoomed out past a few points per candle, candles merge per pixel column, so a long history stays fast. When the view shows the newest candle it follows new ones as they are appended. With the chart focused, Left and Right move the crosshair (Shift: ten at a time), Home and End jump to the ends, + and - zoom and 0 fits everything. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct Candle
 {
     /// <summary>price at the start of the period</summary>
@@ -2085,7 +2085,7 @@ public unsafe partial struct Candle
     };
 }
 
-/// <summary>cui_gauge_band. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Radial gauge: one value on a dial with colored bands, labelled ticks, a needle and a target marker, for dashboards (speed, load, temperature, a score against a goal). The needle springs to new values. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct GaugeBand
 {
     /// <summary>from the band before (or min) up to `to`</summary>
@@ -2117,7 +2117,7 @@ public unsafe partial struct GaugeBand
     };
 }
 
-/// <summary>cui_hex_range. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Hex viewer: offsets, bytes in hex and the same bytes as ASCII, in the code font, for binary tools, emulators and debuggers. You own the bytes (they are read during the call, never kept) and, optionally, the selection: Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct HexRange
 {
     /// <summary>size_t offset</summary>
@@ -2157,7 +2157,7 @@ public unsafe partial struct HexRange
     };
 }
 
-/// <summary>cui_swipe_action. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Swipe actions: drag a row sideways (or swipe on a trackpad) to reveal actions behind it. A long swipe triggers the first action. The row content goes between begin and end; end returns the chosen action: 0..left_count-1 for left actions, 100 + i for right actions, or -1. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct SwipeAction
 {
     /// <summary>const char * icon</summary>
@@ -2193,7 +2193,7 @@ public unsafe partial struct SwipeAction
     };
 }
 
-/// <summary>cui_timeline_view. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct TimelineView
 {
     /// <summary>visible time range; end &lt;= start fits the sequence</summary>
@@ -2229,7 +2229,7 @@ public unsafe partial struct TimelineView
     };
 }
 
-/// <summary>cui_kanban_move. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Kanban board: columns of cards you drag between columns and within them. The board reports drops; you move the card in your data: Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct KanbanMove
 {
     /// <summary>the `card_id` of the card that was dropped</summary>
@@ -2269,7 +2269,7 @@ public unsafe partial struct KanbanMove
     };
 }
 
-/// <summary>cui_timeline_editor_result. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct TimelineEditorResult
 {
     /// <summary>keys or clips moved, were added or removed, or a track flag changed</summary>
@@ -2365,7 +2365,7 @@ public unsafe partial struct TimelineEditorResult
     };
 }
 
-/// <summary>cui_log_line. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct LogLine
 {
     /// <summary>where the line&apos;s text starts in the buffer&apos;s `text`</summary>
@@ -2405,7 +2405,7 @@ public unsafe partial struct LogLine
     };
 }
 
-/// <summary>cui_gradient_stop. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Gradient editor: a color ramp over a checkerboard (so alpha shows) with the stops underneath. You own the stops; the editor edits them in place and keeps them sorted by position. Drag a stop to move it (it may pass its neighbours), drag it off the ramp or press Delete to remove it (never fewer than two), click the ramp or the empty track to add a stop with the color found there. Double click a stop (or Enter on a focused one) to open the color picker; the row under the ramp shows the selected stop&apos;s color, location and opacity. Stops are focusable: Tab moves through them, Left and Right nudge (Shift for fine steps). Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct GradientStop
 {
     /// <summary>position along the ramp, 0..1</summary>
@@ -2437,7 +2437,7 @@ public unsafe partial struct GradientStop
     };
 }
 
-/// <summary>cui_curve_key. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct CurveKey
 {
     /// <summary>position along the horizontal axis, in curve units (seconds in a timeline track)</summary>
@@ -2489,7 +2489,7 @@ public unsafe partial struct CurveKey
     };
 }
 
-/// <summary>cui_vec2. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct Vec2
 {
     /// <summary>float x</summary>
@@ -2521,7 +2521,7 @@ public unsafe partial struct Vec2
     };
 }
 
-/// <summary>cui_flame_view. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct FlameView
 {
     /// <summary>visible time range; end &lt;= start fits every span</summary>
@@ -2557,7 +2557,7 @@ public unsafe partial struct FlameView
     };
 }
 
-/// <summary>cui_presence_user. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Presence: who is here now. Overlapping avatars with a colored ring each, that spread out on hover and name themselves. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct PresenceUser
 {
     /// <summary>shown in the tooltip, and as initials when there is no avatar</summary>
@@ -2597,7 +2597,7 @@ public unsafe partial struct PresenceUser
     };
 }
 
-/// <summary>cui_series. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Charts Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct Series
 {
     /// <summary>shown in the legend and in the hover tooltip</summary>
@@ -2637,7 +2637,7 @@ public unsafe partial struct Series
     };
 }
 
-/// <summary>cui_filter_field. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Filter bar: a search field, a chip per active filter (click it to pick values) and &quot;+ Filter&quot; to add one. selected[i] is a bit mask of the chosen options of fields[i]. Returns true when anything changed. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct FilterField
 {
     /// <summary>the field&apos;s name, on its chip and in the &quot;+ Filter&quot; menu</summary>
@@ -2674,7 +2674,7 @@ public unsafe partial struct FilterField
     };
 }
 
-/// <summary>cui_node_view. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Node editor: nodes with input and output pins on a canvas that pans and zooms, joined by curved links. You own the nodes, pins and links; the editor moves the node positions you pass and reports what the user did: Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct NodeView
 {
     /// <summary>where the canvas origin sits, in points from the editor&apos;s left edge; panning changes it</summary>
@@ -2710,7 +2710,7 @@ public unsafe partial struct NodeView
     };
 }
 
-/// <summary>cui_key_combo. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Shortcut recorder: click and press a key combination to record it. Backspace clears, Esc cancels. Returns true when the combination changed. cui_shortcut_label formats a combination (&quot;Ctrl Shift K&quot;). Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct KeyCombo
 {
     /// <summary>int mods</summary>
@@ -2742,7 +2742,7 @@ public unsafe partial struct KeyCombo
     };
 }
 
-/// <summary>cui_date_range. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Date ranges. A zero start means nothing is chosen. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct DateRange
 {
     /// <summary>first day of the range; a zero date means nothing is chosen</summary>
@@ -2774,7 +2774,7 @@ public unsafe partial struct DateRange
     };
 }
 
-/// <summary>cui_now_playing. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Now playing card: artwork, title, artist, a scrubber and transport buttons. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct NowPlayingState
 {
     /// <summary>name of the track, in medium weight</summary>
@@ -2826,7 +2826,7 @@ public unsafe partial struct NowPlayingState
     };
 }
 
-/// <summary>cui_hex_selection. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>The selected bytes. length 0 means nothing is selected; cursor is the byte the keys move from and is one end of a selection. Set it yourself to select from code. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct HexSelection
 {
     /// <summary>offset of the first selected byte</summary>
@@ -2862,7 +2862,7 @@ public unsafe partial struct HexSelection
     };
 }
 
-/// <summary>cui_flame_span. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Flame graph / profiler timeline: time runs left to right, call depth top to bottom (row d holds the spans at depth d). You own the spans, the view and the selection; the component pans and zooms *view and writes *selected. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct FlameSpan
 {
     /// <summary>drawn in the span when it fits, and in its tooltip</summary>
@@ -2906,7 +2906,7 @@ public unsafe partial struct FlameSpan
     };
 }
 
-/// <summary>cui_doc_tab. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Document tabs: editor style tabs. Clicking selects (*selected is updated), the x or a middle click asks to close, dragging reorders, and the strip scrolls sideways when the tabs do not fit. A dirty tab shows a dot that turns into the close button under the pointer. The selected tab is filled with the surface color so it joins the content below; the strip itself has no fill, like the other bars. Tabs keep their state by title, so give two tabs with the same name a key: &quot;main.c##src&quot;. The component never removes or moves your tabs itself: it reports a close or a move in the result and you apply it (selection already follows a move). With keyboard focus on the strip, Left and Right select, Home and End jump, Shift+Left/Right move the tab and Delete closes it. With `shortcuts` set it also answers Ctrl+Tab, Ctrl+Shift+Tab, Ctrl+PageUp/Down and Ctrl+W (Cmd+W on macOS) from anywhere in the window. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct DocTab
 {
     /// <summary>the tab&apos;s text and its identity; add &quot;##key&quot; to tell two tabs with one name apart</summary>
@@ -2946,7 +2946,7 @@ public unsafe partial struct DocTab
     };
 }
 
-/// <summary>cui_doc_tabs_result. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct DocTabsResult
 {
     /// <summary>selected changed (click, keys or a move)</summary>
@@ -2986,7 +2986,7 @@ public unsafe partial struct DocTabsResult
     };
 }
 
-/// <summary>cui_gradient_result. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct GradientResult
 {
     /// <summary>a stop moved, changed color, or was added or removed</summary>
@@ -3026,7 +3026,7 @@ public unsafe partial struct GradientResult
     };
 }
 
-/// <summary>cui_curve_result. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct CurveResult
 {
     /// <summary>a key moved, a handle or mode changed, or a key was added or removed</summary>
@@ -3078,7 +3078,7 @@ public unsafe partial struct CurveResult
     };
 }
 
-/// <summary>cui_flame_result. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct FlameResult
 {
     /// <summary>selected changed (click or keys)</summary>
@@ -3118,7 +3118,7 @@ public unsafe partial struct FlameResult
     };
 }
 
-/// <summary>cui_diff_result. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct DiffResult
 {
     /// <summary>lines</summary>
@@ -3182,7 +3182,7 @@ public unsafe partial struct DiffResult
     };
 }
 
-/// <summary>cui_code_editor_result. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct CodeEditorResult
 {
     /// <summary>the text changed this frame</summary>
@@ -3258,7 +3258,7 @@ public unsafe partial struct CodeEditorResult
     };
 }
 
-/// <summary>cui_markdown_result. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct MarkdownResult
 {
     /// <summary>URL of the link clicked (or activated with Enter) this frame, or NULL; frame memory</summary>
@@ -3306,7 +3306,7 @@ public unsafe partial struct MarkdownResult
     };
 }
 
-/// <summary>cui_path_bar_result. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct PathBarResult
 {
     /// <summary>segment clicked (here or in the &quot;...&quot; menu), else -1</summary>
@@ -3342,7 +3342,7 @@ public unsafe partial struct PathBarResult
     };
 }
 
-/// <summary>cui_sankey_link. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Sankey: flows between nodes; columns follow the links from the sources. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct SankeyLink
 {
     /// <summary>index of the node the flow leaves</summary>
@@ -3378,7 +3378,7 @@ public unsafe partial struct SankeyLink
     };
 }
 
-/// <summary>cui_grid_column. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>A virtualized table for large data: sticky header, resizable and sortable columns, checkbox selection (click, Ctrl+click, Shift+click, Ctrl+A), keyboard navigation and editable cells. Build only the rows in [first, last): Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct GridColumn
 {
     /// <summary>text of the column&apos;s header</summary>
@@ -3426,7 +3426,7 @@ public unsafe partial struct GridColumn
     };
 }
 
-/// <summary>cui_diff_row. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct DiffRow
 {
     /// <summary>cui_diff_row_kind kind</summary>
@@ -3470,7 +3470,7 @@ public unsafe partial struct DiffRow
     };
 }
 
-/// <summary>cui_gantt_task. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Gantt chart: a task list beside a timeline of bars. Drag a bar to move it, its ends to resize it. Dependencies are drawn as elbow arrows. Returns the index of a clicked task, or -1. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct GanttTask
 {
     /// <summary>shown in the task list and, when it fits, on the bar</summary>
@@ -3526,7 +3526,7 @@ public unsafe partial struct GanttTask
     };
 }
 
-/// <summary>cui_cal_event. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Week calendar: seven day columns on an hour grid. Drag an event to move it (15 minute steps), drag its bottom edge to resize it. Returns the index of a clicked event, or -1. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct CalendarEvent
 {
     /// <summary>shown on the event</summary>
@@ -3574,7 +3574,7 @@ public unsafe partial struct CalendarEvent
     };
 }
 
-/// <summary>cui_check_step. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Onboarding checklist: a card with progress and steps. The first open step shows its description and action. Clicking a step&apos;s circle toggles done. Returns the index whose action was clicked, or -1. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct CheckStep
 {
     /// <summary>the step&apos;s text; muted once the step is done</summary>
@@ -3614,7 +3614,7 @@ public unsafe partial struct CheckStep
     };
 }
 
-/// <summary>cui_toc_item. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Table of contents for a scroll area: highlights the section in view on a progress rail, and scrolls to a section when clicked. Put cui_toc_anchor(ui, &quot;anchor&quot;) at each heading inside the scroll area, and call cui_toc in the same scope as the scroll area. Returns the active index. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct TocItem
 {
     /// <summary>the entry&apos;s text in the list</summary>
@@ -3650,7 +3650,7 @@ public unsafe partial struct TocItem
     };
 }
 
-/// <summary>cui_model. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Model picker: the current model on a button; a list with details opens. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct Model
 {
     /// <summary>shown on the button and as the row&apos;s heading in the list</summary>
@@ -3690,7 +3690,7 @@ public unsafe partial struct Model
     };
 }
 
-/// <summary>cui_prompt_suggestion. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Prompt suggestions: cards to start a conversation with. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct PromptSuggestion
 {
     /// <summary>const char * icon</summary>
@@ -3726,7 +3726,7 @@ public unsafe partial struct PromptSuggestion
     };
 }
 
-/// <summary>cui_source. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Sources: cards for the documents an answer used, and inline citations that show a card on hover. Both return true / the index when clicked. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct Source
 {
     /// <summary>the card&apos;s heading; `NULL` shows the URL&apos;s domain</summary>
@@ -3762,7 +3762,7 @@ public unsafe partial struct Source
     };
 }
 
-/// <summary>cui_plan_step. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Agent plan: steps with their status on a connected rail, and progress. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct PlanStep
 {
     /// <summary>the step&apos;s text; shimmers while the step is running</summary>
@@ -3798,7 +3798,7 @@ public unsafe partial struct PlanStep
     };
 }
 
-/// <summary>cui_ticker_item. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Ticker: items that scroll by continuously, pausing on hover. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct TickerItem
 {
     /// <summary>const char * label</summary>
@@ -3838,7 +3838,7 @@ public unsafe partial struct TickerItem
     };
 }
 
-/// <summary>cui_speed_action. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Speed dial: a round floating action button that fans out related actions. Returns the chosen action index, or -1. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct SpeedAction
 {
     /// <summary>const char * icon</summary>
@@ -3870,7 +3870,7 @@ public unsafe partial struct SpeedAction
     };
 }
 
-/// <summary>cui_reaction. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Reactions: icon pills with counts. Clicking toggles `active` and adjusts the count. Returns the index that changed, or -1. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct Reaction
 {
     /// <summary>const char * icon</summary>
@@ -3906,7 +3906,7 @@ public unsafe partial struct Reaction
     };
 }
 
-/// <summary>cui_tab_bar_item. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Bottom tab bar for compact layouts, with a pill that glides to the selection. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct TabBarItem
 {
     /// <summary>const char * icon</summary>
@@ -3942,7 +3942,7 @@ public unsafe partial struct TabBarItem
     };
 }
 
-/// <summary>cui_viz_item. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Treemap: rectangles with areas proportional to their values. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct VizItem
 {
     /// <summary>const char * label</summary>
@@ -3978,7 +3978,7 @@ public unsafe partial struct VizItem
     };
 }
 
-/// <summary>cui_table_sort. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct TableSort
 {
     /// <summary>int column</summary>
@@ -4010,7 +4010,7 @@ public unsafe partial struct TableSort
     };
 }
 
-/// <summary>cui_table_column. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Table Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct TableColumn
 {
     /// <summary>text of the column&apos;s header</summary>
@@ -4050,7 +4050,7 @@ public unsafe partial struct TableColumn
     };
 }
 
-/// <summary>cui_command. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct Command
 {
     /// <summary>the command&apos;s text in the list; what typing in the palette searches</summary>
@@ -4090,7 +4090,7 @@ public unsafe partial struct Command
     };
 }
 
-/// <summary>cui_choice. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Radio cards: larger selectable cards for choices that need a description (plans, templates). Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct Choice
 {
     /// <summary>the card&apos;s heading, in medium weight; wraps when long</summary>
@@ -4130,7 +4130,7 @@ public unsafe partial struct Choice
     };
 }
 
-/// <summary>cui_keymap_binding. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>A keyboard with your shortcuts on it: each bound key shows its action and the color of its category, for the modifiers chosen above it. Keys bound twice are marked as conflicts. Hover a key for every binding on it; click it to get the key (to rebind it). The keyboard keeps its own layout in a right-to-left interface and scales to the width it gets. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct KeymapBinding
 {
     /// <summary>the modifiers and key the action is bound to</summary>
@@ -4166,7 +4166,7 @@ public unsafe partial struct KeymapBinding
     };
 }
 
-/// <summary>cui_scatter_series. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Scatter (or bubble) chart: points per series, optional sizes. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct ScatterSeries
 {
     /// <summary>shown in the legend, which appears with two or more series</summary>
@@ -4210,7 +4210,7 @@ public unsafe partial struct ScatterSeries
     };
 }
 
-/// <summary>cui_hex_result. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct HexResult
 {
     /// <summary>after this frame (the same as *sel when you pass one)</summary>
