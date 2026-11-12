@@ -474,6 +474,9 @@ public static class CuiMiniWindowProbe
     public static extern bool IsWindowVisible(IntPtr window);
     [DllImport("user32.dll")]
     public static extern bool PostMessage(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern IntPtr SendMessageTimeout(IntPtr window, uint message, IntPtr wParam, IntPtr lParam,
+        uint flags, uint timeoutMs, out IntPtr result);
 }
 '@
         }
@@ -493,6 +496,23 @@ public static class CuiMiniWindowProbe
             if ($window -eq [IntPtr]::Zero -or -not [CuiMiniWindowProbe]::IsWindowVisible($window)) {
                 if (-not $mini.HasExited) { $mini.Kill($true); $mini.WaitForExit() }
                 throw "dotnet run $miniFile did not open a visible native window: $($stderr.GetAwaiter().GetResult()) $($stdout.GetAwaiter().GetResult())"
+            }
+            # WM_GETICON (0x007F) answers with the window's own icon and with nothing when only the
+            # class icon is in play, so it distinguishes an app that installed ApplicationIcon from
+            # one whose window still wears the system default. The icon goes in on the first frame,
+            # so poll; a handle from another process cannot be dereferenced here, being non-zero is
+            # the whole assertion.
+            $hicon = [IntPtr]::Zero
+            $deadline = [DateTime]::UtcNow.AddSeconds(10)
+            while ([DateTime]::UtcNow -lt $deadline) {
+                $sent = [CuiMiniWindowProbe]::SendMessageTimeout($window, 0x007F, [IntPtr]1, [IntPtr]::Zero, 0x0002, 2000, [ref]$hicon)
+                if ($sent -ne [IntPtr]::Zero -and $hicon -ne [IntPtr]::Zero) { break }
+                $hicon = [IntPtr]::Zero
+                Start-Sleep -Milliseconds 100
+            }
+            if ($hicon -eq [IntPtr]::Zero) {
+                if (-not $mini.HasExited) { $mini.Kill($true); $mini.WaitForExit() }
+                throw 'the mini app window carries no icon: WM_GETICON(ICON_BIG) answered with nothing'
             }
             if (-not [CuiMiniWindowProbe]::PostMessage($window, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero)) {
                 throw 'could not send WM_CLOSE to the mini app window'

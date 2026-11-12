@@ -10,10 +10,15 @@ different things.
 
 - **A demo icon in both templates.** `dotnet new cui-app` ships `<Project>.ico` wired in with
   `ApplicationIcon`, and `dotnet new cui-mini` generates `<name>.cs` plus a matching `<name>.ico`;
-  replacing the file and rebuilding changes the exe icon and, because the CUI window class loads
-  the executable's own icon, the window icon too. The shipped icon is a black square reading CUI.
+  replacing the file and rebuilding changes the exe icon and the icon on the title bar, taskbar
+  button and `Alt+Tab` card. The shipped icon is a black square reading CUI.
 
 ### Fixed
+
+- **The embedded icon reaches the window.** An apphost embeds `ApplicationIcon` as `IDI_APPLICATION`,
+  which Explorer reads off the exe but the CUI window class does not find, so a published app wore
+  the system's generic logo in the title bar and taskbar. `CuiApp` now loads that resource and sends
+  `WM_SETICON` itself when the window opens, small and large, at the system's icon metrics.
 
 - **`dotnet new cui-mini` no longer opens a console window.** The generated file-based app now
   sets `#:property OutputType=WinExe`, so `dotnet publish` produces a GUI-subsystem executable

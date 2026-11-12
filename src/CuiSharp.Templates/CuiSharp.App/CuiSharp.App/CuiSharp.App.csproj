@@ -4,8 +4,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <OutputType>WinExe</OutputType>
     <!-- The app icon: replace this one file with your own .ico, keeping the name, and rebuild.
-         It becomes the exe icon, and the window follows it: the CUI window class loads the
-         executable's own icon resource before falling back to the system default. -->
+         It becomes the exe icon, and CuiApp puts the same image on the window — the title bar,
+         the taskbar button and Alt+Tab — when the app starts. -->
     <ApplicationIcon>CuiSharp.App.ico</ApplicationIcon>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
