@@ -8,10 +8,37 @@ different things.
 
 ### Added
 
+- **`dotnet cui docs`** prints the guide, the reference and the behaviour pages that ship *inside*
+  the tool: no repository, no network, nothing built and nothing started. `docs read <topic|doc|doc#section>`
+  reads one of fourteen task topics or any page whole, `docs search <words>` ranks the sections that
+  answer a question and names the read that opens each one, and `--json` makes any of them
+  machine-readable. The topics are pointers into the shipped pages, so the tool cannot say anything
+  the documentation does not.
+- **`dotnet cui session`** relays one protocol command per line from stdin against a single build,
+  replacing the `--stdin` flag.
 - **A demo icon in both templates.** `dotnet new cui-app` ships `<Project>.ico` wired in with
   `ApplicationIcon`, and `dotnet new cui-mini` generates `<name>.cs` plus a matching `<name>.ico`;
   replacing the file and rebuilding changes the exe icon and the icon on the title bar, taskbar
   button and `Alt+Tab` card. The shipped icon is a black square reading CUI.
+
+### Changed
+
+- **The command line is declared with System.CommandLine**, so `dotnet cui <command> --help` and the
+  parser cannot disagree. What the old hand-written help promised and the parser ignored now works:
+  `-a <pid|title>` takes its value, `-t/--target` is gone in its favour, `--version` answers with a
+  version, and a mistyped verb is answered with the verb that was meant (`clik` → ``Did you mean
+  `dotnet cui click`?``). Usage errors exit 2 with the reason on stderr; a failed launch exits 1 with
+  one sentence instead of a stack trace.
+- **Options belong to the commands that honour them.** `docs`, `api`, `icons` and `ps` answer
+  offline and declare no `--project`, `--app`, `--attach`, `--no-build`, `--frames` or `--wait`, so
+  they cannot be given one that would be ignored. Options follow the command they belong to:
+  `dotnet cui tree --frames 2`, not `dotnet cui --frames 2 tree`.
+- **A query is one quoted argument.** `dotnet cui click "Button Save"` is a click on the button
+  labelled *Save*; the unquoted `dotnet cui click Button Save` was two words and is now a usage
+  error rather than a different query. `dotnet cui click "editor > Save"` quotes the path separator
+  that the shell would otherwise read as redirection.
+- **`dwell` and `waittext` require their duration**, which the protocol always needed: bare `dwell`
+  used to start an app and then fail with an unknown command.
 
 ### Fixed
 
@@ -19,7 +46,6 @@ different things.
   which Explorer reads off the exe but the CUI window class does not find, so a published app wore
   the system's generic logo in the title bar and taskbar. `CuiApp` now loads that resource and sends
   `WM_SETICON` itself when the window opens, small and large, at the system's icon metrics.
-
 - **`dotnet new cui-mini` no longer opens a console window.** The generated file-based app now
   sets `#:property OutputType=WinExe`, so `dotnet publish` produces a GUI-subsystem executable
   like the one `dotnet new cui-app` builds; `tools/verify-template.ps1` reads that subsystem out

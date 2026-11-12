@@ -3,6 +3,20 @@
 Rules for working in this app, for whoever — or whatever — edits it next. They are short on
 purpose: they are the ones that change the code.
 
+**The framework's own rules are not in this file.** They ship with the tool, so a project does not
+have to restate them — and cannot fall out of date with them:
+
+```sh
+dotnet tool install -g CuiSharp.Tools
+dotnet cui docs                      # topics: writing-ui, testing, debugging, layout, publishing…
+dotnet cui docs search "<question>"   # the sections that answer it, ranked
+dotnet cui docs read <topic>         # the rules, the pitfalls, the workflow
+dotnet cui api <Name>                # one exact signature
+```
+
+Offline, from inside the tool: no repository, no build, no network. When this file and the tool
+disagree about CuiSharp itself, the tool is right.
+
 ## The shape
 
 ```
@@ -46,14 +60,19 @@ dotnet build -warnaserror
 ```
 
 A render test draws a real frame into a pixel buffer and asserts `surface.Faults` is empty, so a
-page that throws cannot pass as a page that works. `dotnet cui tree` prints what a frame drew:
+page that throws cannot pass as a page that works.
+
+When the question is what the app actually draws, ask the tool rather than guessing which page to
+open — `dotnet cui docs read debugging` is the whole workflow, and these are the commands it uses:
 
 ```sh
-dotnet tool install -g CuiSharp.Tools    # exposes `dotnet cui`
 dotnet cui tree --project .   # the controls of the last frame, nested
 dotnet cui click Dark         # a control, by the label or id the tree printed
 dotnet cui png shot.png       # the frame as a PNG, for you or for a person
 ```
+
+A `tree`, a `click` or a `png` is evidence, not a fix: finish by making the test fail without the
+change.
 
 ## The performance claims are tests
 

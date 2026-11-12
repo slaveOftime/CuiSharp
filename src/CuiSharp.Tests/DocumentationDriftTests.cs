@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using CuiSharp.Tools;
 
 namespace CuiSharp.Tests;
 
@@ -32,6 +33,105 @@ public class DocumentationDriftTests
 
         Assert.True(missing.Count == 0,
             "SKILL.md calls API that llms.txt does not list: " + string.Join(", ", missing));
+    }
+
+    /// <summary>
+    /// Every command line the docs hand a reader has to be a line the tool accepts. This is the
+    /// test that was missing when the grammar was declared: the guide still said
+    /// <c>dotnet cui click Button "Save type"</c> and <c>dotnet cui click editor &gt; Save</c>, and
+    /// both had stopped parsing — the first because a label is one quoted argument, the second
+    /// because an unquoted <c>&gt;</c> is the shell's redirection, not the query's path separator.
+    /// A guide that prints a line the tool rejects turns a one-turn fix into a debugging session.
+    /// </summary>
+    [Fact]
+    public void EveryCommandLineTheDocsShowIsOneTheToolAccepts()
+    {
+        string[] sources =
+        [
+            Find("README.md"),
+            Find(Path.Combine("skills", "cui-dotnet", "SKILL.md")),
+            Find(Path.Combine("skills", "cui-dotnet", "llms.txt")),
+            Find(Path.Combine("src", "CuiSharp.Templates", "CuiSharp.App", "AGENTS.md")),
+            Find(Path.Combine("src", "CuiSharp.Templates", "CuiSharp.App", "README.md")),
+        ];
+
+        var rejected = new List<string>();
+        foreach (string source in sources)
+        {
+            foreach (string raw in File.ReadAllLines(source))
+            {
+                // A trailing comment is prose for the reader, not part of the command line, and a
+                // line has to *be* a command line: one that starts with the command, not a
+                // sentence that mentions it in passing.
+                string line = Regex.Replace(raw, @"\s+#.*$", "").Trim();
+                if (!line.StartsWith("dotnet cui ", StringComparison.Ordinal)) continue;
+                if (CountDotnetCui(line) != 1) continue;
+
+                // Placeholders (`<topic>`, `tree|find`), elisions and pipes are not command lines.
+                if (line.Contains('<', StringComparison.Ordinal) || line.Contains('|', StringComparison.Ordinal)) continue;
+                if (line.Contains('…', StringComparison.Ordinal) || line.Contains("...", StringComparison.Ordinal)) continue;
+
+                string[] argv = Split(line[(line.IndexOf("dotnet cui", StringComparison.Ordinal) + "dotnet cui".Length)..]);
+                Grammar.Parsed parsed = Grammar.Parse(argv);
+                if (parsed.Errors.Count > 0)
+                    rejected.Add($"{Path.GetFileName(source)}: `{line}` -> {string.Join("; ", parsed.Errors)}");
+            }
+        }
+
+        Assert.True(
+            rejected.Count == 0,
+            "the docs show command lines the tool rejects:" + Environment.NewLine + "  "
+                + string.Join(Environment.NewLine + "  ", rejected));
+    }
+
+    private static int CountDotnetCui(string line)
+    {
+        int count = 0;
+        for (int at = line.IndexOf("dotnet cui", StringComparison.Ordinal); at >= 0;
+             at = line.IndexOf("dotnet cui", at + 1, StringComparison.Ordinal))
+        {
+            count++;
+            at += "dotnet cui".Length - 1;
+        }
+
+        return count;
+    }
+
+    /// <summary>Words the way a shell hands them over: a double-quoted word stays one word.</summary>
+    private static string[] Split(string text)
+    {
+        var words = new List<string>();
+        var current = new System.Text.StringBuilder();
+        bool quoted = false;
+
+        foreach (char c in text)
+        {
+            if (c == '"')
+            {
+                quoted = !quoted;
+                current.Append(c);
+                continue;
+            }
+
+            if (!quoted && char.IsWhiteSpace(c))
+            {
+                if (current.Length > 0) words.Add(current.ToString());
+                current.Clear();
+                continue;
+            }
+
+            current.Append(c);
+        }
+
+        if (current.Length > 0) words.Add(current.ToString());
+        return [.. words.Select(word => word.Trim('"')).Where(word => word.Length > 0)];
+    }
+
+    private static string Find(string relative)
+    {
+        string path = Path.Combine(TestPaths.RepositoryRoot, relative);
+        Assert.True(File.Exists(path), $"{path} is missing");
+        return path;
     }
 
     /// <summary>The reference is generated, so it must at least mention every option type.</summary>

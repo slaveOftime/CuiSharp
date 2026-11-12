@@ -74,7 +74,7 @@ foreach ($page in $GalleryPages) {
 Write-Host "==> dwelling on $($GalleryPages.Count) page(s), ${Each}s each, $Theme" -ForegroundColor Cyan
 $env:CUI_THEME = $Theme
 try {
-    $output = $script.ToString() | & $cui --stdin --no-build --project $gallery
+    $output = $script.ToString() | & $cui session --no-build --project $gallery
     if ($LASTEXITCODE -ne 0) { throw 'dotnet cui failed' }
 }
 finally {

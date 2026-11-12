@@ -516,6 +516,11 @@ evidence behind.
 The rule underneath all four: **one reproduction per task, in a file.** If a check mattered once, it
 belongs in the test suite, not in a shell history.
 
+This guide and the pages beside it are also inside the tool, so a reader with no repository can ask
+for them: `dotnet cui docs` lists the topics by task (`testing`, `debugging`, `layout`,
+`publishing`, …), `dotnet cui docs search <words>` ranks sections, and `dotnet cui docs read <topic>`
+prints one — `docs read debugging` is the two sections above that this tool drives the app with.
+
 ## Testing without a window
 
 `CuiSharp.Testing` drives the real component with no window. Frames happen when the test asks, so a
@@ -581,15 +586,15 @@ dotnet cui tree                     # the controls of the last frame, nested
 dotnet cui find Save                # one control: kind, label, rectangle
 dotnet cui find id:draft            # or by the id the app gave it, in any language
 dotnet cui click Save               # click it, print the frame that reacted
-dotnet cui click Button "Save type" # be specific when a label is ambiguous
-dotnet cui click editor > Save      # or name the path to the control
+dotnet cui click "Button Save type"  # be specific when a label is ambiguous
+dotnet cui click "editor > Save"     # or the path to the control
 dotnet cui type Milk                # type into the focused control
 dotnet cui key Tab                  # a key by name
 dotnet cui png frame.png            # the frame as a PNG, to look at
-dotnet cui --stdin < commands.txt   # many commands against one build, in order
+dotnet cui session < commands.txt   # many commands against one build, in order
 ```
 
-`--stdin` is the cheapest way to explore an app you have not read: one build, one startup, a page of
+`session` is the cheapest way to explore an app you have not read: one build, one startup, a page of
 answers. State carries across the commands because it is one process — but a run leaves nothing
 behind, so anything that should be checked twice belongs in a test instead.
 
@@ -598,8 +603,9 @@ behind, so anything that should be checked twice belongs in a test instead.
   `--no-build` reuses the last build; `--` passes the rest to the app.
 - To drive a **live window** while a human watches it (`dotnet watch run -- --live`, `CUISHARP_LIVE=1`,
   or `CuiAppOptions { LiveAttach = true }` on Windows), run `dotnet cui ps` to list active windows and
-  pass `-a` / `--attach` (or `--attach=<pid|title>`) to any command (`dotnet cui tree -a`,
-  `dotnet cui click Save -a`, `dotnet cui png live.png -a`, `dotnet cui quit -a`). Commands travel over
+  pass `-a <pid|title>` to any command, or a bare `-a` when only one window is open
+  (`dotnet cui tree -a 15036`, `dotnet cui click Save -a`, `dotnet cui png live.png -a`,
+  `dotnet cui quit -a`). Commands travel over
   a user-only local named pipe (`cui-live-<pid>-<nonce>`) and leave the window open between calls.
   Published AOT apps omit the listener by default: publish with `-p:CuiSharpLive=true` to retain it,
   then opt in at runtime with `--live` or `LiveAttach`. Disconnecting abandons pending commands;
@@ -685,6 +691,7 @@ Everything below is in this folder, beside this guide; nothing here points outsi
 | records used as array items | `api/Records.md` |
 | the whole API paged, one file per section | `api/` |
 | every declaration as data, for offline lookup | `api/catalog.json` (`dotnet cui api <name> --json`) |
+| the whole folder, offline, with nothing installed but the tool | `dotnet tool install -g CuiSharp.Tools` then `dotnet cui docs` |
 | what each widget does, and its keyboard | `widgets.md`, `widgets-more.md` |
 | hosting: components, mutations, DI | `hosting.md` |
 | which RIDs the package carries, and the glibc floor | `native-abi.md` |

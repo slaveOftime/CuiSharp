@@ -98,7 +98,7 @@ foreach ($page in $chosen) {
 Write-Host "==> drawing $($chosen.Count) page(s), $Theme" -ForegroundColor Cyan
 $env:CUI_THEME = $Theme
 try {
-    $script.ToString() | & $cui --stdin --no-build --project $gallery | Out-Null
+    $script.ToString() | & $cui session --no-build --project $gallery | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'dotnet cui failed' }
 }
 finally {

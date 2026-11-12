@@ -21,6 +21,8 @@ Settled. Reopening one is a design change, not a refactor.
 | D8 | **A packaged native library declares the ABI it was built against.** Windows x64/ARM64 is `/MT` MSVC, Linux x64/ARM64 is glibc 2.31 built inside `debian:11`, `osx-arm64` targets macOS 12. `native/build-native.sh` fails rather than emit a `libcui.so` that needs more, and the Linux build runs inside that image so it cannot inherit a newer floor; the package records the revision, compiler and hashes it shipped (`runtimes/native-provenance.txt`), and `build/CuiSharp.targets` matches the RID exactly and errors when the archive for it is missing. See [native-abi.md](../skills/cui-dotnet/native-abi.md). |
 | D9 | **Window behaviour the framework needs is a hook over CUI's own window procedure, not a native patch.** A drag on Windows makes Win32 send `WM_SIZE` per mouse sample and then a `WM_PAINT` that invalidates the whole client area, and CUI draws in both, inside the modal loop, with vsync on: one mouse step cost two frames and two display waits. `Hosting/LiveResize` subclasses the window procedure (the one place Windows lets a framework intervene), lets the coalesced paint draw once, and stops waiting for the display for the length of the drag — driving CUI's own live-frame path rather than replacing it. The same hook is where the window handle is recovered for `CuiWindow`, because the app loop keeps its `cui_app*` private and the window's user data holds it. A fix that needed `native/CUI/` would be upstream's, per D2. |
 | D10 | **A published binary is a product, and the package decides what goes in it.** `build/CuiSharp.Size.targets` applies the switches that decide size (`CuiSharpSizeProfile`, `CuiSharpHeadless`, `CuiSharpVerboseErrors`) to a self-contained AOT publish and to nothing else, because that is the only build whose size matters: `dotnet run` keeps the headless channel and the framework's exception messages. `PublishAot` alone is not the signal — the file-based app shape sets it for `dotnet run` too. Measured in [SIZE.md](SIZE.md), which is what a size decision has to cite. |
+| D11 | **The tool carries the documentation, and a topic names sections instead of repeating them.** `dotnet cui docs` answers from `skills/cui-dotnet/**` embedded in `CuiSharp.Tools`, so an assistant that has installed one tool can read the guide in a directory with no repository, no network and no app — the reason a project's instruction file can say `dotnet cui docs` instead of restating the framework's rules. A *topic* (`testing`, `debugging`, `publishing`) is a named list of `doc#section` pointers resolved at load, so every sentence has exactly one home and a renamed heading fails a test rather than leaving a topic that reads but misleads. The bundle is embedded, not copied, and a test compares the bytes with the checked-in files. |
+| D12 | **The command line is declared, not parsed by hand, and every option lives on a command that can honour it.** `Grammar` builds a System.CommandLine tree: every verb is a `Command` whose arguments carry their own type and arity, and every option is an `Option` on the commands that use it. The help, the arity, the value types and the error messages then come from a single declaration, which is what stops them disagreeing — the hand-rolled parser had already shipped a help line promising `-a, --attach [id]` while `-a` took no value, so `dotnet cui click "中文" -a 15036` searched for a widget called `中文 15036`. Options are deliberately *not* inherited from the root: `docs`, `api` and `icons` answer offline and name no app, so `--project`, `--attach` and `--frames` do not exist there and cannot be silently ignored. The verbs are still the app's wire protocol: `Grammar.Resolve` re-serialises one command's arguments into exactly one protocol line, so the parser changed and the protocol did not. `dotnet cui` keeps that shape because an agent reads a grammar it can discover (`--help` per verb) more reliably than a man page it has to remember. |
 
 ## Layout
 
@@ -37,7 +39,7 @@ src/CuiSharp/                 the library (package: CuiSharp)
 src/CuiSharp.Analyzers/       CUI001-CUI008, packed into CuiSharp at analyzers/dotnet/cs
 src/CuiSharp.CodeFixes/       IDE-only fixes, packed beside the analyzers (no runtime dependency)
 src/CuiSharp.Testing/         TestApp: drive a component without a window
-src/CuiSharp.Tools/           dotnet cui: build, run headless, relay one command
+src/CuiSharp.Tools/           dotnet cui: the docs and API offline, then build, run headless, relay one command
 src/CuiSharp.Templates/       dotnet new cui-app / cui-mini
 src/CuiSharp.Tests/           ABI, enums, marshalling, frame behaviour, hosting, tools, docs drift
 src/CuiSharp.Benchmarks/      BenchmarkDotNet suites + --fps and --scale harnesses
@@ -264,6 +266,21 @@ an explicitly enabled Windows live window over a user-only local named pipe inst
 HTTP/MCP server or separate daemon. `CuiSharp.Testing` remains the fast, repeatable way to drive an
 app from an agent, and `dotnet watch` is how a human edits in place.
 
+The three commands that are not a relay — `docs`, `api`, `icons` — return before any project is
+resolved, so they answer in a directory that holds no app and start no process (D11). That is what
+lets one installed tool serve both halves of an assistant's job: read the rules, then drive a build.
+
+The grammar itself is declared with System.CommandLine and the verbs are re-serialised into the
+protocol lines above (D12), so `--help` — per verb, generated — is the manual, and it lists only
+the options that verb honours. Three rules survive from the hand-rolled parser because the protocol
+wants them: everything after a standalone `--` is handed to the app untouched, a value is a value
+even when it begins with a dash (`--wait-text -loading`), and a query is one quoted argument
+(`click "Button Save type"`), because the app parses the query grammar and this tool does not.
+
+A session is a command (`dotnet cui session < commands.txt`), not a flag. As a flag it could be
+written beside a verb, and the verb would then be silently dropped; as a command the line says
+which of the two things is happening.
+
 Live work runs on the owning window thread, between completed frames in the pinned Win32 backend's
 message pump. Callback nesting guards are thread/context-owned: an unrelated surface cannot change
 that window's guard. A connection has a bounded asynchronous reader that detects EOF even during
@@ -293,5 +310,5 @@ timeout says which wait it gave up on — the banner or the answer.
 |---|---|---|
 | `CuiSharp` | the library, each RID's `runtimes/<rid>/native/` files, `runtimes/native-provenance.txt`, analyzers and IDE fixes, build targets | AOT links the RID's static archive through `build/CuiSharp.targets`; the RID is matched exactly and a missing archive is an error, not a warning |
 | `CuiSharp.Testing` | `TestApp` (a `HeadlessApp` under the name a test wants) | test-only dependency |
-| `CuiSharp.Tools` | `dotnet cui` | `PackAsTool`, `ToolCommandName=dotnet-cui` |
+| `CuiSharp.Tools` | `dotnet cui`, with `skills/cui-dotnet/**` and the API catalog embedded | `PackAsTool`, `ToolCommandName=dotnet-cui`. The documentation and the catalog are resources, not files beside it: `docs`, `api` and `icons` answer offline, before any project is resolved |
 | `CuiSharp.Templates` | `dotnet new cui-app`, `dotnet new cui-mini` | a solution (app + tests + `AGENTS.md`) or a file-based app named with `-n` in the current directory (optional `-o`), with a package directive |
