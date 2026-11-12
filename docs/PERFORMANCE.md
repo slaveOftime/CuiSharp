@@ -38,7 +38,7 @@ on every pull request, every shape in the on-demand job.
 | Gallery frame, 1240x820, software raster | **0.83 ms** mean (p50 0.69, p95 1.16, p99 1.39) | budget 0.90 ms, `--fps 900` |
 | Build only (a GPU would rasterize) | 0.02 ms | same run |
 | Managed allocation per frame | **0 B** | `FrameLifecycleTests`, `NewComponentTests` |
-| Gallery AOT executable, win-x64 | **2 862 592 B** | budget 2.95 MB |
+| Gallery AOT executable, win-x64 | **2 878 976 B** | budget 2.95 MB |
 | A million virtual list rows | ~12 µs | `--scale` |
 | A million chart points, undecimated | 45.9 ms | why decimation exists |
 | A million chart points, decimated to 800 | 0.018 ms | same |

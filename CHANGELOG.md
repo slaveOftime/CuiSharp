@@ -4,7 +4,7 @@ Every user-visible change, newest first. Pre-1.0 the minor number carries new su
 carries fixes. The section for a tag is what the GitHub release publishes, so the two cannot say
 different things.
 
-## [Unreleased]
+## [0.3.3] — 2026-11-12
 
 ### Added
 

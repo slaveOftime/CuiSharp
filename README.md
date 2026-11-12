@@ -6,7 +6,7 @@ CuiSharp binds [CUI](https://github.com/yappologistic/CUI), a 160-component UI l
 every widget itself. You describe the screen again each frame; your fields are the state.
 
 ![.NET 10](https://img.shields.io/badge/.NET-10-512bd4)
-![NativeAOT](https://img.shields.io/badge/one%20file-2.0%20MB-success)
+![NativeAOT](https://img.shields.io/badge/one%20file-2.9%20MB-success)
 ![alloc](https://img.shields.io/badge/steady--state-0%20B%2Fframe-success)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
@@ -35,7 +35,7 @@ dotnet publish demo1.cs -c Release -o .    # one native binary beside it, no .NE
 folder; replace the .ico with your own to change the exe and window icon. Add `-o <folder>`
 only when you want a separate output directory. The generated file carries the properties that make
 that publish one file of about 1.2 MB, and says so at the top. It starts with
-`#:package CuiSharp@*`, resolving the latest stable package; use `--CuiSharpVersion 0.3.1` when
+`#:package CuiSharp@*`, resolving the latest stable package; use `--CuiSharpVersion 0.3.3` when
 generating to pin a version. Its counter and theme switch use the same frame API as a full app;
 `CUISHARP_HEADLESS=1` runs it without a window for automation.
 
@@ -68,7 +68,7 @@ or holding them across an `await`. Nothing can outlive the frame, so nothing can
 
 | | |
 |---|---|
-| **One executable** | NativeAOT links CUI in statically: no runtime, no `cui.dll`, no VC++ redistributable. The gallery is 2.0 MB. |
+| **One executable** | NativeAOT links CUI in statically: no runtime, no `cui.dll`, no VC++ redistributable. The gallery, all twenty-eight pages, is 2.9 MB. |
 | **No UI framework** | CUI creates the window, owns the message loop and the GL context. `CuiApp.Run` is the entire host. |
 | **Sub-millisecond frames** | 0.85 ms mean for the live gallery, software rasterizer, 1240×820 (`--fps 900`). |
 | **0 B per frame** | Labels, options and interpolated text come from a per-frame arena. A live chart with a million samples allocates nothing. |
@@ -272,7 +272,7 @@ dotnet tool install -g CuiSharp.Tools    # exposes `dotnet cui`
 ```
 
 ```sh
-dotnet publish -c Release -r win-x64      # one executable, ~2 MB, nothing beside it
+dotnet publish -c Release -r win-x64      # one executable, from ~1.2 MB up, nothing beside it
 ```
 
 `cui.lib` is linked statically through the package's targets, so there is no `cui.dll` in the output.
