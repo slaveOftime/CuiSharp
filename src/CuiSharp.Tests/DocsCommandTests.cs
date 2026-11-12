@@ -212,7 +212,7 @@ public class DocsCommandTests
         Assert.Contains("SKILL.md § Driving a running app", debugging, StringComparison.Ordinal);
         // Headless one-shots, one process for a script, and a live window a person is watching.
         Assert.Contains("--stdin", debugging, StringComparison.Ordinal);
-        Assert.Contains("--attach", debugging, StringComparison.Ordinal);
+        Assert.Contains("-a <pid|title>", debugging, StringComparison.Ordinal);
         Assert.Contains("one process", debugging, StringComparison.Ordinal);
         // And the rule that keeps a debugging session from being the only evidence.
         Assert.Contains("belongs in the test suite", debugging, StringComparison.Ordinal);
@@ -260,13 +260,15 @@ public class DocsCommandTests
     [Fact]
     public void ReadAndSearchWithoutTheirArgumentAreUsageErrors()
     {
+        // The arity says both take something, so a missing one is the parser's own sentence
+        // naming the argument, with the command it belongs to.
         (int exit, _, string error) = Run("docs", "read");
         Assert.Equal(2, exit);
-        Assert.Contains("`docs read` needs a topic", error, StringComparison.Ordinal);
+        Assert.Contains("Required argument 'what' missing", error, StringComparison.Ordinal);
 
         (exit, _, error) = Run("docs", "search");
         Assert.Equal(2, exit);
-        Assert.Contains("`docs search` needs words", error, StringComparison.Ordinal);
+        Assert.Contains("Required argument 'words' missing", error, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -357,8 +359,11 @@ public class DocsCommandTests
 
         Assert.Equal(0, exit);
         string usage = output.ToString();
-        Assert.Contains("docs read <what>", usage, StringComparison.Ordinal);
-        Assert.Contains("docs search <words>", usage, StringComparison.Ordinal);
+        // The subcommands are listed with their summary lines, not as a second copy of the
+        // grammar: each one answers `dotnet cui docs read --help` on its own.
+        Assert.Contains("read", usage, StringComparison.Ordinal);
+        Assert.Contains("search", usage, StringComparison.Ordinal);
+        Assert.Contains("Commands:", usage, StringComparison.Ordinal);
     }
 
     /// <summary>The hit headings of a search answer, in the order the answer ranked them.</summary>

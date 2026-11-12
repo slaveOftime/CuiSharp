@@ -602,8 +602,9 @@ behind, so anything that should be checked twice belongs in a test instead.
   `--no-build` reuses the last build; `--` passes the rest to the app.
 - To drive a **live window** while a human watches it (`dotnet watch run -- --live`, `CUISHARP_LIVE=1`,
   or `CuiAppOptions { LiveAttach = true }` on Windows), run `dotnet cui ps` to list active windows and
-  pass `-a` / `--attach` (or `--attach=<pid|title>`) to any command (`dotnet cui tree -a`,
-  `dotnet cui click Save -a`, `dotnet cui png live.png -a`, `dotnet cui quit -a`). Commands travel over
+  pass `-a <pid|title>` to any command, or a bare `-a` when only one window is open
+  (`dotnet cui tree -a 15036`, `dotnet cui click Save -a`, `dotnet cui png live.png -a`,
+  `dotnet cui quit -a`). Commands travel over
   a user-only local named pipe (`cui-live-<pid>-<nonce>`) and leave the window open between calls.
   Published AOT apps omit the listener by default: publish with `-p:CuiSharpLive=true` to retain it,
   then opt in at runtime with `--live` or `LiveAttach`. Disconnecting abandons pending commands;

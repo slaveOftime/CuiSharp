@@ -27,6 +27,11 @@
     <Description>Bundle of the CuiSharp guide and API reference for offline reading, plus a driver that prints a CuiSharp app's controls, clicks and types into it, and saves its frame as a PNG - without a window, an agent SDK or a test project.</Description>
     <PackageTags>cui;ui;tools;dotnet-tool;agent</PackageTags>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- The grammar is declared, not hand-parsed: help, arity, value types and error messages
+         come from one declaration, so they cannot disagree with each other. -->
+    <PackageReference Include="System.CommandLine" Version="3.0.0" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- The command line parsing is worth testing without spawning a process. -->

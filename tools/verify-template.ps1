@@ -213,12 +213,16 @@ internal static class AnalyzerProbe
         throw "the installed tool must ship a $shimName command; found: $((Get-ChildItem $toolPath).Name -join ', ')"
     }
     $shimHelp = (& $shim --help | Out-String)
-    if ($LASTEXITCODE -ne 0 -or $shimHelp -notmatch 'dotnet cui <command>') { throw "the installed command did not print its usage: $shimHelp" }
+    # The usage screen is generated from the grammar, so the check is the shape it always has:
+    # a usage line and the verbs, not a sentence somebody remembered to keep in step.
+    if ($LASTEXITCODE -ne 0 -or $shimHelp -notmatch 'Usage:' -or $shimHelp -notmatch 'docs') {
+        throw "the installed command did not print its usage: $shimHelp"
+    }
     $savedPath = $env:PATH
     try {
         $env:PATH = "$toolPath$([System.IO.Path]::PathSeparator)$savedPath"
         $dispatchHelp = (& dotnet cui --help | Out-String)
-        if ($LASTEXITCODE -ne 0 -or $dispatchHelp -notmatch 'dotnet cui <command>') {
+        if ($LASTEXITCODE -ne 0 -or $dispatchHelp -notmatch 'Usage:' -or $dispatchHelp -notmatch 'docs') {
             throw "dotnet cui did not dispatch to the installed tool: $dispatchHelp"
         }
 

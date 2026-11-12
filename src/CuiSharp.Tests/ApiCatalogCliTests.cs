@@ -139,7 +139,7 @@ public class ApiCatalogCliTests
         (int exit, _, string error) = Run("api");
 
         Assert.Equal(2, exit);
-        Assert.Contains("needs a name", error, StringComparison.Ordinal);
+        Assert.Contains("Required argument 'name' missing", error, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -147,7 +147,7 @@ public class ApiCatalogCliTests
     {
         (int exit, _, string error) = Run("api", "ChartOpts", "--pgae");
 
-        Assert.Equal(1, exit);
+        Assert.Equal(2, exit);
         Assert.Contains("--pgae", error, StringComparison.Ordinal);
     }
 
@@ -173,7 +173,7 @@ public class ApiCatalogCliTests
         (int exit, string output, _) = Run("icons", "help");
         Assert.Equal(0, exit);
         Assert.Contains("CircleHelp", output, StringComparison.Ordinal);
-        Assert.DoesNotContain("dotnet cui <command>", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("Usage:", output, StringComparison.Ordinal);
 
         (exit, output, _) = Run("icons", "help", "--json");
         Assert.Equal(0, exit);
@@ -190,7 +190,7 @@ public class ApiCatalogCliTests
         Assert.Equal(1, exit);
         Assert.Contains("CircleHelp", output, StringComparison.Ordinal);
         Assert.Contains("DialogHelper", output, StringComparison.Ordinal);
-        Assert.DoesNotContain("dotnet cui <command>", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("Usage:", output, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -198,113 +198,103 @@ public class ApiCatalogCliTests
     {
         (int exit, string output, _) = Run("api", "--help");
         Assert.Equal(0, exit);
-        Assert.Contains("dotnet cui <command>", output, StringComparison.Ordinal);
+        Assert.Contains("Usage:", output, StringComparison.Ordinal);
 
         (exit, output, _) = Run("icons", "-h");
         Assert.Equal(0, exit);
-        Assert.Contains("dotnet cui <command>", output, StringComparison.Ordinal);
+        Assert.Contains("Usage:", output, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void AnIgnoredOptionNeverSwallowsTheFlagBehindIt()
+    public void AnOptionWhoseValueIsNotItsTypeIsReportedInsteadOfSwallowed()
     {
-        // `--frames --json` lost its number. Eating the flag behind it would answer a
-        // different command than the one that was typed and call the answer successful.
+        // `--frames --json` used to lose its number and eat the flag behind it, answering a
+        // different command than the one that was typed and calling that success. A typed
+        // option now says what it wanted: a count, not `--json`.
         (int exit, _, string error) = Run("api", "ChartOpts", "--frames", "--json");
-        Assert.Equal(1, exit);
-        Assert.Contains("--frames needs a value", error, StringComparison.Ordinal);
+        Assert.Equal(2, exit);
+        Assert.Contains("'--frames'", error, StringComparison.Ordinal);
+        Assert.Contains("whole number", error, StringComparison.Ordinal);
 
         (exit, _, error) = Run("api", "ChartOpts", "--wait-timeout", "--pgae");
-        Assert.Equal(1, exit);
-        Assert.Contains("--wait-timeout needs a value", error, StringComparison.Ordinal);
+        Assert.Equal(2, exit);
+        Assert.Contains("'--wait-timeout'", error, StringComparison.Ordinal);
+        Assert.Contains("a number", error, StringComparison.Ordinal);
 
         // A value missing at the end of the line is the same mistake. No --project is needed
         // here: the catalog path never looks at a project, so the parse error is all there is.
         var answers = new StringWriter();
         var errors = new StringWriter();
         exit = Cli.Run(["api", "ChartOpts", "--app"], answers, errors);
-        Assert.Equal(1, exit);
-        Assert.Contains("--app needs a value", errors.ToString(), StringComparison.Ordinal);
+        Assert.Equal(2, exit);
+        Assert.Contains("'--app'", errors.ToString(), StringComparison.Ordinal);
+        Assert.Equal("", answers.ToString());
     }
 
     [Fact]
     public void ANonCatalogCommandKeepsItsOwnGrammarEvenWithAwkwardOptionValues()
     {
-        // `tree --wait-text -loading` is legal: `-loading` is a value, not a flag.
-        Cli.Options options = Cli.Options.Parse(["tree", "--wait-text", "-loading", "--help"]);
-        Assert.Equal("tree", options.Command);
-        Assert.Equal("waittext 10 -loading", options.WaitLine);
-        Assert.True(options.Help);
+        // `tree --wait-text -loading` is legal: `-loading` is a value, not a flag, so text that
+        // begins with a dash is still text to wait for.
+        Grammar.Parsed parsed = Grammar.Parse(["tree", "--wait-text", "-loading"]);
+        Assert.Empty(parsed.Errors);
+        Assert.Equal("tree", parsed.Options!.Command);
+        Assert.Equal("waittext 10 -loading", parsed.Options.WaitLine);
 
         (int exit, _, string error) = Run("tree", "--wait-text", "-loading");
         Assert.Equal(1, exit);
         Assert.DoesNotContain("needs a value", error, StringComparison.Ordinal);
         Assert.Contains(NoProjectHere, error, StringComparison.Ordinal);
 
-        // And `--json` is rejected on ordinary app commands.
+        // And `--json` exists only where there is JSON to answer with, so an app command cannot
+        // be handed a switch it would only ignore.
         (exit, _, error) = Run("tree", "--json");
-        Assert.Equal(1, exit);
-        Assert.Contains("Unknown option \"--json\"", error, StringComparison.Ordinal);
+        Assert.Equal(2, exit);
+        Assert.Contains("'--json'", error, StringComparison.Ordinal);
     }
 
     [Fact]
     public void ACatalogCommandReportsMalformedOptionsThroughTheUnifiedParser()
     {
+        // A value that merely looks like a flag is still a value — `--wait-text -loading` needs
+        // that rule — so what is refused is a value the option's declared type cannot hold.
         var output = new StringWriter();
         var errors = new StringWriter();
-        int exit = Cli.Run(["api", "ChartOpts", "--project", "--json"], output, errors);
-        Assert.Equal(1, exit);
-        Assert.Contains("--project needs a value", errors.ToString(), StringComparison.Ordinal);
+        int exit = Cli.Run(["api", "ChartOpts", "--wait-timeout", "abc"], output, errors);
+        Assert.Equal(2, exit);
+        Assert.Contains("'--wait-timeout'", errors.ToString(), StringComparison.Ordinal);
+        Assert.Contains("abc", errors.ToString(), StringComparison.Ordinal);
         Assert.Equal("", output.ToString());
 
-        output = new StringWriter();
-        errors = new StringWriter();
-        exit = Cli.Run(["--wait-text", "--json", "api", "ChartOpts"], output, errors);
-        Assert.Equal(1, exit);
-        Assert.Contains("--wait-text needs a value", errors.ToString(), StringComparison.Ordinal);
-        Assert.Equal("", output.ToString());
-
-        (int badExit, _, string badError) = Run("api", "ChartOpts", "--wait-timeout", "abc");
-        Assert.Equal(1, badExit);
-        Assert.Contains("--wait-timeout needs a finite number of seconds", badError, StringComparison.Ordinal);
-        Assert.Contains("not \"abc\"", badError, StringComparison.Ordinal);
+        (int badExit, _, string badError) = Run("api", "ChartOpts", "--frames", "many");
+        Assert.Equal(2, badExit);
+        Assert.Contains("whole number", badError, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void AWaitTheCallerOverwritesIsJudgedByTheValueThatSurvives()
+    public void ARepeatedOptionIsRefusedRatherThanSilentlyOverwritten()
     {
-        Cli.Options overwritten = Cli.Options.Parse(["api", "ChartOpts", "--wait", "invalid", "--wait", "ready"]);
-        Assert.Equal("wait 10", overwritten.WaitLine);
+        // `--wait ready --wait invalid` used to be decided by whichever came last. Two answers
+        // to the same question mean the line was not settled, so neither answer is acted on.
+        var output = new StringWriter();
+        var errors = new StringWriter();
 
-        (int exit, string output, string error) = Run("api", "ChartOpts", "--wait", "invalid", "--wait", "ready");
-        Assert.Equal(0, exit);
-        Assert.Contains("ChartOpts  [struct]", output, StringComparison.Ordinal);
-        Assert.Equal("", error);
+        Assert.Equal(2, Cli.Run(["api", "ChartOpts", "--wait", "ready", "--wait", "ready"], output, errors));
+        Assert.Contains("'--wait'", errors.ToString(), StringComparison.Ordinal);
+        Assert.Equal("", output.ToString());
 
-        (exit, output, error) = Run("api", "ChartOpts", "--wait", "invalid", "--wait", "ready", "--help");
-        Assert.Equal(0, exit);
-        Assert.Contains("dotnet cui <command>", output.ToString(), StringComparison.Ordinal);
-        Assert.Equal("", error);
-
-        (exit, output, error) = Run("icons", "help", "--wait", "invalid", "--wait", "ready");
-        Assert.Equal(0, exit);
-        Assert.Contains("CircleHelp", output, StringComparison.Ordinal);
-        Assert.DoesNotContain("dotnet cui <command>", output, StringComparison.Ordinal);
-        Assert.Equal("", error);
-
-        Assert.Throws<ToolException>(() => Cli.Options.Parse(
-            ["api", "ChartOpts", "--wait", "ready", "--wait", "invalid"]));
-
-        (exit, output, error) = Run("api", "ChartOpts", "--wait", "ready", "--wait", "invalid");
-        Assert.Equal(1, exit);
-        Assert.Contains("--wait needs \"ready\", not \"invalid\"", error, StringComparison.Ordinal);
-        Assert.Equal("", output);
+        // A wrong value for a one-value option is the same class of mistake, said differently.
+        output = new StringWriter();
+        errors = new StringWriter();
+        Assert.Equal(2, Cli.Run(["api", "ChartOpts", "--wait", "invalid"], output, errors));
+        Assert.Contains("'ready'", errors.ToString(), StringComparison.Ordinal);
+        Assert.Equal("", output.ToString());
     }
 
     [Fact]
     public void JsonAndIgnoredAppFlagsAnswerTheSameOffline()
     {
-        (int exit, string output, _) = Run("--json", "api", "ChartOpts");
+        (int exit, string output, _) = Run("api", "ChartOpts", "--json");
         Assert.Equal(0, exit);
         using (JsonDocument json = JsonDocument.Parse(output))
             Assert.Equal("exact", json.RootElement.GetProperty("match").GetString());
@@ -359,8 +349,15 @@ public class ApiCatalogCliTests
         try
         {
             string tool = Path.Combine(directory, "CuiSharp.Tools.dll");
-            File.Copy(source, tool);
-            File.Copy(Path.ChangeExtension(source, ".deps.json"), Path.ChangeExtension(tool, ".deps.json"));
+            // Everything beside the tool, not just the tool: its own dependencies have to travel
+            // or the child dies before it can answer anything.
+            foreach (string file in Directory.GetFiles(Path.GetDirectoryName(source)!))
+            {
+                string name = Path.GetFileName(file);
+                if (name.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase)) continue;
+                File.Copy(file, Path.Combine(directory, name), overwrite: true);
+            }
+
             File.WriteAllText(Path.ChangeExtension(tool, ".runtimeconfig.json"), """
                 {
                   "runtimeOptions": {
