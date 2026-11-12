@@ -28,7 +28,7 @@ Context menu: opens on right click over the previous component.
 public OpenScope Menu(UiText label, MenuOpts o = default)
 ```
 
-cui_menu_begin
+Dropdown menu: a button that opens a menu. Items return true when chosen.
 
 ## `MenuItem`
 
@@ -60,7 +60,7 @@ cui_menu_separator
 public OpenScope Popover(UiText id, PopoverOpts o = default)
 ```
 
-cui_popover_begin
+Popover anchored to the previous component. Toggle it with cui_popover_toggle / cui_popover_open.
 
 ## `PopoverClose`
 

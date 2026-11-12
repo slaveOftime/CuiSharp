@@ -20,4 +20,4 @@ protected override void Draw(Ui ui)
 public StackTraceResult StackTrace(UiText id, ReadOnlySpan<StackFrame> frames, StackTraceOpts o = default)
 ```
 
-cui_stack_trace_ex
+An exception and its call stack: the error's type and message, then each frame's function and position. Runs of library frames fold into one row. A frame with source opens to show the lines around it, the failing line marked; the first frame of your own code starts open. A button copies the whole trace as text.

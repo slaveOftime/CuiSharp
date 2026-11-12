@@ -28,7 +28,7 @@ Connected buttons. Put buttons between begin and end.
 public bool CopyButton(UiText id, UiText text)
 ```
 
-Icon button that copies text to the clipboard and confirms with a check.
+Icon button that copies text to the clipboard and confirms with a check. Keyboard focus stays on the button when the check appears or disappears.
 
 ## `HoldButton`
 
@@ -36,7 +36,7 @@ Icon button that copies text to the clipboard and confirms with a check.
 public bool HoldButton(UiText label, HoldOpts o = default)
 ```
 
-cui_hold_button_ex
+Hold to confirm: a destructive action that fills while held and fires when full. Returns true once.
 
 ## `PasswordStrength`
 
@@ -60,7 +60,7 @@ Circular progress with the value in the middle.
 public bool RadioCards(UiText id, ReadOnlySpan<Choice> choices, ref int index, RadioCardsOpts o = default)
 ```
 
-cui_radio_cards_ex
+Radio cards: larger selectable cards for choices that need a description (plans, templates).
 
 ## `TimelineItem`
 

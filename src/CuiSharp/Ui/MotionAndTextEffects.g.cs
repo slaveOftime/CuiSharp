@@ -54,7 +54,7 @@ public static unsafe class MotionAndTextEffectsUiExtensions
             WidgetRecorder.Note(ui.Handle, "NumberRoll", id);
         }
 
-        /// <summary>cui_gradient_text_ex</summary>
+        /// <summary>Text painted with a gradient from one color to another; animate makes it drift.</summary>
         public void GradientText(UiText text, GradientTextOpts o = default)
         {
             var __opts = o.ToNative();
@@ -62,7 +62,7 @@ public static unsafe class MotionAndTextEffectsUiExtensions
             WidgetRecorder.Note(ui.Handle, "GradientText", text);
         }
 
-        /// <summary>cui_spotlight_begin</summary>
+        /// <summary>Spotlight card: a soft light follows the pointer across the card and lights the nearest stretch of its border. beam sends a light around the edge.</summary>
         public LayoutScope Spotlight(UiText id, SpotlightOpts o = default)
         {
             var __opts = o.ToNative();
@@ -77,7 +77,7 @@ public static unsafe class MotionAndTextEffectsUiExtensions
             Native.Loader(ui.Handle, in __opts);
         }
 
-        /// <summary>cui_dock_begin</summary>
+        /// <summary>Dock: a row of icons that grow as the pointer passes, with labels and a dot under the running ones. Each item returns true when clicked.</summary>
         public LayoutScope Dock(UiText id, DockOpts o = default)
         {
             var __opts = o.ToNative();
@@ -100,7 +100,7 @@ public static unsafe class MotionAndTextEffectsUiExtensions
             Native.DockSeparator(ui.Handle);
         }
 
-        /// <summary>cui_tab_bar_ex</summary>
+        /// <summary>Bottom tab bar for compact layouts, with a pill that glides to the selection.</summary>
         public bool TabBar(UiText id, ReadOnlySpan<TabBarItem> items, ref int selected, TabBarOpts o = default)
         {
             var __items = Utf8.AllocFrame<NativeTabBarItem>(items.Length);
@@ -111,7 +111,7 @@ public static unsafe class MotionAndTextEffectsUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_control_tile_ex</summary>
+        /// <summary>Control tile: a large toggle with an icon, a label and a state line.</summary>
         public bool ControlTile(UiText label, ref bool on, TileOpts o = default)
         {
             byte __on = (byte)(on ? 1 : 0);
@@ -122,7 +122,7 @@ public static unsafe class MotionAndTextEffectsUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_waveform_ex</summary>
+        /// <summary>Waveform: bars from peaks (0..1). With progress, the played part is colored and clicking or dragging seeks; returns true when it did.</summary>
         public bool Waveform(UiText id, ReadOnlySpan<float> peaks, ref float progress, WaveformOpts o = default)
         {
             var __opts = o.ToNative();
@@ -131,7 +131,7 @@ public static unsafe class MotionAndTextEffectsUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_now_playing_ex</summary>
+        /// <summary>Now playing card: artwork, title, artist, a scrubber and transport buttons.</summary>
         public PlayerEvents NowPlaying(UiText id, ref NowPlayingState np, NowPlayingOpts o = default)
         {
             var __np = np.ToNative();

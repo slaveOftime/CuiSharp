@@ -20,7 +20,7 @@ protected override void Draw(Ui ui)
 public void ChatDivider(UiText label)
 ```
 
-cui_chat_divider
+"Today"
 
 ## `ChatMessage`
 
@@ -28,7 +28,7 @@ cui_chat_divider
 public void ChatMessage(UiText text, ref MarkdownResult markdownResult, ChatOpts o = default)
 ```
 
-cui_chat_message_ex
+Chat message bubble. Consecutive messages from one person set grouped so they stack tightly and show the avatar once.
 
 ## `Comment`
 
@@ -44,7 +44,7 @@ cui_comment_ex
 public void Presence(UiText id, ReadOnlySpan<PresenceUser> users, int maxVisible, float size)
 ```
 
-cui_presence
+Presence: who is here now. Overlapping avatars with a colored ring each, that spread out on hover and name themselves.
 
 ## `TypingIndicator`
 
@@ -52,4 +52,4 @@ cui_presence
 public void TypingIndicator(UiText name)
 ```
 
-cui_typing_indicator
+bouncing dots

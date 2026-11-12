@@ -13,7 +13,7 @@ public static unsafe class CodeUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>* left to right in any interface: see cui__keep_ltr</summary>
+        /// <summary>Code block with syntax highlighting (lang: &quot;c&quot;, &quot;cpp&quot;, &quot;js&quot;, &quot;ts&quot;, &quot;python&quot;, &quot;rust&quot;, &quot;go&quot;, &quot;json&quot;, &quot;shell&quot;, or &quot;text&quot; for none), line numbers, a title bar and a copy button. Long lines scroll sideways.</summary>
         public void CodeBlock(UiText id, UiText code, CodeOpts o = default)
         {
             var __opts = o.ToNative();
@@ -21,7 +21,7 @@ public static unsafe class CodeUiExtensions
             WidgetRecorder.Note(ui.Handle, "CodeBlock", id);
         }
 
-        /// <summary>* left to right in any interface: see cui__keep_ltr</summary>
+        /// <summary>JSON viewer: a collapsible tree with typed colors and item counts. Returns false when the text is not valid JSON (and shows the error).</summary>
         public bool JsonView(UiText id, UiText json, JsonOpts o = default)
         {
             var __opts = o.ToNative();

@@ -20,4 +20,4 @@ protected override void Draw(Ui ui)
 public DiffResult DiffView(UiText id, UiText oldText, UiText newText, ref int current, DiffOpts o = default)
 ```
 
-* left to right in any interface: see cui__keep_ltr
+cui_diff_view_ex

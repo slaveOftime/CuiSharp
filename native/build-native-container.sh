@@ -10,13 +10,16 @@
 # promise true rather than inherited from whichever runner happened to compile it.
 #
 # Needs docker; the image is pulled on first use. Runs as root inside the container, so the
-# files it writes are root-owned: this is for CI, not for a working tree you keep editing.
+# files it writes are root-owned unless it is told whose they should be: HOST_UID/HOST_GID are
+# handed in and the outputs are chowned at the end, which is what keeps a local run from
+# leaving a `runtimes/` that `rm`, `git clean` or the next non-root build cannot touch.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo="$(cd "$here/.." && pwd)"
 image="${1:-debian:11}"
 baseline="${CUI_GLIBC_BASELINE:-2.31}"
+owner="$(id -u):$(id -g)"
 
 if ! command -v docker >/dev/null; then
   echo "docker is needed to build on the $image baseline image" >&2
@@ -28,6 +31,7 @@ docker run --rm \
   -v "$repo:/work" \
   -w /work \
   -e CUI_GLIBC_BASELINE="$baseline" \
+  -e HOST_OWNER="$owner" \
   "$image" \
   bash -c '
     set -e
@@ -56,6 +60,9 @@ docker run --rm \
     echo "    image:  $PRETTY_NAME"
     echo "    glibc:  $(ldd --version | head -1 | awk "{print \$NF}")"
     bash native/build-native.sh
+    # Whatever the build touched is ours inside the container and yours on the host: the
+    # library, its import file, and the provenance line beside them.
+    chown -R "$HOST_OWNER" runtimes 2>/dev/null || true
   '
 
 # The archive is what a packaged consumer links, so the file it actually got is worth saying.

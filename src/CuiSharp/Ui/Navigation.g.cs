@@ -23,7 +23,7 @@ public static unsafe class NavigationUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_nav_item_ex</summary>
+        /// <summary>Sidebar navigation item with a gliding selection highlight shared by all items in the same group.</summary>
         public bool NavItem(UiText label, NavOpts o = default)
         {
             var __opts = o.ToNative();
@@ -39,14 +39,14 @@ public static unsafe class NavigationUiExtensions
             WidgetRecorder.Note(ui.Handle, "NavSection", title);
         }
 
-        /// <summary>cui_breadcrumb</summary>
+        /// <summary>returns clicked index or -1</summary>
         public int Breadcrumb(ReadOnlySpan<string> items)
         {
             var __result = Native.Breadcrumb(ui.Handle, UiMarshal.Strings(items), (int)(items.Length));
             return __result;
         }
 
-        /// <summary>cui_pagination</summary>
+        /// <summary>page is 0 based</summary>
         public bool Pagination(UiText id, ref int page, int pageCount)
         {
             var __result = Native.Pagination(ui.Handle, Utf8.Get(id), ref page, pageCount);

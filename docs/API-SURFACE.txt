@@ -54,6 +54,10 @@ enum CuiSharp.Align
   End
   Start
   Stretch
+enum CuiSharp.AnnotationKind
+  Point
+  X
+  Y
 struct CuiSharp.ApiEndpoint
   ctor(String, String, String, String, Boolean, ApiParam[])
   field ApiParam[] Params
@@ -115,6 +119,9 @@ struct CuiSharp.AvatarOpts
   field Single Size
   field String Status
   field UInt64 Image
+enum CuiSharp.AxisUnits
+  Hours
+  Number
 struct CuiSharp.BadgeOpts
   ctor(Tone)
   field Boolean Dot
@@ -246,7 +253,6 @@ struct CuiSharp.CandlestickOpts
   field Boolean Ohlc
   field Color Down
   field Color Up
-  field Int32 OverlayCount
   field Series[] Overlays
   field Single Height
   field Size Width
@@ -298,6 +304,14 @@ struct CuiSharp.CarouselOpts
   field Single AutoAdvance
   field Single Gap
   field Single Height
+struct CuiSharp.ChartAnnotation
+  ctor(AnnotationKind, Double, Double, String, String, Boolean)
+  field AnnotationKind Kind
+  field Boolean Accent
+  field Double X
+  field Double Y
+  field String Detail
+  field String Label
 class CuiSharp.ChartNormalizer
   static Int32 Normalize(ReadOnlySpan<Single>, Span<Single>, NormalizeMode)
   static Single FindBaseline(ReadOnlySpan<Single>)
@@ -307,6 +321,7 @@ struct CuiSharp.ChartOpts
   field Boolean NoLegend
   field Boolean Smooth
   field Boolean Stacked
+  field ChartAnnotation[] Annotations
   field Int32 MaxPoints
   field NormalizeMode Normalize
   field Single Height
@@ -353,7 +368,6 @@ struct CuiSharp.CodeEditorOpts
   field Boolean NoLineNumbers
   field Boolean ReadOnly
   field Boolean UseTabs
-  field Int32 MarkCount
   field Int32 TabSize
   field Single Height
   field Single Size
@@ -495,7 +509,6 @@ enum CuiSharp.ComposerEvents
 struct CuiSharp.ComposerOpts
   field Boolean Busy
   field Int32 MaxLines
-  field Int32 ModelCount
   field Model[] Models
   field Size Width
   field String Placeholder
@@ -514,7 +527,6 @@ struct CuiSharp.ConfirmPopoverOpts
   field String Description
   field String Title
 struct CuiSharp.ContextOpts
-  field Int32 PartCount
   field String Unit
   field VizItem[] Parts
 enum CuiSharp.ControlSize
@@ -732,11 +744,11 @@ enum CuiSharp.Cursor
   ResizeNs
   Text
 class CuiSharp.CurveAndGradientEditorsUiExtensions
-  static CurveResult CurveEditor(Ui, UiText, Span<CurveKey>, ref Int32, Int32, ref Int32, CurveOpts)
-  static GradientResult GradientEditor(Ui, UiText, Span<GradientStop>, ref Int32, Int32, ref Int32, GradientOpts)
+  static CurveResult CurveEditor(Ui, UiText, Span<CurveKey>, ref Int32, ref Int32, CurveOpts)
+  static GradientResult GradientEditor(Ui, UiText, Span<GradientStop>, ref Int32, ref Int32, GradientOpts)
 class CuiSharp.CurveAndGradientEditorsUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
-  CurveResult CurveEditor(UiText, Span<CurveKey>, ref Int32, Int32, ref Int32, CurveOpts)
-  GradientResult GradientEditor(UiText, Span<GradientStop>, ref Int32, Int32, ref Int32, GradientOpts)
+  CurveResult CurveEditor(UiText, Span<CurveKey>, ref Int32, ref Int32, CurveOpts)
+  GradientResult GradientEditor(UiText, Span<GradientStop>, ref Int32, ref Int32, GradientOpts)
 class CuiSharp.CurveAndGradientEditorsUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4+<M>$D152016828D0F2CB0A8B78500F4F70D3
 struct CuiSharp.CurveKey
   ctor(Single, Single, Single, Single, Single, Single, Byte)
@@ -1049,6 +1061,42 @@ struct CuiSharp.DockspaceOpts
   field Size Height
   field Size Width
   field String Layout
+struct CuiSharp.DotChartOpts
+  field AxisUnits XUnits
+  field Boolean NoAxis
+  field Boolean NoGrid
+  field Boolean NoReadout
+  field ChartAnnotation[] Annotations
+  field Double XMax
+  field Double XMin
+  field Double XStep
+  field Single Height
+  field Single Max
+  field Single Min
+  field Single Pitch
+  field Size Width
+  field String Format
+  field String Unit
+  field String XFormat
+struct CuiSharp.DotChartResult
+  ctor(Int32, Double, Single, Boolean)
+  field Boolean Clicked
+  field Double X
+  field Int32 Hovered
+  field Single Value
+struct CuiSharp.DotDisplayOpts
+  field Boolean Accent
+  field Boolean Marquee
+  field Boolean NoDim
+  field Color Color
+  field Single Pitch
+  field Size Width
+  field TextAlign Align
+struct CuiSharp.DotSeries
+  ctor(Single[], String, Boolean)
+  property Boolean Accent { get; }
+  property Single[] Values { get; }
+  property String Name { get; }
 class CuiSharp.DrawFn : MulticastDelegate
   IAsyncResult BeginInvoke(Ui, AsyncCallback, Object)
   Void EndInvoke(IAsyncResult)
@@ -1099,6 +1147,22 @@ struct CuiSharp.EmptyOpts
   field String Action
   field String Description
   field String Icon
+struct CuiSharp.EventTrackOpts
+  field AxisUnits Units
+  field Boolean NoAdd
+  field Boolean NoAxis
+  field Boolean NoRemove
+  field Double LabelStep
+  field Double Step
+  field Size Width
+  field String Format
+struct CuiSharp.EventTrackResult
+  ctor(Boolean, Int32, Int32, Int32, Boolean)
+  field Boolean Changed
+  field Boolean Dragging
+  field Int32 Added
+  field Int32 Removed
+  field Int32 Selected
 struct CuiSharp.ExpandableCardOpts
   field String Badge
   field String Description
@@ -1393,7 +1457,6 @@ struct CuiSharp.HexViewOpts
   field Boolean NoHeader
   field HexRange[] Ranges
   field Int32 BytesPerRow
-  field Int32 RangeCount
   field Single Height
   field Single Size
   field Size Width
@@ -1770,6 +1833,15 @@ struct CuiSharp.InputResult
 struct CuiSharp.InspectorOpts
   field Single LabelWidth
   field Size Width
+class CuiSharp.InstrumentsDotMatrixChartEventTrackReadoutDotMatrixDisplayUiExtensions
+  static EventTrackResult EventTrack(Ui, UiText, Span<Double>, ref Int32, Double, Double, ref Int32, EventTrackOpts)
+  static Void DotDisplay(Ui, UiText, DotDisplayOpts)
+  static Void Readout(Ui, UiText, UiText, ReadoutOpts)
+class CuiSharp.InstrumentsDotMatrixChartEventTrackReadoutDotMatrixDisplayUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
+  EventTrackResult EventTrack(UiText, Span<Double>, ref Int32, Double, Double, ref Int32, EventTrackOpts)
+  Void DotDisplay(UiText, DotDisplayOpts)
+  Void Readout(UiText, UiText, ReadoutOpts)
+class CuiSharp.InstrumentsDotMatrixChartEventTrackReadoutDotMatrixDisplayUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4+<M>$D152016828D0F2CB0A8B78500F4F70D3
 class CuiSharp.Interop.Native
   static Accent GetAccent(IntPtr)
   static Byte AccordionBegin(IntPtr, IntPtr, IntPtr)
@@ -2013,6 +2085,8 @@ class CuiSharp.Interop.Native
   static NativeDate DateToday()
   static NativeDiffResult DiffView(IntPtr, IntPtr, IntPtr, IntPtr, in NativeDiffOpts)
   static NativeDocTabsResult DocTabs(IntPtr, IntPtr, IntPtr, Int32, ref Int32, in NativeDocTabsOpts)
+  static NativeDotChartResult DotChart(IntPtr, IntPtr, IntPtr, Int32, Int32, in NativeDotChartOpts)
+  static NativeEventTrackResult EventTrack(IntPtr, IntPtr, IntPtr, ref Int32, Int32, Double, Double, in NativeEventTrackOpts)
   static NativeFeatureFlagsResult FeatureFlags(IntPtr, IntPtr, IntPtr, Int32, IntPtr, Int32, in NativeFeatureFlagsOpts)
   static NativeFileBrowserResult FileBrowser(IntPtr, IntPtr, IntPtr, UIntPtr, in NativeFileBrowserOpts)
   static NativeFlameResult FlameGraph(IntPtr, IntPtr, IntPtr, Int32, ref NativeFlameView, ref Int32, in NativeFlameOpts)
@@ -2109,6 +2183,7 @@ class CuiSharp.Interop.Native
   static Void DockspaceBegin(IntPtr, IntPtr, in NativeDockspaceOpts)
   static Void DockspaceEnd(IntPtr)
   static Void DonutChart(IntPtr, IntPtr, IntPtr, IntPtr, Int32, in NativeChartOpts)
+  static Void DotDisplay(IntPtr, IntPtr, in NativeDotDisplayOpts)
   static Void DrawArc(IntPtr, NativeVec2, Single, Single, Single, Single, NativeColor)
   static Void DrawCircle(IntPtr, NativeVec2, Single, NativeColor)
   static Void DrawEmoji(IntPtr, IntPtr, Int32, NativeRect)
@@ -2193,6 +2268,7 @@ class CuiSharp.Interop.Native
   static Void PushId(IntPtr, IntPtr)
   static Void PushIdInt(IntPtr, Int32)
   static Void RadialGauge(IntPtr, IntPtr, Single, Single, Single, in NativeRadialGaugeOpts)
+  static Void Readout(IntPtr, IntPtr, IntPtr, in NativeReadoutOpts)
   static Void ReasoningEnd(IntPtr)
   static Void ReorderBegin(IntPtr, IntPtr, ref Int32, Int32)
   static Void ReorderItemBegin(IntPtr, Int32)
@@ -2315,6 +2391,7 @@ struct CuiSharp.Interop.NativeAppDesc
   field Int32 MinHeight
   field Int32 MinWidth
   field Int32 Width
+  field IntPtr AppId
   field IntPtr Title
   field Renderer Renderer
   field Theme Theme
@@ -2477,14 +2554,23 @@ struct CuiSharp.Interop.NativeCarouselOpts
   field Single AutoAdvance
   field Single Gap
   field Single Height
+struct CuiSharp.Interop.NativeChartAnnotation
+  field AnnotationKind Kind
+  field Byte Accent
+  field Double X
+  field Double Y
+  field IntPtr Detail
+  field IntPtr Label
 struct CuiSharp.Interop.NativeChartOpts
   field Byte Area
   field Byte NoGrid
   field Byte NoLegend
   field Byte Smooth
   field Byte Stacked
+  field Int32 AnnotationCount
   field Int32 LabelCount
   field Int32 Sentinel
+  field IntPtr Annotations
   field IntPtr Format
   field IntPtr Labels
   field NativeSize Width
@@ -2831,6 +2917,43 @@ struct CuiSharp.Interop.NativeDockspaceOpts
   field NativeSize Width
   field Single MinPanelHeight
   field Single MinPanelWidth
+struct CuiSharp.Interop.NativeDotChartOpts
+  field AxisUnits XUnits
+  field Byte NoAxis
+  field Byte NoGrid
+  field Byte NoReadout
+  field Double XMax
+  field Double XMin
+  field Double XStep
+  field Int32 AnnotationCount
+  field Int32 Sentinel
+  field IntPtr Annotations
+  field IntPtr Format
+  field IntPtr Unit
+  field IntPtr XFormat
+  field NativeSize Width
+  field Single Height
+  field Single Max
+  field Single Min
+  field Single Pitch
+struct CuiSharp.Interop.NativeDotChartResult
+  field Byte Clicked
+  field Double X
+  field Int32 Hovered
+  field Single Value
+struct CuiSharp.Interop.NativeDotDisplayOpts
+  field Byte Accent
+  field Byte Marquee
+  field Byte NoDim
+  field Int32 Sentinel
+  field NativeColor Color
+  field NativeSize Width
+  field Single Pitch
+  field TextAlign Align
+struct CuiSharp.Interop.NativeDotSeries
+  field Byte Accent
+  field IntPtr Name
+  field IntPtr Values
 struct CuiSharp.Interop.NativeDrawCmd
   field NativeRect Clip
   field UInt32 IndexCount
@@ -2876,6 +2999,23 @@ struct CuiSharp.Interop.NativeEmptyOpts
   field IntPtr Action
   field IntPtr Description
   field IntPtr Icon
+struct CuiSharp.Interop.NativeEventTrackOpts
+  field AxisUnits Units
+  field Byte NoAdd
+  field Byte NoAxis
+  field Byte NoRemove
+  field Double LabelStep
+  field Double Step
+  field Int32 Sentinel
+  field IntPtr Format
+  field IntPtr Selected
+  field NativeSize Width
+struct CuiSharp.Interop.NativeEventTrackResult
+  field Byte Changed
+  field Byte Dragging
+  field Int32 Added
+  field Int32 Removed
+  field Int32 Selected
 struct CuiSharp.Interop.NativeExpandableCardOpts
   field Int32 Sentinel
   field IntPtr Badge
@@ -3552,6 +3692,15 @@ struct CuiSharp.Interop.NativeReaction
   field Byte Active
   field Int32 Count
   field IntPtr Icon
+struct CuiSharp.Interop.NativeReadoutOpts
+  field Byte Accent
+  field ControlSize Size
+  field Int32 Sentinel
+  field IntPtr Detail
+  field IntPtr Unit
+  field NativeSize Width
+  field TextAlign Align
+  field Tone Tone
 struct CuiSharp.Interop.NativeReasoningOpts
   field Byte Thinking
   field Int32 Sentinel
@@ -4367,9 +4516,9 @@ struct CuiSharp.KeyValue
   field String Key
   field String Value
 class CuiSharp.KeyValueEditorUiExtensions
-  static Boolean KvEditor(Ui, UiText, Span<KeyValue>, ref Int32, Int32, KvEditorOpts)
+  static Boolean KvEditor(Ui, UiText, Span<KeyValue>, ref Int32, KvEditorOpts)
 class CuiSharp.KeyValueEditorUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
-  Boolean KvEditor(UiText, Span<KeyValue>, ref Int32, Int32, KvEditorOpts)
+  Boolean KvEditor(UiText, Span<KeyValue>, ref Int32, KvEditorOpts)
 class CuiSharp.KeyValueEditorUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4+<M>$D152016828D0F2CB0A8B78500F4F70D3
 struct CuiSharp.KeyedScope`1
   Boolean MoveNext()
@@ -5060,9 +5209,9 @@ struct CuiSharp.PropOpts
   field String Suffix
   field String Tooltip
 class CuiSharp.QueryBuilderUiExtensions
-  static Boolean QueryBuilder(Ui, UiText, ReadOnlySpan<QueryField>, Span<QueryNode>, ref Int32, Int32, QueryOpts)
+  static Boolean QueryBuilder(Ui, UiText, ReadOnlySpan<QueryField>, Span<QueryNode>, ref Int32, QueryOpts)
 class CuiSharp.QueryBuilderUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
-  Boolean QueryBuilder(UiText, ReadOnlySpan<QueryField>, Span<QueryNode>, ref Int32, Int32, QueryOpts)
+  Boolean QueryBuilder(UiText, ReadOnlySpan<QueryField>, Span<QueryNode>, ref Int32, QueryOpts)
 class CuiSharp.QueryBuilderUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4+<M>$D152016828D0F2CB0A8B78500F4F70D3
 struct CuiSharp.QueryField
   ctor(String, QueryType, String[])
@@ -5095,7 +5244,6 @@ struct CuiSharp.RadialGaugeOpts
   field Boolean NoNeedle
   field Boolean ShowTarget
   field GaugeBand[] Bands
-  field Int32 BandCount
   field Int32 Ticks
   field Single Size
   field Single Sweep
@@ -5110,6 +5258,14 @@ struct CuiSharp.Reaction
   field Boolean Active
   field Int32 Count
   field String Icon
+struct CuiSharp.ReadoutOpts
+  field Boolean Accent
+  field ControlSize Size
+  field Size Width
+  field String Detail
+  field String Unit
+  field TextAlign Align
+  field Tone Tone
 struct CuiSharp.ReasoningOpts
   field Boolean Thinking
   field Single Seconds
@@ -5847,7 +6003,6 @@ struct CuiSharp.TraceMarker
   field String Name
   field Tone Tone
 struct CuiSharp.TraceOpts
-  field Int32 MarkerCount
   field Single Height
   field Single RowHeight
   field Size Width
@@ -5969,6 +6124,7 @@ struct CuiSharp.Ui
   Color TokenColor(Token)
   DisabledScope Disabled(Boolean)
   DisabledScope Disabled(Boolean, DrawFn)
+  DotChartResult DotChart(UiText, ReadOnlySpan<DotSeries>, Int32, DotChartOpts)
   IdScope Id(Int32)
   IdScope Id(UiText)
   InputResult Input(UiText, ref String, InputOpts)

@@ -28,7 +28,7 @@ cui_dock_load
 public OpenScope DockPanel(UiText title, ref bool open, DockPanelOpts o = default)
 ```
 
-cui_dock_panel_begin_ex
+Returns true while the panel's content should be built; then call cui_dock_panel_end.
 
 ## `DockSave`
 
@@ -44,7 +44,7 @@ Saved layout: one line, e.g. dock1 h0.22([*Scene tree,Assets],v0.7([*Viewport],[
 public LayoutScope Dockspace(UiText id, DockspaceOpts o = default)
 ```
 
-cui_dockspace_begin_ex
+Dockspace: an IDE style workspace that lays out your panels in a tree of resizable splits whose leaves hold one or more panels as document tabs. Submit every panel each frame between cui_dockspace_begin and cui_dockspace_end; the dockspace decides where it goes, and a panel's content is built only while its tab is the one showing:
 
 ## `Inspector`
 
@@ -52,7 +52,7 @@ cui_dockspace_begin_ex
 public OpenScope Inspector(UiText id, InspectorOpts o = default)
 ```
 
-cui_inspector_begin_ex
+Property inspector: labelled rows in folding groups, a label column on the left (drag the line between the columns to resize it) and an editor on the right. Every row returns true when its value changed. Groups end at the next group or at cui_inspector_end.
 
 ## `InspectorGroup`
 

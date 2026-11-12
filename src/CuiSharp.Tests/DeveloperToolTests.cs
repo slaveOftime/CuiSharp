@@ -166,8 +166,8 @@ public class DeveloperToolTests
 
         var pixels = Frame(surface, ui =>
         {
-            ui.KvEditor("headers", headers, ref headerCount, headers.Length);
-            ui.QueryBuilder("query", QueryFields, nodes, ref nodeCount, nodes.Length);
+            ui.KvEditor("headers", headers, ref headerCount);
+            ui.QueryBuilder("query", QueryFields, nodes, ref nodeCount);
             ui.SchedulePicker("schedule", ref cron, 128);
             ui.Keymap("keymap",
             [
@@ -365,8 +365,8 @@ public class DeveloperToolTests
             ui.Problems("problems", OneProblem);
 
             // The editing and reporting tools, drawn with the same state every frame.
-            ui.KvEditor("headers", headers, ref headerCount, headers.Length);
-            ui.QueryBuilder("query", QueryFields, nodes, ref nodeCount, nodes.Length);
+            ui.KvEditor("headers", headers, ref headerCount);
+            ui.QueryBuilder("query", QueryFields, nodes, ref nodeCount);
             ui.SchedulePicker("schedule", ref cron, 128);
             ui.Keymap("keymap", bindings, ref mods, keymapOpts);
             ui.TestExplorer("tests", testItems, new TestExplorerOpts { Height = 180 });

@@ -641,9 +641,21 @@ public class GeneratedAbiTests
     }
 
     [Fact]
+    public void NativeChartAnnotation_MatchesC()
+    {
+        Assert.Equal(48, Unsafe.SizeOf<NativeChartAnnotation>());
+        Assert.Equal(0, (int)Marshal.OffsetOf<NativeChartAnnotation>(nameof(NativeChartAnnotation.Kind)));
+        Assert.Equal(8, (int)Marshal.OffsetOf<NativeChartAnnotation>(nameof(NativeChartAnnotation.X)));
+        Assert.Equal(16, (int)Marshal.OffsetOf<NativeChartAnnotation>(nameof(NativeChartAnnotation.Y)));
+        Assert.Equal(24, (int)Marshal.OffsetOf<NativeChartAnnotation>(nameof(NativeChartAnnotation.Label)));
+        Assert.Equal(32, (int)Marshal.OffsetOf<NativeChartAnnotation>(nameof(NativeChartAnnotation.Detail)));
+        Assert.Equal(40, (int)Marshal.OffsetOf<NativeChartAnnotation>(nameof(NativeChartAnnotation.Accent)));
+    }
+
+    [Fact]
     public void NativeChartOpts_MatchesC()
     {
-        Assert.Equal(56, Unsafe.SizeOf<NativeChartOpts>());
+        Assert.Equal(72, Unsafe.SizeOf<NativeChartOpts>());
         Assert.Equal(0, (int)Marshal.OffsetOf<NativeChartOpts>(nameof(NativeChartOpts.Sentinel)));
         Assert.Equal(4, (int)Marshal.OffsetOf<NativeChartOpts>(nameof(NativeChartOpts.Width)));
         Assert.Equal(12, (int)Marshal.OffsetOf<NativeChartOpts>(nameof(NativeChartOpts.Height)));
@@ -657,6 +669,8 @@ public class GeneratedAbiTests
         Assert.Equal(40, (int)Marshal.OffsetOf<NativeChartOpts>(nameof(NativeChartOpts.Format)));
         Assert.Equal(48, (int)Marshal.OffsetOf<NativeChartOpts>(nameof(NativeChartOpts.Min)));
         Assert.Equal(52, (int)Marshal.OffsetOf<NativeChartOpts>(nameof(NativeChartOpts.Max)));
+        Assert.Equal(56, (int)Marshal.OffsetOf<NativeChartOpts>(nameof(NativeChartOpts.Annotations)));
+        Assert.Equal(64, (int)Marshal.OffsetOf<NativeChartOpts>(nameof(NativeChartOpts.AnnotationCount)));
     }
 
     [Fact]
@@ -3344,6 +3358,104 @@ public class GeneratedAbiTests
     }
 
     [Fact]
+    public void NativeDotSeries_MatchesC()
+    {
+        Assert.Equal(24, Unsafe.SizeOf<NativeDotSeries>());
+        Assert.Equal(0, (int)Marshal.OffsetOf<NativeDotSeries>(nameof(NativeDotSeries.Values)));
+        Assert.Equal(8, (int)Marshal.OffsetOf<NativeDotSeries>(nameof(NativeDotSeries.Name)));
+        Assert.Equal(16, (int)Marshal.OffsetOf<NativeDotSeries>(nameof(NativeDotSeries.Accent)));
+    }
+
+    [Fact]
+    public void NativeDotChartOpts_MatchesC()
+    {
+        Assert.Equal(104, Unsafe.SizeOf<NativeDotChartOpts>());
+        Assert.Equal(0, (int)Marshal.OffsetOf<NativeDotChartOpts>(nameof(NativeDotChartOpts.Sentinel)));
+        Assert.Equal(4, (int)Marshal.OffsetOf<NativeDotChartOpts>(nameof(NativeDotChartOpts.Width)));
+        Assert.Equal(12, (int)Marshal.OffsetOf<NativeDotChartOpts>(nameof(NativeDotChartOpts.Height)));
+        Assert.Equal(16, (int)Marshal.OffsetOf<NativeDotChartOpts>(nameof(NativeDotChartOpts.XMin)));
+        Assert.Equal(24, (int)Marshal.OffsetOf<NativeDotChartOpts>(nameof(NativeDotChartOpts.XMax)));
+        Assert.Equal(32, (int)Marshal.OffsetOf<NativeDotChartOpts>(nameof(NativeDotChartOpts.XUnits)));
+        Assert.Equal(40, (int)Marshal.OffsetOf<NativeDotChartOpts>(nameof(NativeDotChartOpts.XFormat)));
+        Assert.Equal(48, (int)Marshal.OffsetOf<NativeDotChartOpts>(nameof(NativeDotChartOpts.XStep)));
+        Assert.Equal(56, (int)Marshal.OffsetOf<NativeDotChartOpts>(nameof(NativeDotChartOpts.Min)));
+        Assert.Equal(60, (int)Marshal.OffsetOf<NativeDotChartOpts>(nameof(NativeDotChartOpts.Max)));
+        Assert.Equal(64, (int)Marshal.OffsetOf<NativeDotChartOpts>(nameof(NativeDotChartOpts.Format)));
+        Assert.Equal(72, (int)Marshal.OffsetOf<NativeDotChartOpts>(nameof(NativeDotChartOpts.Unit)));
+        Assert.Equal(80, (int)Marshal.OffsetOf<NativeDotChartOpts>(nameof(NativeDotChartOpts.Pitch)));
+        Assert.Equal(84, (int)Marshal.OffsetOf<NativeDotChartOpts>(nameof(NativeDotChartOpts.NoGrid)));
+        Assert.Equal(85, (int)Marshal.OffsetOf<NativeDotChartOpts>(nameof(NativeDotChartOpts.NoAxis)));
+        Assert.Equal(86, (int)Marshal.OffsetOf<NativeDotChartOpts>(nameof(NativeDotChartOpts.NoReadout)));
+        Assert.Equal(88, (int)Marshal.OffsetOf<NativeDotChartOpts>(nameof(NativeDotChartOpts.Annotations)));
+        Assert.Equal(96, (int)Marshal.OffsetOf<NativeDotChartOpts>(nameof(NativeDotChartOpts.AnnotationCount)));
+    }
+
+    [Fact]
+    public void NativeDotChartResult_MatchesC()
+    {
+        Assert.Equal(24, Unsafe.SizeOf<NativeDotChartResult>());
+        Assert.Equal(0, (int)Marshal.OffsetOf<NativeDotChartResult>(nameof(NativeDotChartResult.Hovered)));
+        Assert.Equal(8, (int)Marshal.OffsetOf<NativeDotChartResult>(nameof(NativeDotChartResult.X)));
+        Assert.Equal(16, (int)Marshal.OffsetOf<NativeDotChartResult>(nameof(NativeDotChartResult.Value)));
+        Assert.Equal(20, (int)Marshal.OffsetOf<NativeDotChartResult>(nameof(NativeDotChartResult.Clicked)));
+    }
+
+    [Fact]
+    public void NativeEventTrackOpts_MatchesC()
+    {
+        Assert.Equal(64, Unsafe.SizeOf<NativeEventTrackOpts>());
+        Assert.Equal(0, (int)Marshal.OffsetOf<NativeEventTrackOpts>(nameof(NativeEventTrackOpts.Sentinel)));
+        Assert.Equal(4, (int)Marshal.OffsetOf<NativeEventTrackOpts>(nameof(NativeEventTrackOpts.Width)));
+        Assert.Equal(16, (int)Marshal.OffsetOf<NativeEventTrackOpts>(nameof(NativeEventTrackOpts.Step)));
+        Assert.Equal(24, (int)Marshal.OffsetOf<NativeEventTrackOpts>(nameof(NativeEventTrackOpts.Units)));
+        Assert.Equal(32, (int)Marshal.OffsetOf<NativeEventTrackOpts>(nameof(NativeEventTrackOpts.Format)));
+        Assert.Equal(40, (int)Marshal.OffsetOf<NativeEventTrackOpts>(nameof(NativeEventTrackOpts.LabelStep)));
+        Assert.Equal(48, (int)Marshal.OffsetOf<NativeEventTrackOpts>(nameof(NativeEventTrackOpts.Selected)));
+        Assert.Equal(56, (int)Marshal.OffsetOf<NativeEventTrackOpts>(nameof(NativeEventTrackOpts.NoAdd)));
+        Assert.Equal(57, (int)Marshal.OffsetOf<NativeEventTrackOpts>(nameof(NativeEventTrackOpts.NoRemove)));
+        Assert.Equal(58, (int)Marshal.OffsetOf<NativeEventTrackOpts>(nameof(NativeEventTrackOpts.NoAxis)));
+    }
+
+    [Fact]
+    public void NativeEventTrackResult_MatchesC()
+    {
+        Assert.Equal(20, Unsafe.SizeOf<NativeEventTrackResult>());
+        Assert.Equal(0, (int)Marshal.OffsetOf<NativeEventTrackResult>(nameof(NativeEventTrackResult.Changed)));
+        Assert.Equal(4, (int)Marshal.OffsetOf<NativeEventTrackResult>(nameof(NativeEventTrackResult.Added)));
+        Assert.Equal(8, (int)Marshal.OffsetOf<NativeEventTrackResult>(nameof(NativeEventTrackResult.Removed)));
+        Assert.Equal(12, (int)Marshal.OffsetOf<NativeEventTrackResult>(nameof(NativeEventTrackResult.Selected)));
+        Assert.Equal(16, (int)Marshal.OffsetOf<NativeEventTrackResult>(nameof(NativeEventTrackResult.Dragging)));
+    }
+
+    [Fact]
+    public void NativeReadoutOpts_MatchesC()
+    {
+        Assert.Equal(48, Unsafe.SizeOf<NativeReadoutOpts>());
+        Assert.Equal(0, (int)Marshal.OffsetOf<NativeReadoutOpts>(nameof(NativeReadoutOpts.Sentinel)));
+        Assert.Equal(8, (int)Marshal.OffsetOf<NativeReadoutOpts>(nameof(NativeReadoutOpts.Unit)));
+        Assert.Equal(16, (int)Marshal.OffsetOf<NativeReadoutOpts>(nameof(NativeReadoutOpts.Detail)));
+        Assert.Equal(24, (int)Marshal.OffsetOf<NativeReadoutOpts>(nameof(NativeReadoutOpts.Size)));
+        Assert.Equal(28, (int)Marshal.OffsetOf<NativeReadoutOpts>(nameof(NativeReadoutOpts.Tone)));
+        Assert.Equal(32, (int)Marshal.OffsetOf<NativeReadoutOpts>(nameof(NativeReadoutOpts.Accent)));
+        Assert.Equal(36, (int)Marshal.OffsetOf<NativeReadoutOpts>(nameof(NativeReadoutOpts.Align)));
+        Assert.Equal(40, (int)Marshal.OffsetOf<NativeReadoutOpts>(nameof(NativeReadoutOpts.Width)));
+    }
+
+    [Fact]
+    public void NativeDotDisplayOpts_MatchesC()
+    {
+        Assert.Equal(28, Unsafe.SizeOf<NativeDotDisplayOpts>());
+        Assert.Equal(0, (int)Marshal.OffsetOf<NativeDotDisplayOpts>(nameof(NativeDotDisplayOpts.Sentinel)));
+        Assert.Equal(4, (int)Marshal.OffsetOf<NativeDotDisplayOpts>(nameof(NativeDotDisplayOpts.Pitch)));
+        Assert.Equal(8, (int)Marshal.OffsetOf<NativeDotDisplayOpts>(nameof(NativeDotDisplayOpts.Color)));
+        Assert.Equal(12, (int)Marshal.OffsetOf<NativeDotDisplayOpts>(nameof(NativeDotDisplayOpts.Accent)));
+        Assert.Equal(13, (int)Marshal.OffsetOf<NativeDotDisplayOpts>(nameof(NativeDotDisplayOpts.NoDim)));
+        Assert.Equal(14, (int)Marshal.OffsetOf<NativeDotDisplayOpts>(nameof(NativeDotDisplayOpts.Marquee)));
+        Assert.Equal(16, (int)Marshal.OffsetOf<NativeDotDisplayOpts>(nameof(NativeDotDisplayOpts.Align)));
+        Assert.Equal(20, (int)Marshal.OffsetOf<NativeDotDisplayOpts>(nameof(NativeDotDisplayOpts.Width)));
+    }
+
+    [Fact]
     public void NativeCorners_MatchesC()
     {
         Assert.Equal(16, Unsafe.SizeOf<NativeCorners>());
@@ -3415,7 +3527,7 @@ public class GeneratedAbiTests
     [Fact]
     public void NativeAppDesc_MatchesC()
     {
-        Assert.Equal(48, Unsafe.SizeOf<NativeAppDesc>());
+        Assert.Equal(56, Unsafe.SizeOf<NativeAppDesc>());
         Assert.Equal(0, (int)Marshal.OffsetOf<NativeAppDesc>(nameof(NativeAppDesc.Title)));
         Assert.Equal(8, (int)Marshal.OffsetOf<NativeAppDesc>(nameof(NativeAppDesc.Width)));
         Assert.Equal(12, (int)Marshal.OffsetOf<NativeAppDesc>(nameof(NativeAppDesc.Height)));
@@ -3429,6 +3541,7 @@ public class GeneratedAbiTests
         Assert.Equal(32, (int)Marshal.OffsetOf<NativeAppDesc>(nameof(NativeAppDesc.Theme)));
         Assert.Equal(36, (int)Marshal.OffsetOf<NativeAppDesc>(nameof(NativeAppDesc.Accent)));
         Assert.Equal(40, (int)Marshal.OffsetOf<NativeAppDesc>(nameof(NativeAppDesc.FollowSystemTheme)));
+        Assert.Equal(48, (int)Marshal.OffsetOf<NativeAppDesc>(nameof(NativeAppDesc.AppId)));
     }
 
     [Fact]

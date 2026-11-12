@@ -6,7 +6,7 @@
 #nullable enable
 namespace CuiSharp;
 
-/// <summary>cui_token</summary>
+/// <summary>Semantic colors. Use these instead of raw colors so your UI follows the theme (light/dark) and the accent. They can go anywhere a cui_color goes.</summary>
 public enum Token
 {
     None = 0,
@@ -75,7 +75,7 @@ public enum TextureFormat
     Rgba8 = 4,
 }
 
-/// <summary>cui_direction</summary>
+/// <summary>Zero inherits the parent, or LTR at the context root. With text shaping, AUTO uses the first strong character in descendant text, ignoring explicitly directed subtrees. Without text shaping, AUTO resolves to LTR.</summary>
 public enum Direction
 {
     Inherit = 0,
@@ -173,6 +173,7 @@ public enum Mods
     Shift = 1,
     Ctrl = 2,
     Alt = 4,
+    /// <summary>Command on macOS, Windows key elsewhere</summary>
     Super = 8,
     Primary = Ctrl,
 }
@@ -208,7 +209,7 @@ public enum Dir
     Grid = 3,
 }
 
-/// <summary>cui_align</summary>
+/// <summary>CUI_ALIGN_DEFAULT: columns stretch their children, rows center them.</summary>
 public enum Align
 {
     Default = 0,
@@ -250,8 +251,11 @@ public enum TextAlign
 /// <summary>cui_button_variant</summary>
 public enum ButtonVariant
 {
+    /// <summary>secondary for buttons, ghost for icon buttons</summary>
     Default = 0,
+    /// <summary>neutral filled</summary>
     Secondary = 1,
+    /// <summary>the one main action</summary>
     Primary = 2,
     Outline = 3,
     Ghost = 4,
@@ -312,7 +316,18 @@ public enum Tone
     Accent = 8,
 }
 
-/// <summary>cui_status</summary>
+/// <summary>A line, a threshold or a point drawn over a chart, with a two-line label: the label in the foreground color and a muted detail under it. Line and bar charts take them in cui_chart_opts, the dot chart in cui_dot_chart_opts. Labels that would overlap move to the other side of their line, then down.</summary>
+public enum AnnotationKind
+{
+    /// <summary>a vertical line at `x`, labelled at its top</summary>
+    X = 0,
+    /// <summary>a dashed horizontal line at the value `y`, labelled at its end</summary>
+    Y = 1,
+    /// <summary>a dot at `x`, `y`, labelled beside it</summary>
+    Point = 2,
+}
+
+/// <summary>Button that shows the result of the work it started: idle, a spinner while busy, then a check (or an error) that settles back. Width morphs smoothly between the states. Returns true when clicked while idle.</summary>
 public enum Status
 {
     Idle = 0,
@@ -321,20 +336,22 @@ public enum Status
     Error = 3,
 }
 
-/// <summary>cui_diff_mode</summary>
+/// <summary>Diff viewer: compares two versions of a text line by line, side by side or inline, with changed words marked inside changed lines. The texts are yours (UTF-8, read during the call); the view keeps a copy and diffs again only when one of them changes, so it is cheap to call every frame.</summary>
 public enum DiffMode
 {
     Split = 0,
     Inline = 1,
 }
 
-/// <summary>cui_diff_row_kind</summary>
+/// <summary>The rows the view shows after folding, e.g. to put a comment button beside a line. Copies rows [first, first + cap) and returns how many there are (0 before the view&apos;s first frame). Call it in the same id scope as the view.</summary>
 public enum DiffRowKind
 {
     Same = 0,
     Removed = 1,
     Added = 2,
+    /// <summary>split: a removed line beside the added line that replaced it</summary>
     Changed = 3,
+    /// <summary>hidden unchanged lines, starting at old_line / new_line</summary>
     Fold = 4,
 }
 
@@ -348,7 +365,7 @@ public enum LoaderStyle
     Grid = 4,
 }
 
-/// <summary>cui_task_status</summary>
+/// <summary>Tool call: a compact row with the tool, a detail and its status; opens to show the input and the output (shown as JSON when they parse).</summary>
 public enum CuiTaskStatus
 {
     Pending = 0,
@@ -358,7 +375,7 @@ public enum CuiTaskStatus
     Skipped = 4,
 }
 
-/// <summary>cui_voice_state</summary>
+/// <summary>Voice orb: a living shape for voice modes. level is the input or output loudness (0..1). Returns true when clicked.</summary>
 public enum VoiceState
 {
     Idle = 0,
@@ -367,7 +384,7 @@ public enum VoiceState
     Speaking = 3,
 }
 
-/// <summary>cui_log_level</summary>
+/// <summary>Log console. The app owns the storage: give cui_log_init an array of line records and a byte buffer for the text. Appending never allocates; when either is full the oldest lines are dropped (a ring buffer). Lines longer than the text buffer are cut to fit.</summary>
 public enum LogLevel
 {
     Trace = 0,
@@ -378,24 +395,31 @@ public enum LogLevel
     LevelCount = 5,
 }
 
-/// <summary>cui_curve_mode</summary>
+/// <summary>Curve editor: keyframes on a plot, for easing, animation timing and response curves. You own the array of keys, sorted by x; the editor edits it in place (moves, handles, modes, adds and removes) and reports what it did in the result, so data you keep beside each key can follow:</summary>
 public enum CurveMode
 {
+    /// <summary>automatic tangents</summary>
     Smooth = 0,
+    /// <summary>the key&apos;s own handles</summary>
     Free = 1,
+    /// <summary>a straight line to the next key</summary>
     Linear = 2,
+    /// <summary>hold this value until the next key</summary>
     Step = 3,
 }
 
-/// <summary>cui_timeline_ruler</summary>
+/// <summary>Timeline editor (dope sheet): a track list on the left, a time ruler on top and a row per track with its keys (and clips, for video and audio tracks). You own the tracks, their keys and clips, the playhead time and the selection; the editor edits them in place and reports what it did:</summary>
 public enum TimelineRuler
 {
+    /// <summary>frame numbers</summary>
     Frames = 0,
+    /// <summary>1.5 s</summary>
     Seconds = 1,
+    /// <summary>minutes:seconds:frames (hours too past an hour)</summary>
     Timecode = 2,
 }
 
-/// <summary>cui_severity</summary>
+/// <summary>Compiler and linter diagnostics, grouped by file: errors, warnings, notes and hints with their position, source and code. Toggles above filter by severity (with counts) and a field filters by text. A file&apos;s header folds its group. Up and Down move the selection, Left and Right fold and unfold, Enter or a double-click reports `activated` (open the file there). Only the rows in view are built, so thousands of diagnostics stay fast. The array needs to be valid only during the call.</summary>
 public enum Severity
 {
     Error = 0,
@@ -404,7 +428,7 @@ public enum Severity
     Hint = 3,
 }
 
-/// <summary>cui_job_status</summary>
+/// <summary>A CI/CD run: stages left to right, each a column of jobs with their status and duration. A stage&apos;s header sums up its jobs (failed, running, passed). Running jobs spin. Click a job to get its index (open its log). Below 560 points the stages stack top to bottom.</summary>
 public enum JobStatus
 {
     Pending = 0,
@@ -415,7 +439,7 @@ public enum JobStatus
     Canceled = 5,
 }
 
-/// <summary>cui_query_type</summary>
+/// <summary>Conditions joined by &quot;all&quot; or &quot;any&quot;, in groups you can nest: the filter of an issue tracker, a log search or a database view. You own the nodes, in order, each with its depth: node 0 is the outer group (made for you when count is 0). A rule picks a field, an operator for the field&apos;s type and a value; a group picks all or any. Returns true when anything changed. cui_query_text writes the query as a sentence, cui_query_match tests a record against it.</summary>
 public enum QueryType
 {
     Text = 0,
@@ -424,7 +448,7 @@ public enum QueryType
     Bool = 3,
 }
 
-/// <summary>cui_http_method</summary>
+/// <summary>The method, the URL and Send, as in an API client. Enter in the URL sends; while `loading` the button cancels. cui_response_status shows a response&apos;s status, time and size in one line. cui_url_params and cui_url_set_params move a URL&apos;s query to and from key-value pairs, decoding and encoding it, so a parameters table can stay in step with the URL.</summary>
 public enum HttpMethod
 {
     Get = 0,
@@ -436,15 +460,25 @@ public enum HttpMethod
     Options = 6,
 }
 
+/// <summary>How an axis labels its values.</summary>
+public enum AxisUnits
+{
+    /// <summary>numbers, printed with the axis format (default &quot;%g&quot;)</summary>
+    Number = 0,
+    /// <summary>hours shown as a time of day: 12.25 is 12:15, and 30 is 06:00 the next day</summary>
+    Hours = 1,
+}
+
 /// <summary>cui_renderer_kind</summary>
 public enum Renderer
 {
+    /// <summary>OpenGL, or software when there is no GPU (CPU-drawn OpenGL, X11 and Win32)</summary>
     Auto = 0,
     OpenGL = 1,
     Software = 2,
 }
 
-/// <summary>cui_file_dialog_kind</summary>
+/// <summary>Native file dialogs. Blocking; returns true and writes the chosen path (UTF-8) to out when the user confirms. On Linux this uses zenity or kdialog when installed. Pass NULL as app to use the current app (handy in cui_app_run callbacks).</summary>
 public enum FileDialogKind
 {
     Open = 0,
@@ -455,17 +489,24 @@ public enum FileDialogKind
 /// <summary>cui_sw_format</summary>
 public enum SwFormat
 {
+    /// <summary>bytes R, G, B, A in memory</summary>
     Rgba = 0,
+    /// <summary>bytes B, G, R, A in memory (Win32 DIBs, X11, Cairo)</summary>
     Bgra = 1,
 }
 
 /// <summary>CUI_FONT_BODY</summary>
 public enum Font
 {
+    /// <summary>Inter Regular</summary>
     Body = 0,
+    /// <summary>Inter Medium</summary>
     Medium = 1,
+    /// <summary>Geist Medium, for headings 28pt and up</summary>
     Display = 2,
+    /// <summary>Geist Mono</summary>
     Mono = 3,
+    /// <summary>Lucide icons</summary>
     Icons = 4,
 }
 
@@ -479,7 +520,7 @@ public enum TourAction
     Skipped = 4,
 }
 
-/// <summary>CUI_COMMENT_LIKE</summary>
+/// <summary>Comment with replies. depth indents replies under a connector line. Returns CUI_COMMENT_LIKE or CUI_COMMENT_REPLY flags for what was clicked; *liked and *likes are updated for you.</summary>
 [System.Flags]
 public enum CommentEvents
 {
@@ -499,7 +540,7 @@ public enum PlayerEvents
     Seek = 8,
 }
 
-/// <summary>CUI_RESPONSE_COPY</summary>
+/// <summary>Response actions: copy, regenerate, vote and share under an answer.</summary>
 [System.Flags]
 public enum ResponseEvents
 {
@@ -511,7 +552,7 @@ public enum ResponseEvents
     Share = 16,
 }
 
-/// <summary>CUI_COMPOSER_SEND</summary>
+/// <summary>Chat composer: a growing text area with attachments, a model picker and a send button that turns into stop while busy. Enter sends, Shift+Enter adds a line. Returns CUI_COMPOSER_* flags; *removed is the attachment whose x was clicked.</summary>
 [System.Flags]
 public enum ComposerEvents
 {

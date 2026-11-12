@@ -13,7 +13,7 @@ public static unsafe class MoreComponentsUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_radio_cards_ex</summary>
+        /// <summary>Radio cards: larger selectable cards for choices that need a description (plans, templates).</summary>
         public bool RadioCards(UiText id, ReadOnlySpan<Choice> choices, ref int index, RadioCardsOpts o = default)
         {
             var __choices = Utf8.AllocFrame<NativeChoice>(choices.Length);
@@ -31,7 +31,7 @@ public static unsafe class MoreComponentsUiExtensions
             return new LayoutScope(ui.Handle, &Native.ButtonGroupEnd, "ButtonGroup", null);
         }
 
-        /// <summary>Icon button that copies text to the clipboard and confirms with a check.</summary>
+        /// <summary>Icon button that copies text to the clipboard and confirms with a check. Keyboard focus stays on the button when the check appears or disappears.</summary>
         public bool CopyButton(UiText id, UiText text)
         {
             var __result = Native.CopyButton(ui.Handle, Utf8.Get(id), Utf8.Get(text));
@@ -39,7 +39,7 @@ public static unsafe class MoreComponentsUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_hold_button_ex</summary>
+        /// <summary>Hold to confirm: a destructive action that fills while held and fires when full. Returns true once.</summary>
         public bool HoldButton(UiText label, HoldOpts o = default)
         {
             var __opts = o.ToNative();

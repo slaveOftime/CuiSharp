@@ -36,7 +36,7 @@ True once, with the chosen path in out, when the dialog is confirmed; *open turn
 public PathBarResult PathBar(UiText id, ReadOnlySpan<string> segments, PathBarOpts o = default)
 ```
 
-cui_path_bar_ex
+Path bar: a breadcrumb for file and scene paths. Segments are clickable, the last one is the current place. Middle segments that do not fit collapse into a "..." menu. With .menus, the chevron after segment k opens a menu you fill with the children of segment k (cui_path_bar_menu_begin). Click the empty part (or the current segment), or press Ctrl+L, to type a path: Enter submits it, Esc or clicking away cancels.
 
 ## `PathBarMenu`
 
@@ -52,7 +52,7 @@ True while the menu of separator *segment is showing: build menu items for the c
 public int TreeTableDepth()
 ```
 
-cui_tree_table_depth
+depth of the current row, 0 at the top
 
 ## `TreeTableName`
 

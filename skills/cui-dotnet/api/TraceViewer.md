@@ -20,4 +20,4 @@ protected override void Draw(Ui ui)
 public TraceResult TraceView(UiText id, ReadOnlySpan<TraceTrack> tracks, ReadOnlySpan<TraceSpan> spans, ref TraceViewState view, ref int selected, TraceOpts o = default)
 ```
 
-cui_trace_view_ex
+A tracing timeline: one lane per thread, process or service, each with its nested spans, on one time ruler, with markers (frames, GC pauses, deploys) drawn across every lane. Wheel zooms around the pointer, Shift+wheel or a drag pans, click selects a span, Shift+drag measures a time range. A lane's name folds it. Keys: Left and Right step through the selected span's lane, + and - zoom, F fits, Esc clears. Spans must be sorted by track, depth and start (cui_trace_sort), with no overlap within a depth of a track. Like the flame graph, only what is in view is visited.

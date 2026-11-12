@@ -13,7 +13,7 @@ public static unsafe class MenusAndPopoversUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_popover_begin</summary>
+        /// <summary>Popover anchored to the previous component. Toggle it with cui_popover_toggle / cui_popover_open.</summary>
         public OpenScope Popover(UiText id, PopoverOpts o = default)
         {
             var __opts = o.ToNative();
@@ -69,7 +69,7 @@ public static unsafe class MenusAndPopoversUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_menu_begin</summary>
+        /// <summary>Dropdown menu: a button that opens a menu. Items return true when chosen.</summary>
         public OpenScope Menu(UiText label, MenuOpts o = default)
         {
             var __opts = o.ToNative();

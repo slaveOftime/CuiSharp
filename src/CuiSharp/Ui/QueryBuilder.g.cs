@@ -14,7 +14,7 @@ public static unsafe class QueryBuilderUiExtensions
     extension(Ui ui)
     {
         /// <summary>cui_query_builder_ex</summary>
-        public bool QueryBuilder(UiText id, ReadOnlySpan<QueryField> fields, Span<QueryNode> nodes, ref int count, int capacity, QueryOpts o = default)
+        public bool QueryBuilder(UiText id, ReadOnlySpan<QueryField> fields, Span<QueryNode> nodes, ref int count, QueryOpts o = default)
         {
             var __fields = Utf8.AllocFrame<NativeQueryField>(fields.Length);
             for (int i = 0; i < fields.Length; i++) __fields[i] = fields[i].ToNative();
@@ -22,7 +22,7 @@ public static unsafe class QueryBuilderUiExtensions
             for (int i = 0; i < nodes.Length; i++) __nodes[i] = nodes[i].ToNative();
             int __nodesCount = count;
             var __opts = o.ToNative();
-            var __result = Native.QueryBuilder(ui.Handle, Utf8.Get(id), (nint)__fields, (int)(fields.Length), (nint)__nodes, ref __nodesCount, capacity, in __opts);
+            var __result = Native.QueryBuilder(ui.Handle, Utf8.Get(id), (nint)__fields, (int)(fields.Length), (nint)__nodes, ref __nodesCount, (int)(nodes.Length), in __opts);
             if (__result != 0)
             {
                 for (int i = 0; i < Math.Min(__nodesCount, nodes.Length); i++) nodes[i] = QueryNode.FromNative(__nodes[i]);

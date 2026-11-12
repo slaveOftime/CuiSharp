@@ -13,7 +13,7 @@ public static unsafe class AiInterfacesUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_reasoning_begin</summary>
+        /// <summary>Reasoning: a model&apos;s thinking. While thinking, the header shimmers and counts the seconds; afterwards it reads &quot;Thought for 12s&quot; and the body folds away. Click the header to open or close it. Put text inside.</summary>
         public OpenScope Reasoning(UiText id, ReasoningOpts o = default)
         {
             var __opts = o.ToNative();
@@ -37,7 +37,7 @@ public static unsafe class AiInterfacesUiExtensions
             WidgetRecorder.Note(ui.Handle, "ToolCall", id);
         }
 
-        /// <summary>cui_agent_plan_ex</summary>
+        /// <summary>Agent plan: steps with their status on a connected rail, and progress.</summary>
         public int AgentPlan(UiText id, ReadOnlySpan<PlanStep> steps, AgentPlanOpts o = default)
         {
             var __steps = Utf8.AllocFrame<NativePlanStep>(steps.Length);
@@ -48,7 +48,7 @@ public static unsafe class AiInterfacesUiExtensions
             return __result;
         }
 
-        /// <summary>cui_agent_status_ex</summary>
+        /// <summary>Agent status pill: what the agent is doing right now and for how long.</summary>
         public void AgentStatus(UiText text, AgentStatusOpts o = default)
         {
             var __opts = o.ToNative();
@@ -74,7 +74,7 @@ public static unsafe class AiInterfacesUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_context_meter_ex</summary>
+        /// <summary>Context meter: a small ring of how full the context is; hover for a breakdown. It turns amber past 80% and red past 95%.</summary>
         public void ContextMeter(UiText id, float used, float limit, ContextOpts o = default)
         {
             var __opts = o.ToNative();
@@ -93,7 +93,7 @@ public static unsafe class AiInterfacesUiExtensions
             return (ResponseEvents)__result;
         }
 
-        /// <summary>cui_prompt_suggestions_ex</summary>
+        /// <summary>Prompt suggestions: cards to start a conversation with.</summary>
         public int PromptSuggestions(UiText id, ReadOnlySpan<PromptSuggestion> items, PromptSuggestionsOpts o = default)
         {
             var __items = Utf8.AllocFrame<NativePromptSuggestion>(items.Length);
@@ -104,7 +104,7 @@ public static unsafe class AiInterfacesUiExtensions
             return __result;
         }
 
-        /// <summary>cui_model_picker_ex</summary>
+        /// <summary>Model picker: the current model on a button; a list with details opens.</summary>
         public bool ModelPicker(UiText id, ReadOnlySpan<Model> models, ref int selected, ModelPickerOpts o = default)
         {
             var __models = Utf8.AllocFrame<NativeModel>(models.Length);

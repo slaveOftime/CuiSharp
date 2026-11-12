@@ -20,4 +20,4 @@ protected override void Draw(Ui ui)
 public WaterfallResult Waterfall(UiText id, ReadOnlySpan<NetRequest> requests, ref int selected, WaterfallOpts o = default)
 ```
 
-cui_waterfall_ex
+HTTP requests as a table with a timing bar each: queued, DNS, connect, TLS, waiting for the first byte and downloading, on one time scale with the page's DOMContentLoaded and load lines. Hover a bar for the breakdown. Narrow panels drop the type and size columns. Only the rows in view are built. Up and Down move the selection.

@@ -13,7 +13,7 @@ public static unsafe class UptimeBarsUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_uptime_ex</summary>
+        /// <summary>A status page: each service with its current state, its uptime over the period, and one bar per day colored by availability (gray without data). Hover a bar for its day and uptime. On a narrow panel only the most recent days that fit are shown.</summary>
         public UptimeResult Uptime(UiText id, ReadOnlySpan<UptimeService> services, UptimeOpts o = default)
         {
             var __services = Utf8.AllocFrame<NativeUptimeService>(services.Length);

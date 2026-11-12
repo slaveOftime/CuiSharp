@@ -13,7 +13,7 @@ public static unsafe class CoverageUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_coverage_ex</summary>
+        /// <summary>Test coverage by folder and file: the files&apos; paths make the tree, each folder sums up what it holds, and folders fold. Line coverage shows as a bar colored by thresholds, with branches and functions beside it. Click a column&apos;s title to sort. Enter or a double-click activates a file. Narrow panels show lines only.</summary>
         public CoverageResult Coverage(UiText id, ReadOnlySpan<CoverageFile> files, CoverageOpts o = default)
         {
             var __files = Utf8.AllocFrame<NativeCoverageFile>(files.Length);

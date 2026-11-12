@@ -36,9 +36,10 @@ retained-pointer storage.
 | `src/CuiSharp/Ui/Records.g.cs` | Data records used as array items (`Choice`, `Command`, `TableColumn`, `TableSort`): friendly constructor, `ToNative()`, and `FromNative()` where write-back is meaningful. |
 | `src/CuiSharp.Tests/OptionMappings.g.cs` | One consolidated test covering every generated option's populated fields, sentinel and null/false defaults. A swapped field is a single generator bug, so it is one test, not one per option. |
 
-Current state: **166** option structs, **100** data records, **278** generated wrappers, **169**
-deliberate hand-written ones, **4** excluded, **4** variadic skipped, **0** pending — 492 C
-functions, every one with a status. Pointer-heavy options are withheld rather than exposed with guessed
+Current state: **170** option structs, **104** data records, **277** generated wrappers, **175**
+deliberate hand-written ones, **4** excluded, **4** variadic skipped, **0** pending — 496 C
+functions, every one with a status. `pwsh skills/cui-sync/scripts/sync-status.ps1` prints these
+numbers from `coverage.txt` and fails when the prose here or in `README.md` disagrees. Pointer-heavy options are withheld rather than exposed with guessed
 ownership. Charts, texture handles, text-buffer inputs and reorder are hand-written on purpose, and
 `coverage.txt` names the member and the file for every one of them.
 
@@ -76,6 +77,7 @@ and missing reasons fail generation.
 | `arrayLengths` | `length`, `cast`, `emit`, `why` | A `const T *` parameter whose length is an expression (`rows * cols`) or a differently-named parameter (`size`). `emit: false` means native derives it and the wrapper only checks it. |
 | `arrayParams` | `why` | A pointer parameter that is an array although its name is singular, e.g. `const cui_swipe_action *left` (`name@function`). |
 | `inOutArrays` | `count`, `why`, `changedWhen` | A record array the widget edits, plus the count it may change: copied in, called, copied back. `changedWhen` is the condition the widget reports an edit by (`__result != 0`, `__result.Changed != 0`, `__result.Flag >= 0`) and the copy back only runs then, because converting a record allocates the strings and fixed arrays it holds. |
+| `capacityParams` | `array`, `why` | An `int capacity` the widget writes up to, where the array's length is that number. The wrapper passes the span's length and the parameter leaves the signature: supplying both lets them disagree, and the widget writes past the caller's array. |
 | `textFields` | `capacity`, `why` | A `char * buf` pair the caller sees as one `ref string`; the wrapper rents a pooled buffer and reads the text back only when it changed. |
 | `optionPointers` | `type`, `why` | An option field that is a pointer to a primitive (`int *`, `_Bool *`), exposed as a `ref` parameter. |
 | `optionArrayChecks` | `atLeast`, `why` | An option array whose length is a widget parameter; the wrapper rejects a short array before the call. |

@@ -11,6 +11,9 @@ build-native.sh    Linux x64/ARM64 or macOS ARM64: shared library and libcui.a
 build-native-container.sh  Linux: builds inside debian:11 (glibc 2.31)
 ```
 
+The container script hands its uid/gid to the image and chowns `runtimes/` on the way out, so
+the files it writes are yours on the host — the same as `build-native.sh` would leave.
+
 ## Build
 
 ```sh

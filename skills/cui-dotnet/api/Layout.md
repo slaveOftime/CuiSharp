@@ -28,7 +28,7 @@ cui_box_begin
 public LayoutScope Card(Card o = default)
 ```
 
-cui_card_begin
+returns true when clicked (hoverable)
 
 ## `Column`
 
@@ -44,7 +44,7 @@ cui_column_begin
 public void Gap(float size)
 ```
 
-cui_gap
+fixed space
 
 ## `Row`
 
@@ -60,7 +60,7 @@ cui_row_begin
 public LayoutScope Scroll(ScrollOpts o = default)
 ```
 
-cui_scroll_begin
+Scroll area with smooth scrolling and overlay scrollbars.
 
 ## `ScrollTo`
 
@@ -76,7 +76,7 @@ cui_scroll_to
 public void Separator()
 ```
 
-cui_separator
+hairline, follows the parent direction
 
 ## `Spacer`
 
@@ -84,7 +84,7 @@ cui_separator
 public void Spacer()
 ```
 
-cui_spacer
+flexible space
 
 ## `Split`
 
@@ -92,7 +92,7 @@ cui_spacer
 public LayoutScope Split(UiText id, ref float ratio, SplitOpts o = default)
 ```
 
-cui_split_begin
+Resizable split view: two panes with a draggable divider. `ratio` is the size of the first pane in 0..1. Call cui_split_next between the panes.
 
 ## `SplitNext`
 

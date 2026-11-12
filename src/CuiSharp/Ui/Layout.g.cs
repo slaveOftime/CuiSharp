@@ -37,25 +37,25 @@ public static unsafe class LayoutUiExtensions
             return new LayoutScope(ui.Handle, &Native.BoxEnd, "Column", o.Id, nativeId: __result);
         }
 
-        /// <summary>cui_spacer</summary>
+        /// <summary>flexible space</summary>
         public void Spacer()
         {
             Native.Spacer(ui.Handle);
         }
 
-        /// <summary>cui_gap</summary>
+        /// <summary>fixed space</summary>
         public void Gap(float size)
         {
             Native.Gap(ui.Handle, size);
         }
 
-        /// <summary>cui_separator</summary>
+        /// <summary>hairline, follows the parent direction</summary>
         public void Separator()
         {
             Native.Separator(ui.Handle);
         }
 
-        /// <summary>cui_card_begin</summary>
+        /// <summary>returns true when clicked (hoverable)</summary>
         public LayoutScope Card(Card o = default)
         {
             var __opts = o.ToNative();
@@ -71,7 +71,7 @@ public static unsafe class LayoutUiExtensions
             return new LayoutScope(ui.Handle, &Native.CardEnd, "Card", o.Id);
         }
 
-        /// <summary>cui_scroll_begin</summary>
+        /// <summary>Scroll area with smooth scrolling and overlay scrollbars.</summary>
         public LayoutScope Scroll(ScrollOpts o = default)
         {
             var __opts = o.ToNative();
@@ -86,7 +86,7 @@ public static unsafe class LayoutUiExtensions
             WidgetRecorder.Note(ui.Handle, "ScrollTo", scrollId);
         }
 
-        /// <summary>cui_split_begin</summary>
+        /// <summary>Resizable split view: two panes with a draggable divider. `ratio` is the size of the first pane in 0..1. Call cui_split_next between the panes.</summary>
         public LayoutScope Split(UiText id, ref float ratio, SplitOpts o = default)
         {
             var __ratio = Utf8.AllocFrame<float>(1);

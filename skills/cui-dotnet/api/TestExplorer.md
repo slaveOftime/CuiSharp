@@ -20,4 +20,4 @@ protected override void Draw(Ui ui)
 public TestExplorerResult TestExplorer(UiText id, ReadOnlySpan<TestItem> items, TestExplorerOpts o = default)
 ```
 
-cui_test_explorer_ex
+Test results as a tree: suites fold, each test shows its status and time, and a failure shows its message under it. A suite's status sums up its tests. The toolbar runs everything, counts results and filters by status and by name. Hover a row for its run button. Only the rows in view are built. Up and Down move, Left and Right fold, Enter activates. Items are in tree order with their depth; the statuses are the pipeline's.

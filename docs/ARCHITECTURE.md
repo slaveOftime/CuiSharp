@@ -43,7 +43,7 @@ src/CuiSharp.Tools/           dotnet cui: the docs and API offline, then build, 
 src/CuiSharp.Templates/       dotnet new cui-app / cui-mini
 src/CuiSharp.Tests/           ABI, enums, marshalling, frame behaviour, hosting, tools, docs drift
 src/CuiSharp.Benchmarks/      BenchmarkDotNet suites + --fps and --scale harnesses
-samples/CuiSharp.Gallery/     twenty-eight pages of every component, one file per page
+samples/CuiSharp.Gallery/     twenty-nine pages of every component, one file per page
 native/                       submodule + the two build scripts
 tools/                        bindgen.cs, regen.ps1, verify-template.ps1, api-surface.ps1, snapshots.ps1
 bindings/                     api.json (generated IR), overrides.json (inputs), coverage.txt (report)
@@ -88,12 +88,19 @@ The convention table the generator's default rules implement:
 | result flags (`CUI_CHANGED`, …) | `readonly struct` (`InputResult`) when the bits are shared and read one by one |
 | a widget's own event or action word | the `[Flags]` enum or enum it names (`PlayerEvents`, `TourAction`) |
 | `CUI_TONE_DANGER` | `Tone.Danger` |
-| header comment | `/// <summary>` |
+| a comment in the header, beside a declaration, or above the definition | `/// <summary>` |
 
 An array is a `const` pointer, and a widget that writes one value back through a pointer says so
 with a non-const one: `float *pos` is the compare divider, not a list of positions. That is why
 the plural-name heuristic in `Parameter()` is narrowed to const pointers — `pos` and `progress` end
-in an `s` and are still one number.
+in an `s` and are still one number. An `arrayParams` or `inOutArrays` entry overrides the heuristic
+outright, which is how `double *times` on the event track is read as the array it is.
+
+**A length is passed once, never twice.** A count is derived from the array (`x`/`x_count`, or an
+`optionFieldCounts` pair) and a `capacity` is the array's own length (`capacityParams`), so the
+parameter leaves the signature. Two numbers for one buffer is a disagreement waiting to happen, and
+the widget writes up to the number it was told: a capacity larger than the array is a buffer
+overrun the type system would not catch.
 
 An `int` return is the last thing callers should have to decode. When the header documents it as
 one of `CUI_TOUR_*` or a `CUI_PLAYER_*` word, the wrapper returns that enum (`returnTypes` in
@@ -103,6 +110,20 @@ reach into `Interop` for — and, for the tour, mistaking the action for the ste
 Adding a wrapper to the hand-written layer instead of the generator is allowed, but it must be
 recorded in `bindings/overrides.json` as `MANUAL` with the member and the file, because
 `coverage.txt` claims that nothing wraps it otherwise.
+
+**A wrapper's summary is upstream's own sentence, wherever upstream wrote it.** Five places, in
+order: the comment above the declaration, the one beside it (`CUI_API void cui_gap(...);  /* a gap */`,
+which libclang does not attach to the declaration), the comment above the definition in the C source,
+the paragraph above the options struct, and — because upstream attaches a block to the declaration
+under it, and the component's paragraph often sits above an *item record* (`cui_blame_commit`) or an
+*enum* (`cui_task_status`) instead — that declaration's paragraph, when this widget is the only
+function that takes it. `cui_viz_item` opens the Treemap section and Funnel, Waffle and Bar list take
+the same record, so its paragraph describes the record and is not used as their summary. Constant and
+field comments become enum-member and field summaries the same way. Two things are not
+documentation and are dropped: a section title bar (`---- Terminal ----`), which libclang attaches to
+the declaration beneath it, and a note written to CUI's next reader (`left to right in any
+interface: see cui__keep_ltr`), which would otherwise stand in for the description the header has.
+What stays uncommented is counted in `docs/PLAN.md` rather than filled in by hand.
 
 Record array counts derive only through explicit `recordFieldCounts` overrides identifying
 input-only metadata (`QueryField.Choices`, `ApiEndpoint.Params`, `UptimeService.Days`,

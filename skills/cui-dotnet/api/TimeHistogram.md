@@ -20,4 +20,4 @@ protected override void Draw(Ui ui)
 public TimeHistogramResult TimeHistogram(UiText id, double start, double bucketSeconds, int buckets, ReadOnlySpan<HistogramSeries> series, ref double selStart, ref double selEnd, TimeHistogramOpts o = default)
 ```
 
-cui_time_histogram_ex
+Event counts over time, stacked by series (log levels, status classes), as above a log search. Drag across it to select a time range, click to clear. Hover a bar for its time and counts. Times are Unix seconds.

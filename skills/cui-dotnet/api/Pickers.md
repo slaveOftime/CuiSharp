@@ -36,7 +36,7 @@ cui_fader_ex
 public bool HistogramSlider(UiText label, ReadOnlySpan<float> bins, ref float lo, ref float hi, float min, float max, HistogramOpts o = default)
 ```
 
-cui_histogram_slider_ex
+Range slider over a histogram of the data it filters.
 
 ## `Knob`
 
@@ -44,7 +44,7 @@ cui_histogram_slider_ex
 public bool Knob(UiText id, ref float value, float min, float max, KnobOpts o = default)
 ```
 
-cui_knob_ex
+Knob, fader and level meter: the controls of audio, synth and mixer panels.
 
 ## `LevelMeter`
 
@@ -68,7 +68,7 @@ One or two months side by side; click a start and an end.
 public bool RulerSlider(UiText label, ref float value, float min, float max, RulerOpts o = default)
 ```
 
-cui_ruler_slider_ex
+Ruler slider: a tape measure that slides under a fixed marker, with momentum and snapping to step.
 
 ## `TimeDial`
 
@@ -84,7 +84,7 @@ Time dial: a clock face. Drag the hand to set hours, then minutes.
 public bool TimePicker(UiText id, ref int hour, ref int minute, TimeOpts o = default)
 ```
 
-cui_time_picker_ex
+Time picker: a field that opens hour and minute columns. hour is 0..23.
 
 ## `WheelPicker`
 
@@ -92,4 +92,4 @@ cui_time_picker_ex
 public bool WheelPicker(UiText id, ReadOnlySpan<string> items, ref int index, WheelOpts o = default)
 ```
 
-cui_wheel_picker_ex
+Wheel picker: a drum of options that you drag, scroll or arrow through. Several side by side make a date or time reel. join_left / join_right square off the selection band so wheels placed side by side share one continuous band.

@@ -13,7 +13,7 @@ public static unsafe class MoreActionsUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_split_button_ex</summary>
+        /// <summary>Split button: a main action with a menu of related actions on the chevron. Returns 0 when the main part is clicked, 1 + i when menu item i is chosen and -1 otherwise.</summary>
         public int SplitButton(UiText label, ReadOnlySpan<string> items, SplitButtonOpts o = default)
         {
             var __opts = o.ToNative();
@@ -22,7 +22,7 @@ public static unsafe class MoreActionsUiExtensions
             return __result;
         }
 
-        /// <summary>cui_confirm_button_ex</summary>
+        /// <summary>Two step destructive button: the first click morphs it into a confirm state with a countdown, the second click confirms. Returns true once.</summary>
         public bool ConfirmButton(UiText label, ConfirmOpts o = default)
         {
             var __opts = o.ToNative();
@@ -40,7 +40,7 @@ public static unsafe class MoreActionsUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_reactions</summary>
+        /// <summary>Reactions: icon pills with counts. Clicking toggles `active` and adjusts the count. Returns the index that changed, or -1.</summary>
         public int Reactions(UiText id, Span<Reaction> items)
         {
             var __items = Utf8.AllocFrame<NativeReaction>(items.Length);
@@ -54,7 +54,7 @@ public static unsafe class MoreActionsUiExtensions
             return __result;
         }
 
-        /// <summary>cui_speed_dial_ex</summary>
+        /// <summary>Speed dial: a round floating action button that fans out related actions. Returns the chosen action index, or -1.</summary>
         public int SpeedDial(UiText id, ReadOnlySpan<SpeedAction> actions, SpeedDialOpts o = default)
         {
             var __actions = Utf8.AllocFrame<NativeSpeedAction>(actions.Length);
@@ -79,7 +79,7 @@ public static unsafe class MoreActionsUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_user_menu_begin</summary>
+        /// <summary>User menu: an avatar, a name and a line of detail that opens a menu of account actions. Put menu items between begin and end.</summary>
         public OpenScope UserMenu(UiText name, UserMenuOpts o = default)
         {
             var __opts = o.ToNative();
@@ -95,7 +95,7 @@ public static unsafe class MoreActionsUiExtensions
             if (scope) body(ui);
         }
 
-        /// <summary>cui_swipe_item_begin The end call reports which swipe action was taken, or -1, so the body overload returns it.</summary>
+        /// <summary>Swipe actions: drag a row sideways (or swipe on a trackpad) to reveal actions behind it. A long swipe triggers the first action. The row content goes between begin and end; end returns the chosen action: 0..left_count-1 for left actions, 100 + i for right actions, or -1. The end call reports which swipe action was taken, or -1, so the body overload returns it.</summary>
         public int SwipeItem(UiText id, ReadOnlySpan<SwipeAction> left, ReadOnlySpan<SwipeAction> right, DrawFn body)
         {
             ArgumentNullException.ThrowIfNull(body);

@@ -237,6 +237,28 @@
       "why": "CUI takes an int* the method menu writes: the wrapper keeps the caller's HttpMethod and hands over the int behind it."
     }
   },
+  "capacityParams": {
+    "cui_curve_editor_ex.capacity": {
+      "array": "keys",
+      "why": "The editor adds keys up to the buffer it was given: the span's length is that buffer."
+    },
+    "cui_gradient_editor_ex.capacity": {
+      "array": "stops",
+      "why": "The editor adds stops up to the buffer it was given: the span's length is that buffer."
+    },
+    "cui_kv_editor_ex.capacity": {
+      "array": "pairs",
+      "why": "The editor adds pairs up to the buffer it was given: the span's length is that buffer."
+    },
+    "cui_query_builder_ex.capacity": {
+      "array": "nodes",
+      "why": "The builder adds nodes up to the buffer it was given: the span's length is that buffer."
+    },
+    "cui_event_track_ex.capacity": {
+      "array": "times",
+      "why": "The track adds events up to the buffer it was given: the span's length is that buffer."
+    }
+  },
   "scopes": {
     "cui_row_begin": {
       "end": "cui_box_end",
@@ -801,6 +823,9 @@
     },
     "cui_filter_bar": {
       "why": "ui.FilterBar (Ui/Ui.BoolGroups.cs): the bar edits one option bitmask per field in the caller's array; the wrapper copies through a frame-arena uint block because native writes count masks, not one."
+    },
+    "cui_dot_chart_ex": {
+      "why": "A dot series carries its samples as a bare pointer, and their number is the call's, not the series': the wrapper builds the array in the frame arena from managed series, as the line and bar charts do."
     }
   },
   "outParams": {
@@ -1269,6 +1294,18 @@
     "cui_trace_view": {
       "name": "TraceViewState",
       "why": "The visible time range, the scroll and the measured range: the caller owns it and the viewer moves it. Named State because the widget's member is already TraceView."
+    },
+    "cui_chart_annotation": {
+      "name": "ChartAnnotation",
+      "why": "Chart annotations are built by callers as a small record: the wrapper owns the array of them, and two of the fields are strings."
+    },
+    "cui_dot_chart_result": {
+      "name": "DotChartResult",
+      "why": "What the dot chart reports back: the sample under the pointer and whether the plot was clicked."
+    },
+    "cui_event_track_result": {
+      "name": "EventTrackResult",
+      "why": "What the event track reports back: whether it changed, and which event was added, removed or selected."
     }
   },
   "extraOptionFields": {
@@ -1646,6 +1683,10 @@
     "cui_regex_tester_opts.flags": {
       "type": "RegexFlags",
       "why": "The CUI_REGEX_* flags the tester toggles, so the wrapper passes a ref RegexFlags and writes it back."
+    },
+    "cui_event_track_opts.selected": {
+      "type": "int",
+      "why": "The selected event: the track moves it with the keys and a drag, so the wrapper writes it back."
     }
   },
   "arrayParams": {
@@ -1731,6 +1772,11 @@
       "count": "count",
       "why": "Dragging reschedules a task in place: the wrapper copies the tasks back on the frame the widget names a moved one, because converting every task every frame would allocate strings for nothing.",
       "changedWhen": "__result >= 0"
+    },
+    "cui_event_track_ex.times": {
+      "count": "count",
+      "why": "The track keeps its events sorted, moves them with the keys and a drag, adds on a click and removes on a double-click: the wrapper copies the array and its count back on the frames it reports a change.",
+      "changedWhen": "__result.Changed != 0"
     }
   },
   "hiddenOptionFields": {

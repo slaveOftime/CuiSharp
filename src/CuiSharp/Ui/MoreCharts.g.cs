@@ -13,7 +13,7 @@ public static unsafe class MoreChartsUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_heatmap_ex</summary>
+        /// <summary>Heatmap: a rows x cols matrix (values[row * cols + col]) on one hue, light to dark, with a scale below.</summary>
         public int Heatmap(UiText id, ReadOnlySpan<float> values, int rows, int cols, HeatmapOpts o = default)
         {
             if (values.Length < rows * cols) throw new ArgumentException("values needs at least rows * cols entries.", nameof(values));
@@ -27,7 +27,7 @@ public static unsafe class MoreChartsUiExtensions
             return __result;
         }
 
-        /// <summary>cui_calendar_heatmap_ex</summary>
+        /// <summary>Calendar heatmap: one cell per day from start, weeks as columns, in five levels, with month and weekday labels and a Less / More legend.</summary>
         public int CalendarHeatmap(UiText id, Date start, ReadOnlySpan<float> values, CalendarHeatmapOpts o = default)
         {
             var __opts = o.ToNative();
@@ -47,7 +47,7 @@ public static unsafe class MoreChartsUiExtensions
             return __result;
         }
 
-        /// <summary>cui_radar_chart_ex</summary>
+        /// <summary>Radar chart: series over shared axes (series[i].values[axis]).</summary>
         public int RadarChart(UiText id, ReadOnlySpan<Series> series, ReadOnlySpan<string> axes, RadarOpts o = default)
         {
             var __series = Utf8.AllocFrame<NativeSeries>(series.Length);
@@ -58,7 +58,7 @@ public static unsafe class MoreChartsUiExtensions
             return __result;
         }
 
-        /// <summary>cui_funnel_ex</summary>
+        /// <summary>Funnel: stages narrowing by value, with the conversion between them.</summary>
         public int Funnel(UiText id, ReadOnlySpan<VizItem> stages, FunnelOpts o = default)
         {
             var __stages = Utf8.AllocFrame<NativeVizItem>(stages.Length);
@@ -69,7 +69,7 @@ public static unsafe class MoreChartsUiExtensions
             return __result;
         }
 
-        /// <summary>cui_sankey_ex</summary>
+        /// <summary>Sankey: flows between nodes; columns follow the links from the sources.</summary>
         public int Sankey(UiText id, ReadOnlySpan<string> nodes, ReadOnlySpan<SankeyLink> links, SankeyOpts o = default)
         {
             var __links = Utf8.AllocFrame<NativeSankeyLink>(links.Length);
@@ -80,7 +80,7 @@ public static unsafe class MoreChartsUiExtensions
             return __result;
         }
 
-        /// <summary>cui_waffle_ex</summary>
+        /// <summary>Waffle: a 10 x 10 grid of squares split by share, with a legend.</summary>
         public int Waffle(UiText id, ReadOnlySpan<VizItem> items, WaffleOpts o = default)
         {
             var __items = Utf8.AllocFrame<NativeVizItem>(items.Length);
@@ -91,7 +91,7 @@ public static unsafe class MoreChartsUiExtensions
             return __result;
         }
 
-        /// <summary>cui_split_bar_ex</summary>
+        /// <summary>Split bar: one bar split into parts, with a legend of values and shares.</summary>
         public int SplitBar(UiText id, ReadOnlySpan<VizItem> items, SplitBarOpts o = default)
         {
             var __items = Utf8.AllocFrame<NativeVizItem>(items.Length);
@@ -102,7 +102,7 @@ public static unsafe class MoreChartsUiExtensions
             return __result;
         }
 
-        /// <summary>cui_bar_list_ex</summary>
+        /// <summary>Bar list: ranked horizontal bars. Rows are keyed by label, so when the values change the bars grow and the rows slide to their new rank.</summary>
         public int BarList(UiText id, ReadOnlySpan<VizItem> items, BarListOpts o = default)
         {
             var __items = Utf8.AllocFrame<NativeVizItem>(items.Length);
@@ -113,7 +113,7 @@ public static unsafe class MoreChartsUiExtensions
             return __result;
         }
 
-        /// <summary>cui_activity_rings_ex</summary>
+        /// <summary>Activity rings: concentric progress rings; values past 1 keep winding.</summary>
         public int ActivityRings(UiText id, ReadOnlySpan<VizItem> rings, RingsOpts o = default)
         {
             var __rings = Utf8.AllocFrame<NativeVizItem>(rings.Length);
@@ -124,7 +124,7 @@ public static unsafe class MoreChartsUiExtensions
             return __result;
         }
 
-        /// <summary>cui_scatter_chart_ex</summary>
+        /// <summary>Scatter (or bubble) chart: points per series, optional sizes.</summary>
         public int ScatterChart(UiText id, ReadOnlySpan<ScatterSeries> series, ScatterOpts o = default)
         {
             var __series = Utf8.AllocFrame<NativeScatterSeries>(series.Length);

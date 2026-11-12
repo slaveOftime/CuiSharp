@@ -13,7 +13,7 @@ public static unsafe class MoreInputsUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_inline_edit_ex</summary>
+        /// <summary>Inline edit: text that turns into a field in place. Click (or Enter when focused) to edit, Enter or clicking away saves, Esc cancels. Returns CUI_CHANGED when an edit is committed.</summary>
         public int InlineEdit(UiText id, ref string buf, int cap = 256, InlineEditOpts o = default)
         {
             var __bufSlot = ui.RentText(Native.MakeId(ui.Handle, Utf8.Get(id)) ^ 0x7d0ae244u, ref buf, (int)cap);
@@ -24,7 +24,7 @@ public static unsafe class MoreInputsUiExtensions
             return __result;
         }
 
-        /// <summary>cui_scrub_ex</summary>
+        /// <summary>Scrub field: drag sideways anywhere on it to change the value (Shift for fine steps), or click to type a number. Arrow keys step when focused.</summary>
         public bool Scrub(UiText label, ref float value, float min, float max, ScrubOpts o = default)
         {
             var __opts = o.ToNative();
@@ -33,7 +33,7 @@ public static unsafe class MoreInputsUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_money_input_ex</summary>
+        /// <summary>Money field: shows the amount with thousands separators, edits as plain digits, keeps a fixed number of decimals.</summary>
         public bool MoneyInput(UiText id, ref double value, MoneyOpts o = default)
         {
             var __opts = o.ToNative();
@@ -42,7 +42,7 @@ public static unsafe class MoreInputsUiExtensions
             return __result != 0;
         }
 
-        /// <summary>* left to right in any interface: see cui__keep_ltr</summary>
+        /// <summary>Shortcut recorder: click and press a key combination to record it. Backspace clears, Esc cancels. Returns true when the combination changed. cui_shortcut_label formats a combination (&quot;Ctrl Shift K&quot;).</summary>
         public bool ShortcutRecorder(UiText id, ref KeyCombo combo, ShortcutRecorderOpts o = default)
         {
             var __combo = combo.ToNative();

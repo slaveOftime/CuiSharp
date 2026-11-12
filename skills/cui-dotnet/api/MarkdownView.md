@@ -20,4 +20,4 @@ protected override void Draw(Ui ui)
 public MarkdownResult Markdown(UiText id, UiText text, MarkdownOpts o = default)
 ```
 
-cui_markdown_ex
+Markdown view: renders your markdown text (UTF-8) as native content, every frame, without keeping a copy:

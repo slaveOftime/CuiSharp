@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 
 namespace CuiSharp.Interop;
 
-/// <summary>cui_vec2, 8 bytes.</summary>
+/// <summary>cui_vec2 (8 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeVec2
 {
@@ -19,7 +19,7 @@ public unsafe struct NativeVec2
     public float Y;
 }
 
-/// <summary>cui_rect, 16 bytes.</summary>
+/// <summary>cui_rect (16 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeRect
 {
@@ -33,7 +33,7 @@ public unsafe struct NativeRect
     public float H;
 }
 
-/// <summary>cui_color, 4 bytes.</summary>
+/// <summary>cui_color (4 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeColor
 {
@@ -47,7 +47,7 @@ public unsafe struct NativeColor
     public byte A;
 }
 
-/// <summary>cui_renderer_iface, 32 bytes.</summary>
+/// <summary>How CUI talks to a renderer. The built-in renderers fill this in for you (cui_render_gl_iface / cui_render_sw_iface). Implement it to use CUI with any graphics API. (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeRendererIface
 {
@@ -61,7 +61,7 @@ public unsafe struct NativeRendererIface
     public nint TextureDestroy;
 }
 
-/// <summary>cui_allocator, 32 bytes.</summary>
+/// <summary>cui_allocator (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeAllocator
 {
@@ -75,25 +75,25 @@ public unsafe struct NativeAllocator
     public nint User;
 }
 
-/// <summary>cui_ctx_desc, 80 bytes.</summary>
+/// <summary>cui_ctx_desc (80 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeCtxDesc
 {
-    /// <summary>cui_renderer_iface (offset 0)</summary>
+    /// <summary>required for drawing; may be set later (offset 0)</summary>
     public NativeRendererIface Renderer;
-    /// <summary>cui_allocator (offset 32)</summary>
+    /// <summary>optional, defaults to malloc/free (offset 32)</summary>
     public NativeAllocator Allocator;
     /// <summary>cui_theme_mode (offset 64)</summary>
     public Theme Theme;
     /// <summary>cui_accent (offset 68)</summary>
     public Accent Accent;
-    /// <summary>_Bool (offset 72)</summary>
+    /// <summary>skip the embedded Inter/Geist/Lucide fonts (offset 72)</summary>
     public byte NoDefaultFonts;
     /// <summary>cui_direction (offset 76)</summary>
     public Direction Direction;
 }
 
-/// <summary>cui_platform_iface, 48 bytes.</summary>
+/// <summary>Platform services. The built-in backends set these. (48 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativePlatformIface
 {
@@ -101,17 +101,17 @@ public unsafe struct NativePlatformIface
     public nint User;
     /// <summary>void (*)(void *, const char *) (offset 8)</summary>
     public nint SetClipboard;
-    /// <summary>const char *(*)(void *) (offset 16)</summary>
+    /// <summary>returned string stays valid until next call (offset 16)</summary>
     public nint GetClipboard;
     /// <summary>void (*)(void *, cui_cursor) (offset 24)</summary>
     public nint SetCursor;
-    /// <summary>void (*)(void *, cui_rect) (offset 32)</summary>
+    /// <summary>IME candidate window position (offset 32)</summary>
     public nint SetTextInputRect;
-    /// <summary>_Bool (*)(void *, const char *, int, int, unsigned char *) (offset 40)</summary>
+    /// <summary>Optional: draws one emoji (UTF-8) into a px by px RGBA buffer (straight alpha), for when no emoji font is loaded; the browser build uses the browser&apos;s emoji. (offset 40)</summary>
     public nint DrawEmoji;
 }
 
-/// <summary>cui_shadow, 16 bytes.</summary>
+/// <summary>cui_shadow (16 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeShadow
 {
@@ -153,7 +153,7 @@ public struct NativeThemeShadowFloatingArray
     private NativeShadow _element0;
 }
 
-/// <summary>cui_theme, 328 bytes.</summary>
+/// <summary>cui_theme (328 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTheme
 {
@@ -173,27 +173,27 @@ public unsafe struct NativeTheme
     public NativeColor ToneOrchid;
     /// <summary>cui_color (offset 164)</summary>
     public NativeColor ToneViolet;
-    /// <summary>float (offset 168)</summary>
+    /// <summary>buttons, inputs (default 10) (offset 168)</summary>
     public float RadiusControl;
-    /// <summary>float (offset 172)</summary>
+    /// <summary>menus, popovers, nested panels (default 14) (offset 172)</summary>
     public float RadiusPanel;
-    /// <summary>float (offset 176)</summary>
+    /// <summary>cards, dialogs (default 18) (offset 176)</summary>
     public float RadiusSurface;
-    /// <summary>float (offset 180)</summary>
+    /// <summary>control heights (30/36/44) (offset 180)</summary>
     public float ControlSm;
-    /// <summary>float (offset 184)</summary>
+    /// <summary>control heights (30/36/44) (offset 184)</summary>
     public float ControlMd;
-    /// <summary>float (offset 188)</summary>
+    /// <summary>control heights (30/36/44) (offset 188)</summary>
     public float ControlLg;
-    /// <summary>float (offset 192)</summary>
+    /// <summary>11/12/13/15 (offset 192)</summary>
     public float TextXs;
-    /// <summary>float (offset 196)</summary>
+    /// <summary>11/12/13/15 (offset 196)</summary>
     public float TextSm;
-    /// <summary>float (offset 200)</summary>
+    /// <summary>11/12/13/15 (offset 200)</summary>
     public float TextBody;
-    /// <summary>float (offset 204)</summary>
+    /// <summary>11/12/13/15 (offset 204)</summary>
     public float TextLg;
-    /// <summary>float[4] (offset 208)</summary>
+    /// <summary>h1..h4: 36/28/22/17 (offset 208)</summary>
     public fixed float Heading[4];
     /// <summary>cui_shadow[2] (offset 224)</summary>
     public NativeThemeShadowRestingArray ShadowResting;
@@ -201,9 +201,9 @@ public unsafe struct NativeTheme
     public NativeThemeShadowRaisedArray ShadowRaised;
     /// <summary>cui_shadow[2] (offset 288)</summary>
     public NativeThemeShadowFloatingArray ShadowFloating;
-    /// <summary>float (offset 320)</summary>
+    /// <summary>1 = normal, 0 = reduced motion (no travel), &gt;1 slow motion (offset 320)</summary>
     public float Motion;
-    /// <summary>float (offset 324)</summary>
+    /// <summary>user text scale multiplier (default 1) (offset 324)</summary>
     public float FontScale;
 }
 
@@ -242,25 +242,25 @@ public struct NativeStringsWeekdayMinArray
     private nint _element0;
 }
 
-/// <summary>cui_strings, 368 bytes.</summary>
+/// <summary>Text the components show, for another language. CUI keeps the pointer (the table must outlive its use) and reads it every frame, so switching language is one call. An entry left NULL falls back to English, so a partial table is fine. Weeks start on Monday, as in every CUI calendar. NULL restores English. (368 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeStrings
 {
-    /// <summary>const char *[12] (offset 0)</summary>
+    /// <summary>&quot;January&quot; ... (offset 0)</summary>
     public NativeStringsMonthArray Month;
-    /// <summary>const char *[12] (offset 96)</summary>
+    /// <summary>&quot;Jan&quot; ... (offset 96)</summary>
     public NativeStringsMonthShortArray MonthShort;
-    /// <summary>const char *[7] (offset 192)</summary>
+    /// <summary>&quot;Monday&quot; ... &quot;Sunday&quot; (offset 192)</summary>
     public NativeStringsWeekdayArray Weekday;
-    /// <summary>const char *[7] (offset 248)</summary>
+    /// <summary>&quot;Mon&quot; ... (offset 248)</summary>
     public NativeStringsWeekdayShortArray WeekdayShort;
-    /// <summary>const char *[7] (offset 304)</summary>
+    /// <summary>&quot;Mo&quot; ... (offset 304)</summary>
     public NativeStringsWeekdayMinArray WeekdayMin;
-    /// <summary>const char * (offset 360)</summary>
+    /// <summary>&quot;Today&quot; (offset 360)</summary>
     public nint Today;
 }
 
-/// <summary>cui_text_metrics, 20 bytes.</summary>
+/// <summary>cui_text_metrics (20 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTextMetrics
 {
@@ -276,7 +276,7 @@ public unsafe struct NativeTextMetrics
     public float LineHeight;
 }
 
-/// <summary>cui_size, 8 bytes.</summary>
+/// <summary>cui_size (8 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeSize
 {
@@ -286,19 +286,19 @@ public unsafe struct NativeSize
     public float Value;
 }
 
-/// <summary>cui_box, 152 bytes.</summary>
+/// <summary>Options for every container. All fields are optional. (152 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeBox
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>identity for scroll state etc. (defaults to an automatic id) (offset 8)</summary>
     public nint Id;
-    /// <summary>cui_dir (offset 16)</summary>
+    /// <summary>CUI_COLUMN (default), CUI_ROW, CUI_STACK, CUI_GRID (offset 16)</summary>
     public Dir Dir;
-    /// <summary>cui_size (offset 20)</summary>
+    /// <summary>default: fit content (columns stretch children horizontally) (offset 20)</summary>
     public NativeSize Width;
-    /// <summary>cui_size (offset 28)</summary>
+    /// <summary>default: fit content (columns stretch children horizontally) (offset 28)</summary>
     public NativeSize Height;
     /// <summary>float (offset 36)</summary>
     public float MinWidth;
@@ -322,25 +322,25 @@ public unsafe struct NativeBox
     public float PadBottom;
     /// <summary>float (offset 76)</summary>
     public float PadLeft;
-    /// <summary>float (offset 80)</summary>
+    /// <summary>space between children (and between wrapped lines) (offset 80)</summary>
     public float Gap;
-    /// <summary>int (offset 84)</summary>
+    /// <summary>CUI_GRID: column count (with min_column_width: the most columns) (offset 84)</summary>
     public int Columns;
-    /// <summary>float (offset 88)</summary>
+    /// <summary>CUI_GRID: as many columns as fit at this width, at least one (offset 88)</summary>
     public float MinColumnWidth;
-    /// <summary>_Bool (offset 92)</summary>
+    /// <summary>CUI_ROW: children that do not fit move to a new line (offset 92)</summary>
     public byte Wrap;
-    /// <summary>cui_align (offset 96)</summary>
+    /// <summary>cross axis alignment of children (offset 96)</summary>
     public Align Align;
-    /// <summary>cui_justify (offset 100)</summary>
+    /// <summary>main axis distribution (offset 100)</summary>
     public Justify Justify;
-    /// <summary>cui_color (offset 104)</summary>
+    /// <summary>background (offset 104)</summary>
     public NativeColor Bg;
-    /// <summary>cui_color (offset 108)</summary>
+    /// <summary>defaults to CUI_COLOR_BORDER when border &gt; 0 (offset 108)</summary>
     public NativeColor BorderColor;
-    /// <summary>float (offset 112)</summary>
+    /// <summary>border width (offset 112)</summary>
     public float Border;
-    /// <summary>float (offset 116)</summary>
+    /// <summary>corner radius; use radius_tl.. for single corners (offset 116)</summary>
     public float Radius;
     /// <summary>float (offset 120)</summary>
     public float RadiusTl;
@@ -352,39 +352,39 @@ public unsafe struct NativeBox
     public float RadiusBl;
     /// <summary>cui_elevation (offset 136)</summary>
     public Elevation Elevation;
-    /// <summary>_Bool (offset 140)</summary>
+    /// <summary>make the box a scroll area (clips content) (offset 140)</summary>
     public byte ScrollX;
-    /// <summary>_Bool (offset 141)</summary>
+    /// <summary>make the box a scroll area (clips content) (offset 141)</summary>
     public byte ScrollY;
-    /// <summary>_Bool (offset 142)</summary>
+    /// <summary>clip children to the box (offset 142)</summary>
     public byte Clip;
-    /// <summary>float (offset 144)</summary>
+    /// <summary>0 means 1 (fully opaque) (offset 144)</summary>
     public float Opacity;
-    /// <summary>cui_direction (offset 148)</summary>
+    /// <summary>inherited by default; mirrors horizontal layout and padding (offset 148)</summary>
     public Direction Direction;
 }
 
-/// <summary>cui_card_opts, 72 bytes.</summary>
+/// <summary>Card: a bordered surface with generous padding. (72 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeCardOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>identity of the card, for its hover state (defaults to an automatic id) (offset 8)</summary>
     public nint Id;
     /// <summary>cui_size (offset 16)</summary>
     public NativeSize Width;
     /// <summary>cui_size (offset 24)</summary>
     public NativeSize Height;
-    /// <summary>float (offset 32)</summary>
+    /// <summary>e.g. CUI_FILL up to max_width: fills narrow screens, stops on wide ones (offset 32)</summary>
     public float MinWidth;
-    /// <summary>float (offset 36)</summary>
+    /// <summary>e.g. CUI_FILL up to max_width: fills narrow screens, stops on wide ones (offset 36)</summary>
     public float MaxWidth;
     /// <summary>float (offset 40)</summary>
     public float Pad;
-    /// <summary>float (offset 44)</summary>
+    /// <summary>left and right padding in points; 0 uses `pad` (offset 44)</summary>
     public float PadX;
-    /// <summary>float (offset 48)</summary>
+    /// <summary>top and bottom padding in points; 0 uses `pad` (offset 48)</summary>
     public float PadY;
     /// <summary>float (offset 52)</summary>
     public float Gap;
@@ -392,17 +392,17 @@ public unsafe struct NativeCardOpts
     public Dir Dir;
     /// <summary>cui_align (offset 60)</summary>
     public Align Align;
-    /// <summary>_Bool (offset 64)</summary>
+    /// <summary>CUI_ROW cards: children that do not fit move to a new line (offset 64)</summary>
     public byte Wrap;
-    /// <summary>_Bool (offset 65)</summary>
+    /// <summary>lifts slightly on hover and returns clicks (offset 65)</summary>
     public byte Hoverable;
-    /// <summary>_Bool (offset 66)</summary>
+    /// <summary>muted surface, no border (offset 66)</summary>
     public byte Muted;
-    /// <summary>_Bool (offset 67)</summary>
+    /// <summary>accent border (offset 67)</summary>
     public byte Selected;
 }
 
-/// <summary>cui_scroll_opts, 56 bytes.</summary>
+/// <summary>Scroll area with smooth scrolling and overlay scrollbars. (56 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeScrollOpts
 {
@@ -414,19 +414,19 @@ public unsafe struct NativeScrollOpts
     public NativeSize Width;
     /// <summary>cui_size (offset 24)</summary>
     public NativeSize Height;
-    /// <summary>_Bool (offset 32)</summary>
+    /// <summary>also scroll horizontally (offset 32)</summary>
     public byte Horizontal;
     /// <summary>float (offset 36)</summary>
     public float Pad;
     /// <summary>float (offset 40)</summary>
     public float Gap;
-    /// <summary>_Bool (offset 44)</summary>
+    /// <summary>content fades out at an edge with more to scroll (offset 44)</summary>
     public byte FadeEdges;
-    /// <summary>cui_color (offset 45)</summary>
+    /// <summary>what it fades into (default: the nearest opaque box around it) (offset 45)</summary>
     public NativeColor FadeColor;
 }
 
-/// <summary>cui_split_opts, 32 bytes.</summary>
+/// <summary>Resizable split view: two panes with a draggable divider. `ratio` is the size of the first pane in 0..1. Call cui_split_next between the panes. (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeSplitOpts
 {
@@ -444,35 +444,35 @@ public unsafe struct NativeSplitOpts
     public NativeSize Height;
 }
 
-/// <summary>cui_text_opts, 40 bytes.</summary>
+/// <summary>cui_text_opts (40 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTextOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>cui_font (offset 4)</summary>
+    /// <summary>default CUI_FONT_BODY (0) (offset 4)</summary>
     public Font Font;
-    /// <summary>float (offset 8)</summary>
+    /// <summary>default theme text_body (offset 8)</summary>
     public float Size;
-    /// <summary>cui_color (offset 12)</summary>
+    /// <summary>default foreground (offset 12)</summary>
     public NativeColor Color;
     /// <summary>cui_text_align (offset 16)</summary>
     public TextAlign Align;
-    /// <summary>_Bool (offset 20)</summary>
+    /// <summary>single line, ellipsis when it does not fit (offset 20)</summary>
     public byte Nowrap;
-    /// <summary>_Bool (offset 21)</summary>
+    /// <summary>tabular numbers (offset 21)</summary>
     public byte Tabular;
-    /// <summary>_Bool (offset 22)</summary>
+    /// <summary>reserved (offset 22)</summary>
     public byte Selectable;
     /// <summary>cui_size (offset 24)</summary>
     public NativeSize Width;
-    /// <summary>float (offset 32)</summary>
+    /// <summary>multiplier, default 1.45 (offset 32)</summary>
     public float LineHeight;
-    /// <summary>cui_direction (offset 36)</summary>
+    /// <summary>inherited; AUTO examines this text (offset 36)</summary>
     public Direction Direction;
 }
 
-/// <summary>cui_button_opts, 72 bytes.</summary>
+/// <summary>cui_button_opts (72 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeButtonOpts
 {
@@ -482,29 +482,29 @@ public unsafe struct NativeButtonOpts
     public ButtonVariant Variant;
     /// <summary>cui_control_size (offset 8)</summary>
     public ControlSize Size;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>leading icon, e.g. CUI_ICON_PLUS (offset 16)</summary>
     public nint Icon;
-    /// <summary>const char * (offset 24)</summary>
+    /// <summary>trailing icon (offset 24)</summary>
     public nint IconRight;
     /// <summary>_Bool (offset 32)</summary>
     public byte Disabled;
-    /// <summary>_Bool (offset 33)</summary>
+    /// <summary>spinner, ignores clicks (offset 33)</summary>
     public byte Loading;
     /// <summary>_Bool (offset 34)</summary>
     public byte FullWidth;
-    /// <summary>_Bool (offset 35)</summary>
+    /// <summary>toggled look (offset 35)</summary>
     public byte Selected;
     /// <summary>const char * (offset 40)</summary>
     public nint Tooltip;
-    /// <summary>const char * (offset 48)</summary>
+    /// <summary>shown as a hint in the tooltip, e.g. &quot;Ctrl S&quot; (offset 48)</summary>
     public nint Shortcut;
     /// <summary>cui_size (offset 56)</summary>
     public NativeSize Width;
-    /// <summary>cui_color (offset 64)</summary>
+    /// <summary>text and icon color, e.g. CUI_COLOR_ACCENT for a toggled icon (offset 64)</summary>
     public NativeColor Color;
 }
 
-/// <summary>cui_segmented_opts, 24 bytes.</summary>
+/// <summary>Segmented control: a row of options with a gliding highlight. (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeSegmentedOpts
 {
@@ -518,7 +518,7 @@ public unsafe struct NativeSegmentedOpts
     public nint Icons;
 }
 
-/// <summary>cui_check_opts, 24 bytes.</summary>
+/// <summary>cui_check_opts (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeCheckOpts
 {
@@ -532,17 +532,17 @@ public unsafe struct NativeCheckOpts
     public byte Indeterminate;
 }
 
-/// <summary>cui_slider_opts, 40 bytes.</summary>
+/// <summary>cui_slider_opts (40 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeSliderOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>float (offset 4)</summary>
+    /// <summary>0 = continuous (offset 4)</summary>
     public float Step;
     /// <summary>_Bool (offset 8)</summary>
     public byte ShowValue;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>printf format for the value, default &quot;%.0f&quot; (offset 16)</summary>
     public nint Format;
     /// <summary>_Bool (offset 24)</summary>
     public byte Disabled;
@@ -550,7 +550,7 @@ public unsafe struct NativeSliderOpts
     public NativeSize Width;
 }
 
-/// <summary>cui_chip_opts, 24 bytes.</summary>
+/// <summary>cui_chip_opts (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeChipOpts
 {
@@ -562,27 +562,27 @@ public unsafe struct NativeChipOpts
     public byte Disabled;
 }
 
-/// <summary>cui_input_opts, 88 bytes.</summary>
+/// <summary>cui_input_opts (88 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeInputOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>label above the field (offset 8)</summary>
     public nint Label;
     /// <summary>const char * (offset 16)</summary>
     public nint Placeholder;
-    /// <summary>const char * (offset 24)</summary>
+    /// <summary>leading icon (offset 24)</summary>
     public nint Icon;
-    /// <summary>const char * (offset 32)</summary>
+    /// <summary>helper text below (offset 32)</summary>
     public nint Hint;
-    /// <summary>const char * (offset 40)</summary>
+    /// <summary>error text below (red) (offset 40)</summary>
     public nint Error;
-    /// <summary>_Bool (offset 48)</summary>
+    /// <summary>shows dots instead of the text, with an eye button that reveals it (offset 48)</summary>
     public byte Password;
     /// <summary>_Bool (offset 49)</summary>
     public byte Disabled;
-    /// <summary>_Bool (offset 50)</summary>
+    /// <summary>x button when not empty (offset 50)</summary>
     public byte Clearable;
     /// <summary>_Bool (offset 51)</summary>
     public byte Autofocus;
@@ -592,15 +592,15 @@ public unsafe struct NativeInputOpts
     public ControlSize Size;
     /// <summary>cui_size (offset 60)</summary>
     public NativeSize Width;
-    /// <summary>float (offset 68)</summary>
+    /// <summary>textarea: height in points; negative fills the space (offset 68)</summary>
     public float Height;
-    /// <summary>const char * (offset 72)</summary>
+    /// <summary>muted text before the value, e.g. &quot;$&quot; or &quot;https://&quot; (offset 72)</summary>
     public nint Prefix;
-    /// <summary>const char * (offset 80)</summary>
+    /// <summary>muted text after the value, e.g. &quot;USD&quot; or &quot;kg&quot; (offset 80)</summary>
     public nint Suffix;
 }
 
-/// <summary>cui_number_opts, 48 bytes.</summary>
+/// <summary>cui_number_opts (48 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeNumberOpts
 {
@@ -616,11 +616,11 @@ public unsafe struct NativeNumberOpts
     public byte Disabled;
     /// <summary>cui_size (offset 32)</summary>
     public NativeSize Width;
-    /// <summary>const char * (offset 40)</summary>
+    /// <summary>muted text after the value, before the - and + buttons, e.g. &quot;kg&quot; (offset 40)</summary>
     public nint Suffix;
 }
 
-/// <summary>cui_select_opts, 48 bytes.</summary>
+/// <summary>cui_select_opts (48 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeSelectOpts
 {
@@ -632,7 +632,7 @@ public unsafe struct NativeSelectOpts
     public nint Placeholder;
     /// <summary>const char *const * (offset 24)</summary>
     public nint Icons;
-    /// <summary>_Bool (offset 32)</summary>
+    /// <summary>combobox: filter options by typing (offset 32)</summary>
     public byte Searchable;
     /// <summary>_Bool (offset 33)</summary>
     public byte Disabled;
@@ -640,19 +640,19 @@ public unsafe struct NativeSelectOpts
     public NativeSize Width;
 }
 
-/// <summary>cui_date, 12 bytes.</summary>
+/// <summary>cui_date (12 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeDate
 {
-    /// <summary>int (offset 0)</summary>
+    /// <summary>month 1..12 (offset 0)</summary>
     public int Year;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>month 1..12 (offset 4)</summary>
     public int Month;
-    /// <summary>int (offset 8)</summary>
+    /// <summary>month 1..12 (offset 8)</summary>
     public int Day;
 }
 
-/// <summary>cui_date_opts, 32 bytes.</summary>
+/// <summary>cui_date_opts (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeDateOpts
 {
@@ -666,7 +666,7 @@ public unsafe struct NativeDateOpts
     public NativeSize Width;
 }
 
-/// <summary>cui_tabs_opts, 24 bytes.</summary>
+/// <summary>cui_tabs_opts (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTabsOpts
 {
@@ -680,7 +680,7 @@ public unsafe struct NativeTabsOpts
     public byte FullWidth;
 }
 
-/// <summary>cui_nav_opts, 40 bytes.</summary>
+/// <summary>Sidebar navigation item with a gliding selection highlight shared by all items in the same group. (40 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeNavOpts
 {
@@ -688,15 +688,15 @@ public unsafe struct NativeNavOpts
     public int Sentinel;
     /// <summary>const char * (offset 8)</summary>
     public nint Icon;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>small text at the right edge of the item, e.g. a count (offset 16)</summary>
     public nint Badge;
-    /// <summary>_Bool (offset 24)</summary>
+    /// <summary>the current page: medium weight text, and the group&apos;s highlight glides to it (offset 24)</summary>
     public byte Selected;
-    /// <summary>const char * (offset 32)</summary>
+    /// <summary>items with the same group name share one highlight; `NULL` puts them in one common group (offset 32)</summary>
     public nint Group;
 }
 
-/// <summary>cui_popover_opts, 20 bytes.</summary>
+/// <summary>Popover anchored to the previous component. Toggle it with cui_popover_toggle / cui_popover_open. (20 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativePopoverOpts
 {
@@ -712,43 +712,43 @@ public unsafe struct NativePopoverOpts
     public float Gap;
 }
 
-/// <summary>cui_tour_step, 32 bytes.</summary>
+/// <summary>Guided tour: a spotlight on one control at a time, with a card beside it that says what the control does, for onboarding and &quot;what&apos;s new&quot;. The rest of the window dims; the spotlight glides from one control to the next. Call it after the controls it points at, every frame while *step is 0 or more; it sets *step to -1 when the tour ends. Right or Enter go to the next step, Left goes back and Esc ends the tour. (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTourStep
 {
-    /// <summary>cui_id (offset 0)</summary>
+    /// <summary>the control to point at (cui_last_id after it); 0: a card in the middle (offset 0)</summary>
     public uint Target;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>heading of the step&apos;s card; `NULL` or &quot;&quot; leaves it out (offset 8)</summary>
     public nint Title;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>the explanation under the title; wraps to the card&apos;s width (offset 16)</summary>
     public nint Body;
-    /// <summary>cui_placement (offset 24)</summary>
+    /// <summary>the card&apos;s side of the target, default below it (offset 24)</summary>
     public Placement Placement;
 }
 
-/// <summary>cui_tour_opts, 48 bytes.</summary>
+/// <summary>cui_tour_opts (48 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTourOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>float (offset 4)</summary>
+    /// <summary>the card, default 300 (offset 4)</summary>
     public float Width;
-    /// <summary>float (offset 8)</summary>
+    /// <summary>room around the target inside the spotlight, default 6 (offset 8)</summary>
     public float Padding;
-    /// <summary>_Bool (offset 12)</summary>
+    /// <summary>the spotlighted control ignores the pointer too (offset 12)</summary>
     public byte BlockTarget;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>default &quot;Next&quot;, &quot;Back&quot;, &quot;Done&quot; (offset 16)</summary>
     public nint NextLabel;
-    /// <summary>const char * (offset 24)</summary>
+    /// <summary>default &quot;Next&quot;, &quot;Back&quot;, &quot;Done&quot; (offset 24)</summary>
     public nint BackLabel;
-    /// <summary>const char * (offset 32)</summary>
+    /// <summary>default &quot;Next&quot;, &quot;Back&quot;, &quot;Done&quot; (offset 32)</summary>
     public nint DoneLabel;
-    /// <summary>const char * (offset 40)</summary>
+    /// <summary>the step count, default &quot;%d of %d&quot; (step, then total) (offset 40)</summary>
     public nint CountFormat;
 }
 
-/// <summary>cui_menu_opts, 32 bytes.</summary>
+/// <summary>Dropdown menu: a button that opens a menu. Items return true when chosen. (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeMenuOpts
 {
@@ -762,11 +762,11 @@ public unsafe struct NativeMenuOpts
     public Placement Placement;
     /// <summary>float (offset 24)</summary>
     public float Width;
-    /// <summary>_Bool (offset 28)</summary>
+    /// <summary>an icon button (the ellipsis unless `icon` is set) with the label as its tooltip (offset 28)</summary>
     public byte IconOnly;
 }
 
-/// <summary>cui_menu_item_opts, 32 bytes.</summary>
+/// <summary>cui_menu_item_opts (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeMenuItemOpts
 {
@@ -780,11 +780,11 @@ public unsafe struct NativeMenuItemOpts
     public byte Danger;
     /// <summary>_Bool (offset 25)</summary>
     public byte Disabled;
-    /// <summary>_Bool (offset 26)</summary>
+    /// <summary>a check mark at the right edge of the item (offset 26)</summary>
     public byte Checked;
 }
 
-/// <summary>cui_dialog_opts, 24 bytes.</summary>
+/// <summary>cui_dialog_opts (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeDialogOpts
 {
@@ -792,15 +792,15 @@ public unsafe struct NativeDialogOpts
     public int Sentinel;
     /// <summary>const char * (offset 8)</summary>
     public nint Description;
-    /// <summary>float (offset 16)</summary>
+    /// <summary>default 440 (offset 16)</summary>
     public float Width;
-    /// <summary>_Bool (offset 20)</summary>
+    /// <summary>hides the x in the corner (Esc and a click outside still close it unless `persistent`) (offset 20)</summary>
     public byte NoCloseButton;
-    /// <summary>_Bool (offset 21)</summary>
+    /// <summary>clicking outside or Esc does not close (offset 21)</summary>
     public byte Persistent;
 }
 
-/// <summary>cui_sheet_opts, 24 bytes.</summary>
+/// <summary>cui_sheet_opts (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeSheetOpts
 {
@@ -814,7 +814,7 @@ public unsafe struct NativeSheetOpts
     public nint Description;
 }
 
-/// <summary>cui_toast_opts, 40 bytes.</summary>
+/// <summary>cui_toast_opts (40 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeToastOpts
 {
@@ -824,15 +824,15 @@ public unsafe struct NativeToastOpts
     public nint Description;
     /// <summary>cui_tone (offset 16)</summary>
     public Tone Tone;
-    /// <summary>float (offset 20)</summary>
+    /// <summary>seconds, default 4; negative = until dismissed (offset 20)</summary>
     public float Duration;
-    /// <summary>const char * (offset 24)</summary>
+    /// <summary>optional action button label (offset 24)</summary>
     public nint Action;
-    /// <summary>_Bool (offset 32)</summary>
+    /// <summary>a draining line shows how long the action stays (undo) (offset 32)</summary>
     public byte ShowTimer;
 }
 
-/// <summary>cui_alert_opts, 40 bytes.</summary>
+/// <summary>cui_alert_opts (40 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeAlertOpts
 {
@@ -848,7 +848,7 @@ public unsafe struct NativeAlertOpts
     public byte Dismissible;
 }
 
-/// <summary>cui_progress_opts, 40 bytes.</summary>
+/// <summary>cui_progress_opts (40 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeProgressOpts
 {
@@ -868,7 +868,7 @@ public unsafe struct NativeProgressOpts
     public NativeSize Width;
 }
 
-/// <summary>cui_badge_opts, 32 bytes.</summary>
+/// <summary>cui_badge_opts (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeBadgeOpts
 {
@@ -876,9 +876,9 @@ public unsafe struct NativeBadgeOpts
     public int Sentinel;
     /// <summary>cui_tone (offset 4)</summary>
     public Tone Tone;
-    /// <summary>_Bool (offset 8)</summary>
+    /// <summary>a small dot before the text, in the tone&apos;s color (offset 8)</summary>
     public byte Dot;
-    /// <summary>_Bool (offset 9)</summary>
+    /// <summary>filled with the tone&apos;s color instead of a light tint of it (offset 9)</summary>
     public byte Solid;
     /// <summary>const char * (offset 16)</summary>
     public nint Icon;
@@ -886,7 +886,7 @@ public unsafe struct NativeBadgeOpts
     public ControlSize Size;
 }
 
-/// <summary>cui_avatar_opts, 32 bytes.</summary>
+/// <summary>cui_avatar_opts (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeAvatarOpts
 {
@@ -894,15 +894,15 @@ public unsafe struct NativeAvatarOpts
     public int Sentinel;
     /// <summary>float (offset 4)</summary>
     public float Size;
-    /// <summary>cui_texture (offset 8)</summary>
+    /// <summary>picture to show instead of the initials of the name (offset 8)</summary>
     public nuint Image;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>a dot at the bottom right: &quot;online&quot; green, &quot;busy&quot; red, &quot;away&quot; amber, anything else gray (offset 16)</summary>
     public nint Status;
-    /// <summary>_Bool (offset 24)</summary>
+    /// <summary>rounded square instead of a circle (offset 24)</summary>
     public byte Square;
 }
 
-/// <summary>cui_empty_opts, 32 bytes.</summary>
+/// <summary>cui_empty_opts (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeEmptyOpts
 {
@@ -912,33 +912,33 @@ public unsafe struct NativeEmptyOpts
     public nint Icon;
     /// <summary>const char * (offset 16)</summary>
     public nint Description;
-    /// <summary>const char * (offset 24)</summary>
+    /// <summary>label of a button under the text; the call returns true when it is clicked (offset 24)</summary>
     public nint Action;
 }
 
-/// <summary>cui_metric_opts, 56 bytes.</summary>
+/// <summary>cui_metric_opts (56 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeMetricOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>float (offset 4)</summary>
+    /// <summary>change shown beside the value with a trend arrow, as a percentage (4.2 shows +4.2%); 0 hides it (offset 4)</summary>
     public float Delta;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>text shown instead of the percentage, e.g. &quot;+12 this week&quot;; `delta` still sets arrow and color (offset 8)</summary>
     public nint DeltaLabel;
-    /// <summary>const float * (offset 16)</summary>
+    /// <summary>values for a sparkline under the value; needs at least 2 (offset 16)</summary>
     public nint Spark;
-    /// <summary>int (offset 24)</summary>
+    /// <summary>number of values in `spark` (offset 24)</summary>
     public int SparkCount;
     /// <summary>const char * (offset 32)</summary>
     public nint Icon;
     /// <summary>cui_size (offset 40)</summary>
     public NativeSize Width;
-    /// <summary>_Bool (offset 48)</summary>
+    /// <summary>build times, errors, latency: a fall is good news, shown in green (offset 48)</summary>
     public byte LowerIsBetter;
 }
 
-/// <summary>cui_tree_opts, 24 bytes.</summary>
+/// <summary>Tree view node. (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTreeOpts
 {
@@ -946,13 +946,13 @@ public unsafe struct NativeTreeOpts
     public int Sentinel;
     /// <summary>const char * (offset 8)</summary>
     public nint Icon;
-    /// <summary>_Bool (offset 16)</summary>
+    /// <summary>a node without children: no chevron, a file icon, and `*open` is left alone (offset 16)</summary>
     public byte Leaf;
-    /// <summary>_Bool (offset 17)</summary>
+    /// <summary>drawn with the active background and medium weight text (offset 17)</summary>
     public byte Selected;
 }
 
-/// <summary>cui_list_item_opts, 48 bytes.</summary>
+/// <summary>List item: a selectable row with optional icon, subtitle and trailing text. (48 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeListItemOpts
 {
@@ -960,23 +960,23 @@ public unsafe struct NativeListItemOpts
     public int Sentinel;
     /// <summary>const char * (offset 8)</summary>
     public nint Icon;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>second line under the title, smaller; makes the row taller (offset 16)</summary>
     public nint Subtitle;
-    /// <summary>const char * (offset 24)</summary>
+    /// <summary>muted text at the right edge, e.g. a time or a count (offset 24)</summary>
     public nint Trailing;
-    /// <summary>_Bool (offset 32)</summary>
+    /// <summary>drawn with the active background (offset 32)</summary>
     public byte Selected;
-    /// <summary>const char * (offset 40)</summary>
+    /// <summary>a name: shows that person&apos;s avatar (initials) in place of the icon (offset 40)</summary>
     public nint Avatar;
 }
 
-/// <summary>cui_table_column, 24 bytes.</summary>
+/// <summary>Table (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTableColumn
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>text of the column&apos;s header (offset 0)</summary>
     public nint Title;
-    /// <summary>cui_size (offset 8)</summary>
+    /// <summary>default fill (offset 8)</summary>
     public NativeSize Width;
     /// <summary>cui_text_align (offset 16)</summary>
     public TextAlign Align;
@@ -984,7 +984,7 @@ public unsafe struct NativeTableColumn
     public byte Sortable;
 }
 
-/// <summary>cui_table_sort, 8 bytes.</summary>
+/// <summary>cui_table_sort (8 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTableSort
 {
@@ -994,39 +994,57 @@ public unsafe struct NativeTableSort
     public byte Descending;
 }
 
-/// <summary>cui_table_opts, 32 bytes.</summary>
+/// <summary>cui_table_opts (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTableOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>cui_table_sort * (offset 8)</summary>
+    /// <summary>optional, updated when a sortable header is clicked (offset 8)</summary>
     public nint Sort;
-    /// <summary>cui_size (offset 16)</summary>
+    /// <summary>scrolls when set (offset 16)</summary>
     public NativeSize Height;
     /// <summary>_Bool (offset 24)</summary>
     public byte Striped;
-    /// <summary>_Bool (offset 25)</summary>
+    /// <summary>rows at least 36 points tall instead of 44 (offset 25)</summary>
     public byte Compact;
-    /// <summary>_Bool (offset 26)</summary>
+    /// <summary>rows take keyboard focus and show the hand cursor (pass the chosen row&apos;s state to `cui_table_row`) (offset 26)</summary>
     public byte Selectable;
 }
 
-/// <summary>cui_series, 24 bytes.</summary>
+/// <summary>Charts (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeSeries
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>shown in the legend and in the hover tooltip (offset 0)</summary>
     public nint Name;
-    /// <summary>const float * (offset 8)</summary>
+    /// <summary>the series&apos; data, one value per point (offset 8)</summary>
     public nint Values;
-    /// <summary>int (offset 16)</summary>
+    /// <summary>number of `values` (offset 16)</summary>
     public int Count;
-    /// <summary>cui_color (offset 20)</summary>
+    /// <summary>default: series palette (offset 20)</summary>
     public NativeColor Color;
 }
 
-/// <summary>cui_chart_opts, 56 bytes.</summary>
+/// <summary>cui_chart_annotation (48 bytes)</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeChartAnnotation
+{
+    /// <summary>cui_annotation_kind (offset 0)</summary>
+    public AnnotationKind Kind;
+    /// <summary>in the chart&apos;s x units: the point&apos;s index for line and bar charts, x_min to x_max for the dot chart (offset 8)</summary>
+    public double X;
+    /// <summary>a value, in the chart&apos;s value units (offset 16)</summary>
+    public double Y;
+    /// <summary>first line, e.g. &quot;PEAK 203 MG&quot;; `NULL` for a line with no label (offset 24)</summary>
+    public nint Label;
+    /// <summary>second line, muted, e.g. &quot;13:06&quot;; `NULL` for none (offset 32)</summary>
+    public nint Detail;
+    /// <summary>the line, dot and label in the accent color (offset 40)</summary>
+    public byte Accent;
+}
+
+/// <summary>cui_chart_opts (72 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeChartOpts
 {
@@ -1034,31 +1052,35 @@ public unsafe struct NativeChartOpts
     public int Sentinel;
     /// <summary>cui_size (offset 4)</summary>
     public NativeSize Width;
-    /// <summary>float (offset 12)</summary>
+    /// <summary>default 220 (offset 12)</summary>
     public float Height;
-    /// <summary>const char *const * (offset 16)</summary>
+    /// <summary>x axis labels (offset 16)</summary>
     public nint Labels;
-    /// <summary>int (offset 24)</summary>
+    /// <summary>number of `labels`; 0 means one per data point (offset 24)</summary>
     public int LabelCount;
-    /// <summary>_Bool (offset 28)</summary>
+    /// <summary>fill under lines (offset 28)</summary>
     public byte Area;
     /// <summary>_Bool (offset 29)</summary>
     public byte NoGrid;
     /// <summary>_Bool (offset 30)</summary>
     public byte NoLegend;
-    /// <summary>_Bool (offset 31)</summary>
+    /// <summary>bar chart (offset 31)</summary>
     public byte Stacked;
-    /// <summary>_Bool (offset 32)</summary>
+    /// <summary>curved lines (offset 32)</summary>
     public byte Smooth;
-    /// <summary>const char * (offset 40)</summary>
+    /// <summary>value format for axis and tooltip, default &quot;%.0f&quot; (offset 40)</summary>
     public nint Format;
-    /// <summary>float (offset 48)</summary>
+    /// <summary>fixed y range when min != max (offset 48)</summary>
     public float Min;
-    /// <summary>float (offset 52)</summary>
+    /// <summary>fixed y range when min != max (offset 52)</summary>
     public float Max;
+    /// <summary>lines and points drawn over the chart (line and bar charts) (offset 56)</summary>
+    public nint Annotations;
+    /// <summary>number of `annotations` (offset 64)</summary>
+    public int AnnotationCount;
 }
 
-/// <summary>cui_image_opts, 28 bytes.</summary>
+/// <summary>cui_image_opts (28 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeImageOpts
 {
@@ -1068,99 +1090,99 @@ public unsafe struct NativeImageOpts
     public NativeSize Width;
     /// <summary>cui_size (offset 12)</summary>
     public NativeSize Height;
-    /// <summary>float (offset 20)</summary>
+    /// <summary>corner radius in points (offset 20)</summary>
     public float Radius;
-    /// <summary>cui_color (offset 24)</summary>
+    /// <summary>color the image is multiplied by; unset draws it as it is (offset 24)</summary>
     public NativeColor Tint;
 }
 
-/// <summary>cui_image_view, 12 bytes.</summary>
+/// <summary>Image viewer: zoom and pan a picture. The wheel (or a pinch, which comes as Ctrl+wheel) zooms around the pointer, dragging pans, double-click switches between fitting the view and 100%. With the viewer focused, + and - zoom, 0 fits, 1 shows actual pixels and the arrows pan. Zoom and pan ease. Keep a cui_image_view to keep the zoom and position (zeroed: fit). (12 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeImageView
 {
-    /// <summary>float (offset 0)</summary>
+    /// <summary>screen points per image pixel; 0 fits the image in the view (offset 0)</summary>
     public float Zoom;
-    /// <summary>float (offset 4)</summary>
+    /// <summary>the image point at the middle of the view, in pixels (offset 4)</summary>
     public float Cx;
-    /// <summary>float (offset 8)</summary>
+    /// <summary>the image point at the middle of the view, in pixels (offset 8)</summary>
     public float Cy;
 }
 
-/// <summary>cui_image_viewer_opts, 28 bytes.</summary>
+/// <summary>cui_image_viewer_opts (28 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeImageViewerOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>cui_size (offset 4)</summary>
+    /// <summary>default the width it gets and 360 (offset 4)</summary>
     public NativeSize Width;
-    /// <summary>cui_size (offset 12)</summary>
+    /// <summary>default the width it gets and 360 (offset 12)</summary>
     public NativeSize Height;
-    /// <summary>float (offset 20)</summary>
+    /// <summary>default 16 (1600%) (offset 20)</summary>
     public float MaxZoom;
-    /// <summary>_Bool (offset 24)</summary>
+    /// <summary>the zoom buttons and percentage in the corner (offset 24)</summary>
     public byte NoToolbar;
-    /// <summary>_Bool (offset 25)</summary>
+    /// <summary>a grid behind transparent images (offset 25)</summary>
     public byte Checkerboard;
 }
 
-/// <summary>cui_cropper_opts, 32 bytes.</summary>
+/// <summary>Cropper: a crop rectangle over a picture, in image pixels. Drag inside to move it, drag a corner or an edge to resize it; the outside dims and thirds lines show while you drag. With it focused, the arrows move the crop (Shift for 10 pixels). A zeroed crop starts as the largest centered rectangle of the aspect. (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeCropperOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>cui_size (offset 4)</summary>
+    /// <summary>default the width it gets and 360 (offset 4)</summary>
     public NativeSize Width;
-    /// <summary>cui_size (offset 12)</summary>
+    /// <summary>default the width it gets and 360 (offset 12)</summary>
     public NativeSize Height;
-    /// <summary>float (offset 20)</summary>
+    /// <summary>width / height to keep, 0 for free (offset 20)</summary>
     public float Aspect;
-    /// <summary>_Bool (offset 24)</summary>
+    /// <summary>a round mask, for avatars (keeps a 1:1 aspect) (offset 24)</summary>
     public byte Round;
-    /// <summary>float (offset 28)</summary>
+    /// <summary>smallest side, image pixels; default 16 (offset 28)</summary>
     public float MinSize;
 }
 
-/// <summary>cui_command, 32 bytes.</summary>
+/// <summary>cui_command (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeCommand
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>the command&apos;s text in the list; what typing in the palette searches (offset 0)</summary>
     public nint Title;
     /// <summary>const char * (offset 8)</summary>
     public nint Icon;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>heading above a run of commands with the same group, shown while the search is empty (offset 16)</summary>
     public nint Group;
     /// <summary>const char * (offset 24)</summary>
     public nint Shortcut;
 }
 
-/// <summary>cui_choice, 32 bytes.</summary>
+/// <summary>Radio cards: larger selectable cards for choices that need a description (plans, templates). (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeChoice
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>the card&apos;s heading, in medium weight; wraps when long (offset 0)</summary>
     public nint Title;
     /// <summary>const char * (offset 8)</summary>
     public nint Description;
     /// <summary>const char * (offset 16)</summary>
     public nint Icon;
-    /// <summary>const char * (offset 24)</summary>
+    /// <summary>small accent badge beside the title, e.g. &quot;Popular&quot;; `NULL` for none (offset 24)</summary>
     public nint Badge;
 }
 
-/// <summary>cui_radio_cards_opts, 8 bytes.</summary>
+/// <summary>cui_radio_cards_opts (8 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeRadioCardsOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>cards per row; 0 puts up to 3 choices in one row and more in 2 columns (offset 4)</summary>
     public int Columns;
 }
 
-/// <summary>cui_tag_opts, 40 bytes.</summary>
+/// <summary>Tag input: tags are stored comma separated in buf. Enter or comma adds the typed tag, Backspace on an empty field removes the last one. (40 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTagOpts
 {
@@ -1170,19 +1192,19 @@ public unsafe struct NativeTagOpts
     public nint Label;
     /// <summary>const char * (offset 16)</summary>
     public nint Placeholder;
-    /// <summary>int (offset 24)</summary>
+    /// <summary>most tags the field holds; once reached it takes no more typing. 0 means no limit (offset 24)</summary>
     public int MaxTags;
     /// <summary>cui_size (offset 28)</summary>
     public NativeSize Width;
 }
 
-/// <summary>cui_hold_opts, 24 bytes.</summary>
+/// <summary>Hold to confirm: a destructive action that fills while held and fires when full. Returns true once. (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeHoldOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>float (offset 4)</summary>
+    /// <summary>seconds the button must be held before it fires, default 1.2 (offset 4)</summary>
     public float Duration;
     /// <summary>const char * (offset 8)</summary>
     public nint Icon;
@@ -1190,13 +1212,13 @@ public unsafe struct NativeHoldOpts
     public ButtonVariant Variant;
 }
 
-/// <summary>cui_timeline_opts, 40 bytes.</summary>
+/// <summary>Activity timeline item. (40 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTimelineOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>muted text at the right of the title, e.g. &quot;2h ago&quot; (offset 8)</summary>
     public nint Time;
     /// <summary>const char * (offset 16)</summary>
     public nint Description;
@@ -1204,29 +1226,29 @@ public unsafe struct NativeTimelineOpts
     public nint Icon;
     /// <summary>cui_tone (offset 32)</summary>
     public Tone Tone;
-    /// <summary>_Bool (offset 36)</summary>
+    /// <summary>the final item: no connector line below its dot and no space after it (offset 36)</summary>
     public byte Last;
 }
 
-/// <summary>cui_split_button_opts, 40 bytes.</summary>
+/// <summary>Split button: a main action with a menu of related actions on the chevron. Returns 0 when the main part is clicked, 1 + i when menu item i is chosen and -1 otherwise. (40 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeSplitButtonOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>cui_button_variant (offset 4)</summary>
+    /// <summary>default primary (offset 4)</summary>
     public ButtonVariant Variant;
     /// <summary>cui_control_size (offset 8)</summary>
     public ControlSize Size;
     /// <summary>const char * (offset 16)</summary>
     public nint Icon;
-    /// <summary>const char *const * (offset 24)</summary>
+    /// <summary>one icon per menu item, in the order of the items; `NULL` for none (offset 24)</summary>
     public nint ItemIcons;
     /// <summary>_Bool (offset 32)</summary>
     public byte Disabled;
 }
 
-/// <summary>cui_toggle_group_opts, 24 bytes.</summary>
+/// <summary>Toggle group: a row of toggles (bold, italic...). values[i] is toggled when item i is clicked; with exclusive set exactly one stays on. Labels become tooltips when icon_only is set. Returns true when a value changed. (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeToggleGroupOpts
 {
@@ -1234,65 +1256,65 @@ public unsafe struct NativeToggleGroupOpts
     public int Sentinel;
     /// <summary>const char *const * (offset 8)</summary>
     public nint Icons;
-    /// <summary>_Bool (offset 16)</summary>
+    /// <summary>clicking an item turns it on and every other one off, like radio buttons (offset 16)</summary>
     public byte Exclusive;
-    /// <summary>_Bool (offset 17)</summary>
+    /// <summary>items that have an icon show only the icon, with their label as the tooltip (offset 17)</summary>
     public byte IconOnly;
     /// <summary>cui_control_size (offset 20)</summary>
     public ControlSize Size;
 }
 
-/// <summary>cui_confirm_opts, 40 bytes.</summary>
+/// <summary>Two step destructive button: the first click morphs it into a confirm state with a countdown, the second click confirms. Returns true once. (40 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeConfirmOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>default &quot;Click to confirm&quot; (offset 8)</summary>
     public nint ConfirmLabel;
     /// <summary>const char * (offset 16)</summary>
     public nint Icon;
-    /// <summary>cui_button_variant (offset 24)</summary>
+    /// <summary>resting look, default secondary (offset 24)</summary>
     public ButtonVariant Variant;
     /// <summary>cui_control_size (offset 28)</summary>
     public ControlSize Size;
-    /// <summary>float (offset 32)</summary>
+    /// <summary>seconds before it disarms, default 3 (offset 32)</summary>
     public float Timeout;
 }
 
-/// <summary>cui_status_button_opts, 48 bytes.</summary>
+/// <summary>cui_status_button_opts (48 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeStatusButtonOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>default label + &quot;...&quot; (offset 8)</summary>
     public nint BusyLabel;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>default &quot;Done&quot; (offset 16)</summary>
     public nint SuccessLabel;
-    /// <summary>const char * (offset 24)</summary>
+    /// <summary>default &quot;Failed&quot; (offset 24)</summary>
     public nint ErrorLabel;
     /// <summary>const char * (offset 32)</summary>
     public nint Icon;
-    /// <summary>cui_button_variant (offset 40)</summary>
+    /// <summary>default primary (offset 40)</summary>
     public ButtonVariant Variant;
     /// <summary>cui_control_size (offset 44)</summary>
     public ControlSize Size;
 }
 
-/// <summary>cui_reaction, 16 bytes.</summary>
+/// <summary>Reactions: icon pills with counts. Clicking toggles `active` and adjusts the count. Returns the index that changed, or -1. (16 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeReaction
 {
     /// <summary>const char * (offset 0)</summary>
     public nint Icon;
-    /// <summary>int (offset 8)</summary>
+    /// <summary>the number beside the icon; a click adds or takes away 1 (offset 8)</summary>
     public int Count;
-    /// <summary>_Bool (offset 12)</summary>
+    /// <summary>the user has reacted: the pill is highlighted; a click flips it (offset 12)</summary>
     public byte Active;
 }
 
-/// <summary>cui_speed_action, 16 bytes.</summary>
+/// <summary>Speed dial: a round floating action button that fans out related actions. Returns the chosen action index, or -1. (16 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeSpeedAction
 {
@@ -1302,7 +1324,7 @@ public unsafe struct NativeSpeedAction
     public nint Label;
 }
 
-/// <summary>cui_speed_dial_opts, 32 bytes.</summary>
+/// <summary>cui_speed_dial_opts (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeSpeedDialOpts
 {
@@ -1316,19 +1338,19 @@ public unsafe struct NativeSpeedDialOpts
     public nint Tooltip;
 }
 
-/// <summary>cui_user_menu_opts, 48 bytes.</summary>
+/// <summary>User menu: an avatar, a name and a line of detail that opens a menu of account actions. Put menu items between begin and end. (48 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeUserMenuOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>second line under the name, e.g. an email address; also in the menu&apos;s header (offset 8)</summary>
     public nint Detail;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>status dot on the avatar: &quot;online&quot;, &quot;busy&quot;, &quot;away&quot; or anything else (gray) (offset 16)</summary>
     public nint Status;
-    /// <summary>cui_texture (offset 24)</summary>
+    /// <summary>picture for the avatar instead of the name&apos;s initials (offset 24)</summary>
     public nuint Avatar;
-    /// <summary>_Bool (offset 32)</summary>
+    /// <summary>only the avatar as the button, as wide as it needs; the menu then opens below it (offset 32)</summary>
     public byte Compact;
     /// <summary>cui_placement (offset 36)</summary>
     public Placement Placement;
@@ -1336,7 +1358,7 @@ public unsafe struct NativeUserMenuOpts
     public float Width;
 }
 
-/// <summary>cui_swipe_action, 24 bytes.</summary>
+/// <summary>Swipe actions: drag a row sideways (or swipe on a trackpad) to reveal actions behind it. A long swipe triggers the first action. The row content goes between begin and end; end returns the chosen action: 0..left_count-1 for left actions, 100 + i for right actions, or -1. (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeSwipeAction
 {
@@ -1348,159 +1370,159 @@ public unsafe struct NativeSwipeAction
     public Tone Tone;
 }
 
-/// <summary>cui_grid_column, 24 bytes.</summary>
+/// <summary>A virtualized table for large data: sticky header, resizable and sortable columns, checkbox selection (click, Ctrl+click, Shift+click, Ctrl+A), keyboard navigation and editable cells. Build only the rows in [first, last): (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeGridColumn
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>text of the column&apos;s header (offset 0)</summary>
     public nint Title;
-    /// <summary>float (offset 8)</summary>
+    /// <summary>initial width in points, default 150 (offset 8)</summary>
     public float Width;
     /// <summary>cui_text_align (offset 12)</summary>
     public TextAlign Align;
     /// <summary>_Bool (offset 16)</summary>
     public byte Sortable;
-    /// <summary>_Bool (offset 17)</summary>
+    /// <summary>not resizable (offset 17)</summary>
     public byte Fixed;
-    /// <summary>int (offset 20)</summary>
+    /// <summary>0 always shown; when the grid is too narrow, columns with a priority hide, the highest number first, until the rest fit (offset 20)</summary>
     public int Priority;
 }
 
-/// <summary>cui_grid_opts, 72 bytes.</summary>
+/// <summary>cui_grid_opts (72 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeGridOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>cui_size (offset 4)</summary>
+    /// <summary>default fill (offset 4)</summary>
     public NativeSize Width;
-    /// <summary>cui_size (offset 12)</summary>
+    /// <summary>default fill (offset 12)</summary>
     public NativeSize Height;
-    /// <summary>float (offset 20)</summary>
+    /// <summary>default 40 (offset 20)</summary>
     public float RowHeight;
-    /// <summary>_Bool * (offset 24)</summary>
+    /// <summary>one bool per row; adds a checkbox column (offset 24)</summary>
     public nint Selected;
-    /// <summary>cui_table_sort * (offset 32)</summary>
+    /// <summary>optional; a click on a sortable header updates it and the header shows its arrow. Sort the rows yourself (offset 32)</summary>
     public nint Sort;
     /// <summary>_Bool (offset 40)</summary>
     public byte Striped;
-    /// <summary>int * (offset 48)</summary>
+    /// <summary>the keyboard row, optional; setting it scrolls that row into view (offset 48)</summary>
     public nint Cursor;
-    /// <summary>_Bool (offset 56)</summary>
+    /// <summary>with selected: rows still select (click, Shift, Ctrl) but no checkbox column (offset 56)</summary>
     public byte HideCheckboxes;
-    /// <summary>int * (offset 64)</summary>
+    /// <summary>the row Shift ranges start from, optional (in and out like cursor) (offset 64)</summary>
     public nint Anchor;
 }
 
-/// <summary>cui_filter_field, 32 bytes.</summary>
+/// <summary>Filter bar: a search field, a chip per active filter (click it to pick values) and &quot;+ Filter&quot; to add one. selected[i] is a bit mask of the chosen options of fields[i]. Returns true when anything changed. (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeFilterField
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>the field&apos;s name, on its chip and in the &quot;+ Filter&quot; menu (offset 0)</summary>
     public nint Name;
     /// <summary>const char * (offset 8)</summary>
     public nint Icon;
-    /// <summary>const char *const * (offset 16)</summary>
+    /// <summary>the values to choose from; at most 32, one bit of the mask each (offset 16)</summary>
     public nint Options;
-    /// <summary>int (offset 24)</summary>
+    /// <summary>number of `options` (offset 24)</summary>
     public int OptionCount;
 }
 
-/// <summary>cui_tree_node, 16 bytes.</summary>
+/// <summary>cui_tree_node (16 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTreeNode
 {
-    /// <summary>int (offset 0)</summary>
+    /// <summary>-1 for a top level node (offset 0)</summary>
     public int Parent;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>-1 when it has none, or none loaded yet (offset 4)</summary>
     public int FirstChild;
-    /// <summary>int (offset 8)</summary>
+    /// <summary>-1 for the last one (offset 8)</summary>
     public int NextSibling;
-    /// <summary>uint32_t (offset 12)</summary>
+    /// <summary>CUI_TREE_* (offset 12)</summary>
     public uint Flags;
 }
 
-/// <summary>cui_tree_table_opts, 72 bytes.</summary>
+/// <summary>cui_tree_table_opts (72 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTreeTableOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>cui_size (offset 4)</summary>
+    /// <summary>default fill (offset 4)</summary>
     public NativeSize Width;
-    /// <summary>cui_size (offset 12)</summary>
+    /// <summary>default fill (offset 12)</summary>
     public NativeSize Height;
-    /// <summary>float (offset 20)</summary>
+    /// <summary>default 32 (offset 20)</summary>
     public float RowHeight;
-    /// <summary>int (offset 24)</summary>
+    /// <summary>the first top level node, default 0 (offset 24)</summary>
     public int Root;
-    /// <summary>cui_table_sort * (offset 32)</summary>
+    /// <summary>sortable headers set it; sort each level yourself (cui_tree_sort) (offset 32)</summary>
     public nint Sort;
-    /// <summary>int * (offset 40)</summary>
+    /// <summary>the keyboard node, optional (in and out) (offset 40)</summary>
     public nint Cursor;
-    /// <summary>_Bool (offset 48)</summary>
+    /// <summary>quiet vertical lines for each indentation level (offset 48)</summary>
     public byte Guides;
-    /// <summary>const char *(*)(void *, int) (offset 56)</summary>
+    /// <summary>names for type-ahead, optional (offset 56)</summary>
     public nint Label;
-    /// <summary>void * (offset 64)</summary>
+    /// <summary>passed to `label` as its first argument (offset 64)</summary>
     public nint User;
 }
 
-/// <summary>cui_tree_table_events, 32 bytes.</summary>
+/// <summary>cui_tree_table_events (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTreeTableEvents
 {
-    /// <summary>int (offset 0)</summary>
+    /// <summary>node chosen with Enter or a double click, else -1 (offset 0)</summary>
     public int Activated;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>a node opened or closed this frame, else -1 (offset 4)</summary>
     public int Expanded;
-    /// <summary>int (offset 8)</summary>
+    /// <summary>a node opened or closed this frame, else -1 (offset 8)</summary>
     public int Collapsed;
-    /// <summary>const int * (offset 16)</summary>
+    /// <summary>nodes to load children for (each now has CUI_TREE_LOADING), valid this frame (offset 16)</summary>
     public nint Load;
-    /// <summary>int (offset 24)</summary>
+    /// <summary>number of nodes in `load`; at most 64 a frame (offset 24)</summary>
     public int LoadCount;
-    /// <summary>_Bool (offset 28)</summary>
+    /// <summary>a node&apos;s `CUI_TREE_SELECTED` flag changed this frame (offset 28)</summary>
     public byte SelectionChanged;
-    /// <summary>_Bool (offset 29)</summary>
+    /// <summary>re-sort every sibling list by *sort (offset 29)</summary>
     public byte SortChanged;
 }
 
-/// <summary>cui_path_bar_opts, 48 bytes.</summary>
+/// <summary>Path bar: a breadcrumb for file and scene paths. Segments are clickable, the last one is the current place. Middle segments that do not fit collapse into a &quot;...&quot; menu. With .menus, the chevron after segment k opens a menu you fill with the children of segment k (cui_path_bar_menu_begin). Click the empty part (or the current segment), or press Ctrl+L, to type a path: Enter submits it, Esc or clicking away cancels. (48 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativePathBarOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>before the first segment (offset 8)</summary>
     public nint Icon;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>what editing starts with, default the segments joined by &quot;/&quot; (offset 16)</summary>
     public nint Text;
     /// <summary>const char * (offset 24)</summary>
     public nint Placeholder;
     /// <summary>cui_control_size (offset 32)</summary>
     public ControlSize Size;
-    /// <summary>cui_size (offset 36)</summary>
+    /// <summary>default fill (offset 36)</summary>
     public NativeSize Width;
-    /// <summary>_Bool (offset 44)</summary>
+    /// <summary>separators open a menu of the next segment&apos;s siblings (offset 44)</summary>
     public byte Menus;
-    /// <summary>_Bool (offset 45)</summary>
+    /// <summary>no text mode (offset 45)</summary>
     public byte NoEdit;
 }
 
-/// <summary>cui_path_bar_result, 24 bytes.</summary>
+/// <summary>cui_path_bar_result (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativePathBarResult
 {
-    /// <summary>int (offset 0)</summary>
+    /// <summary>segment clicked (here or in the &quot;...&quot; menu), else -1 (offset 0)</summary>
     public int Clicked;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>the typed path after Enter, else NULL; valid this frame (offset 8)</summary>
     public nint Submitted;
-    /// <summary>_Bool (offset 16)</summary>
+    /// <summary>the bar is showing its text field for typing a path (offset 16)</summary>
     public byte Editing;
 }
 
-/// <summary>cui_file_entry, 32 bytes.</summary>
+/// <summary>File browser and file picker (an open or save dialog drawn by CUI, like the rest of the window; cui_app_file_dialog in cui_app.h opens the system&apos;s own). The browser lists a folder (name, date modified and size; folders first, any column sorts), with back, forward and up, a path bar you can type into, a filter field and a sidebar of places. Double-click or Enter opens a folder or picks a file; Backspace goes up, Alt+Left and Alt+Right go back and forward, F5 reloads, and typing a letter jumps to the next name that starts with it. A folder is read when you enter it (or reload), not every frame, and only the rows in view are built. (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeFileEntry
 {
@@ -1508,159 +1530,159 @@ public unsafe struct NativeFileEntry
     public nint Name;
     /// <summary>_Bool (offset 8)</summary>
     public byte Dir;
-    /// <summary>uint64_t (offset 16)</summary>
+    /// <summary>bytes (offset 16)</summary>
     public ulong Size;
-    /// <summary>int64_t (offset 24)</summary>
+    /// <summary>seconds since 1970 (UTC); 0 unknown (offset 24)</summary>
     public long Modified;
 }
 
-/// <summary>cui_file_browser_opts, 80 bytes.</summary>
+/// <summary>cui_file_browser_opts (80 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeFileBrowserOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>cui_size (offset 4)</summary>
+    /// <summary>default fill and 380 (offset 4)</summary>
     public NativeSize Width;
-    /// <summary>cui_size (offset 12)</summary>
+    /// <summary>default fill and 380 (offset 12)</summary>
     public NativeSize Height;
-    /// <summary>const char * (offset 24)</summary>
+    /// <summary>patterns that files must match, e.g. &quot;*.png;*.jpg&quot;; folders always show (offset 24)</summary>
     public nint Filter;
-    /// <summary>_Bool (offset 32)</summary>
+    /// <summary>lists folders and leaves the files out (offset 32)</summary>
     public byte FoldersOnly;
-    /// <summary>_Bool (offset 33)</summary>
+    /// <summary>show hidden files (offset 33)</summary>
     public byte Hidden;
-    /// <summary>_Bool (offset 34)</summary>
+    /// <summary>the sidebar of places (offset 34)</summary>
     public byte NoPlaces;
-    /// <summary>const char *const * (offset 40)</summary>
+    /// <summary>full paths for the sidebar, each shown by its last part; at most 6 (offset 40)</summary>
     public nint Places;
-    /// <summary>int (offset 48)</summary>
+    /// <summary>entries in `places`; with `places` NULL the sidebar shows home, desktop, documents, downloads and the root (offset 48)</summary>
     public int PlaceCount;
-    /// <summary>cui_file_list_fn (offset 56)</summary>
+    /// <summary>function that lists a folder; set it to browse something other than the local disk (offset 56)</summary>
     public nint List;
-    /// <summary>void * (offset 64)</summary>
+    /// <summary>passed to `list` as its first argument; `list` defaults to cui_fs_list, the local disk (offset 64)</summary>
     public nint ListUser;
-    /// <summary>int (offset 72)</summary>
+    /// <summary>default 20,000 (offset 72)</summary>
     public int MaxEntries;
 }
 
-/// <summary>cui_file_browser_result, 24 bytes.</summary>
+/// <summary>cui_file_browser_result (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeFileBrowserResult
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>a file double-clicked or Entered, as a full path; valid this frame (offset 0)</summary>
     public nint Picked;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>the selected entry as a full path, or NULL; valid this frame (offset 8)</summary>
     public nint Selected;
-    /// <summary>_Bool (offset 16)</summary>
+    /// <summary>the folder in *path changed (offset 16)</summary>
     public byte Navigated;
-    /// <summary>_Bool (offset 17)</summary>
+    /// <summary>the folder could not be read (offset 17)</summary>
     public byte Error;
 }
 
-/// <summary>cui_file_picker_opts, 72 bytes.</summary>
+/// <summary>cui_file_picker_opts (72 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeFilePickerOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>default &quot;Open&quot;, &quot;Save&quot; or &quot;Choose a folder&quot; (offset 8)</summary>
     public nint Title;
-    /// <summary>_Bool (offset 16)</summary>
+    /// <summary>a name field and Save (offset 16)</summary>
     public byte Save;
-    /// <summary>_Bool (offset 17)</summary>
+    /// <summary>choose a folder (offset 17)</summary>
     public byte Folders;
-    /// <summary>const char * (offset 24)</summary>
+    /// <summary>the folder to start in, default the current directory (offset 24)</summary>
     public nint Start;
-    /// <summary>const char * (offset 32)</summary>
+    /// <summary>save: the name to start with (offset 32)</summary>
     public nint Name;
-    /// <summary>const char * (offset 40)</summary>
+    /// <summary>e.g. &quot;*.png;*.jpg&quot; (offset 40)</summary>
     public nint Filter;
-    /// <summary>const char * (offset 48)</summary>
+    /// <summary>e.g. &quot;Images&quot; (offset 48)</summary>
     public nint FilterLabel;
-    /// <summary>cui_file_list_fn (offset 56)</summary>
+    /// <summary>function that lists a folder (the local disk unless set); default `cui_fs_list` (offset 56)</summary>
     public nint List;
-    /// <summary>void * (offset 64)</summary>
+    /// <summary>passed to `list` as its first argument (offset 64)</summary>
     public nint ListUser;
 }
 
-/// <summary>cui_code_opts, 48 bytes.</summary>
+/// <summary>Code block with syntax highlighting (lang: &quot;c&quot;, &quot;cpp&quot;, &quot;js&quot;, &quot;ts&quot;, &quot;python&quot;, &quot;rust&quot;, &quot;go&quot;, &quot;json&quot;, &quot;shell&quot;, or &quot;text&quot; for none), line numbers, a title bar and a copy button. Long lines scroll sideways. (48 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeCodeOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>&quot;c&quot;, &quot;cpp&quot;, &quot;js&quot;, &quot;ts&quot;, &quot;python&quot;, &quot;rust&quot;, &quot;go&quot;, &quot;json&quot;, &quot;shell&quot; or &quot;text&quot; (no colors); shown in the title bar (offset 8)</summary>
     public nint Lang;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>e.g. a file name (offset 16)</summary>
     public nint Title;
-    /// <summary>_Bool (offset 24)</summary>
+    /// <summary>a column of line numbers on the left (offset 24)</summary>
     public byte LineNumbers;
-    /// <summary>int (offset 28)</summary>
+    /// <summary>1 based line range to emphasize (offset 28)</summary>
     public int HighlightFrom;
-    /// <summary>int (offset 32)</summary>
+    /// <summary>1 based line range to emphasize (offset 32)</summary>
     public int HighlightTo;
-    /// <summary>float (offset 36)</summary>
+    /// <summary>scrolls beyond this, default none (offset 36)</summary>
     public float MaxHeight;
-    /// <summary>float (offset 40)</summary>
+    /// <summary>font size, default 13 (offset 40)</summary>
     public float Size;
-    /// <summary>_Bool (offset 44)</summary>
+    /// <summary>no title bar, even with a lang (offset 44)</summary>
     public byte NoHeader;
 }
 
-/// <summary>cui_json_opts, 12 bytes.</summary>
+/// <summary>JSON viewer: a collapsible tree with typed colors and item counts. Returns false when the text is not valid JSON (and shows the error). (12 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeJsonOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>levels of the tree that start open, default 2 (offset 4)</summary>
     public int ExpandDepth;
-    /// <summary>float (offset 8)</summary>
+    /// <summary>points; taller content scrolls. 0 shows everything (offset 8)</summary>
     public float MaxHeight;
 }
 
-/// <summary>cui_markdown_opts, 32 bytes.</summary>
+/// <summary>Markdown view: renders your markdown text (UTF-8) as native content, every frame, without keeping a copy: (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeMarkdownOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>cui_size (offset 4)</summary>
+    /// <summary>default fill (offset 4)</summary>
     public NativeSize Width;
-    /// <summary>_Bool (offset 12)</summary>
+    /// <summary>as wide as the content needs, up to the space there is (chat bubbles) (offset 12)</summary>
     public byte FitContent;
-    /// <summary>int (offset 16)</summary>
+    /// <summary>bytes of text to show, default strlen (text then need not end in a NUL) (offset 16)</summary>
     public int Length;
-    /// <summary>float (offset 20)</summary>
+    /// <summary>body text size, default theme text_body (offset 20)</summary>
     public float Size;
-    /// <summary>cui_color (offset 24)</summary>
+    /// <summary>body text color, default foreground; links then take it too, underlined (offset 24)</summary>
     public NativeColor Color;
-    /// <summary>_Bool (offset 28)</summary>
+    /// <summary>text is still arriving (offset 28)</summary>
     public byte Streaming;
-    /// <summary>_Bool (offset 29)</summary>
+    /// <summary>smaller headings and tighter spacing, for chat bubbles (offset 29)</summary>
     public byte Compact;
 }
 
-/// <summary>cui_markdown_result, 32 bytes.</summary>
+/// <summary>cui_markdown_result (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeMarkdownResult
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>URL of the link clicked (or activated with Enter) this frame, or NULL; frame memory (offset 0)</summary>
     public nint Link;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>URL of the link under the pointer, or NULL; frame memory (offset 8)</summary>
     public nint HoveredLink;
-    /// <summary>int (offset 16)</summary>
+    /// <summary>a task box was toggled: byte offset in text of the character between its brackets, else -1 (offset 16)</summary>
     public int TaskOffset;
-    /// <summary>int (offset 20)</summary>
+    /// <summary>that item&apos;s 1 based line in text, 0 when none (offset 20)</summary>
     public int TaskLine;
-    /// <summary>_Bool (offset 24)</summary>
+    /// <summary>the state the box was toggled to (offset 24)</summary>
     public byte TaskChecked;
-    /// <summary>float (offset 28)</summary>
+    /// <summary>height of the view in the latest layout (offset 28)</summary>
     public float Height;
 }
 
-/// <summary>cui_text_mark, 12 bytes.</summary>
+/// <summary>Code editor: editable code with the code block&apos;s highlighting, a line number gutter and a monospace grid, for shader editors, script consoles and config files. You own the text: a NUL terminated buffer and its capacity, edited in place. (12 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTextMark
 {
@@ -1672,71 +1694,71 @@ public unsafe struct NativeTextMark
     public int Color;
 }
 
-/// <summary>cui_code_editor_opts, 64 bytes.</summary>
+/// <summary>cui_code_editor_opts (64 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeCodeEditorOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>as cui_code_block: &quot;c&quot;, &quot;cpp&quot;, &quot;js&quot;, &quot;ts&quot;, &quot;python&quot;, &quot;rust&quot;, &quot;go&quot;, &quot;json&quot;, &quot;shell&quot;; &quot;text&quot; for none (offset 8)</summary>
     public nint Lang;
-    /// <summary>cui_size (offset 16)</summary>
+    /// <summary>default fill (offset 16)</summary>
     public NativeSize Width;
-    /// <summary>float (offset 24)</summary>
+    /// <summary>default 320; negative fills the space (offset 24)</summary>
     public float Height;
-    /// <summary>float (offset 28)</summary>
+    /// <summary>font size, default 13 (offset 28)</summary>
     public float Size;
-    /// <summary>int (offset 32)</summary>
+    /// <summary>columns per indentation level, default 4 (offset 32)</summary>
     public int TabSize;
-    /// <summary>_Bool (offset 36)</summary>
+    /// <summary>indent with tab characters instead of spaces (offset 36)</summary>
     public byte UseTabs;
     /// <summary>_Bool (offset 37)</summary>
     public byte ReadOnly;
-    /// <summary>_Bool (offset 38)</summary>
+    /// <summary>hides the gutter of line numbers (offset 38)</summary>
     public byte NoLineNumbers;
     /// <summary>_Bool (offset 39)</summary>
     public byte Autofocus;
-    /// <summary>const char * (offset 40)</summary>
+    /// <summary>shown while the text is empty (offset 40)</summary>
     public nint Placeholder;
-    /// <summary>const cui_text_mark * (offset 48)</summary>
+    /// <summary>ranges to highlight (search results, regex matches), sorted by start (offset 48)</summary>
     public nint Marks;
-    /// <summary>int (offset 56)</summary>
+    /// <summary>number of `marks` (offset 56)</summary>
     public int MarkCount;
 }
 
-/// <summary>cui_code_editor_result, 44 bytes.</summary>
+/// <summary>cui_code_editor_result (44 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeCodeEditorResult
 {
-    /// <summary>_Bool (offset 0)</summary>
+    /// <summary>the text changed this frame (offset 0)</summary>
     public byte Changed;
-    /// <summary>_Bool (offset 1)</summary>
+    /// <summary>an edit did not fit in the capacity and was dropped (offset 1)</summary>
     public byte Refused;
-    /// <summary>_Bool (offset 2)</summary>
+    /// <summary>the editor or its find bar has the keyboard (offset 2)</summary>
     public byte Focused;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>caret and the other end of the selection, byte offsets (offset 4)</summary>
     public int Cursor;
-    /// <summary>int (offset 8)</summary>
+    /// <summary>caret and the other end of the selection, byte offsets (offset 8)</summary>
     public int Anchor;
-    /// <summary>int (offset 12)</summary>
+    /// <summary>the caret, 1 based; columns count tabs to their stop (offset 12)</summary>
     public int Line;
-    /// <summary>int (offset 16)</summary>
+    /// <summary>the caret, 1 based; columns count tabs to their stop (offset 16)</summary>
     public int Column;
-    /// <summary>int (offset 20)</summary>
+    /// <summary>lines, and bytes of text (offset 20)</summary>
     public int LineCount;
-    /// <summary>int (offset 24)</summary>
+    /// <summary>lines, and bytes of text (offset 24)</summary>
     public int Length;
-    /// <summary>int (offset 28)</summary>
+    /// <summary>the bracket beside the caret and its partner, byte offsets, or -1 (offset 28)</summary>
     public int Bracket;
-    /// <summary>int (offset 32)</summary>
+    /// <summary>the bracket beside the caret and its partner, byte offsets, or -1 (offset 32)</summary>
     public int BracketMatch;
-    /// <summary>int (offset 36)</summary>
+    /// <summary>with the find bar open: matches, and which one is selected (1 based, 0 none) (offset 36)</summary>
     public int FindMatches;
-    /// <summary>int (offset 40)</summary>
+    /// <summary>with the find bar open: matches, and which one is selected (1 based, 0 none) (offset 40)</summary>
     public int FindIndex;
 }
 
-/// <summary>cui_diff_opts, 72 bytes.</summary>
+/// <summary>cui_diff_opts (72 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeDiffOpts
 {
@@ -1744,73 +1766,73 @@ public unsafe struct NativeDiffOpts
     public int Sentinel;
     /// <summary>cui_diff_mode (offset 4)</summary>
     public DiffMode Mode;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>syntax colors, as cui_code_block: &quot;c&quot;, &quot;js&quot;, &quot;python&quot;, ... (offset 8)</summary>
     public nint Language;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>a header above the sides, e.g. file names, with the +/- summary (offset 16)</summary>
     public nint OldTitle;
-    /// <summary>const char * (offset 24)</summary>
+    /// <summary>a header above the sides, e.g. file names, with the +/- summary (offset 24)</summary>
     public nint NewTitle;
-    /// <summary>int * (offset 32)</summary>
+    /// <summary>the selected change, read and written (may be NULL); set it to scroll to a change (offset 32)</summary>
     public nint Current;
-    /// <summary>int (offset 40)</summary>
+    /// <summary>unchanged lines kept beside each change, default 3 (offset 40)</summary>
     public int Context;
-    /// <summary>_Bool (offset 44)</summary>
+    /// <summary>show every unchanged line (offset 44)</summary>
     public byte NoFold;
-    /// <summary>_Bool (offset 45)</summary>
+    /// <summary>&quot;\r\n&quot; equals &quot;\n&quot;, and a missing final newline does not count (offset 45)</summary>
     public byte IgnoreEol;
-    /// <summary>float (offset 48)</summary>
+    /// <summary>below this width split shows inline, default 560 (offset 48)</summary>
     public float SplitMinWidth;
-    /// <summary>cui_size (offset 52)</summary>
+    /// <summary>default fill (offset 52)</summary>
     public NativeSize Width;
-    /// <summary>float (offset 60)</summary>
+    /// <summary>default: the rows, up to 420; negative fills the space (offset 60)</summary>
     public float Height;
-    /// <summary>float (offset 64)</summary>
+    /// <summary>font size, default 12 (offset 64)</summary>
     public float Size;
 }
 
-/// <summary>cui_diff_result, 36 bytes.</summary>
+/// <summary>cui_diff_result (36 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeDiffResult
 {
-    /// <summary>int (offset 0)</summary>
+    /// <summary>lines (offset 0)</summary>
     public int Added;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>lines (offset 4)</summary>
     public int Removed;
-    /// <summary>int (offset 8)</summary>
+    /// <summary>change blocks (hunks without context) (offset 8)</summary>
     public int Changes;
-    /// <summary>int (offset 12)</summary>
+    /// <summary>the selected change, -1 none (offset 12)</summary>
     public int Current;
-    /// <summary>_Bool (offset 16)</summary>
+    /// <summary>this frame, by the keys, a click or .current (offset 16)</summary>
     public byte CurrentChanged;
-    /// <summary>cui_diff_mode (offset 20)</summary>
+    /// <summary>what is shown: inline when split did not fit (offset 20)</summary>
     public DiffMode Mode;
-    /// <summary>int (offset 24)</summary>
+    /// <summary>folded rows shown, and the unchanged lines they hide (offset 24)</summary>
     public int Folds;
-    /// <summary>int (offset 28)</summary>
+    /// <summary>folded rows shown, and the unchanged lines they hide (offset 28)</summary>
     public int Hidden;
-    /// <summary>_Bool (offset 32)</summary>
+    /// <summary>a text changed and was diffed this frame (offset 32)</summary>
     public byte Recomputed;
-    /// <summary>_Bool (offset 33)</summary>
+    /// <summary>the search hit its limit: correct, maybe not the shortest (offset 33)</summary>
     public byte Approximate;
 }
 
-/// <summary>cui_diff_row, 20 bytes.</summary>
+/// <summary>cui_diff_row (20 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeDiffRow
 {
     /// <summary>cui_diff_row_kind (offset 0)</summary>
     public DiffRowKind Kind;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>0 based, -1 for none (offset 4)</summary>
     public int OldLine;
-    /// <summary>int (offset 8)</summary>
+    /// <summary>0 based, -1 for none (offset 8)</summary>
     public int NewLine;
-    /// <summary>int (offset 12)</summary>
+    /// <summary>the change it belongs to, or -1 (offset 12)</summary>
     public int Change;
-    /// <summary>int (offset 16)</summary>
+    /// <summary>fold rows: lines hidden (offset 16)</summary>
     public int Hidden;
 }
 
-/// <summary>cui_diff_hunk, 16 bytes.</summary>
+/// <summary>The same diff without a view. Old lines [old_start, old_start + old_count) became new lines [new_start, new_start + new_count), 0 based; a pure insertion has old_count 0 and goes before old line old_start. Writes up to cap hunks and returns how many there are (-1 when out of memory). Lines end at &quot;\n&quot;; a &quot;\r&quot; before it is part of the line ending. Allocates with malloc. (16 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeDiffHunk
 {
@@ -1824,7 +1846,7 @@ public unsafe struct NativeDiffHunk
     public int NewCount;
 }
 
-/// <summary>cui_diff_stats, 24 bytes.</summary>
+/// <summary>cui_diff_stats (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeDiffStats
 {
@@ -1842,7 +1864,7 @@ public unsafe struct NativeDiffStats
     public byte Approximate;
 }
 
-/// <summary>cui_diff_range, 8 bytes.</summary>
+/// <summary>Word marks between two versions of one line, as byte ranges (a length of -1 reads up to the terminator). Returns false when the lines have too little in common for marks to help, or a line is very long (over 2000 bytes). (8 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeDiffRange
 {
@@ -1852,67 +1874,67 @@ public unsafe struct NativeDiffRange
     public int Length;
 }
 
-/// <summary>cui_chat_opts, 64 bytes.</summary>
+/// <summary>Chat message bubble. Consecutive messages from one person set grouped so they stack tightly and show the avatar once. (64 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeChatOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>_Bool (offset 4)</summary>
+    /// <summary>right aligned, accent bubble (offset 4)</summary>
     public byte Mine;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>name above the first bubble of a group (offset 8)</summary>
     public nint Author;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>shown after the author&apos;s name; on your own messages after `status` (offset 16)</summary>
     public nint Time;
-    /// <summary>const char * (offset 24)</summary>
+    /// <summary>under your own last message, e.g. &quot;Read&quot; (offset 24)</summary>
     public nint Status;
-    /// <summary>_Bool (offset 32)</summary>
+    /// <summary>continues the previous message (offset 32)</summary>
     public byte Grouped;
-    /// <summary>_Bool (offset 33)</summary>
+    /// <summary>shows the avatar (others) and status (mine) (offset 33)</summary>
     public byte LastInGroup;
-    /// <summary>cui_texture (offset 40)</summary>
+    /// <summary>picture for the sender&apos;s avatar instead of initials (other people&apos;s messages) (offset 40)</summary>
     public nuint Avatar;
-    /// <summary>_Bool (offset 48)</summary>
+    /// <summary>render the text with cui_markdown (compact, as wide as it needs) (offset 48)</summary>
     public byte Markdown;
-    /// <summary>cui_markdown_result * (offset 56)</summary>
+    /// <summary>optional: links and task toggles the markdown reported (offset 56)</summary>
     public nint MarkdownResult;
 }
 
-/// <summary>cui_comment_opts, 56 bytes.</summary>
+/// <summary>cui_comment_opts (56 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeCommentOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>muted text after the author&apos;s name, e.g. &quot;2h ago&quot; (offset 8)</summary>
     public nint Time;
-    /// <summary>int (offset 16)</summary>
+    /// <summary>0 for a top level comment; each level indents a reply 44 points under a connector line (offset 16)</summary>
     public int Depth;
-    /// <summary>int * (offset 24)</summary>
+    /// <summary>the like count, shown beside the heart; changed with `*liked`. May be `NULL` (offset 24)</summary>
     public nint Likes;
-    /// <summary>_Bool * (offset 32)</summary>
+    /// <summary>whether you liked it: tints the heart and flips on a click. `NULL`: the click is only reported (offset 32)</summary>
     public nint Liked;
-    /// <summary>_Bool (offset 40)</summary>
+    /// <summary>adds &quot;edited&quot; after the time (offset 40)</summary>
     public byte Edited;
-    /// <summary>const char * (offset 48)</summary>
+    /// <summary>small badge after the author&apos;s name, e.g. &quot;Author&quot; (offset 48)</summary>
     public nint Badge;
 }
 
-/// <summary>cui_presence_user, 32 bytes.</summary>
+/// <summary>Presence: who is here now. Overlapping avatars with a colored ring each, that spread out on hover and name themselves. (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativePresenceUser
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>shown in the tooltip, and as initials when there is no avatar (offset 0)</summary>
     public nint Name;
     /// <summary>cui_color (offset 8)</summary>
     public NativeColor Color;
-    /// <summary>cui_texture (offset 16)</summary>
+    /// <summary>picture to show instead of the initials (offset 16)</summary>
     public nuint Avatar;
-    /// <summary>_Bool (offset 24)</summary>
+    /// <summary>away: the avatar dims, its ring turns gray and the tooltip adds &quot;(away)&quot; (offset 24)</summary>
     public byte Idle;
 }
 
-/// <summary>cui_carousel_opts, 20 bytes.</summary>
+/// <summary>Carousel: slides that you swipe, drag, scroll or page with the arrows and dots. Build every slide between begin and end: cui_carousel(ui, &quot;tour&quot;, 4, &amp;index, .height = 220) { for (int k = 0; k &lt; 4; k++) cui_carousel_slide(ui) { ... } } (20 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeCarouselOpts
 {
@@ -1920,19 +1942,19 @@ public unsafe struct NativeCarouselOpts
     public int Sentinel;
     /// <summary>float (offset 4)</summary>
     public float Height;
-    /// <summary>float (offset 8)</summary>
+    /// <summary>seconds on a slide before it moves to the next, paused while hovered; 0 turns it off (offset 8)</summary>
     public float AutoAdvance;
     /// <summary>float (offset 12)</summary>
     public float Gap;
-    /// <summary>_Bool (offset 16)</summary>
+    /// <summary>hides the previous and next arrows that show on hover (offset 16)</summary>
     public byte NoArrows;
-    /// <summary>_Bool (offset 17)</summary>
+    /// <summary>hides the row of page dots under the slides (offset 17)</summary>
     public byte NoDots;
-    /// <summary>_Bool (offset 18)</summary>
+    /// <summary>past the last slide comes the first again, and back from the first the last (offset 18)</summary>
     public byte Loop;
 }
 
-/// <summary>cui_compare_opts, 40 bytes.</summary>
+/// <summary>Before and after: drag the divider to compare two images. *pos is 0..1. (40 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeCompareOpts
 {
@@ -1942,15 +1964,15 @@ public unsafe struct NativeCompareOpts
     public NativeSize Width;
     /// <summary>float (offset 12)</summary>
     public float Height;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>caption in the top left corner, default &quot;Before&quot; (offset 16)</summary>
     public nint BeforeLabel;
-    /// <summary>const char * (offset 24)</summary>
+    /// <summary>caption in the top right corner, default &quot;After&quot; (offset 24)</summary>
     public nint AfterLabel;
-    /// <summary>float (offset 32)</summary>
+    /// <summary>the images&apos; width / height: they are cropped to fill, never stretched (offset 32)</summary>
     public float Aspect;
 }
 
-/// <summary>cui_card_stack_opts, 20 bytes.</summary>
+/// <summary>Card stack: a deck where the top card can be flicked away left or right. Build `count` cards; card 0 is the top. end returns -1 or 1 on the frame the top card leaves (to the left or right), else 0. (20 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeCardStackOpts
 {
@@ -1960,11 +1982,11 @@ public unsafe struct NativeCardStackOpts
     public NativeSize Width;
     /// <summary>float (offset 12)</summary>
     public float Height;
-    /// <summary>int (offset 16)</summary>
+    /// <summary>cards of the deck that show at once, default 3 (offset 16)</summary>
     public int Visible;
 }
 
-/// <summary>cui_counter_opts, 32 bytes.</summary>
+/// <summary>Odometer: a number whose digits roll to their new values. (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeCounterOpts
 {
@@ -1974,57 +1996,57 @@ public unsafe struct NativeCounterOpts
     public nint Format;
     /// <summary>float (offset 16)</summary>
     public float Size;
-    /// <summary>cui_font (offset 20)</summary>
+    /// <summary>default `CUI_FONT_DISPLAY` (offset 20)</summary>
     public Font Font;
     /// <summary>cui_color (offset 24)</summary>
     public NativeColor Color;
-    /// <summary>_Bool (offset 28)</summary>
+    /// <summary>commas between thousands: 48210 shows as 48,210 (offset 28)</summary>
     public byte GroupThousands;
 }
 
-/// <summary>cui_ticker_item, 24 bytes.</summary>
+/// <summary>Ticker: items that scroll by continuously, pausing on hover. (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTickerItem
 {
     /// <summary>const char * (offset 0)</summary>
     public nint Label;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>text after the label in medium weight, e.g. a price; may be `NULL` (offset 8)</summary>
     public nint Value;
-    /// <summary>float (offset 16)</summary>
+    /// <summary>percent change, shown with a trend arrow in green or red; 0 hides it (offset 16)</summary>
     public float Delta;
-    /// <summary>_Bool (offset 20)</summary>
+    /// <summary>a fall in `delta` is good news: it shows green, and a rise red (offset 20)</summary>
     public byte LowerIsBetter;
 }
 
-/// <summary>cui_ticker_opts, 12 bytes.</summary>
+/// <summary>cui_ticker_opts (12 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTickerOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>float (offset 4)</summary>
+    /// <summary>points per second, default 40 (offset 4)</summary>
     public float Speed;
     /// <summary>float (offset 8)</summary>
     public float Height;
 }
 
-/// <summary>cui_heatmap_opts, 56 bytes.</summary>
+/// <summary>Heatmap: a rows x cols matrix (values[row * cols + col]) on one hue, light to dark, with a scale below. (56 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeHeatmapOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>const char *const * (offset 8)</summary>
+    /// <summary>one label per row, left of the grid; `NULL` for none (offset 8)</summary>
     public nint RowLabels;
-    /// <summary>const char *const * (offset 16)</summary>
+    /// <summary>one label per column, under the grid; labels that would overlap are skipped (offset 16)</summary>
     public nint ColLabels;
-    /// <summary>float (offset 24)</summary>
+    /// <summary>cell size, default fits the width (offset 24)</summary>
     public float Cell;
-    /// <summary>float (offset 28)</summary>
+    /// <summary>value range, default the data&apos;s (offset 28)</summary>
     public float Min;
-    /// <summary>float (offset 32)</summary>
+    /// <summary>value range, default the data&apos;s (offset 32)</summary>
     public float Max;
-    /// <summary>cui_color (offset 36)</summary>
+    /// <summary>hue of the scale, default the accent (offset 36)</summary>
     public NativeColor Color;
     /// <summary>const char * (offset 40)</summary>
     public nint Format;
@@ -2032,13 +2054,13 @@ public unsafe struct NativeHeatmapOpts
     public NativeSize Width;
 }
 
-/// <summary>cui_calendar_heatmap_opts, 32 bytes.</summary>
+/// <summary>Calendar heatmap: one cell per day from start, weeks as columns, in five levels, with month and weekday labels and a Less / More legend. (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeCalendarHeatmapOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>float (offset 4)</summary>
+    /// <summary>size of a day&apos;s square in points, default 11 (offset 4)</summary>
     public float Cell;
     /// <summary>cui_color (offset 8)</summary>
     public NativeColor Color;
@@ -2048,19 +2070,19 @@ public unsafe struct NativeCalendarHeatmapOpts
     public nint Unit;
 }
 
-/// <summary>cui_viz_item, 16 bytes.</summary>
+/// <summary>Treemap: rectangles with areas proportional to their values. (16 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeVizItem
 {
     /// <summary>const char * (offset 0)</summary>
     public nint Label;
-    /// <summary>float (offset 8)</summary>
+    /// <summary>the item&apos;s amount: its area, length or share, by chart (activity rings: 1 is a full turn) (offset 8)</summary>
     public float Value;
     /// <summary>cui_color (offset 12)</summary>
     public NativeColor Color;
 }
 
-/// <summary>cui_treemap_opts, 24 bytes.</summary>
+/// <summary>cui_treemap_opts (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTreemapOpts
 {
@@ -2074,7 +2096,7 @@ public unsafe struct NativeTreemapOpts
     public nint Format;
 }
 
-/// <summary>cui_radar_opts, 32 bytes.</summary>
+/// <summary>Radar chart: series over shared axes (series[i].values[axis]). (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeRadarOpts
 {
@@ -2082,7 +2104,7 @@ public unsafe struct NativeRadarOpts
     public int Sentinel;
     /// <summary>float (offset 4)</summary>
     public float Size;
-    /// <summary>float (offset 8)</summary>
+    /// <summary>value at the outer ring; 0 picks a round number above the largest value (offset 8)</summary>
     public float Max;
     /// <summary>const char * (offset 16)</summary>
     public nint Format;
@@ -2090,7 +2112,7 @@ public unsafe struct NativeRadarOpts
     public byte NoLegend;
 }
 
-/// <summary>cui_funnel_opts, 32 bytes.</summary>
+/// <summary>Funnel: stages narrowing by value, with the conversion between them. (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeFunnelOpts
 {
@@ -2106,19 +2128,19 @@ public unsafe struct NativeFunnelOpts
     public NativeColor Color;
 }
 
-/// <summary>cui_sankey_link, 12 bytes.</summary>
+/// <summary>Sankey: flows between nodes; columns follow the links from the sources. (12 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeSankeyLink
 {
-    /// <summary>int (offset 0)</summary>
+    /// <summary>index of the node the flow leaves (offset 0)</summary>
     public int From;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>index of the node the flow enters (offset 4)</summary>
     public int To;
-    /// <summary>float (offset 8)</summary>
+    /// <summary>size of the flow: sets the link&apos;s thickness (offset 8)</summary>
     public float Value;
 }
 
-/// <summary>cui_sankey_opts, 32 bytes.</summary>
+/// <summary>cui_sankey_opts (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeSankeyOpts
 {
@@ -2130,27 +2152,27 @@ public unsafe struct NativeSankeyOpts
     public float Height;
     /// <summary>const char * (offset 16)</summary>
     public nint Format;
-    /// <summary>float (offset 24)</summary>
+    /// <summary>width of the node bars in points, default 12 (offset 24)</summary>
     public float NodeWidth;
 }
 
-/// <summary>cui_waffle_opts, 24 bytes.</summary>
+/// <summary>Waffle: a 10 x 10 grid of squares split by share, with a legend. (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeWaffleOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>float (offset 4)</summary>
+    /// <summary>size of a square in points, default 18 (offset 4)</summary>
     public float Cell;
-    /// <summary>int (offset 8)</summary>
+    /// <summary>squares per row, at most 60; default 10 (offset 8)</summary>
     public int Columns;
-    /// <summary>int (offset 12)</summary>
+    /// <summary>rows of squares, at most 60; default 10 (offset 12)</summary>
     public int Rows;
     /// <summary>const char * (offset 16)</summary>
     public nint Format;
 }
 
-/// <summary>cui_split_bar_opts, 32 bytes.</summary>
+/// <summary>Split bar: one bar split into parts, with a legend of values and shares. (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeSplitBarOpts
 {
@@ -2166,7 +2188,7 @@ public unsafe struct NativeSplitBarOpts
     public byte NoLegend;
 }
 
-/// <summary>cui_bar_list_opts, 40 bytes.</summary>
+/// <summary>Bar list: ranked horizontal bars. Rows are keyed by label, so when the values change the bars grow and the rows slide to their new rank. (40 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeBarListOpts
 {
@@ -2176,15 +2198,15 @@ public unsafe struct NativeBarListOpts
     public NativeSize Width;
     /// <summary>const char * (offset 16)</summary>
     public nint Format;
-    /// <summary>int (offset 24)</summary>
+    /// <summary>shows only this many rows from the top; 0 shows all (offset 24)</summary>
     public int MaxRows;
-    /// <summary>_Bool (offset 28)</summary>
+    /// <summary>keeps the items in the order given instead of sorting them largest first (offset 28)</summary>
     public byte KeepOrder;
     /// <summary>cui_color (offset 29)</summary>
     public NativeColor Color;
 }
 
-/// <summary>cui_rings_opts, 40 bytes.</summary>
+/// <summary>Activity rings: concentric progress rings; values past 1 keep winding. (40 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeRingsOpts
 {
@@ -2192,33 +2214,33 @@ public unsafe struct NativeRingsOpts
     public int Sentinel;
     /// <summary>float (offset 4)</summary>
     public float Size;
-    /// <summary>float (offset 8)</summary>
+    /// <summary>width of each ring in points; 0 uses a tenth of `size`, at least 8 (offset 8)</summary>
     public float Thickness;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>large text in the middle of the rings, e.g. a total (offset 16)</summary>
     public nint Center;
-    /// <summary>const char * (offset 24)</summary>
+    /// <summary>small muted text under `center`; shown only with `center` (offset 24)</summary>
     public nint Caption;
-    /// <summary>_Bool (offset 32)</summary>
+    /// <summary>names and shares beside the rings (offset 32)</summary>
     public byte Legend;
 }
 
-/// <summary>cui_scatter_series, 32 bytes.</summary>
+/// <summary>Scatter (or bubble) chart: points per series, optional sizes. (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeScatterSeries
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>shown in the legend, which appears with two or more series (offset 0)</summary>
     public nint Name;
-    /// <summary>const cui_vec2 * (offset 8)</summary>
+    /// <summary>the points, x and y in data units (offset 8)</summary>
     public nint Points;
-    /// <summary>const float * (offset 16)</summary>
+    /// <summary>optional, one per point: makes a bubble chart, each bubble sized against the largest (offset 16)</summary>
     public nint Sizes;
-    /// <summary>int (offset 24)</summary>
+    /// <summary>number of `points` (and of `sizes`) (offset 24)</summary>
     public int Count;
     /// <summary>cui_color (offset 28)</summary>
     public NativeColor Color;
 }
 
-/// <summary>cui_scatter_opts, 56 bytes.</summary>
+/// <summary>cui_scatter_opts (56 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeScatterOpts
 {
@@ -2228,75 +2250,75 @@ public unsafe struct NativeScatterOpts
     public NativeSize Width;
     /// <summary>float (offset 12)</summary>
     public float Height;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>title under the x axis; also names the x value in the tooltip (offset 16)</summary>
     public nint XLabel;
-    /// <summary>const char * (offset 24)</summary>
+    /// <summary>title above the y axis; also names the y value in the tooltip (offset 24)</summary>
     public nint YLabel;
-    /// <summary>const char * (offset 32)</summary>
+    /// <summary>printf format for the x axis labels and the tooltip (offset 32)</summary>
     public nint XFormat;
-    /// <summary>const char * (offset 40)</summary>
+    /// <summary>printf format for the y axis labels and the tooltip (offset 40)</summary>
     public nint YFormat;
     /// <summary>_Bool (offset 48)</summary>
     public byte NoLegend;
 }
 
-/// <summary>cui_gauge_band, 8 bytes.</summary>
+/// <summary>Radial gauge: one value on a dial with colored bands, labelled ticks, a needle and a target marker, for dashboards (speed, load, temperature, a score against a goal). The needle springs to new values. (8 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeGaugeBand
 {
-    /// <summary>float (offset 0)</summary>
+    /// <summary>from the band before (or min) up to `to` (offset 0)</summary>
     public float To;
-    /// <summary>cui_tone (offset 4)</summary>
+    /// <summary>from the band before (or min) up to `to` (offset 4)</summary>
     public Tone Tone;
 }
 
-/// <summary>cui_radial_gauge_opts, 64 bytes.</summary>
+/// <summary>cui_radial_gauge_opts (64 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeRadialGaugeOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>under the value (offset 8)</summary>
     public nint Label;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>the value and the tick labels, default &quot;%.0f&quot; (offset 16)</summary>
     public nint Format;
-    /// <summary>const char * (offset 24)</summary>
+    /// <summary>after the value, smaller (offset 24)</summary>
     public nint Unit;
-    /// <summary>float (offset 32)</summary>
+    /// <summary>width, default 200; the height follows the sweep (offset 32)</summary>
     public float Size;
-    /// <summary>float (offset 36)</summary>
+    /// <summary>degrees of arc, default 240 (90 to 300) (offset 36)</summary>
     public float Sweep;
-    /// <summary>const cui_gauge_band * (offset 40)</summary>
+    /// <summary>colored stretches of the arc, each from the one before up to its `to`; at most 16 (offset 40)</summary>
     public nint Bands;
-    /// <summary>int (offset 48)</summary>
+    /// <summary>number of `bands` (offset 48)</summary>
     public int BandCount;
-    /// <summary>int (offset 52)</summary>
+    /// <summary>labelled divisions, default 5; -1 hides the ticks (offset 52)</summary>
     public int Ticks;
-    /// <summary>float (offset 56)</summary>
+    /// <summary>a marker on the arc, when show_target is set (offset 56)</summary>
     public float Target;
-    /// <summary>_Bool (offset 60)</summary>
+    /// <summary>draws the marker at `target` (offset 60)</summary>
     public byte ShowTarget;
-    /// <summary>_Bool (offset 61)</summary>
+    /// <summary>a thick arc filled to the value instead of a needle (offset 61)</summary>
     public byte NoNeedle;
 }
 
-/// <summary>cui_candle, 20 bytes.</summary>
+/// <summary>Candlestick chart: open, high, low and close per period with volume under it, for prices. The wheel zooms around the pointer, dragging (or Shift+wheel) pans, a crosshair shows each candle&apos;s values, and the price axis fits the candles in view. Zoomed out past a few points per candle, candles merge per pixel column, so a long history stays fast. When the view shows the newest candle it follows new ones as they are appended. With the chart focused, Left and Right move the crosshair (Shift: ten at a time), Home and End jump to the ends, + and - zoom and 0 fits everything. (20 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeCandle
 {
-    /// <summary>float (offset 0)</summary>
+    /// <summary>price at the start of the period (offset 0)</summary>
     public float Open;
-    /// <summary>float (offset 4)</summary>
+    /// <summary>highest price in the period (offset 4)</summary>
     public float High;
-    /// <summary>float (offset 8)</summary>
+    /// <summary>lowest price in the period (offset 8)</summary>
     public float Low;
-    /// <summary>float (offset 12)</summary>
+    /// <summary>price at the end of the period (offset 12)</summary>
     public float Close;
-    /// <summary>float (offset 16)</summary>
+    /// <summary>amount traded in the period, drawn as a bar under the candle; 0 for none (offset 16)</summary>
     public float Volume;
 }
 
-/// <summary>cui_candlestick_opts, 56 bytes.</summary>
+/// <summary>cui_candlestick_opts (56 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeCandlestickOpts
 {
@@ -2304,33 +2326,33 @@ public unsafe struct NativeCandlestickOpts
     public int Sentinel;
     /// <summary>cui_size (offset 4)</summary>
     public NativeSize Width;
-    /// <summary>float (offset 12)</summary>
+    /// <summary>default 320 (offset 12)</summary>
     public float Height;
-    /// <summary>const char *const * (offset 16)</summary>
+    /// <summary>one per candle (dates or times): the time axis and the tooltip (offset 16)</summary>
     public nint Labels;
-    /// <summary>const char * (offset 24)</summary>
+    /// <summary>prices, default &quot;%.2f&quot; (offset 24)</summary>
     public nint Format;
-    /// <summary>const cui_series * (offset 32)</summary>
+    /// <summary>series drawn as lines over the candles; at most 4 (offset 32)</summary>
     public nint Overlays;
-    /// <summary>int (offset 40)</summary>
+    /// <summary>entries in `overlays`: lines with one value per candle, e.g. moving averages (offset 40)</summary>
     public int OverlayCount;
-    /// <summary>_Bool (offset 44)</summary>
+    /// <summary>volume bars show when any candle has volume (offset 44)</summary>
     public byte NoVolume;
-    /// <summary>_Bool (offset 45)</summary>
+    /// <summary>OHLC bars instead of candle bodies (offset 45)</summary>
     public byte Ohlc;
-    /// <summary>cui_color (offset 46)</summary>
+    /// <summary>default the success and danger colors (offset 46)</summary>
     public NativeColor Up;
-    /// <summary>cui_color (offset 50)</summary>
+    /// <summary>default the success and danger colors (offset 50)</summary>
     public NativeColor Down;
 }
 
-/// <summary>cui_text_fx_opts, 40 bytes.</summary>
+/// <summary>Motion and text effects All of these respect reduced motion: they show their final state. (40 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTextFxOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>cui_font (offset 4)</summary>
+    /// <summary>default `CUI_FONT_BODY` (0) (offset 4)</summary>
     public Font Font;
     /// <summary>float (offset 8)</summary>
     public float Size;
@@ -2338,37 +2360,37 @@ public unsafe struct NativeTextFxOpts
     public NativeColor Color;
     /// <summary>cui_size (offset 16)</summary>
     public NativeSize Width;
-    /// <summary>_Bool (offset 24)</summary>
+    /// <summary>keeps the text on one line instead of wrapping it (offset 24)</summary>
     public byte Nowrap;
-    /// <summary>float (offset 28)</summary>
+    /// <summary>shimmer: sweeps per second; typewriter: characters per second (offset 28)</summary>
     public float Speed;
-    /// <summary>float (offset 32)</summary>
+    /// <summary>seconds before it starts (offset 32)</summary>
     public float Delay;
-    /// <summary>_Bool (offset 36)</summary>
+    /// <summary>typewriter: a blinking caret while typing (offset 36)</summary>
     public byte Caret;
 }
 
-/// <summary>cui_gradient_text_opts, 32 bytes.</summary>
+/// <summary>Text painted with a gradient from one color to another; animate makes it drift. (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeGradientTextOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>cui_font (offset 4)</summary>
+    /// <summary>default `CUI_FONT_BODY` (0) (offset 4)</summary>
     public Font Font;
     /// <summary>float (offset 8)</summary>
     public float Size;
-    /// <summary>cui_color (offset 12)</summary>
+    /// <summary>color at the left edge; default the accent, or the text color under the neutral accent (offset 12)</summary>
     public NativeColor From;
-    /// <summary>cui_color (offset 16)</summary>
+    /// <summary>color at the right edge, default `from` blended toward the foreground color (offset 16)</summary>
     public NativeColor To;
-    /// <summary>_Bool (offset 20)</summary>
+    /// <summary>the gradient drifts along the text (offset 20)</summary>
     public byte Animate;
     /// <summary>cui_size (offset 24)</summary>
     public NativeSize Width;
 }
 
-/// <summary>cui_spotlight_opts, 36 bytes.</summary>
+/// <summary>Spotlight card: a soft light follows the pointer across the card and lights the nearest stretch of its border. beam sends a light around the edge. (36 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeSpotlightOpts
 {
@@ -2384,11 +2406,11 @@ public unsafe struct NativeSpotlightOpts
     public float Gap;
     /// <summary>cui_color (offset 28)</summary>
     public NativeColor Color;
-    /// <summary>_Bool (offset 32)</summary>
+    /// <summary>a light travels around the card&apos;s edge all the time (offset 32)</summary>
     public byte Beam;
 }
 
-/// <summary>cui_loader_opts, 16 bytes.</summary>
+/// <summary>cui_loader_opts (16 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeLoaderOpts
 {
@@ -2402,7 +2424,7 @@ public unsafe struct NativeLoaderOpts
     public NativeColor Color;
 }
 
-/// <summary>cui_dock_opts, 12 bytes.</summary>
+/// <summary>Dock: a row of icons that grow as the pointer passes, with labels and a dot under the running ones. Each item returns true when clicked. (12 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeDockOpts
 {
@@ -2410,11 +2432,11 @@ public unsafe struct NativeDockOpts
     public int Sentinel;
     /// <summary>float (offset 4)</summary>
     public float Size;
-    /// <summary>float (offset 8)</summary>
+    /// <summary>how much the icon under the pointer grows, default 1.55 (offset 8)</summary>
     public float Magnify;
 }
 
-/// <summary>cui_dock_item_opts, 16 bytes.</summary>
+/// <summary>cui_dock_item_opts (16 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeDockItemOpts
 {
@@ -2422,13 +2444,13 @@ public unsafe struct NativeDockItemOpts
     public int Sentinel;
     /// <summary>cui_color (offset 4)</summary>
     public NativeColor Color;
-    /// <summary>_Bool (offset 8)</summary>
+    /// <summary>a small dot under the icon (offset 8)</summary>
     public byte Running;
-    /// <summary>int (offset 12)</summary>
+    /// <summary>a count badge on the icon (&quot;99+&quot; above 99); 0 for none (offset 12)</summary>
     public int Badge;
 }
 
-/// <summary>cui_tab_bar_item, 24 bytes.</summary>
+/// <summary>Bottom tab bar for compact layouts, with a pill that glides to the selection. (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTabBarItem
 {
@@ -2436,11 +2458,11 @@ public unsafe struct NativeTabBarItem
     public nint Icon;
     /// <summary>const char * (offset 8)</summary>
     public nint Label;
-    /// <summary>int (offset 16)</summary>
+    /// <summary>a count on the icon (&quot;9+&quot; above 9); 0 for none (offset 16)</summary>
     public int Badge;
 }
 
-/// <summary>cui_tab_bar_opts, 16 bytes.</summary>
+/// <summary>cui_tab_bar_opts (16 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTabBarOpts
 {
@@ -2448,11 +2470,11 @@ public unsafe struct NativeTabBarOpts
     public int Sentinel;
     /// <summary>cui_size (offset 4)</summary>
     public NativeSize Width;
-    /// <summary>_Bool (offset 12)</summary>
+    /// <summary>only the selected tab shows its label; the others show just their icon (offset 12)</summary>
     public byte LabelsOnSelectedOnly;
 }
 
-/// <summary>cui_tile_opts, 40 bytes.</summary>
+/// <summary>Control tile: a large toggle with an icon, a label and a state line. (40 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTileOpts
 {
@@ -2460,17 +2482,17 @@ public unsafe struct NativeTileOpts
     public int Sentinel;
     /// <summary>const char * (offset 8)</summary>
     public nint Icon;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>the state line under the label, default &quot;On&quot; or &quot;Off&quot; (offset 16)</summary>
     public nint Detail;
     /// <summary>cui_color (offset 24)</summary>
     public NativeColor Color;
     /// <summary>cui_size (offset 28)</summary>
     public NativeSize Width;
-    /// <summary>_Bool (offset 36)</summary>
+    /// <summary>icon beside the text in a lower tile, instead of above it (offset 36)</summary>
     public byte Wide;
 }
 
-/// <summary>cui_waveform_opts, 28 bytes.</summary>
+/// <summary>Waveform: bars from peaks (0..1). With progress, the played part is colored and clicking or dragging seeks; returns true when it did. (28 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeWaveformOpts
 {
@@ -2480,7 +2502,7 @@ public unsafe struct NativeWaveformOpts
     public NativeSize Width;
     /// <summary>float (offset 12)</summary>
     public float Height;
-    /// <summary>float (offset 16)</summary>
+    /// <summary>width of each bar in points, default 3 (offset 16)</summary>
     public float Bar;
     /// <summary>float (offset 20)</summary>
     public float Gap;
@@ -2488,27 +2510,27 @@ public unsafe struct NativeWaveformOpts
     public NativeColor Color;
 }
 
-/// <summary>cui_now_playing, 40 bytes.</summary>
+/// <summary>Now playing card: artwork, title, artist, a scrubber and transport buttons. (40 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeNowPlaying
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>name of the track, in medium weight (offset 0)</summary>
     public nint Title;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>shown under the title (offset 8)</summary>
     public nint Artist;
-    /// <summary>cui_texture (offset 16)</summary>
+    /// <summary>artwork texture; 0 shows a tile in `art_color` with a note icon (offset 16)</summary>
     public nuint Art;
-    /// <summary>cui_color (offset 24)</summary>
+    /// <summary>color of the tile behind (or in place of) the artwork (offset 24)</summary>
     public NativeColor ArtColor;
-    /// <summary>float (offset 28)</summary>
+    /// <summary>seconds played; written when the user seeks (offset 28)</summary>
     public float Position;
-    /// <summary>float (offset 32)</summary>
+    /// <summary>length of the track in seconds (offset 32)</summary>
     public float Duration;
-    /// <summary>_Bool (offset 36)</summary>
+    /// <summary>shows pause instead of play; the play button flips it (offset 36)</summary>
     public byte Playing;
 }
 
-/// <summary>cui_now_playing_opts, 16 bytes.</summary>
+/// <summary>cui_now_playing_opts (16 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeNowPlayingOpts
 {
@@ -2516,25 +2538,25 @@ public unsafe struct NativeNowPlayingOpts
     public int Sentinel;
     /// <summary>cui_size (offset 4)</summary>
     public NativeSize Width;
-    /// <summary>_Bool (offset 12)</summary>
+    /// <summary>smaller artwork and padding, and no previous button (offset 12)</summary>
     public byte Compact;
 }
 
-/// <summary>cui_reasoning_opts, 24 bytes.</summary>
+/// <summary>Reasoning: a model&apos;s thinking. While thinking, the header shimmers and counts the seconds; afterwards it reads &quot;Thought for 12s&quot; and the body folds away. Click the header to open or close it. Put text inside. (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeReasoningOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>_Bool (offset 4)</summary>
+    /// <summary>still thinking: the header shimmers and the body opens; it folds when this turns false (offset 4)</summary>
     public byte Thinking;
-    /// <summary>float (offset 8)</summary>
+    /// <summary>time spent, for the header: &quot;Thinking for 12s&quot;, then &quot;Thought for 12s&quot; (offset 8)</summary>
     public float Seconds;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>header text to show instead of the &quot;Thinking&quot; and &quot;Thought for&quot; lines (offset 16)</summary>
     public nint Title;
 }
 
-/// <summary>cui_tool_call_opts, 48 bytes.</summary>
+/// <summary>cui_tool_call_opts (48 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeToolCallOpts
 {
@@ -2544,39 +2566,39 @@ public unsafe struct NativeToolCallOpts
     public CuiTaskStatus Status;
     /// <summary>const char * (offset 8)</summary>
     public nint Icon;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>muted text after the tool&apos;s name, e.g. the file or query it works on (offset 16)</summary>
     public nint Detail;
-    /// <summary>const char * (offset 24)</summary>
+    /// <summary>what was sent to the tool; the row then opens to show it (as JSON when it parses) (offset 24)</summary>
     public nint Input;
-    /// <summary>const char * (offset 32)</summary>
+    /// <summary>what the tool returned, shown when open; labelled &quot;Error&quot; when the status is failed (offset 32)</summary>
     public nint Output;
-    /// <summary>float (offset 40)</summary>
+    /// <summary>how long the call took, shown at the end of the row unless it is pending; 0 hides it (offset 40)</summary>
     public float Seconds;
 }
 
-/// <summary>cui_plan_step, 24 bytes.</summary>
+/// <summary>Agent plan: steps with their status on a connected rail, and progress. (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativePlanStep
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>the step&apos;s text; shimmers while the step is running (offset 0)</summary>
     public nint Title;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>smaller muted line under the title (red when the step failed); may be `NULL` (offset 8)</summary>
     public nint Detail;
     /// <summary>cui_task_status (offset 16)</summary>
     public CuiTaskStatus Status;
 }
 
-/// <summary>cui_agent_plan_opts, 16 bytes.</summary>
+/// <summary>cui_agent_plan_opts (16 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeAgentPlanOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>heading of the plan, default &quot;Plan&quot; (offset 8)</summary>
     public nint Title;
 }
 
-/// <summary>cui_agent_status_opts, 24 bytes.</summary>
+/// <summary>Agent status pill: what the agent is doing right now and for how long. (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeAgentStatusOpts
 {
@@ -2584,103 +2606,103 @@ public unsafe struct NativeAgentStatusOpts
     public int Sentinel;
     /// <summary>cui_task_status (offset 4)</summary>
     public CuiTaskStatus Status;
-    /// <summary>float (offset 8)</summary>
+    /// <summary>elapsed time shown after the text, as 42s or 1m 05s; 0 hides it (offset 8)</summary>
     public float Seconds;
     /// <summary>const char * (offset 16)</summary>
     public nint Icon;
 }
 
-/// <summary>cui_source, 24 bytes.</summary>
+/// <summary>Sources: cards for the documents an answer used, and inline citations that show a card on hover. Both return true / the index when clicked. (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeSource
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>the card&apos;s heading; `NULL` shows the URL&apos;s domain (offset 0)</summary>
     public nint Title;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>the address: its domain is shown, and the whole URL as the card&apos;s tooltip (offset 8)</summary>
     public nint Url;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>an excerpt, shown in the hover card of a citation (offset 16)</summary>
     public nint Snippet;
 }
 
-/// <summary>cui_context_opts, 32 bytes.</summary>
+/// <summary>Context meter: a small ring of how full the context is; hover for a breakdown. It turns amber past 80% and red past 95%. (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeContextOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>const cui_viz_item * (offset 8)</summary>
+    /// <summary>what fills the context (label, amount, color), for the breakdown on hover (offset 8)</summary>
     public nint Parts;
-    /// <summary>int (offset 16)</summary>
+    /// <summary>number of `parts` (offset 16)</summary>
     public int PartCount;
     /// <summary>const char * (offset 24)</summary>
     public nint Unit;
 }
 
-/// <summary>cui_response_actions_opts, 32 bytes.</summary>
+/// <summary>cui_response_actions_opts (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeResponseActionsOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>the text the copy button copies; `NULL` leaves the button out (offset 8)</summary>
     public nint CopyText;
-    /// <summary>int * (offset 16)</summary>
+    /// <summary>1 thumbs up, -1 thumbs down, 0 none: shown on the buttons and updated on a click (offset 16)</summary>
     public nint Vote;
-    /// <summary>_Bool (offset 24)</summary>
+    /// <summary>hides the regenerate button (offset 24)</summary>
     public byte NoRegenerate;
-    /// <summary>_Bool (offset 25)</summary>
+    /// <summary>hides the share button (offset 25)</summary>
     public byte NoShare;
 }
 
-/// <summary>cui_prompt_suggestion, 24 bytes.</summary>
+/// <summary>Prompt suggestions: cards to start a conversation with. (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativePromptSuggestion
 {
     /// <summary>const char * (offset 0)</summary>
     public nint Icon;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>the card&apos;s heading, in medium weight (offset 8)</summary>
     public nint Title;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>smaller muted text under the title; may be `NULL` (offset 16)</summary>
     public nint Detail;
 }
 
-/// <summary>cui_prompt_suggestions_opts, 8 bytes.</summary>
+/// <summary>cui_prompt_suggestions_opts (8 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativePromptSuggestionsOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>cards per row, default 2 (offset 4)</summary>
     public int Columns;
 }
 
-/// <summary>cui_model, 32 bytes.</summary>
+/// <summary>Model picker: the current model on a button; a list with details opens. (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeModel
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>shown on the button and as the row&apos;s heading in the list (offset 0)</summary>
     public nint Name;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>smaller muted line under the name in the list, e.g. what the model is good at (offset 8)</summary>
     public nint Detail;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>small accent badge after the name, e.g. &quot;New&quot;; `NULL` for none (offset 16)</summary>
     public nint Badge;
     /// <summary>const char * (offset 24)</summary>
     public nint Icon;
 }
 
-/// <summary>cui_model_picker_opts, 12 bytes.</summary>
+/// <summary>cui_model_picker_opts (12 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeModelPickerOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>_Bool (offset 4)</summary>
+    /// <summary>no border or fill on the button until hovered, for use inside another control (offset 4)</summary>
     public byte Ghost;
     /// <summary>cui_placement (offset 8)</summary>
     public Placement Placement;
 }
 
-/// <summary>cui_composer_opts, 88 bytes.</summary>
+/// <summary>cui_composer_opts (88 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeComposerOpts
 {
@@ -2688,27 +2710,27 @@ public unsafe struct NativeComposerOpts
     public int Sentinel;
     /// <summary>const char * (offset 8)</summary>
     public nint Placeholder;
-    /// <summary>_Bool (offset 16)</summary>
+    /// <summary>a reply is being generated: the send button becomes stop and Enter does not send (offset 16)</summary>
     public byte Busy;
-    /// <summary>const char *const * (offset 24)</summary>
+    /// <summary>names of the attached files, shown as chips above the text, each with an x (offset 24)</summary>
     public nint Attachments;
-    /// <summary>int (offset 32)</summary>
+    /// <summary>number of `attachments` (offset 32)</summary>
     public int AttachmentCount;
-    /// <summary>int * (offset 40)</summary>
+    /// <summary>set to the index of the attachment whose x was clicked (with `CUI_COMPOSER_REMOVE`) (offset 40)</summary>
     public nint Removed;
-    /// <summary>const cui_model * (offset 48)</summary>
+    /// <summary>models for a picker beside the attach button; `NULL` for no picker (offset 48)</summary>
     public nint Models;
-    /// <summary>int (offset 56)</summary>
+    /// <summary>number of `models` (offset 56)</summary>
     public int ModelCount;
-    /// <summary>int * (offset 64)</summary>
+    /// <summary>index of the chosen model, read and written (offset 64)</summary>
     public nint Model;
-    /// <summary>int (offset 72)</summary>
+    /// <summary>default 8 (offset 72)</summary>
     public int MaxLines;
     /// <summary>cui_size (offset 76)</summary>
     public NativeSize Width;
 }
 
-/// <summary>cui_voice_orb_opts, 12 bytes.</summary>
+/// <summary>cui_voice_orb_opts (12 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeVoiceOrbOpts
 {
@@ -2720,63 +2742,63 @@ public unsafe struct NativeVoiceOrbOpts
     public NativeColor Color;
 }
 
-/// <summary>cui_kanban_move, 16 bytes.</summary>
+/// <summary>Kanban board: columns of cards you drag between columns and within them. The board reports drops; you move the card in your data: (16 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeKanbanMove
 {
-    /// <summary>int (offset 0)</summary>
+    /// <summary>the `card_id` of the card that was dropped (offset 0)</summary>
     public int Card;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>index of the column it came from, in the order the columns were begun (offset 4)</summary>
     public int FromColumn;
-    /// <summary>int (offset 8)</summary>
+    /// <summary>index of the column it was dropped in (offset 8)</summary>
     public int ToColumn;
-    /// <summary>int (offset 12)</summary>
+    /// <summary>its position in that column, counted with the dragged card left out (offset 12)</summary>
     public int ToIndex;
 }
 
-/// <summary>cui_kanban_column_opts, 16 bytes.</summary>
+/// <summary>cui_kanban_column_opts (16 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeKanbanColumnOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>cui_color (offset 4)</summary>
+    /// <summary>a small dot of this color before the title; unset for none (offset 4)</summary>
     public NativeColor Dot;
-    /// <summary>int (offset 8)</summary>
+    /// <summary>work in progress limit: the count reads &quot;3 / 5&quot; and turns red above it; 0 for none (offset 8)</summary>
     public int Limit;
     /// <summary>float (offset 12)</summary>
     public float Width;
 }
 
-/// <summary>cui_cal_event, 32 bytes.</summary>
+/// <summary>Week calendar: seven day columns on an hour grid. Drag an event to move it (15 minute steps), drag its bottom edge to resize it. Returns the index of a clicked event, or -1. (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeCalEvent
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>shown on the event (offset 0)</summary>
     public nint Title;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>a second line such as the place, shown when the event is tall enough; may be `NULL` (offset 8)</summary>
     public nint Detail;
-    /// <summary>int (offset 16)</summary>
+    /// <summary>day column, 0 (the day of `week_start`) to 6; dragging the event changes it (offset 16)</summary>
     public int Day;
-    /// <summary>float (offset 20)</summary>
+    /// <summary>start in hours (13.5 is 13:30); dragging the event changes it (offset 20)</summary>
     public float Start;
-    /// <summary>float (offset 24)</summary>
+    /// <summary>end in hours; moving or resizing the event changes it (offset 24)</summary>
     public float End;
     /// <summary>cui_tone (offset 28)</summary>
     public Tone Tone;
 }
 
-/// <summary>cui_week_opts, 28 bytes.</summary>
+/// <summary>cui_week_opts (28 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeWeekOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>float (offset 4)</summary>
+    /// <summary>first hour shown, default 7; set together with `end_hour` (offset 4)</summary>
     public float StartHour;
-    /// <summary>float (offset 8)</summary>
+    /// <summary>last hour shown, default 21; used only when it is greater than `start_hour` (offset 8)</summary>
     public float EndHour;
-    /// <summary>float (offset 12)</summary>
+    /// <summary>points per hour, default 52 (offset 12)</summary>
     public float HourHeight;
     /// <summary>cui_size (offset 16)</summary>
     public NativeSize Height;
@@ -2784,101 +2806,101 @@ public unsafe struct NativeWeekOpts
     public byte ReadOnly;
 }
 
-/// <summary>cui_month_event, 48 bytes.</summary>
+/// <summary>Month calendar: a month grid with events. All-day and multi-day events are bars across the days they cover; timed events are a dot, a time and a title. A day with more than fits says &quot;+N more&quot; and opens a list of them. On a narrow screen the cells show colored dots and the selected day&apos;s events are listed under the grid. (48 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeMonthEvent
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>shown on the event&apos;s bar, or after the time of a timed event (offset 0)</summary>
     public nint Title;
-    /// <summary>cui_date (offset 8)</summary>
+    /// <summary>inclusive; an unset or earlier end means one day (offset 8)</summary>
     public NativeDate Start;
-    /// <summary>cui_date (offset 20)</summary>
+    /// <summary>inclusive; an unset or earlier end means one day (offset 20)</summary>
     public NativeDate End;
-    /// <summary>float (offset 32)</summary>
+    /// <summary>hour of a timed event (9.5 is 9:30); ignored when all_day (offset 32)</summary>
     public float Time;
-    /// <summary>_Bool (offset 36)</summary>
+    /// <summary>a bar, like every event that spans days (offset 36)</summary>
     public byte AllDay;
     /// <summary>cui_tone (offset 40)</summary>
     public Tone Tone;
 }
 
-/// <summary>cui_month_opts, 56 bytes.</summary>
+/// <summary>cui_month_opts (56 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeMonthOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>cui_date * (offset 8)</summary>
+    /// <summary>the selected day: yours to read and set (offset 8)</summary>
     public nint Selected;
-    /// <summary>int (offset 16)</summary>
+    /// <summary>0 Monday (default) .. 6 Sunday (offset 16)</summary>
     public int FirstWeekday;
-    /// <summary>float (offset 20)</summary>
+    /// <summary>default 104, 44 on a phone (offset 20)</summary>
     public float CellHeight;
-    /// <summary>const char *const * (offset 24)</summary>
+    /// <summary>12 names for another language, January first (offset 24)</summary>
     public nint MonthNames;
-    /// <summary>const char *const * (offset 32)</summary>
+    /// <summary>7 short names, Monday first (offset 32)</summary>
     public nint DayNames;
-    /// <summary>_Bool (offset 40)</summary>
+    /// <summary>9:30a rather than 9:30 (offset 40)</summary>
     public byte Hour12;
-    /// <summary>cui_date (offset 44)</summary>
+    /// <summary>overrides the system date when set (another time zone, tests) (offset 44)</summary>
     public NativeDate Today;
 }
 
-/// <summary>cui_month_result, 8 bytes.</summary>
+/// <summary>cui_month_result (8 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeMonthResult
 {
-    /// <summary>int (offset 0)</summary>
+    /// <summary>clicked event, or -1 (offset 0)</summary>
     public int Event;
-    /// <summary>_Bool (offset 4)</summary>
+    /// <summary>a day was clicked or moved to with the keys (see selected) (offset 4)</summary>
     public byte DayClicked;
-    /// <summary>_Bool (offset 5)</summary>
+    /// <summary>double-clicked or Enter: add an event there (offset 5)</summary>
     public byte DayActivated;
-    /// <summary>_Bool (offset 6)</summary>
+    /// <summary>the arrows, Today or the keys changed *month (offset 6)</summary>
     public byte MonthChanged;
 }
 
-/// <summary>cui_gantt_task, 40 bytes.</summary>
+/// <summary>Gantt chart: a task list beside a timeline of bars. Drag a bar to move it, its ends to resize it. Dependencies are drawn as elbow arrows. Returns the index of a clicked task, or -1. (40 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeGanttTask
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>shown in the task list and, when it fits, on the bar (offset 0)</summary>
     public nint Name;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>a name: shows that person&apos;s avatar in the task list; `NULL` for none (offset 8)</summary>
     public nint Owner;
-    /// <summary>int (offset 16)</summary>
+    /// <summary>day the bar starts, counted from `origin`; dragging the bar changes it (offset 16)</summary>
     public int Start;
-    /// <summary>int (offset 20)</summary>
+    /// <summary>day the bar ends, counted from `origin` (it is end - start days long); dragging changes it (offset 20)</summary>
     public int End;
-    /// <summary>float (offset 24)</summary>
+    /// <summary>0..1: the part of the bar drawn darker, as done (offset 24)</summary>
     public float Progress;
     /// <summary>cui_tone (offset 28)</summary>
     public Tone Tone;
-    /// <summary>int (offset 32)</summary>
+    /// <summary>index of the task this one waits for: an arrow runs from its end to this start. -1 for none (offset 32)</summary>
     public int DependsOn;
-    /// <summary>_Bool (offset 36)</summary>
+    /// <summary>a diamond at `start` instead of a bar; it cannot be resized (offset 36)</summary>
     public byte Milestone;
 }
 
-/// <summary>cui_gantt_opts, 28 bytes.</summary>
+/// <summary>cui_gantt_opts (28 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeGanttOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>float (offset 4)</summary>
+    /// <summary>points per day, default 30 (offset 4)</summary>
     public float DayWidth;
-    /// <summary>float (offset 8)</summary>
+    /// <summary>points per task row, default 40 (offset 8)</summary>
     public float RowHeight;
     /// <summary>cui_size (offset 12)</summary>
     public NativeSize Height;
-    /// <summary>int (offset 20)</summary>
+    /// <summary>day to mark as today, counted from `origin`; 0 marks none (offset 20)</summary>
     public int Today;
     /// <summary>_Bool (offset 24)</summary>
     public byte ReadOnly;
 }
 
-/// <summary>cui_hover_card_opts, 16 bytes.</summary>
+/// <summary>Hover card: rich content that appears when the pointer rests on the previous component, and stays while the pointer is over either. (16 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeHoverCardOpts
 {
@@ -2888,23 +2910,23 @@ public unsafe struct NativeHoverCardOpts
     public Placement Placement;
     /// <summary>float (offset 8)</summary>
     public float Width;
-    /// <summary>float (offset 12)</summary>
+    /// <summary>seconds the pointer must rest on the component before the card shows, default 0.45 (offset 12)</summary>
     public float Delay;
 }
 
-/// <summary>cui_confirm_popover_opts, 48 bytes.</summary>
+/// <summary>Confirm popover: a small question anchored to the previous component. Open it with cui_popover_open(ui, id). Returns true when confirmed. (48 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeConfirmPopoverOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>the question, in medium weight at the top, e.g. &quot;Delete this file?&quot; (offset 8)</summary>
     public nint Title;
     /// <summary>const char * (offset 16)</summary>
     public nint Description;
-    /// <summary>const char * (offset 24)</summary>
+    /// <summary>default &quot;Confirm&quot; (offset 24)</summary>
     public nint ConfirmLabel;
-    /// <summary>const char * (offset 32)</summary>
+    /// <summary>default &quot;Cancel&quot; (offset 32)</summary>
     public nint CancelLabel;
     /// <summary>_Bool (offset 40)</summary>
     public byte Danger;
@@ -2912,23 +2934,23 @@ public unsafe struct NativeConfirmPopoverOpts
     public Placement Placement;
 }
 
-/// <summary>cui_expandable_text_opts, 20 bytes.</summary>
+/// <summary>Text clamped to a few lines with a fade and Show more / Show less. (20 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeExpandableTextOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>lines shown while collapsed, default 3 (offset 4)</summary>
     public int Lines;
     /// <summary>float (offset 8)</summary>
     public float Size;
     /// <summary>cui_color (offset 12)</summary>
     public NativeColor Color;
-    /// <summary>cui_color (offset 16)</summary>
+    /// <summary>color the last line fades into; set it to the surface behind the text, default the background (offset 16)</summary>
     public NativeColor FadeTo;
 }
 
-/// <summary>cui_expandable_card_opts, 40 bytes.</summary>
+/// <summary>Expandable card: a card whose header opens a body with a height spring. (40 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeExpandableCardOpts
 {
@@ -2938,25 +2960,25 @@ public unsafe struct NativeExpandableCardOpts
     public nint Description;
     /// <summary>const char * (offset 16)</summary>
     public nint Icon;
-    /// <summary>const char * (offset 24)</summary>
+    /// <summary>small badge in the header before the chevron, colored by `badge_tone`; `NULL` for none (offset 24)</summary>
     public nint Badge;
     /// <summary>cui_tone (offset 32)</summary>
     public Tone BadgeTone;
 }
 
-/// <summary>cui_toc_item, 24 bytes.</summary>
+/// <summary>Table of contents for a scroll area: highlights the section in view on a progress rail, and scrolls to a section when clicked. Put cui_toc_anchor(ui, &quot;anchor&quot;) at each heading inside the scroll area, and call cui_toc in the same scope as the scroll area. Returns the active index. (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTocItem
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>the entry&apos;s text in the list (offset 0)</summary>
     public nint Title;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>the name given to `cui_toc_anchor` at that section&apos;s heading (offset 8)</summary>
     public nint Anchor;
-    /// <summary>int (offset 16)</summary>
+    /// <summary>indentation: 0 for a top level section, up to 4 (12 points each) (offset 16)</summary>
     public int Level;
 }
 
-/// <summary>cui_banner_opts, 32 bytes.</summary>
+/// <summary>Announcement banner across the top of a view. Collapses smoothly when dismissed (*open becomes false). Returns true when the action is clicked. (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeBannerOpts
 {
@@ -2966,51 +2988,51 @@ public unsafe struct NativeBannerOpts
     public Tone Tone;
     /// <summary>const char * (offset 8)</summary>
     public nint Icon;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>label of a button in the banner; the call returns true when it is clicked (offset 16)</summary>
     public nint Action;
     /// <summary>_Bool (offset 24)</summary>
     public byte Dismissible;
 }
 
-/// <summary>cui_countdown_opts, 8 bytes.</summary>
+/// <summary>Countdown: days, hours, minutes and seconds as tiles whose digits roll. (8 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeCountdownOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>_Bool (offset 4)</summary>
+    /// <summary>no days tile; the hours tile counts the days in (49 hours, not 2 days and 1 hour) (offset 4)</summary>
     public byte HideDays;
-    /// <summary>_Bool (offset 5)</summary>
+    /// <summary>small tiles joined by colons, without the unit names under them (offset 5)</summary>
     public byte Compact;
 }
 
-/// <summary>cui_check_step, 32 bytes.</summary>
+/// <summary>Onboarding checklist: a card with progress and steps. The first open step shows its description and action. Clicking a step&apos;s circle toggles done. Returns the index whose action was clicked, or -1. (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeCheckStep
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>the step&apos;s text; muted once the step is done (offset 0)</summary>
     public nint Title;
     /// <summary>const char * (offset 8)</summary>
     public nint Description;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>label of the button shown under the first step that is not done; `NULL` for none (offset 16)</summary>
     public nint Action;
-    /// <summary>_Bool (offset 24)</summary>
+    /// <summary>the step is complete; clicking its circle flips this (offset 24)</summary>
     public byte Done;
 }
 
-/// <summary>cui_checklist_opts, 24 bytes.</summary>
+/// <summary>cui_checklist_opts (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeChecklistOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>heading of the card, default &quot;Get started&quot; (offset 8)</summary>
     public nint Title;
     /// <summary>const char * (offset 16)</summary>
     public nint Description;
 }
 
-/// <summary>cui_multi_select_opts, 48 bytes.</summary>
+/// <summary>Multi-select: a field with chips for the chosen items and a list with checkboxes (and search). selected[i] is true for chosen items. (48 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeMultiSelectOpts
 {
@@ -3022,25 +3044,25 @@ public unsafe struct NativeMultiSelectOpts
     public nint Placeholder;
     /// <summary>const char *const * (offset 24)</summary>
     public nint Icons;
-    /// <summary>_Bool (offset 32)</summary>
+    /// <summary>a search field at the top of the list that filters the items as you type (offset 32)</summary>
     public byte Searchable;
-    /// <summary>int (offset 36)</summary>
+    /// <summary>chips before &quot;+N&quot;, default 3 (offset 36)</summary>
     public int MaxChips;
     /// <summary>cui_size (offset 40)</summary>
     public NativeSize Width;
 }
 
-/// <summary>cui_date_range, 24 bytes.</summary>
+/// <summary>Date ranges. A zero start means nothing is chosen. (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeDateRange
 {
-    /// <summary>cui_date (offset 0)</summary>
+    /// <summary>first day of the range; a zero date means nothing is chosen (offset 0)</summary>
     public NativeDate Start;
-    /// <summary>cui_date (offset 12)</summary>
+    /// <summary>last day of the range, inclusive (offset 12)</summary>
     public NativeDate End;
 }
 
-/// <summary>cui_date_range_opts, 40 bytes.</summary>
+/// <summary>cui_date_range_opts (40 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeDateRangeOpts
 {
@@ -3052,11 +3074,11 @@ public unsafe struct NativeDateRangeOpts
     public nint Placeholder;
     /// <summary>cui_size (offset 24)</summary>
     public NativeSize Width;
-    /// <summary>_Bool (offset 32)</summary>
+    /// <summary>hides the list of preset ranges beside (or above) the calendar (offset 32)</summary>
     public byte NoPresets;
 }
 
-/// <summary>cui_time_opts, 32 bytes.</summary>
+/// <summary>Time picker: a field that opens hour and minute columns. hour is 0..23. (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTimeOpts
 {
@@ -3064,33 +3086,33 @@ public unsafe struct NativeTimeOpts
     public int Sentinel;
     /// <summary>const char * (offset 8)</summary>
     public nint Label;
-    /// <summary>_Bool (offset 16)</summary>
+    /// <summary>shows 1 to 12 with AM and PM (as in &quot;2:30 PM&quot;); `*hour` stays 0..23 (offset 16)</summary>
     public byte TwelveHour;
-    /// <summary>int (offset 20)</summary>
+    /// <summary>minutes between the entries of the minute column, default 5 (offset 20)</summary>
     public int MinuteStep;
     /// <summary>cui_size (offset 24)</summary>
     public NativeSize Width;
 }
 
-/// <summary>cui_wheel_opts, 20 bytes.</summary>
+/// <summary>Wheel picker: a drum of options that you drag, scroll or arrow through. Several side by side make a date or time reel. join_left / join_right square off the selection band so wheels placed side by side share one continuous band. (20 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeWheelOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>rows in view, made odd so the selected one sits in the middle; default 5 (offset 4)</summary>
     public int Rows;
     /// <summary>cui_size (offset 8)</summary>
     public NativeSize Width;
-    /// <summary>_Bool (offset 16)</summary>
+    /// <summary>the items wrap around: after the last comes the first again (offset 16)</summary>
     public byte Loop;
-    /// <summary>_Bool (offset 17)</summary>
+    /// <summary>squares off the left end of the selection band, to join a wheel on that side (offset 17)</summary>
     public byte JoinLeft;
-    /// <summary>_Bool (offset 18)</summary>
+    /// <summary>squares off the right end of the selection band, to join a wheel on that side (offset 18)</summary>
     public byte JoinRight;
 }
 
-/// <summary>cui_ruler_opts, 40 bytes.</summary>
+/// <summary>Ruler slider: a tape measure that slides under a fixed marker, with momentum and snapping to step. (40 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeRulerOpts
 {
@@ -3098,9 +3120,9 @@ public unsafe struct NativeRulerOpts
     public int Sentinel;
     /// <summary>float (offset 4)</summary>
     public float Step;
-    /// <summary>int (offset 8)</summary>
+    /// <summary>every Nth tick is long and labelled, default 10; Shift+arrows move this many steps (offset 8)</summary>
     public int MajorEvery;
-    /// <summary>float (offset 12)</summary>
+    /// <summary>points between two ticks (one `step` apart), default 9 (offset 12)</summary>
     public float Spacing;
     /// <summary>const char * (offset 16)</summary>
     public nint Format;
@@ -3110,7 +3132,7 @@ public unsafe struct NativeRulerOpts
     public NativeSize Width;
 }
 
-/// <summary>cui_histogram_opts, 16 bytes.</summary>
+/// <summary>Range slider over a histogram of the data it filters. (16 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeHistogramOpts
 {
@@ -3122,63 +3144,63 @@ public unsafe struct NativeHistogramOpts
     public nint Format;
 }
 
-/// <summary>cui_knob_opts, 56 bytes.</summary>
+/// <summary>Knob, fader and level meter: the controls of audio, synth and mixer panels. (56 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeKnobOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>under the knob; the id when NULL (offset 8)</summary>
     public nint Label;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>printf format for the value, default &quot;%.0f&quot; (offset 16)</summary>
     public nint Format;
-    /// <summary>const char * (offset 24)</summary>
+    /// <summary>after the value, e.g. &quot;Hz&quot; or &quot;dB&quot; (offset 24)</summary>
     public nint Unit;
-    /// <summary>float (offset 32)</summary>
+    /// <summary>diameter, default 48 (offset 32)</summary>
     public float Size;
-    /// <summary>float (offset 36)</summary>
+    /// <summary>0 = continuous (keys move 1% of the range) (offset 36)</summary>
     public float Step;
-    /// <summary>float (offset 40)</summary>
+    /// <summary>double-click value, default 0 (clamped to the range) (offset 40)</summary>
     public float Reset;
-    /// <summary>_Bool (offset 44)</summary>
+    /// <summary>the arc grows from the middle: pan, EQ gain (offset 44)</summary>
     public byte Bipolar;
-    /// <summary>_Bool (offset 45)</summary>
+    /// <summary>equal turns multiply the value: frequency, time (min &gt; 0) (offset 45)</summary>
     public byte LogScale;
     /// <summary>_Bool (offset 46)</summary>
     public byte HideValue;
     /// <summary>_Bool (offset 47)</summary>
     public byte Disabled;
-    /// <summary>cui_color (offset 48)</summary>
+    /// <summary>the value arc, default the control color (offset 48)</summary>
     public NativeColor Color;
 }
 
-/// <summary>cui_fader_opts, 80 bytes.</summary>
+/// <summary>cui_fader_opts (80 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeFaderOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>under a vertical fader, before a horizontal one; the id when NULL (offset 8)</summary>
     public nint Label;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>default &quot;%.1f&quot; (offset 16)</summary>
     public nint Format;
     /// <summary>const char * (offset 24)</summary>
     public nint Unit;
-    /// <summary>float (offset 32)</summary>
+    /// <summary>track length, default 160 (offset 32)</summary>
     public float Length;
-    /// <summary>_Bool (offset 36)</summary>
+    /// <summary>the track runs left to right, with the label before it, instead of bottom to top (offset 36)</summary>
     public byte Horizontal;
     /// <summary>float (offset 40)</summary>
     public float Step;
-    /// <summary>float (offset 44)</summary>
+    /// <summary>double-click value, default 0 (clamped to the range) (offset 44)</summary>
     public float Reset;
-    /// <summary>const float * (offset 48)</summary>
+    /// <summary>values to mark and label beside the track, e.g. dB marks; at most 32 (offset 48)</summary>
     public nint Ticks;
-    /// <summary>int (offset 56)</summary>
+    /// <summary>entries in `ticks` (offset 56)</summary>
     public int TickCount;
-    /// <summary>const float * (offset 64)</summary>
+    /// <summary>linear sample peaks, one per channel, for a level meter beside the track; `NULL` for none (offset 64)</summary>
     public nint Meter;
-    /// <summary>int (offset 72)</summary>
+    /// <summary>entries in `meter`, up to 8; a dB fader&apos;s range sets the meter&apos;s scale (offset 72)</summary>
     public int MeterChannels;
     /// <summary>_Bool (offset 76)</summary>
     public byte HideValue;
@@ -3186,33 +3208,33 @@ public unsafe struct NativeFaderOpts
     public byte Disabled;
 }
 
-/// <summary>cui_level_meter_opts, 32 bytes.</summary>
+/// <summary>Level meter: bars that jump up to each new peak and fall back at `decay` dB per second, with a peak mark that holds for `hold` seconds and a clip light that stays on until clicked. Levels are linear sample peaks (1.0 is 0 dBFS); green runs to -18 dB, amber to -6 dB, red above. (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeLevelMeterOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>float (offset 4)</summary>
+    /// <summary>default -60 and +6 (offset 4)</summary>
     public float MinDb;
-    /// <summary>float (offset 8)</summary>
+    /// <summary>default -60 and +6 (offset 8)</summary>
     public float MaxDb;
-    /// <summary>float (offset 12)</summary>
+    /// <summary>default 160 (offset 12)</summary>
     public float Length;
-    /// <summary>float (offset 16)</summary>
+    /// <summary>each channel&apos;s bar, default 6 (offset 16)</summary>
     public float Thickness;
-    /// <summary>_Bool (offset 20)</summary>
+    /// <summary>bars run left to right instead of bottom to top (offset 20)</summary>
     public byte Horizontal;
-    /// <summary>_Bool (offset 21)</summary>
+    /// <summary>dB labels beside the bars (offset 21)</summary>
     public byte Scale;
-    /// <summary>_Bool (offset 22)</summary>
+    /// <summary>LED segments instead of a solid bar (offset 22)</summary>
     public byte Segmented;
-    /// <summary>float (offset 24)</summary>
+    /// <summary>peak hold, seconds; default 1.5, &lt; 0 none (offset 24)</summary>
     public float Hold;
-    /// <summary>float (offset 28)</summary>
+    /// <summary>fall rate, dB per second; default 20 (offset 28)</summary>
     public float Decay;
 }
 
-/// <summary>cui_signature_opts, 32 bytes.</summary>
+/// <summary>Signature pad: draw with the mouse or a pen. The strokes are kept for you; read them with cui_signature_points (stroke_ends[i] is one past the last point of stroke i). (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeSignatureOpts
 {
@@ -3224,39 +3246,39 @@ public unsafe struct NativeSignatureOpts
     public float Height;
     /// <summary>const char * (offset 16)</summary>
     public nint Placeholder;
-    /// <summary>cui_color (offset 24)</summary>
+    /// <summary>color of the strokes, default the foreground color (offset 24)</summary>
     public NativeColor Ink;
 }
 
-/// <summary>cui_dropzone_opts, 56 bytes.</summary>
+/// <summary>Dropzone: drop files from the OS, or click to browse. Returns the number of files dropped on it this frame (read them with cui_dropped_file), -1 when clicked (open a file dialog), 0 otherwise. accept filters by extension, e.g. &quot;png;jpg;pdf&quot;. (56 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeDropzoneOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>default &quot;Drop files here&quot; (offset 8)</summary>
     public nint Title;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>default &quot;or click to browse&quot; (offset 16)</summary>
     public nint Description;
     /// <summary>const char * (offset 24)</summary>
     public nint Icon;
-    /// <summary>const char * (offset 32)</summary>
+    /// <summary>extensions it takes, separated by semicolons, e.g. &quot;png;jpg;pdf&quot;; `NULL` takes any file (offset 32)</summary>
     public nint Accept;
-    /// <summary>float (offset 40)</summary>
+    /// <summary>default 160 (offset 40)</summary>
     public float Height;
     /// <summary>cui_size (offset 44)</summary>
     public NativeSize Width;
-    /// <summary>_Bool (offset 52)</summary>
+    /// <summary>one row instead of a tall area (offset 52)</summary>
     public byte Compact;
 }
 
-/// <summary>cui_inline_edit_opts, 32 bytes.</summary>
+/// <summary>Inline edit: text that turns into a field in place. Click (or Enter when focused) to edit, Enter or clicking away saves, Esc cancels. Returns CUI_CHANGED when an edit is committed. (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeInlineEditOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>cui_font (offset 4)</summary>
+    /// <summary>font of the text and of the field, default `CUI_FONT_MEDIUM` (offset 4)</summary>
     public Font Font;
     /// <summary>float (offset 8)</summary>
     public float Size;
@@ -3266,25 +3288,25 @@ public unsafe struct NativeInlineEditOpts
     public NativeSize Width;
 }
 
-/// <summary>cui_scrub_opts, 40 bytes.</summary>
+/// <summary>Scrub field: drag sideways anywhere on it to change the value (Shift for fine steps), or click to type a number. Arrow keys step when focused. (40 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeScrubOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>float (offset 4)</summary>
+    /// <summary>default (max - min) / 100 (offset 4)</summary>
     public float Step;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>default &quot;%.0f&quot; (offset 8)</summary>
     public nint Format;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>e.g. &quot;px&quot; or &quot;%&quot; (offset 16)</summary>
     public nint Suffix;
-    /// <summary>const char * (offset 24)</summary>
+    /// <summary>shown instead of the label (offset 24)</summary>
     public nint Icon;
     /// <summary>cui_size (offset 32)</summary>
     public NativeSize Width;
 }
 
-/// <summary>cui_money_opts, 56 bytes.</summary>
+/// <summary>Money field: shows the amount with thousands separators, edits as plain digits, keeps a fixed number of decimals. (56 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeMoneyOpts
 {
@@ -3292,19 +3314,19 @@ public unsafe struct NativeMoneyOpts
     public int Sentinel;
     /// <summary>const char * (offset 8)</summary>
     public nint Label;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>currency symbol before the amount, default &quot;$&quot; (offset 16)</summary>
     public nint Symbol;
-    /// <summary>const char * (offset 24)</summary>
+    /// <summary>currency code after the amount, e.g. &quot;USD&quot; (offset 24)</summary>
     public nint Code;
     /// <summary>int (offset 32)</summary>
     public int Decimals;
     /// <summary>cui_size (offset 36)</summary>
     public NativeSize Width;
-    /// <summary>const char * (offset 48)</summary>
+    /// <summary>helper text below the field (offset 48)</summary>
     public nint Hint;
 }
 
-/// <summary>cui_key_combo, 8 bytes.</summary>
+/// <summary>Shortcut recorder: click and press a key combination to record it. Backspace clears, Esc cancels. Returns true when the combination changed. cui_shortcut_label formats a combination (&quot;Ctrl Shift K&quot;). (8 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeKeyCombo
 {
@@ -3314,7 +3336,7 @@ public unsafe struct NativeKeyCombo
     public Key Key;
 }
 
-/// <summary>cui_shortcut_recorder_opts, 24 bytes.</summary>
+/// <summary>cui_shortcut_recorder_opts (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeShortcutRecorderOpts
 {
@@ -3326,61 +3348,61 @@ public unsafe struct NativeShortcutRecorderOpts
     public NativeSize Width;
 }
 
-/// <summary>cui_node_view, 12 bytes.</summary>
+/// <summary>Node editor: nodes with input and output pins on a canvas that pans and zooms, joined by curved links. You own the nodes, pins and links; the editor moves the node positions you pass and reports what the user did: (12 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeNodeView
 {
-    /// <summary>float (offset 0)</summary>
+    /// <summary>where the canvas origin sits, in points from the editor&apos;s left edge; panning changes it (offset 0)</summary>
     public float X;
-    /// <summary>float (offset 4)</summary>
+    /// <summary>where the canvas origin sits, in points from the editor&apos;s top edge (offset 4)</summary>
     public float Y;
-    /// <summary>float (offset 8)</summary>
+    /// <summary>scale of the canvas; 0 means 1. Kept between `min_zoom` and `max_zoom` (offset 8)</summary>
     public float Zoom;
 }
 
-/// <summary>cui_node_editor_opts, 32 bytes.</summary>
+/// <summary>cui_node_editor_opts (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeNodeEditorOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>cui_size (offset 4)</summary>
+    /// <summary>default: fill the width, 440 tall (offset 4)</summary>
     public NativeSize Width;
-    /// <summary>cui_size (offset 12)</summary>
+    /// <summary>default: fill the width, 440 tall (offset 12)</summary>
     public NativeSize Height;
-    /// <summary>float (offset 20)</summary>
+    /// <summary>default 0.25 .. 2 (offset 20)</summary>
     public float MinZoom;
-    /// <summary>float (offset 24)</summary>
+    /// <summary>default 0.25 .. 2 (offset 24)</summary>
     public float MaxZoom;
     /// <summary>_Bool (offset 28)</summary>
     public byte NoGrid;
-    /// <summary>_Bool (offset 29)</summary>
+    /// <summary>an overview of the graph in the bottom right corner; click it to move there (offset 29)</summary>
     public byte Minimap;
 }
 
-/// <summary>cui_node_opts, 16 bytes.</summary>
+/// <summary>A node at canvas position (*x, *y), updated while it is dragged. Returns true while the node is selected. (16 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeNodeOpts
 {
-    /// <summary>int (offset 0)</summary>
+    /// <summary>width default 184 (offset 0)</summary>
     public int Sentinel;
-    /// <summary>float (offset 4)</summary>
+    /// <summary>width default 184 (offset 4)</summary>
     public float Width;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>width default 184 (offset 8)</summary>
     public nint Icon;
 }
 
-/// <summary>cui_pin_opts, 8 bytes.</summary>
+/// <summary>A row with a pin on the left (input) or right (output). type picks the pin color from the series palette and limits links to pins of the same type (0 connects to anything). Returns true when the pin has a link. (8 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativePinOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>0 links to any pin; another number links only to pins of that type and picks their color (offset 4)</summary>
     public int Type;
 }
 
-/// <summary>cui_menu_bar_opts, 8 bytes.</summary>
+/// <summary>Menu bar: File / Edit / View along the top of a window. Each menu holds the usual menu items (cui_menu_item, cui_menu_separator, cui_menu_label). Once a menu is open, hovering another one switches to it. Alt (on its own) or F10 focuses the bar; arrows move between menus and items, Enter chooses, Esc steps back. Alt + a menu&apos;s mnemonic letter opens it (the first letter of its label unless `mnemonic` says otherwise). (8 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeMenuBarOpts
 {
@@ -3390,13 +3412,13 @@ public unsafe struct NativeMenuBarOpts
     public byte NoBorder;
 }
 
-/// <summary>cui_menu_bar_menu_opts, 16 bytes.</summary>
+/// <summary>One menu of the bar. Returns true while its items should be built; call cui_menu_bar_menu_end only then. (16 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeMenuBarMenuOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>char (offset 4)</summary>
+    /// <summary>letter that opens the menu with Alt; 0 uses the first letter or digit of the label (offset 4)</summary>
     public sbyte Mnemonic;
     /// <summary>float (offset 8)</summary>
     public float Width;
@@ -3404,7 +3426,7 @@ public unsafe struct NativeMenuBarMenuOpts
     public byte Disabled;
 }
 
-/// <summary>cui_toolbar_opts, 8 bytes.</summary>
+/// <summary>Toolbar: a row of compact icon buttons, toggles, separators and small text buttons. Icon only buttons show their tooltip as their name. Items that do not fit collapse, from the end, into a &quot;more&quot; menu; an item chosen there returns true on the next frame. (8 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeToolbarOpts
 {
@@ -3414,25 +3436,25 @@ public unsafe struct NativeToolbarOpts
     public byte NoBorder;
 }
 
-/// <summary>cui_tool_opts, 48 bytes.</summary>
+/// <summary>cui_tool_opts (48 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeToolOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>text on the button (icon may be NULL); also its name in the overflow menu (offset 8)</summary>
     public nint Label;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>the name of an icon only button (offset 16)</summary>
     public nint Tooltip;
-    /// <summary>const char * (offset 24)</summary>
+    /// <summary>shown in the tooltip, e.g. &quot;Ctrl B&quot; (offset 24)</summary>
     public nint Shortcut;
-    /// <summary>_Bool * (offset 32)</summary>
+    /// <summary>toggle button: flipped on click, shown pressed while true (offset 32)</summary>
     public nint Toggle;
     /// <summary>_Bool (offset 40)</summary>
     public byte Disabled;
 }
 
-/// <summary>cui_status_bar_opts, 8 bytes.</summary>
+/// <summary>Status bar: a thin bar along the bottom of a window, with a hairline on top and no fill of its own (put it in a box with the background you want). Items go left to right; cui_status_bar_spacer sends the rest to the right edge. (8 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeStatusBarOpts
 {
@@ -3442,7 +3464,7 @@ public unsafe struct NativeStatusBarOpts
     public byte NoBorder;
 }
 
-/// <summary>cui_status_item_opts, 40 bytes.</summary>
+/// <summary>cui_status_item_opts (40 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeStatusItemOpts
 {
@@ -3458,7 +3480,7 @@ public unsafe struct NativeStatusItemOpts
     public byte Disabled;
 }
 
-/// <summary>cui_status_progress_opts, 24 bytes.</summary>
+/// <summary>A small progress bar with an optional label. value is 0..1. (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeStatusProgressOpts
 {
@@ -3472,69 +3494,69 @@ public unsafe struct NativeStatusProgressOpts
     public float Width;
 }
 
-/// <summary>cui_doc_tab, 32 bytes.</summary>
+/// <summary>Document tabs: editor style tabs. Clicking selects (*selected is updated), the x or a middle click asks to close, dragging reorders, and the strip scrolls sideways when the tabs do not fit. A dirty tab shows a dot that turns into the close button under the pointer. The selected tab is filled with the surface color so it joins the content below; the strip itself has no fill, like the other bars. Tabs keep their state by title, so give two tabs with the same name a key: &quot;main.c##src&quot;. The component never removes or moves your tabs itself: it reports a close or a move in the result and you apply it (selection already follows a move). With keyboard focus on the strip, Left and Right select, Home and End jump, Shift+Left/Right move the tab and Delete closes it. With `shortcuts` set it also answers Ctrl+Tab, Ctrl+Shift+Tab, Ctrl+PageUp/Down and Ctrl+W (Cmd+W on macOS) from anywhere in the window. (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeDocTab
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>the tab&apos;s text and its identity; add &quot;##key&quot; to tell two tabs with one name apart (offset 0)</summary>
     public nint Title;
     /// <summary>const char * (offset 8)</summary>
     public nint Icon;
     /// <summary>const char * (offset 16)</summary>
     public nint Tooltip;
-    /// <summary>_Bool (offset 24)</summary>
+    /// <summary>unsaved changes: a dot in place of the x, which returns under the pointer (offset 24)</summary>
     public byte Dirty;
 }
 
-/// <summary>cui_doc_tabs_opts, 8 bytes.</summary>
+/// <summary>cui_doc_tabs_opts (8 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeDocTabsOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>_Bool (offset 4)</summary>
+    /// <summary>Ctrl+Tab, Ctrl+Shift+Tab, Ctrl+PageUp/Down and Ctrl+W (Cmd+W on macOS) work from anywhere in the window (offset 4)</summary>
     public byte Shortcuts;
-    /// <summary>_Bool (offset 5)</summary>
+    /// <summary>tabs have no x and cannot be closed (middle click, Delete and Ctrl+W do nothing) (offset 5)</summary>
     public byte NoClose;
-    /// <summary>_Bool (offset 6)</summary>
+    /// <summary>tabs cannot be dragged or moved with Shift+Left/Right (offset 6)</summary>
     public byte NoReorder;
 }
 
-/// <summary>cui_doc_tabs_result, 16 bytes.</summary>
+/// <summary>cui_doc_tabs_result (16 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeDocTabsResult
 {
-    /// <summary>_Bool (offset 0)</summary>
+    /// <summary>selected changed (click, keys or a move) (offset 0)</summary>
     public byte Changed;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>tab to close, or -1 (offset 4)</summary>
     public int Close;
-    /// <summary>int (offset 8)</summary>
+    /// <summary>move the tab at move_from to move_to, or -1 (offset 8)</summary>
     public int MoveFrom;
-    /// <summary>int (offset 12)</summary>
+    /// <summary>move the tab at move_from to move_to, or -1 (offset 12)</summary>
     public int MoveTo;
 }
 
-/// <summary>cui_dockspace_opts, 48 bytes.</summary>
+/// <summary>Dockspace: an IDE style workspace that lays out your panels in a tree of resizable splits whose leaves hold one or more panels as document tabs. Submit every panel each frame between cui_dockspace_begin and cui_dockspace_end; the dockspace decides where it goes, and a panel&apos;s content is built only while its tab is the one showing: (48 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeDockspaceOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>first run layout, in the cui_dock_save format (offset 8)</summary>
     public nint Layout;
-    /// <summary>cui_size (offset 16)</summary>
+    /// <summary>default fill (offset 16)</summary>
     public NativeSize Width;
-    /// <summary>cui_size (offset 24)</summary>
+    /// <summary>default fill (offset 24)</summary>
     public NativeSize Height;
-    /// <summary>float (offset 32)</summary>
+    /// <summary>default 120; splits stop here (and share what there is when too narrow) (offset 32)</summary>
     public float MinPanelWidth;
-    /// <summary>float (offset 36)</summary>
+    /// <summary>default 96 (offset 36)</summary>
     public float MinPanelHeight;
-    /// <summary>_Bool (offset 40)</summary>
+    /// <summary>Ctrl+Tab, Ctrl+Shift+Tab and Ctrl+W act on the focused leaf (offset 40)</summary>
     public byte Shortcuts;
 }
 
-/// <summary>cui_dock_panel_opts, 24 bytes.</summary>
+/// <summary>Returns true while the panel&apos;s content should be built; then call cui_dock_panel_end. (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeDockPanelOpts
 {
@@ -3542,211 +3564,211 @@ public unsafe struct NativeDockPanelOpts
     public int Sentinel;
     /// <summary>const char * (offset 8)</summary>
     public nint Icon;
-    /// <summary>_Bool (offset 16)</summary>
+    /// <summary>unsaved changes: the panel&apos;s tab shows a dot in place of its x (offset 16)</summary>
     public byte Dirty;
 }
 
-/// <summary>cui_inspector_opts, 16 bytes.</summary>
+/// <summary>Property inspector: labelled rows in folding groups, a label column on the left (drag the line between the columns to resize it) and an editor on the right. Every row returns true when its value changed. Groups end at the next group or at cui_inspector_end. (16 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeInspectorOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>cui_size (offset 4)</summary>
+    /// <summary>default fill (offset 4)</summary>
     public NativeSize Width;
-    /// <summary>float (offset 12)</summary>
+    /// <summary>initial label column in points, default 38% of the width (offset 12)</summary>
     public float LabelWidth;
 }
 
-/// <summary>cui_prop_opts, 56 bytes.</summary>
+/// <summary>cui_prop_opts (56 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativePropOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>float (offset 4)</summary>
+    /// <summary>number and vector rows; both 0 = unbounded (offset 4)</summary>
     public float Min;
-    /// <summary>float (offset 8)</summary>
+    /// <summary>number and vector rows; both 0 = unbounded (offset 8)</summary>
     public float Max;
-    /// <summary>float (offset 12)</summary>
+    /// <summary>drag and arrow step, default 1/100 of the range (0.1 unbounded) (offset 12)</summary>
     public float Step;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>printf format, default from the step (&quot;%.2f&quot; for 0.01) (offset 16)</summary>
     public nint Format;
-    /// <summary>const char * (offset 24)</summary>
+    /// <summary>unit after the value, e.g. &quot;px&quot; or &quot;deg&quot; (offset 24)</summary>
     public nint Suffix;
-    /// <summary>const char * (offset 32)</summary>
+    /// <summary>text rows (offset 32)</summary>
     public nint Placeholder;
-    /// <summary>const char * (offset 40)</summary>
+    /// <summary>shown on the label (offset 40)</summary>
     public nint Tooltip;
     /// <summary>_Bool (offset 48)</summary>
     public byte Disabled;
-    /// <summary>_Bool (offset 49)</summary>
+    /// <summary>bool rows: a checkbox instead of a switch (offset 49)</summary>
     public byte Checkbox;
 }
 
-/// <summary>cui_log_line, 24 bytes.</summary>
+/// <summary>cui_log_line (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeLogLine
 {
-    /// <summary>uint32_t (offset 0)</summary>
+    /// <summary>where the line&apos;s text starts in the buffer&apos;s `text` (offset 0)</summary>
     public uint Offset;
-    /// <summary>uint32_t (offset 4)</summary>
+    /// <summary>bytes of text, not counting the terminator (offset 4)</summary>
     public uint Len;
-    /// <summary>double (offset 8)</summary>
+    /// <summary>the timestamp it was appended with, in seconds (offset 8)</summary>
     public double Time;
-    /// <summary>uint8_t (offset 16)</summary>
+    /// <summary>a `cui_log_level` (offset 16)</summary>
     public byte Level;
 }
 
-/// <summary>cui_log_buffer, 80 bytes.</summary>
+/// <summary>cui_log_buffer (80 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeLogBuffer
 {
-    /// <summary>double (offset 0)</summary>
+    /// <summary>timestamp given to the next appended line (seconds) (offset 0)</summary>
     public double Now;
-    /// <summary>cui_log_line * (offset 8)</summary>
+    /// <summary>the line records given to `cui_log_init` (offset 8)</summary>
     public nint Lines;
-    /// <summary>int (offset 16)</summary>
+    /// <summary>how many records `lines` has room for (offset 16)</summary>
     public int LineCap;
-    /// <summary>char * (offset 24)</summary>
+    /// <summary>the bytes given to `cui_log_init`, holding the text of the lines (offset 24)</summary>
     public nint Text;
-    /// <summary>uint32_t (offset 32)</summary>
+    /// <summary>size of `text` in bytes (offset 32)</summary>
     public uint TextCap;
-    /// <summary>int (offset 36)</summary>
+    /// <summary>ring of lines: oldest record and how many (offset 36)</summary>
     public int First;
-    /// <summary>int (offset 40)</summary>
+    /// <summary>ring of lines: oldest record and how many (offset 40)</summary>
     public int Count;
-    /// <summary>uint32_t (offset 44)</summary>
+    /// <summary>where the next line&apos;s text goes (offset 44)</summary>
     public uint TextEnd;
-    /// <summary>uint64_t (offset 48)</summary>
+    /// <summary>lines ever appended; line i of the buffer is number total - count + i (offset 48)</summary>
     public ulong Total;
-    /// <summary>int[5] (offset 56)</summary>
+    /// <summary>lines of each level now in the buffer, indexed by `cui_log_level` (offset 56)</summary>
     public fixed int LevelCount[5];
 }
 
-/// <summary>cui_log_view_opts, 24 bytes.</summary>
+/// <summary>cui_log_view_opts (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeLogViewOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>cui_size (offset 4)</summary>
+    /// <summary>default fill (offset 4)</summary>
     public NativeSize Width;
-    /// <summary>float (offset 12)</summary>
+    /// <summary>default 320; negative fills the space (offset 12)</summary>
     public float Height;
-    /// <summary>_Bool (offset 16)</summary>
+    /// <summary>show each line&apos;s time as HH:MM:SS.mmm (offset 16)</summary>
     public byte Timestamps;
-    /// <summary>_Bool (offset 17)</summary>
+    /// <summary>just the lines (offset 17)</summary>
     public byte NoToolbar;
-    /// <summary>float (offset 20)</summary>
+    /// <summary>font size, default 12 (offset 20)</summary>
     public float Size;
 }
 
-/// <summary>cui_terminal_line, 12 bytes.</summary>
+/// <summary>Terminal: program output with ANSI colors over an input line with a prompt and history, for consoles, REPLs and build tools. Output goes into a buffer you own (appending never allocates; the oldest lines go when it is full) and is parsed as it arrives: \n starts a line, \r returns to its start (progress bars redraw in place), \t, \b, and ESC [ ... m sets colors and styles (16 colors, 256 and 24-bit; bold, dim, italic, underline, inverse). Other escape sequences are skipped. (12 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTerminalLine
 {
-    /// <summary>uint32_t (offset 0)</summary>
+    /// <summary>where the line&apos;s bytes start in the buffer&apos;s `text` (offset 0)</summary>
     public uint Offset;
-    /// <summary>uint32_t (offset 4)</summary>
+    /// <summary>bytes of the line, with its color sequences (offset 4)</summary>
     public uint Len;
-    /// <summary>uint32_t (offset 8)</summary>
+    /// <summary>character cells the line takes, before wrapping (offset 8)</summary>
     public uint Cols;
 }
 
-/// <summary>cui_terminal_buffer, 88 bytes.</summary>
+/// <summary>cui_terminal_buffer (88 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTerminalBuffer
 {
-    /// <summary>char * (offset 0)</summary>
+    /// <summary>the bytes given to `cui_terminal_init`, holding the lines and their color sequences (offset 0)</summary>
     public nint Text;
-    /// <summary>uint32_t (offset 8)</summary>
+    /// <summary>size of `text` in bytes (offset 8)</summary>
     public uint TextCap;
-    /// <summary>cui_terminal_line * (offset 16)</summary>
+    /// <summary>the line records given to `cui_terminal_init` (offset 16)</summary>
     public nint Lines;
-    /// <summary>int (offset 24)</summary>
+    /// <summary>how many records `lines` has room for; 0 when the buffer cannot be used (offset 24)</summary>
     public int LineCap;
-    /// <summary>int (offset 28)</summary>
+    /// <summary>ring of lines; the last one is still being written (offset 28)</summary>
     public int First;
-    /// <summary>int (offset 32)</summary>
+    /// <summary>ring of lines; the last one is still being written (offset 32)</summary>
     public int Count;
-    /// <summary>uint32_t (offset 36)</summary>
+    /// <summary>where the next byte goes (offset 36)</summary>
     public uint End;
-    /// <summary>uint64_t (offset 40)</summary>
+    /// <summary>lines ever started (offset 40)</summary>
     public ulong Total;
-    /// <summary>uint8_t (offset 48)</summary>
+    /// <summary>parser: text, escape, CSI or OSC (offset 48)</summary>
     public byte Mode;
-    /// <summary>uint8_t (offset 49)</summary>
+    /// <summary>bytes of `seq` read so far (offset 49)</summary>
     public byte SeqN;
-    /// <summary>char[30] (offset 50)</summary>
+    /// <summary>the escape sequence being read, so a write can split one (offset 50)</summary>
     public fixed sbyte Seq[30];
-    /// <summary>_Bool (offset 80)</summary>
+    /// <summary>a \r was seen: the next character starts the line over (offset 80)</summary>
     public byte Cr;
 }
 
-/// <summary>cui_terminal_opts, 40 bytes.</summary>
+/// <summary>cui_terminal_opts (40 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTerminalOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>cui_size (offset 4)</summary>
+    /// <summary>default fill (offset 4)</summary>
     public NativeSize Width;
-    /// <summary>float (offset 12)</summary>
+    /// <summary>default 320; negative fills the space (offset 12)</summary>
     public float Height;
-    /// <summary>float (offset 16)</summary>
+    /// <summary>font size, default 13 (offset 16)</summary>
     public float Size;
-    /// <summary>const char * (offset 24)</summary>
+    /// <summary>default &quot;$ &quot; (offset 24)</summary>
     public nint Prompt;
-    /// <summary>_Bool (offset 32)</summary>
+    /// <summary>output only (offset 32)</summary>
     public byte NoInput;
 }
 
-/// <summary>cui_terminal_result, 16 bytes.</summary>
+/// <summary>cui_terminal_result (16 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTerminalResult
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>the line entered (Enter), already echoed; valid this frame (offset 0)</summary>
     public nint Command;
-    /// <summary>_Bool (offset 8)</summary>
+    /// <summary>Ctrl+C with nothing selected (offset 8)</summary>
     public byte Interrupt;
 }
 
-/// <summary>cui_emoji_picker_opts, 88 bytes.</summary>
+/// <summary>Emoji picker: search, groups with tabs, recent emoji, skin tones and a preview with the name. Returns the emoji picked this frame (UTF-8, valid until the next frame) or NULL. Put it in a popover to open it from a button. (88 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeEmojiPickerOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>cui_size (offset 4)</summary>
+    /// <summary>default up to 360 (offset 4)</summary>
     public NativeSize Width;
-    /// <summary>float (offset 12)</summary>
+    /// <summary>the grid; default 280 (offset 12)</summary>
     public float Height;
-    /// <summary>float (offset 16)</summary>
+    /// <summary>emoji size; default 26 (offset 16)</summary>
     public float Size;
-    /// <summary>char * (offset 24)</summary>
+    /// <summary>buffer for the recent emoji, read and updated here so the app can save it; `NULL` keeps them in the picker (offset 24)</summary>
     public nint Recent;
-    /// <summary>size_t (offset 32)</summary>
+    /// <summary>size of the `recent` buffer in bytes; it holds the recent emoji newest first, space separated (offset 32)</summary>
     public nuint RecentCap;
-    /// <summary>int * (offset 40)</summary>
+    /// <summary>skin tone, 0 (none) to 5 (dark), kept by the app (offset 40)</summary>
     public nint Tone;
-    /// <summary>const char * (offset 48)</summary>
+    /// <summary>&quot;Search emoji&quot; (offset 48)</summary>
     public nint Placeholder;
-    /// <summary>const char * (offset 56)</summary>
+    /// <summary>&quot;No emoji found&quot; (offset 56)</summary>
     public nint EmptyText;
-    /// <summary>const char * (offset 64)</summary>
+    /// <summary>the preview with nothing to show: &quot;Pick an emoji&quot; (offset 64)</summary>
     public nint Hint;
-    /// <summary>const char *const * (offset 72)</summary>
+    /// <summary>10 names: recent, then Unicode&apos;s nine groups (offset 72)</summary>
     public nint GroupNames;
-    /// <summary>_Bool (offset 80)</summary>
+    /// <summary>hides the search field (offset 80)</summary>
     public byte NoSearch;
-    /// <summary>_Bool (offset 81)</summary>
+    /// <summary>hides the row at the bottom that shows the hovered emoji and its name (offset 81)</summary>
     public byte NoPreview;
-    /// <summary>_Bool (offset 82)</summary>
+    /// <summary>hides the skin tone button (offset 82)</summary>
     public byte NoTone;
 }
 
-/// <summary>cui_hex_range, 32 bytes.</summary>
+/// <summary>Hex viewer: offsets, bytes in hex and the same bytes as ASCII, in the code font, for binary tools, emulators and debuggers. You own the bytes (they are read during the call, never kept) and, optionally, the selection: (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeHexRange
 {
@@ -3754,439 +3776,439 @@ public unsafe struct NativeHexRange
     public nuint Offset;
     /// <summary>size_t (offset 8)</summary>
     public nuint Length;
-    /// <summary>cui_tone (offset 16)</summary>
+    /// <summary>tints the range&apos;s background (offset 16)</summary>
     public Tone Tone;
-    /// <summary>const char * (offset 24)</summary>
+    /// <summary>tooltip for the range; may be NULL (offset 24)</summary>
     public nint Label;
 }
 
-/// <summary>cui_hex_selection, 24 bytes.</summary>
+/// <summary>The selected bytes. length 0 means nothing is selected; cursor is the byte the keys move from and is one end of a selection. Set it yourself to select from code. (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeHexSelection
 {
-    /// <summary>size_t (offset 0)</summary>
+    /// <summary>offset of the first selected byte (offset 0)</summary>
     public nuint Start;
-    /// <summary>size_t (offset 8)</summary>
+    /// <summary>bytes selected; 0 means nothing is selected (offset 8)</summary>
     public nuint Length;
-    /// <summary>size_t (offset 16)</summary>
+    /// <summary>the byte the keys move from; one end of the selection (offset 16)</summary>
     public nuint Cursor;
 }
 
-/// <summary>cui_hex_view_opts, 64 bytes.</summary>
+/// <summary>cui_hex_view_opts (64 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeHexViewOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>cui_size (offset 4)</summary>
+    /// <summary>default fill (offset 4)</summary>
     public NativeSize Width;
-    /// <summary>float (offset 12)</summary>
+    /// <summary>default: the rows, up to 320; negative fills the space (offset 12)</summary>
     public float Height;
-    /// <summary>uint64_t (offset 16)</summary>
+    /// <summary>address shown for byte 0 in the offset column (offset 16)</summary>
     public ulong Base;
-    /// <summary>int (offset 24)</summary>
+    /// <summary>8, 16 (default) or 32 (offset 24)</summary>
     public int BytesPerRow;
-    /// <summary>const cui_hex_range * (offset 32)</summary>
+    /// <summary>byte ranges to highlight, each with a tone and a tooltip label (offset 32)</summary>
     public nint Ranges;
-    /// <summary>int (offset 40)</summary>
+    /// <summary>entries in `ranges`, drawn in order with later ones on top (offset 40)</summary>
     public int RangeCount;
-    /// <summary>uint8_t * (offset 48)</summary>
+    /// <summary>writable bytes to show and overwrite instead of data (usually the same memory), or NULL for read only (offset 48)</summary>
     public nint Edit;
-    /// <summary>_Bool (offset 56)</summary>
+    /// <summary>hide the ASCII column (offset 56)</summary>
     public byte NoAscii;
-    /// <summary>_Bool (offset 57)</summary>
+    /// <summary>hide the column header (00 01 .. 0F) (offset 57)</summary>
     public byte NoHeader;
-    /// <summary>float (offset 60)</summary>
+    /// <summary>font size, default 12 (offset 60)</summary>
     public float Size;
 }
 
-/// <summary>cui_hex_result, 64 bytes.</summary>
+/// <summary>cui_hex_result (64 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeHexResult
 {
-    /// <summary>cui_hex_selection (offset 0)</summary>
+    /// <summary>after this frame (the same as *sel when you pass one) (offset 0)</summary>
     public NativeHexSelection Selection;
-    /// <summary>_Bool (offset 24)</summary>
+    /// <summary>by the pointer, the keys or cui_hex_view_goto (offset 24)</summary>
     public byte SelectionChanged;
-    /// <summary>_Bool (offset 25)</summary>
+    /// <summary>bytes in .edit were overwritten this frame (offset 25)</summary>
     public byte Edited;
-    /// <summary>size_t (offset 32)</summary>
+    /// <summary>with `edited`: offset of the first byte overwritten this frame (offset 32)</summary>
     public nuint EditOffset;
-    /// <summary>size_t (offset 40)</summary>
+    /// <summary>with `edited`: bytes from `edit_offset` up to the last one overwritten (offset 40)</summary>
     public nuint EditLength;
-    /// <summary>int64_t (offset 48)</summary>
+    /// <summary>byte under the pointer, or -1 (offset 48)</summary>
     public long Hovered;
-    /// <summary>_Bool (offset 56)</summary>
+    /// <summary>Ctrl+C or Ctrl+Shift+C put the selection on the clipboard (offset 56)</summary>
     public byte Copied;
 }
 
-/// <summary>cui_flame_span, 32 bytes.</summary>
+/// <summary>Flame graph / profiler timeline: time runs left to right, call depth top to bottom (row d holds the spans at depth d). You own the spans, the view and the selection; the component pans and zooms *view and writes *selected. (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeFlameSpan
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>drawn in the span when it fits, and in its tooltip (offset 0)</summary>
     public nint Name;
-    /// <summary>double (offset 8)</summary>
+    /// <summary>seconds, end &gt;= start (offset 8)</summary>
     public double Start;
-    /// <summary>double (offset 16)</summary>
+    /// <summary>seconds, end &gt;= start (offset 16)</summary>
     public double End;
-    /// <summary>int (offset 24)</summary>
+    /// <summary>row, 0 = top (offset 24)</summary>
     public int Depth;
-    /// <summary>uint32_t (offset 28)</summary>
+    /// <summary>0: hashed from name (offset 28)</summary>
     public uint ColorKey;
 }
 
-/// <summary>cui_flame_view, 24 bytes.</summary>
+/// <summary>cui_flame_view (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeFlameView
 {
-    /// <summary>double (offset 0)</summary>
+    /// <summary>visible time range; end &lt;= start fits every span (offset 0)</summary>
     public double Start;
-    /// <summary>double (offset 8)</summary>
+    /// <summary>visible time range; end &lt;= start fits every span (offset 8)</summary>
     public double End;
-    /// <summary>float (offset 16)</summary>
+    /// <summary>rows scrolled off the top, in points (offset 16)</summary>
     public float Scroll;
 }
 
-/// <summary>cui_flame_opts, 32 bytes.</summary>
+/// <summary>cui_flame_opts (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeFlameOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>cui_size (offset 4)</summary>
+    /// <summary>default fill (offset 4)</summary>
     public NativeSize Width;
-    /// <summary>float (offset 12)</summary>
+    /// <summary>default: fits the rows (up to 360) (offset 12)</summary>
     public float Height;
-    /// <summary>float (offset 16)</summary>
+    /// <summary>default 20 (offset 16)</summary>
     public float RowHeight;
-    /// <summary>double (offset 24)</summary>
+    /// <summary>deepest zoom in seconds, default 1e-8 (offset 24)</summary>
     public double MinRange;
 }
 
-/// <summary>cui_flame_result, 12 bytes.</summary>
+/// <summary>cui_flame_result (12 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeFlameResult
 {
-    /// <summary>_Bool (offset 0)</summary>
+    /// <summary>selected changed (click or keys) (offset 0)</summary>
     public byte SelectionChanged;
-    /// <summary>_Bool (offset 1)</summary>
+    /// <summary>view changed (zoom, pan, fit, animation) (offset 1)</summary>
     public byte ViewChanged;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>span under the pointer, or -1 (offset 4)</summary>
     public int Hovered;
-    /// <summary>int (offset 8)</summary>
+    /// <summary>span zoomed to this frame (double-click, Enter), or -1 (offset 8)</summary>
     public int Zoomed;
 }
 
-/// <summary>cui_curve_key, 28 bytes.</summary>
+/// <summary>cui_curve_key (28 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeCurveKey
 {
-    /// <summary>float (offset 0)</summary>
+    /// <summary>position along the horizontal axis, in curve units (seconds in a timeline track) (offset 0)</summary>
     public float X;
-    /// <summary>float (offset 4)</summary>
+    /// <summary>the curve&apos;s value at the key (offset 4)</summary>
     public float Y;
-    /// <summary>float (offset 8)</summary>
+    /// <summary>handle toward the previous key, relative to the key (FREE) (offset 8)</summary>
     public float InDx;
-    /// <summary>float (offset 12)</summary>
+    /// <summary>handle toward the previous key, relative to the key (FREE) (offset 12)</summary>
     public float InDy;
-    /// <summary>float (offset 16)</summary>
+    /// <summary>handle toward the next key, relative to the key (FREE) (offset 16)</summary>
     public float OutDx;
-    /// <summary>float (offset 20)</summary>
+    /// <summary>handle toward the next key, relative to the key (FREE) (offset 20)</summary>
     public float OutDy;
-    /// <summary>uint8_t (offset 24)</summary>
+    /// <summary>cui_curve_mode (offset 24)</summary>
     public byte Mode;
 }
 
-/// <summary>cui_curve_opts, 80 bytes.</summary>
+/// <summary>cui_curve_opts (80 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeCurveOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>float (offset 4)</summary>
+    /// <summary>plotted range; both 0 = 0..1. Keys stay inside it (offset 4)</summary>
     public float XMin;
-    /// <summary>float (offset 8)</summary>
+    /// <summary>plotted range; both 0 = 0..1. Keys stay inside it (offset 8)</summary>
     public float XMax;
-    /// <summary>float (offset 12)</summary>
+    /// <summary>both 0 = 0..1; leave room above and below for overshoot (offset 12)</summary>
     public float YMin;
-    /// <summary>float (offset 16)</summary>
+    /// <summary>both 0 = 0..1; leave room above and below for overshoot (offset 16)</summary>
     public float YMax;
-    /// <summary>cui_size (offset 20)</summary>
+    /// <summary>default fill (offset 20)</summary>
     public NativeSize Width;
-    /// <summary>float (offset 28)</summary>
+    /// <summary>plot height, default 220 (offset 28)</summary>
     public float Height;
-    /// <summary>const char * (offset 32)</summary>
+    /// <summary>printf formats for labels and readouts, default from the grid step (offset 32)</summary>
     public nint XFormat;
-    /// <summary>const char * (offset 40)</summary>
+    /// <summary>printf formats for labels and readouts, default from the grid step (offset 40)</summary>
     public nint YFormat;
-    /// <summary>const char * (offset 48)</summary>
+    /// <summary>readout names, default &quot;X&quot; and &quot;Y&quot; (e.g. &quot;Time&quot;, &quot;Value&quot;) (offset 48)</summary>
     public nint XLabel;
-    /// <summary>const char * (offset 56)</summary>
+    /// <summary>readout names, default &quot;X&quot; and &quot;Y&quot; (e.g. &quot;Time&quot;, &quot;Value&quot;) (offset 56)</summary>
     public nint YLabel;
-    /// <summary>int * (offset 64)</summary>
+    /// <summary>the selected key or -1, kept by you; NULL keeps it in the editor (offset 64)</summary>
     public nint Selected;
-    /// <summary>_Bool (offset 72)</summary>
+    /// <summary>drags always snap to the grid (otherwise hold Shift) (offset 72)</summary>
     public byte Snap;
-    /// <summary>_Bool (offset 73)</summary>
+    /// <summary>a marker at x = playhead (offset 73)</summary>
     public byte ShowPlayhead;
-    /// <summary>float (offset 76)</summary>
+    /// <summary>x of the playhead marker, drawn when `show_playhead` is set (offset 76)</summary>
     public float Playhead;
 }
 
-/// <summary>cui_curve_result, 28 bytes.</summary>
+/// <summary>cui_curve_result (28 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeCurveResult
 {
-    /// <summary>_Bool (offset 0)</summary>
+    /// <summary>a key moved, a handle or mode changed, or a key was added or removed (offset 0)</summary>
     public byte Changed;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>index of the key added this frame, or -1 (offset 4)</summary>
     public int Added;
-    /// <summary>int (offset 8)</summary>
+    /// <summary>index the removed key had, or -1 (offset 8)</summary>
     public int Removed;
-    /// <summary>int (offset 12)</summary>
+    /// <summary>the selected key, or -1 (offset 12)</summary>
     public int Selected;
-    /// <summary>_Bool (offset 16)</summary>
+    /// <summary>the pointer is over the plot: (offset 16)</summary>
     public byte Hovered;
-    /// <summary>float (offset 20)</summary>
+    /// <summary>the x under it and the curve&apos;s value there (offset 20)</summary>
     public float HoverX;
-    /// <summary>float (offset 24)</summary>
+    /// <summary>the x under it and the curve&apos;s value there (offset 24)</summary>
     public float HoverY;
 }
 
-/// <summary>cui_gradient_stop, 8 bytes.</summary>
+/// <summary>Gradient editor: a color ramp over a checkerboard (so alpha shows) with the stops underneath. You own the stops; the editor edits them in place and keeps them sorted by position. Drag a stop to move it (it may pass its neighbours), drag it off the ramp or press Delete to remove it (never fewer than two), click the ramp or the empty track to add a stop with the color found there. Double click a stop (or Enter on a focused one) to open the color picker; the row under the ramp shows the selected stop&apos;s color, location and opacity. Stops are focusable: Tab moves through them, Left and Right nudge (Shift for fine steps). (8 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeGradientStop
 {
-    /// <summary>float (offset 0)</summary>
+    /// <summary>position along the ramp, 0..1 (offset 0)</summary>
     public float Pos;
     /// <summary>cui_color (offset 4)</summary>
     public NativeColor Color;
 }
 
-/// <summary>cui_gradient_opts, 24 bytes.</summary>
+/// <summary>cui_gradient_opts (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeGradientOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>cui_size (offset 4)</summary>
+    /// <summary>default fill (offset 4)</summary>
     public NativeSize Width;
-    /// <summary>float (offset 12)</summary>
+    /// <summary>ramp height, default 28 (offset 12)</summary>
     public float Height;
-    /// <summary>int * (offset 16)</summary>
+    /// <summary>the selected stop, kept by you; NULL keeps it in the editor (offset 16)</summary>
     public nint Selected;
 }
 
-/// <summary>cui_gradient_result, 16 bytes.</summary>
+/// <summary>cui_gradient_result (16 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeGradientResult
 {
-    /// <summary>_Bool (offset 0)</summary>
+    /// <summary>a stop moved, changed color, or was added or removed (offset 0)</summary>
     public byte Changed;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>index of the stop added this frame, or -1 (offset 4)</summary>
     public int Added;
-    /// <summary>int (offset 8)</summary>
+    /// <summary>index the removed stop had, or -1 (offset 8)</summary>
     public int Removed;
-    /// <summary>int (offset 12)</summary>
+    /// <summary>the selected stop (offset 12)</summary>
     public int Selected;
 }
 
-/// <summary>cui_timeline_clip, 32 bytes.</summary>
+/// <summary>cui_timeline_clip (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTimelineClip
 {
-    /// <summary>float (offset 0)</summary>
+    /// <summary>seconds, end &gt; start (offset 0)</summary>
     public float Start;
-    /// <summary>float (offset 4)</summary>
+    /// <summary>seconds, end &gt; start (offset 4)</summary>
     public float End;
-    /// <summary>float (offset 8)</summary>
+    /// <summary>where the clip starts in its media; trimming the start moves it along (offset 8)</summary>
     public float Offset;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>drawn in the clip&apos;s bar when it fits, and in its tooltip (offset 16)</summary>
     public nint Name;
-    /// <summary>_Bool (offset 24)</summary>
+    /// <summary>the clip is selected: set and cleared by clicks, kept by you (offset 24)</summary>
     public byte Selected;
 }
 
-/// <summary>cui_timeline_track, 64 bytes.</summary>
+/// <summary>cui_timeline_track (64 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTimelineTrack
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>shown in the track list and in tooltips (offset 0)</summary>
     public nint Name;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>optional, before the name (offset 8)</summary>
     public nint Icon;
-    /// <summary>int (offset 16)</summary>
+    /// <summary>0 top level; the deeper tracks after a track belong to it (a group) (offset 16)</summary>
     public int Depth;
-    /// <summary>_Bool (offset 20)</summary>
+    /// <summary>a group hides its tracks (its chevron toggles this) (offset 20)</summary>
     public byte Collapsed;
-    /// <summary>_Bool (offset 21)</summary>
+    /// <summary>toggled by the row&apos;s buttons (.toggles); a locked track can&apos;t be edited (offset 21)</summary>
     public byte Muted;
-    /// <summary>_Bool (offset 22)</summary>
+    /// <summary>toggled by the row&apos;s buttons (.toggles); a locked track can&apos;t be edited (offset 22)</summary>
     public byte Locked;
-    /// <summary>uint8_t (offset 23)</summary>
+    /// <summary>series color 1..6; 0 takes the group&apos;s, or the next one at the top level (offset 23)</summary>
     public byte Color;
-    /// <summary>cui_curve_key * (offset 24)</summary>
+    /// <summary>sorted by x: x is the time in seconds, y the value (may be NULL) (offset 24)</summary>
     public nint Keys;
-    /// <summary>int (offset 32)</summary>
+    /// <summary>keys in `keys`; the editor changes it when keys are added or removed (offset 32)</summary>
     public int KeyCount;
-    /// <summary>int (offset 36)</summary>
+    /// <summary>room in `keys`; a double click adds no key once it is full (or 0) (offset 36)</summary>
     public int KeyCapacity;
-    /// <summary>_Bool * (offset 40)</summary>
+    /// <summary>parallel to keys, kept by you; NULL: the keys are shown but not selectable (offset 40)</summary>
     public nint KeySelected;
-    /// <summary>cui_timeline_clip * (offset 48)</summary>
+    /// <summary>sorted by start, not overlapping (may be NULL) (offset 48)</summary>
     public nint Clips;
-    /// <summary>int (offset 56)</summary>
+    /// <summary>clips in `clips`; lowered when selected clips are removed (offset 56)</summary>
     public int ClipCount;
 }
 
-/// <summary>cui_timeline_view, 12 bytes.</summary>
+/// <summary>cui_timeline_view (12 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTimelineView
 {
-    /// <summary>float (offset 0)</summary>
+    /// <summary>visible time range; end &lt;= start fits the sequence (offset 0)</summary>
     public float Start;
-    /// <summary>float (offset 4)</summary>
+    /// <summary>visible time range; end &lt;= start fits the sequence (offset 4)</summary>
     public float End;
-    /// <summary>float (offset 8)</summary>
+    /// <summary>rows scrolled off the top, in points (offset 8)</summary>
     public float Scroll;
 }
 
-/// <summary>cui_timeline_editor_opts, 88 bytes.</summary>
+/// <summary>cui_timeline_editor_opts (88 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTimelineEditorOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>float (offset 4)</summary>
+    /// <summary>the sequence in seconds; both 0 = 0..10 (offset 4)</summary>
     public float Start;
-    /// <summary>float (offset 8)</summary>
+    /// <summary>the sequence in seconds; both 0 = 0..10 (offset 8)</summary>
     public float End;
-    /// <summary>float (offset 12)</summary>
+    /// <summary>frames per second, default 30: snapping, stepping and frame labels (offset 12)</summary>
     public float Fps;
-    /// <summary>int (offset 16)</summary>
+    /// <summary>cui_timeline_ruler (offset 16)</summary>
     public int Ruler;
-    /// <summary>cui_timeline_view * (offset 24)</summary>
+    /// <summary>NULL keeps it in the editor (offset 24)</summary>
     public nint View;
-    /// <summary>float * (offset 32)</summary>
+    /// <summary>a play range: with both set, markers to drag in the ruler and shading outside (offset 32)</summary>
     public nint In;
-    /// <summary>float * (offset 40)</summary>
+    /// <summary>a play range: with both set, markers to drag in the ruler and shading outside (offset 40)</summary>
     public nint Out;
-    /// <summary>int * (offset 48)</summary>
+    /// <summary>the key last clicked or added, or -1; kept by you (NULL: in the editor) (offset 48)</summary>
     public nint CurrentTrack;
-    /// <summary>int * (offset 56)</summary>
+    /// <summary>the key last clicked or added, or -1; kept by you (NULL: in the editor) (offset 56)</summary>
     public nint CurrentKey;
-    /// <summary>cui_size (offset 64)</summary>
+    /// <summary>default fill (offset 64)</summary>
     public NativeSize Width;
-    /// <summary>float (offset 72)</summary>
+    /// <summary>default: fits every track (up to 360) (offset 72)</summary>
     public float Height;
-    /// <summary>float (offset 76)</summary>
+    /// <summary>default 26 (offset 76)</summary>
     public float RowHeight;
-    /// <summary>float (offset 80)</summary>
+    /// <summary>track list, default 184; narrower (then icons only) on a narrow editor (offset 80)</summary>
     public float TrackWidth;
-    /// <summary>_Bool (offset 84)</summary>
+    /// <summary>hide and lock buttons on every track (offset 84)</summary>
     public byte Toggles;
-    /// <summary>_Bool (offset 85)</summary>
+    /// <summary>drags and scrubbing do not snap to frames (offset 85)</summary>
     public byte FreeDrag;
 }
 
-/// <summary>cui_timeline_editor_result, 52 bytes.</summary>
+/// <summary>cui_timeline_editor_result (52 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTimelineEditorResult
 {
-    /// <summary>_Bool (offset 0)</summary>
+    /// <summary>keys or clips moved, were added or removed, or a track flag changed (offset 0)</summary>
     public byte Changed;
-    /// <summary>_Bool (offset 1)</summary>
+    /// <summary>time moved (scrub, ruler click, keys) (offset 1)</summary>
     public byte TimeChanged;
-    /// <summary>_Bool (offset 2)</summary>
+    /// <summary>the playhead is being dragged (offset 2)</summary>
     public byte Scrubbing;
-    /// <summary>_Bool (offset 3)</summary>
+    /// <summary>Space: start or stop playback (offset 3)</summary>
     public byte PlayToggled;
-    /// <summary>_Bool (offset 4)</summary>
+    /// <summary>a key or clip was selected or unselected this frame (offset 4)</summary>
     public byte SelectionChanged;
-    /// <summary>_Bool (offset 5)</summary>
+    /// <summary>the visible time range or the row scroll changed (zoom, pan, fit) (offset 5)</summary>
     public byte ViewChanged;
-    /// <summary>_Bool (offset 6)</summary>
+    /// <summary>selected keys moved this frame (drag or Alt+arrows) (offset 6)</summary>
     public byte KeysMoved;
-    /// <summary>int (offset 8)</summary>
+    /// <summary>the key added this frame (double click), or -1 (offset 8)</summary>
     public int AddedTrack;
-    /// <summary>int (offset 12)</summary>
+    /// <summary>the key added this frame (double click), or -1 (offset 12)</summary>
     public int AddedKey;
-    /// <summary>int (offset 16)</summary>
+    /// <summary>how many were removed this frame (Delete) (offset 16)</summary>
     public int RemovedKeys;
-    /// <summary>int (offset 20)</summary>
+    /// <summary>how many were removed this frame (Delete) (offset 20)</summary>
     public int RemovedClips;
-    /// <summary>int (offset 24)</summary>
+    /// <summary>the clip moved or trimmed this frame, or -1 (offset 24)</summary>
     public int ClipTrack;
-    /// <summary>int (offset 28)</summary>
+    /// <summary>the clip moved or trimmed this frame, or -1 (offset 28)</summary>
     public int Clip;
-    /// <summary>int (offset 32)</summary>
+    /// <summary>the track whose collapsed, muted or locked flag changed, or -1 (offset 32)</summary>
     public int Toggled;
-    /// <summary>int (offset 36)</summary>
+    /// <summary>track of the key last clicked or added, or -1 (offset 36)</summary>
     public int CurrentTrack;
-    /// <summary>int (offset 40)</summary>
+    /// <summary>index of that key in its track, or -1 (offset 40)</summary>
     public int CurrentKey;
-    /// <summary>int (offset 44)</summary>
+    /// <summary>the key under the pointer, or -1 (offset 44)</summary>
     public int HoveredTrack;
-    /// <summary>int (offset 48)</summary>
+    /// <summary>the key under the pointer, or -1 (offset 48)</summary>
     public int HoveredKey;
 }
 
-/// <summary>cui_kv_pair, 322 bytes.</summary>
+/// <summary>Rows of key = value pairs: HTTP headers, query parameters, environment variables. You own the array and it is edited in place. The checkbox turns a pair on or off, typing in the empty row at the end adds a pair, the x removes one. Secret values show as dots with an eye to reveal them. A key used twice, or one with a space, is marked. On a phone each key sits above its value. Returns true when anything changed. (322 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeKvPair
 {
-    /// <summary>char[64] (offset 0)</summary>
+    /// <summary>the name, e.g. &quot;Accept&quot;; edited in place (offset 0)</summary>
     public fixed sbyte Key[64];
-    /// <summary>char[256] (offset 64)</summary>
+    /// <summary>the value, e.g. &quot;application/json&quot;; edited in place (offset 64)</summary>
     public fixed sbyte Value[256];
-    /// <summary>_Bool (offset 320)</summary>
+    /// <summary>the pair is in use; its checkbox toggles this (offset 320)</summary>
     public byte Enabled;
-    /// <summary>_Bool (offset 321)</summary>
+    /// <summary>the value shows as dots, with an eye to reveal it; the lock button toggles this (offset 321)</summary>
     public byte Secret;
 }
 
-/// <summary>cui_kv_editor_opts, 40 bytes.</summary>
+/// <summary>cui_kv_editor_opts (40 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeKvEditorOpts
 {
     /// <summary>int (offset 0)</summary>
     public int Sentinel;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>default &quot;Key&quot; (offset 8)</summary>
     public nint KeyPlaceholder;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>default &quot;Value&quot; (offset 16)</summary>
     public nint ValuePlaceholder;
-    /// <summary>_Bool (offset 24)</summary>
+    /// <summary>no checkboxes: every pair is on (offset 24)</summary>
     public byte NoToggles;
-    /// <summary>_Bool (offset 25)</summary>
+    /// <summary>no eye button (offset 25)</summary>
     public byte NoSecrets;
     /// <summary>_Bool (offset 26)</summary>
     public byte ReadOnly;
-    /// <summary>cui_size (offset 28)</summary>
+    /// <summary>default fill (offset 28)</summary>
     public NativeSize Width;
 }
 
-/// <summary>cui_diagnostic, 48 bytes.</summary>
+/// <summary>cui_diagnostic (48 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeDiagnostic
 {
     /// <summary>cui_severity (offset 0)</summary>
     public Severity Severity;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>the text of the row; the whole message shows on hover (offset 8)</summary>
     public nint Message;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>groups the rows; NULL or &quot;&quot; groups as &quot;No file&quot; (offset 16)</summary>
     public nint File;
-    /// <summary>int (offset 24)</summary>
+    /// <summary>1 based; 0 leaves it out (offset 24)</summary>
     public int Line;
-    /// <summary>int (offset 28)</summary>
+    /// <summary>1 based; 0 leaves it out (offset 28)</summary>
     public int Column;
-    /// <summary>const char * (offset 32)</summary>
+    /// <summary>&quot;gcc&quot;, &quot;clang-tidy&quot;... (may be NULL) (offset 32)</summary>
     public nint Source;
-    /// <summary>const char * (offset 40)</summary>
+    /// <summary>&quot;-Wunused-variable&quot;... (may be NULL) (offset 40)</summary>
     public nint Code;
 }
 
-/// <summary>cui_problems_opts, 20 bytes.</summary>
+/// <summary>cui_problems_opts (20 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeProblemsOpts
 {
@@ -4196,93 +4218,93 @@ public unsafe struct NativeProblemsOpts
     public NativeSize Width;
     /// <summary>float (offset 12)</summary>
     public float Height;
-    /// <summary>_Bool (offset 16)</summary>
+    /// <summary>hides the severity toggles and the filter field above the list (offset 16)</summary>
     public byte NoToolbar;
 }
 
-/// <summary>cui_problems_result, 12 bytes.</summary>
+/// <summary>cui_problems_result (12 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeProblemsResult
 {
-    /// <summary>int (offset 0)</summary>
+    /// <summary>diagnostic selected, or -1 (offset 0)</summary>
     public int Selected;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>diagnostic opened this frame (Enter, double-click), or -1 (offset 4)</summary>
     public int Activated;
-    /// <summary>int (offset 8)</summary>
+    /// <summary>diagnostics that pass the filters (offset 8)</summary>
     public int Shown;
 }
 
-/// <summary>cui_pipeline_job, 24 bytes.</summary>
+/// <summary>cui_pipeline_job (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativePipelineJob
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>shown on the job&apos;s row and in its tooltip (offset 0)</summary>
     public nint Name;
-    /// <summary>int (offset 8)</summary>
+    /// <summary>index into the stage names (offset 8)</summary>
     public int Stage;
     /// <summary>cui_job_status (offset 12)</summary>
     public JobStatus Status;
-    /// <summary>float (offset 16)</summary>
+    /// <summary>seconds; negative when it has not run (offset 16)</summary>
     public float Duration;
-    /// <summary>_Bool (offset 20)</summary>
+    /// <summary>a failure does not fail the stage (offset 20)</summary>
     public byte AllowFailure;
 }
 
-/// <summary>cui_pipeline_opts, 24 bytes.</summary>
+/// <summary>cui_pipeline_opts (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativePipelineOpts
 {
-    /// <summary>int (offset 0)</summary>
+    /// <summary>job shown selected, set on a click (offset 0)</summary>
     public int Sentinel;
-    /// <summary>cui_size (offset 4)</summary>
+    /// <summary>job shown selected, set on a click (offset 4)</summary>
     public NativeSize Width;
-    /// <summary>int * (offset 16)</summary>
+    /// <summary>job shown selected, set on a click (offset 16)</summary>
     public nint Selected;
 }
 
-/// <summary>cui_pipeline_result, 8 bytes.</summary>
+/// <summary>cui_pipeline_result (8 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativePipelineResult
 {
-    /// <summary>int (offset 0)</summary>
+    /// <summary>job clicked this frame (or chosen with Enter or Space), or -1 (offset 0)</summary>
     public int Clicked;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>job under the pointer, or -1 (offset 4)</summary>
     public int Hovered;
 }
 
-/// <summary>cui_query_field, 32 bytes.</summary>
+/// <summary>cui_query_field (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeQueryField
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>shown in the field select and in the text `cui_query_text` writes (offset 0)</summary>
     public nint Name;
     /// <summary>cui_query_type (offset 8)</summary>
     public QueryType Type;
-    /// <summary>const char *const * (offset 16)</summary>
+    /// <summary>CUI_QUERY_CHOICE: the values to pick from (offset 16)</summary>
     public nint Choices;
-    /// <summary>int (offset 24)</summary>
+    /// <summary>number of `choices` (offset 24)</summary>
     public int ChoiceCount;
 }
 
-/// <summary>cui_query_node, 80 bytes.</summary>
+/// <summary>cui_query_node (80 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeQueryNode
 {
-    /// <summary>int (offset 0)</summary>
+    /// <summary>0 for the outer group (offset 0)</summary>
     public int Depth;
-    /// <summary>_Bool (offset 4)</summary>
+    /// <summary>a group of the nodes after it that are one level deeper; otherwise a rule (offset 4)</summary>
     public byte Group;
-    /// <summary>_Bool (offset 5)</summary>
+    /// <summary>group: any rule (or) instead of all (and) (offset 5)</summary>
     public byte Any;
-    /// <summary>int (offset 8)</summary>
+    /// <summary>rule: index into the fields (offset 8)</summary>
     public int Field;
-    /// <summary>int (offset 12)</summary>
+    /// <summary>rule: see cui_query_op_name (offset 12)</summary>
     public int Op;
-    /// <summary>char[64] (offset 16)</summary>
+    /// <summary>rule: the text, number or choice compared with (offset 16)</summary>
     public fixed sbyte Value[64];
 }
 
-/// <summary>cui_query_opts, 20 bytes.</summary>
+/// <summary>cui_query_opts (20 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeQueryOpts
 {
@@ -4290,13 +4312,13 @@ public unsafe struct NativeQueryOpts
     public int Sentinel;
     /// <summary>cui_size (offset 4)</summary>
     public NativeSize Width;
-    /// <summary>int (offset 12)</summary>
+    /// <summary>how deep groups may nest, default 3 (offset 12)</summary>
     public int MaxDepth;
     /// <summary>_Bool (offset 16)</summary>
     public byte ReadOnly;
 }
 
-/// <summary>cui_schedule_opts, 32 bytes.</summary>
+/// <summary>A cron schedule edited the friendly way: every N minutes, hourly at a minute, daily at a time, weekly on chosen days, monthly on a day, or a custom expression. It reads and writes `cron` (five fields: minute hour day month weekday) and shows what it means and when it runs next. Weekday and month names come from cui_set_strings. (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeScheduleOpts
 {
@@ -4304,39 +4326,39 @@ public unsafe struct NativeScheduleOpts
     public int Sentinel;
     /// <summary>cui_size (offset 4)</summary>
     public NativeSize Width;
-    /// <summary>int64_t (offset 16)</summary>
+    /// <summary>the next runs are counted from here, Unix seconds; 0: the clock (offset 16)</summary>
     public long Now;
-    /// <summary>_Bool (offset 24)</summary>
+    /// <summary>times in UTC instead of local time (offset 24)</summary>
     public byte Utc;
-    /// <summary>int (offset 28)</summary>
+    /// <summary>runs listed, default 3, 0 hides them (offset 28)</summary>
     public int NextCount;
 }
 
-/// <summary>cui_schedule_result, 16 bytes.</summary>
+/// <summary>cui_schedule_result (16 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeScheduleResult
 {
-    /// <summary>_Bool (offset 0)</summary>
+    /// <summary>`cron` was edited this frame (offset 0)</summary>
     public byte Changed;
-    /// <summary>_Bool (offset 1)</summary>
+    /// <summary>`cron` is a valid expression (offset 1)</summary>
     public byte Valid;
-    /// <summary>int64_t (offset 8)</summary>
+    /// <summary>the next run, Unix seconds, 0 none (offset 8)</summary>
     public long Next;
 }
 
-/// <summary>cui_keymap_binding, 24 bytes.</summary>
+/// <summary>A keyboard with your shortcuts on it: each bound key shows its action and the color of its category, for the modifiers chosen above it. Keys bound twice are marked as conflicts. Hover a key for every binding on it; click it to get the key (to rebind it). The keyboard keeps its own layout in a right-to-left interface and scales to the width it gets. (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeKeymapBinding
 {
-    /// <summary>cui_key_combo (offset 0)</summary>
+    /// <summary>the modifiers and key the action is bound to (offset 0)</summary>
     public NativeKeyCombo Combo;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>name of the action, shown on the key and in its tooltip (offset 8)</summary>
     public nint Action;
-    /// <summary>int (offset 16)</summary>
+    /// <summary>index into the categories, colors the key (offset 16)</summary>
     public int Category;
 }
 
-/// <summary>cui_keymap_opts, 48 bytes.</summary>
+/// <summary>cui_keymap_opts (48 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeKeymapOpts
 {
@@ -4344,45 +4366,45 @@ public unsafe struct NativeKeymapOpts
     public int Sentinel;
     /// <summary>cui_size (offset 4)</summary>
     public NativeSize Width;
-    /// <summary>const char *const * (offset 16)</summary>
+    /// <summary>names for the legend (offset 16)</summary>
     public nint Categories;
-    /// <summary>int (offset 24)</summary>
+    /// <summary>number of `categories` (offset 24)</summary>
     public int CategoryCount;
-    /// <summary>int * (offset 32)</summary>
+    /// <summary>the modifiers shown; NULL: kept for you (offset 32)</summary>
     public nint Mods;
-    /// <summary>_Bool (offset 40)</summary>
+    /// <summary>leaves out the row of function keys (offset 40)</summary>
     public byte NoFunctionRow;
 }
 
-/// <summary>cui_keymap_result, 8 bytes.</summary>
+/// <summary>cui_keymap_result (8 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeKeymapResult
 {
-    /// <summary>cui_key (offset 0)</summary>
+    /// <summary>key clicked this frame, or `CUI_KEY_NONE` (offset 0)</summary>
     public Key Clicked;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>bindings that repeat a combination another binding already uses (offset 4)</summary>
     public int Conflicts;
 }
 
-/// <summary>cui_commit, 48 bytes.</summary>
+/// <summary>Version history: the branch lanes drawn beside each commit, newest first, with its message, branch and tag names, author, date and short hash. Each commit names its parents by row (parents come later in the array), so merges and branches draw as lines between lanes. Only the rows in view are built. Up and Down move the selection; Enter or a double-click activates. (48 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeCommit
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>the commit id; its first 7 characters are shown (offset 0)</summary>
     public nint Hash;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>the first line is shown (offset 8)</summary>
     public nint Message;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>shown in its own column, which a narrow panel leaves out (offset 16)</summary>
     public nint Author;
-    /// <summary>const char * (offset 24)</summary>
+    /// <summary>already formatted: &quot;2 hours ago&quot;, &quot;Mar 3&quot; (offset 24)</summary>
     public nint Date;
-    /// <summary>const char * (offset 32)</summary>
+    /// <summary>&quot;main, origin/main, tag: v1.2&quot;, may be NULL (offset 32)</summary>
     public nint Refs;
-    /// <summary>int[2] (offset 40)</summary>
+    /// <summary>row of each parent, -1 for none (offset 40)</summary>
     public fixed int Parent[2];
 }
 
-/// <summary>cui_commit_graph_opts, 24 bytes.</summary>
+/// <summary>cui_commit_graph_opts (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeCommitGraphOpts
 {
@@ -4392,45 +4414,45 @@ public unsafe struct NativeCommitGraphOpts
     public NativeSize Width;
     /// <summary>float (offset 12)</summary>
     public float Height;
-    /// <summary>int * (offset 16)</summary>
+    /// <summary>the selected row or -1, kept by you; `NULL` keeps it in the component (offset 16)</summary>
     public nint Selected;
 }
 
-/// <summary>cui_commit_graph_result, 12 bytes.</summary>
+/// <summary>cui_commit_graph_result (12 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeCommitGraphResult
 {
-    /// <summary>int (offset 0)</summary>
+    /// <summary>row clicked this frame, or -1 (offset 0)</summary>
     public int Clicked;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>row double-clicked or chosen with Enter this frame, or -1 (offset 4)</summary>
     public int Activated;
-    /// <summary>int (offset 8)</summary>
+    /// <summary>row under the pointer, or -1 (offset 8)</summary>
     public int Hovered;
 }
 
-/// <summary>cui_graph_node, 24 bytes.</summary>
+/// <summary>Nodes and directed edges laid out in layers (each edge points to a later layer, cycles are broken), for build targets, packages, services or call graphs. The layout is computed when the graph changes. Wheel zooms, drag pans, click selects; hovering a node lights up what it depends on and what depends on it. F fits the graph. (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeGraphNode
 {
     /// <summary>const char * (offset 0)</summary>
     public nint Label;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>smaller second line under the label, e.g. the node&apos;s kind; `NULL` for none (offset 8)</summary>
     public nint Detail;
     /// <summary>cui_tone (offset 16)</summary>
     public Tone Tone;
 }
 
-/// <summary>cui_graph_edge, 8 bytes.</summary>
+/// <summary>cui_graph_edge (8 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeGraphEdge
 {
-    /// <summary>int (offset 0)</summary>
+    /// <summary>index of the node the arrow starts at (offset 0)</summary>
     public int From;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>index of the node the arrow points to (offset 4)</summary>
     public int To;
 }
 
-/// <summary>cui_graph_opts, 32 bytes.</summary>
+/// <summary>cui_graph_opts (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeGraphOpts
 {
@@ -4440,45 +4462,45 @@ public unsafe struct NativeGraphOpts
     public NativeSize Width;
     /// <summary>float (offset 12)</summary>
     public float Height;
-    /// <summary>_Bool (offset 16)</summary>
+    /// <summary>layers stack from top to bottom instead of running side by side (offset 16)</summary>
     public byte TopDown;
-    /// <summary>int * (offset 24)</summary>
+    /// <summary>the selected node or -1, kept by you; `NULL` keeps it in the component (offset 24)</summary>
     public nint Selected;
 }
 
-/// <summary>cui_graph_result, 12 bytes.</summary>
+/// <summary>cui_graph_result (12 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeGraphResult
 {
-    /// <summary>int (offset 0)</summary>
+    /// <summary>node clicked this frame, or -1 (offset 0)</summary>
     public int Clicked;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>node double-clicked or chosen with Enter this frame, or -1 (offset 4)</summary>
     public int Activated;
-    /// <summary>int (offset 8)</summary>
+    /// <summary>node under the pointer, or -1 (offset 8)</summary>
     public int Hovered;
 }
 
-/// <summary>cui_net_request, 72 bytes.</summary>
+/// <summary>HTTP requests as a table with a timing bar each: queued, DNS, connect, TLS, waiting for the first byte and downloading, on one time scale with the page&apos;s DOMContentLoaded and load lines. Hover a bar for the breakdown. Narrow panels drop the type and size columns. Only the rows in view are built. Up and Down move the selection. (72 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeNetRequest
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>path or URL; the last part is shown (offset 0)</summary>
     public nint Name;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>&quot;GET&quot; (offset 8)</summary>
     public nint Method;
-    /// <summary>int (offset 16)</summary>
+    /// <summary>0 while pending or when it failed (offset 16)</summary>
     public int Status;
-    /// <summary>const char * (offset 24)</summary>
+    /// <summary>&quot;fetch&quot;, &quot;script&quot;, &quot;image&quot;... (offset 24)</summary>
     public nint Type;
-    /// <summary>double (offset 32)</summary>
+    /// <summary>bytes transferred (offset 32)</summary>
     public double Size;
-    /// <summary>double (offset 40)</summary>
+    /// <summary>seconds from the start of the page (offset 40)</summary>
     public double Start;
-    /// <summary>float[6] (offset 48)</summary>
+    /// <summary>seconds: queued, dns, connect, tls, waiting, download (offset 48)</summary>
     public fixed float Timing[6];
 }
 
-/// <summary>cui_waterfall_opts, 40 bytes.</summary>
+/// <summary>cui_waterfall_opts (40 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeWaterfallOpts
 {
@@ -4488,55 +4510,55 @@ public unsafe struct NativeWaterfallOpts
     public NativeSize Width;
     /// <summary>float (offset 12)</summary>
     public float Height;
-    /// <summary>int * (offset 16)</summary>
+    /// <summary>the selected request or -1, kept by you; `NULL` keeps it in the component (offset 16)</summary>
     public nint Selected;
-    /// <summary>double (offset 24)</summary>
+    /// <summary>seconds; 0: no line (offset 24)</summary>
     public double DomLoaded;
-    /// <summary>double (offset 32)</summary>
+    /// <summary>seconds; 0: no line (offset 32)</summary>
     public double Loaded;
 }
 
-/// <summary>cui_waterfall_result, 12 bytes.</summary>
+/// <summary>cui_waterfall_result (12 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeWaterfallResult
 {
-    /// <summary>int (offset 0)</summary>
+    /// <summary>request clicked this frame, or -1 (offset 0)</summary>
     public int Clicked;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>request double-clicked or chosen with Enter this frame, or -1 (offset 4)</summary>
     public int Activated;
-    /// <summary>int (offset 8)</summary>
+    /// <summary>request under the pointer, or -1 (offset 8)</summary>
     public int Hovered;
 }
 
-/// <summary>cui_trace_track, 16 bytes.</summary>
+/// <summary>A tracing timeline: one lane per thread, process or service, each with its nested spans, on one time ruler, with markers (frames, GC pauses, deploys) drawn across every lane. Wheel zooms around the pointer, Shift+wheel or a drag pans, click selects a span, Shift+drag measures a time range. A lane&apos;s name folds it. Keys: Left and Right step through the selected span&apos;s lane, + and - zoom, F fits, Esc clears. Spans must be sorted by track, depth and start (cui_trace_sort), with no overlap within a depth of a track. Like the flame graph, only what is in view is visited. (16 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTraceTrack
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>the lane&apos;s name, in the column on the left (offset 0)</summary>
     public nint Name;
-    /// <summary>_Bool (offset 8)</summary>
+    /// <summary>the lane shows only its top row; a click on its name toggles this (offset 8)</summary>
     public byte Collapsed;
 }
 
-/// <summary>cui_trace_span, 40 bytes.</summary>
+/// <summary>cui_trace_span (40 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTraceSpan
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>drawn in the span when it fits, and in its tooltip (offset 0)</summary>
     public nint Name;
-    /// <summary>double (offset 8)</summary>
+    /// <summary>when the span begins, in seconds (offset 8)</summary>
     public double Start;
-    /// <summary>double (offset 16)</summary>
+    /// <summary>when the span ends, in seconds; end &gt;= start (offset 16)</summary>
     public double End;
-    /// <summary>int (offset 24)</summary>
+    /// <summary>index into the tracks: the lane the span is drawn in (offset 24)</summary>
     public int Track;
-    /// <summary>int (offset 28)</summary>
+    /// <summary>row within the lane, 0 = top; a child lies within its parent (offset 28)</summary>
     public int Depth;
-    /// <summary>uint32_t (offset 32)</summary>
+    /// <summary>picks the color; 0: hashed from the name (offset 32)</summary>
     public uint ColorKey;
 }
 
-/// <summary>cui_trace_marker, 24 bytes.</summary>
+/// <summary>cui_trace_marker (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTraceMarker
 {
@@ -4548,23 +4570,23 @@ public unsafe struct NativeTraceMarker
     public Tone Tone;
 }
 
-/// <summary>cui_trace_view, 40 bytes.</summary>
+/// <summary>cui_trace_view (40 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTraceView
 {
-    /// <summary>double (offset 0)</summary>
+    /// <summary>visible time range; end &lt;= start fits everything (offset 0)</summary>
     public double Start;
-    /// <summary>double (offset 8)</summary>
+    /// <summary>visible time range; end &lt;= start fits everything (offset 8)</summary>
     public double End;
-    /// <summary>float (offset 16)</summary>
+    /// <summary>points scrolled down (offset 16)</summary>
     public float Scroll;
-    /// <summary>double (offset 24)</summary>
+    /// <summary>measured range; mark_end &lt;= mark_start: none (offset 24)</summary>
     public double MarkStart;
-    /// <summary>double (offset 32)</summary>
+    /// <summary>measured range; mark_end &lt;= mark_start: none (offset 32)</summary>
     public double MarkEnd;
 }
 
-/// <summary>cui_trace_opts, 40 bytes.</summary>
+/// <summary>cui_trace_opts (40 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTraceOpts
 {
@@ -4572,25 +4594,25 @@ public unsafe struct NativeTraceOpts
     public int Sentinel;
     /// <summary>cui_size (offset 4)</summary>
     public NativeSize Width;
-    /// <summary>float (offset 12)</summary>
+    /// <summary>default 320 (offset 12)</summary>
     public float Height;
-    /// <summary>float (offset 16)</summary>
+    /// <summary>default 20 (offset 16)</summary>
     public float RowHeight;
-    /// <summary>const cui_trace_marker * (offset 24)</summary>
+    /// <summary>moments drawn as lines across every lane, named in a strip under the ruler (offset 24)</summary>
     public nint Markers;
-    /// <summary>int (offset 32)</summary>
+    /// <summary>number of `markers` (offset 32)</summary>
     public int MarkerCount;
 }
 
-/// <summary>cui_trace_result, 8 bytes.</summary>
+/// <summary>cui_trace_result (8 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTraceResult
 {
-    /// <summary>_Bool (offset 0)</summary>
+    /// <summary>`*selected` changed this frame (click or keys) (offset 0)</summary>
     public byte SelectionChanged;
-    /// <summary>_Bool (offset 1)</summary>
+    /// <summary>the visible time range or the scroll in `*view` changed (zoom, pan, fit) (offset 1)</summary>
     public byte ViewChanged;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>span under the pointer, or -1 (offset 4)</summary>
     public int Hovered;
 }
 
@@ -4608,25 +4630,25 @@ public struct NativeRegexMatchGroupNameArray1
     private NativeRegexMatchGroupNameArray2 _element0;
 }
 
-/// <summary>cui_regex_match, 332 bytes.</summary>
+/// <summary>cui_regex_match (332 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeRegexMatch
 {
-    /// <summary>int (offset 0)</summary>
+    /// <summary>bytes (offset 0)</summary>
     public int Start;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>bytes (offset 4)</summary>
     public int End;
-    /// <summary>int (offset 8)</summary>
+    /// <summary>capture groups in the pattern (offset 8)</summary>
     public int Groups;
-    /// <summary>int[10] (offset 12)</summary>
+    /// <summary>1 based; -1 when a group took no part (offset 12)</summary>
     public fixed int GroupStart[10];
-    /// <summary>int[10] (offset 52)</summary>
+    /// <summary>1 based; -1 when a group took no part (offset 52)</summary>
     public fixed int GroupEnd[10];
-    /// <summary>char[10][24] (offset 92)</summary>
+    /// <summary>the name of each `(?&lt;name&gt; )` group, indexed like `group_start`; &quot;&quot; when unnamed (offset 92)</summary>
     public NativeRegexMatchGroupNameArray1 GroupName;
 }
 
-/// <summary>cui_regex_tester_opts, 24 bytes.</summary>
+/// <summary>A pattern field with flags over a test text: every match is highlighted in the text and its groups in their own colors, and the list below shows each match with its groups. Errors show under the pattern. Both buffers are yours and edited in place. (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeRegexTesterOpts
 {
@@ -4634,97 +4656,97 @@ public unsafe struct NativeRegexTesterOpts
     public int Sentinel;
     /// <summary>cui_size (offset 4)</summary>
     public NativeSize Width;
-    /// <summary>float (offset 12)</summary>
+    /// <summary>of the test text, default 180 (offset 12)</summary>
     public float Height;
-    /// <summary>int * (offset 16)</summary>
+    /// <summary>CUI_REGEX_*; NULL: kept for you (offset 16)</summary>
     public nint Flags;
 }
 
-/// <summary>cui_regex_tester_result, 16 bytes.</summary>
+/// <summary>cui_regex_tester_result (16 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeRegexTesterResult
 {
-    /// <summary>_Bool (offset 0)</summary>
+    /// <summary>the pattern is valid and matching finished in time (offset 0)</summary>
     public byte Valid;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>matches found in the test text (offset 4)</summary>
     public int Matches;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>why, when `valid` is false; otherwise `NULL` (offset 8)</summary>
     public nint Error;
 }
 
-/// <summary>cui_test_item, 32 bytes.</summary>
+/// <summary>Test results as a tree: suites fold, each test shows its status and time, and a failure shows its message under it. A suite&apos;s status sums up its tests. The toolbar runs everything, counts results and filters by status and by name. Hover a row for its run button. Only the rows in view are built. Up and Down move, Left and Right fold, Enter activates. Items are in tree order with their depth; the statuses are the pipeline&apos;s. (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTestItem
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>name of the suite or test; the toolbar&apos;s field filters by it (offset 0)</summary>
     public nint Name;
-    /// <summary>int (offset 8)</summary>
+    /// <summary>0 for the top suites (offset 8)</summary>
     public int Depth;
-    /// <summary>cui_job_status (offset 12)</summary>
+    /// <summary>a suite&apos;s own status is ignored when it has tests (offset 12)</summary>
     public JobStatus Status;
-    /// <summary>float (offset 16)</summary>
+    /// <summary>seconds, negative when it has not run (offset 16)</summary>
     public float Duration;
-    /// <summary>const char * (offset 24)</summary>
+    /// <summary>why it failed, may be NULL (offset 24)</summary>
     public nint Message;
 }
 
-/// <summary>cui_test_explorer_opts, 16 bytes.</summary>
+/// <summary>cui_test_explorer_opts (16 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTestExplorerOpts
 {
-    /// <summary>int (offset 0)</summary>
+    /// <summary>default 320 (offset 0)</summary>
     public int Sentinel;
-    /// <summary>cui_size (offset 4)</summary>
+    /// <summary>default 320 (offset 4)</summary>
     public NativeSize Width;
-    /// <summary>float (offset 12)</summary>
+    /// <summary>default 320 (offset 12)</summary>
     public float Height;
 }
 
-/// <summary>cui_test_explorer_result, 32 bytes.</summary>
+/// <summary>cui_test_explorer_result (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTestExplorerResult
 {
-    /// <summary>int (offset 0)</summary>
+    /// <summary>items, or -1 (offset 0)</summary>
     public int Selected;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>items, or -1 (offset 4)</summary>
     public int Activated;
-    /// <summary>int (offset 8)</summary>
+    /// <summary>item whose run button was pressed this frame, or -1 (offset 8)</summary>
     public int Run;
-    /// <summary>_Bool (offset 12)</summary>
+    /// <summary>the Run all button was pressed this frame (offset 12)</summary>
     public byte RunAll;
-    /// <summary>int (offset 16)</summary>
+    /// <summary>tests, not suites (offset 16)</summary>
     public int Passed;
-    /// <summary>int (offset 20)</summary>
+    /// <summary>tests, not suites (offset 20)</summary>
     public int Failed;
-    /// <summary>int (offset 24)</summary>
+    /// <summary>tests, not suites (offset 24)</summary>
     public int Skipped;
-    /// <summary>int (offset 28)</summary>
+    /// <summary>tests, not suites (offset 28)</summary>
     public int Total;
 }
 
-/// <summary>cui_stack_frame, 48 bytes.</summary>
+/// <summary>An exception and its call stack: the error&apos;s type and message, then each frame&apos;s function and position. Runs of library frames fold into one row. A frame with source opens to show the lines around it, the failing line marked; the first frame of your own code starts open. A button copies the whole trace as text. (48 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeStackFrame
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>name of the function; `NULL` or &quot;&quot; shows as &lt;anonymous&gt; (offset 0)</summary>
     public nint Function;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>path shown with the line and column; on a phone only the file&apos;s name (offset 8)</summary>
     public nint File;
-    /// <summary>int (offset 16)</summary>
+    /// <summary>1 based; 0 leaves it out (offset 16)</summary>
     public int Line;
-    /// <summary>int (offset 20)</summary>
+    /// <summary>1 based; 0 leaves it out (offset 20)</summary>
     public int Column;
-    /// <summary>_Bool (offset 24)</summary>
+    /// <summary>library or runtime code (offset 24)</summary>
     public byte External;
-    /// <summary>const char *const * (offset 32)</summary>
+    /// <summary>lines around the frame, may be NULL (offset 32)</summary>
     public nint Source;
-    /// <summary>int (offset 40)</summary>
+    /// <summary>number of lines in `source` (offset 40)</summary>
     public int SourceCount;
-    /// <summary>int (offset 44)</summary>
+    /// <summary>line number of source[0] (offset 44)</summary>
     public int SourceFirst;
 }
 
-/// <summary>cui_stack_trace_opts, 40 bytes.</summary>
+/// <summary>cui_stack_trace_opts (40 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeStackTraceOpts
 {
@@ -4732,23 +4754,23 @@ public unsafe struct NativeStackTraceOpts
     public int Sentinel;
     /// <summary>cui_size (offset 4)</summary>
     public NativeSize Width;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>&quot;TypeError&quot; (offset 16)</summary>
     public nint Title;
-    /// <summary>const char * (offset 24)</summary>
+    /// <summary>&quot;Cannot read properties of undefined&quot; (offset 24)</summary>
     public nint Message;
-    /// <summary>const char * (offset 32)</summary>
+    /// <summary>highlights the source, as the code block (offset 32)</summary>
     public nint Lang;
 }
 
-/// <summary>cui_stack_trace_result, 4 bytes.</summary>
+/// <summary>cui_stack_trace_result (4 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeStackTraceResult
 {
-    /// <summary>int (offset 0)</summary>
+    /// <summary>frame, or -1 (offset 0)</summary>
     public int Clicked;
 }
 
-/// <summary>cui_request_bar_opts, 24 bytes.</summary>
+/// <summary>cui_request_bar_opts (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeRequestBarOpts
 {
@@ -4756,71 +4778,71 @@ public unsafe struct NativeRequestBarOpts
     public int Sentinel;
     /// <summary>cui_size (offset 4)</summary>
     public NativeSize Width;
-    /// <summary>_Bool (offset 12)</summary>
+    /// <summary>a request is in flight: the button reads Cancel and Enter does not send (offset 12)</summary>
     public byte Loading;
     /// <summary>const char * (offset 16)</summary>
     public nint Placeholder;
 }
 
-/// <summary>cui_request_bar_result, 3 bytes.</summary>
+/// <summary>cui_request_bar_result (3 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeRequestBarResult
 {
-    /// <summary>_Bool (offset 0)</summary>
+    /// <summary>Send was pressed, or Enter in the URL: start the request (offset 0)</summary>
     public byte Send;
-    /// <summary>_Bool (offset 1)</summary>
+    /// <summary>Cancel was pressed while `loading` (offset 1)</summary>
     public byte Cancel;
-    /// <summary>_Bool (offset 2)</summary>
+    /// <summary>the method or the URL was edited this frame (offset 2)</summary>
     public byte Changed;
 }
 
-/// <summary>cui_uptime_service, 24 bytes.</summary>
+/// <summary>A status page: each service with its current state, its uptime over the period, and one bar per day colored by availability (gray without data). Hover a bar for its day and uptime. On a narrow panel only the most recent days that fit are shown. (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeUptimeService
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>shown above the service&apos;s bars (offset 0)</summary>
     public nint Name;
-    /// <summary>const float * (offset 8)</summary>
+    /// <summary>oldest first: the fraction of the day it was up, 0..1; negative: no data (offset 8)</summary>
     public nint Days;
-    /// <summary>int (offset 16)</summary>
+    /// <summary>number of values in `days` (offset 16)</summary>
     public int DayCount;
 }
 
-/// <summary>cui_uptime_opts, 24 bytes.</summary>
+/// <summary>cui_uptime_opts (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeUptimeOpts
 {
-    /// <summary>int (offset 0)</summary>
+    /// <summary>the date of the last value, for the tooltips (offset 0)</summary>
     public int Sentinel;
-    /// <summary>cui_size (offset 4)</summary>
+    /// <summary>the date of the last value, for the tooltips (offset 4)</summary>
     public NativeSize Width;
-    /// <summary>cui_date (offset 12)</summary>
+    /// <summary>the date of the last value, for the tooltips (offset 12)</summary>
     public NativeDate LastDay;
 }
 
-/// <summary>cui_uptime_result, 8 bytes.</summary>
+/// <summary>cui_uptime_result (8 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeUptimeResult
 {
-    /// <summary>int (offset 0)</summary>
+    /// <summary>under the pointer, or -1 (offset 0)</summary>
     public int Service;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>under the pointer, or -1 (offset 4)</summary>
     public int Day;
 }
 
-/// <summary>cui_histogram_series, 24 bytes.</summary>
+/// <summary>Event counts over time, stacked by series (log levels, status classes), as above a log search. Drag across it to select a time range, click to clear. Hover a bar for its time and counts. Times are Unix seconds. (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeHistogramSeries
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>shown in the legend and in the hover tooltip (offset 0)</summary>
     public nint Name;
-    /// <summary>const float * (offset 8)</summary>
+    /// <summary>one count per bucket; `NULL` counts as zeros (offset 8)</summary>
     public nint Counts;
     /// <summary>cui_tone (offset 16)</summary>
     public Tone Tone;
 }
 
-/// <summary>cui_time_histogram_opts, 20 bytes.</summary>
+/// <summary>cui_time_histogram_opts (20 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTimeHistogramOpts
 {
@@ -4828,83 +4850,83 @@ public unsafe struct NativeTimeHistogramOpts
     public int Sentinel;
     /// <summary>cui_size (offset 4)</summary>
     public NativeSize Width;
-    /// <summary>float (offset 12)</summary>
+    /// <summary>default 140 (offset 12)</summary>
     public float Height;
-    /// <summary>_Bool (offset 16)</summary>
+    /// <summary>label times in UTC instead of local time (offset 16)</summary>
     public byte Utc;
 }
 
-/// <summary>cui_time_histogram_result, 8 bytes.</summary>
+/// <summary>cui_time_histogram_result (8 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTimeHistogramResult
 {
-    /// <summary>_Bool (offset 0)</summary>
+    /// <summary>`*sel_start` or `*sel_end` changed this frame (a drag, or a click that cleared it) (offset 0)</summary>
     public byte SelectionChanged;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>bucket, or -1 (offset 4)</summary>
     public int Hovered;
 }
 
-/// <summary>cui_coverage_file, 32 bytes.</summary>
+/// <summary>Test coverage by folder and file: the files&apos; paths make the tree, each folder sums up what it holds, and folders fold. Line coverage shows as a bar colored by thresholds, with branches and functions beside it. Click a column&apos;s title to sort. Enter or a double-click activates a file. Narrow panels show lines only. (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeCoverageFile
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>&quot;src/core/layout.c&quot; (offset 0)</summary>
     public nint Path;
-    /// <summary>int (offset 8)</summary>
+    /// <summary>lines that can be covered (offset 8)</summary>
     public int Lines;
-    /// <summary>int (offset 12)</summary>
+    /// <summary>lines the tests ran (offset 12)</summary>
     public int LinesHit;
-    /// <summary>int (offset 16)</summary>
+    /// <summary>0 branches: not measured (offset 16)</summary>
     public int Branches;
-    /// <summary>int (offset 20)</summary>
+    /// <summary>0 branches: not measured (offset 20)</summary>
     public int BranchesHit;
-    /// <summary>int (offset 24)</summary>
+    /// <summary>functions in the file (offset 24)</summary>
     public int Functions;
-    /// <summary>int (offset 28)</summary>
+    /// <summary>functions the tests called (offset 28)</summary>
     public int FunctionsHit;
 }
 
-/// <summary>cui_coverage_opts, 24 bytes.</summary>
+/// <summary>cui_coverage_opts (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeCoverageOpts
 {
-    /// <summary>int (offset 0)</summary>
+    /// <summary>percent; default 50 and 80 (offset 0)</summary>
     public int Sentinel;
-    /// <summary>cui_size (offset 4)</summary>
+    /// <summary>percent; default 50 and 80 (offset 4)</summary>
     public NativeSize Width;
-    /// <summary>float (offset 12)</summary>
+    /// <summary>percent; default 50 and 80 (offset 12)</summary>
     public float Height;
-    /// <summary>float (offset 16)</summary>
+    /// <summary>percent; default 50 and 80 (offset 16)</summary>
     public float Low;
-    /// <summary>float (offset 20)</summary>
+    /// <summary>percent; default 50 and 80 (offset 20)</summary>
     public float High;
 }
 
-/// <summary>cui_coverage_result, 8 bytes.</summary>
+/// <summary>cui_coverage_result (8 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeCoverageResult
 {
-    /// <summary>int (offset 0)</summary>
+    /// <summary>file opened this frame (Enter or a double-click), or -1 (offset 0)</summary>
     public int Activated;
-    /// <summary>float (offset 4)</summary>
+    /// <summary>percent of all lines covered (offset 4)</summary>
     public float Lines;
 }
 
-/// <summary>cui_blame_commit, 32 bytes.</summary>
+/// <summary>Source with who last changed each line: lines from one commit share one gutter entry with its author, age and hash, and a bar at the edge shades newer changes stronger. Hover a gutter entry for the commit&apos;s summary and to mark its lines; click it to get the commit. Only the lines in view are built. On a phone the gutter keeps only the shade and initials. (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeBlameCommit
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>the commit id; its first 7 characters are shown (offset 0)</summary>
     public nint Hash;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>shown in the gutter; on a phone as initials (offset 8)</summary>
     public nint Author;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>the commit&apos;s message line, shown in the gutter&apos;s tooltip (offset 16)</summary>
     public nint Summary;
-    /// <summary>int64_t (offset 24)</summary>
+    /// <summary>Unix seconds (offset 24)</summary>
     public long Time;
 }
 
-/// <summary>cui_blame_opts, 40 bytes.</summary>
+/// <summary>cui_blame_opts (40 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeBlameOpts
 {
@@ -4912,99 +4934,99 @@ public unsafe struct NativeBlameOpts
     public int Sentinel;
     /// <summary>cui_size (offset 4)</summary>
     public NativeSize Width;
-    /// <summary>float (offset 12)</summary>
+    /// <summary>default 360 (offset 12)</summary>
     public float Height;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>highlights the code, as the code block (offset 16)</summary>
     public nint Lang;
-    /// <summary>int64_t (offset 24)</summary>
+    /// <summary>ages are counted to here; 0: the clock (offset 24)</summary>
     public long Now;
-    /// <summary>int (offset 32)</summary>
+    /// <summary>number of the first line, default 1 (offset 32)</summary>
     public int FirstLine;
 }
 
-/// <summary>cui_blame_result, 8 bytes.</summary>
+/// <summary>cui_blame_result (8 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeBlameResult
 {
-    /// <summary>int (offset 0)</summary>
+    /// <summary>commit whose gutter entry was clicked this frame, or -1 (offset 0)</summary>
     public int Clicked;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>commits, or -1 (offset 4)</summary>
     public int Hovered;
 }
 
-/// <summary>cui_feature_flag, 56 bytes.</summary>
+/// <summary>cui_feature_flag (56 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeFeatureFlag
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>the flag&apos;s name, in the code font; the filter field searches it (offset 0)</summary>
     public nint Key;
     /// <summary>const char * (offset 8)</summary>
     public nint Description;
-    /// <summary>_Bool[8] (offset 16)</summary>
+    /// <summary>the flag&apos;s switch in each environment, in the order of `envs` (offset 16)</summary>
     public fixed byte On[8];
-    /// <summary>int[8] (offset 24)</summary>
+    /// <summary>percent of users while on; 0 and 100 mean everyone (offset 24)</summary>
     public fixed int Rollout[8];
 }
 
-/// <summary>cui_feature_flags_opts, 16 bytes.</summary>
+/// <summary>cui_feature_flags_opts (16 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeFeatureFlagsOpts
 {
-    /// <summary>int (offset 0)</summary>
+    /// <summary>default fits the flags (offset 0)</summary>
     public int Sentinel;
-    /// <summary>cui_size (offset 4)</summary>
+    /// <summary>default fits the flags (offset 4)</summary>
     public NativeSize Width;
-    /// <summary>float (offset 12)</summary>
+    /// <summary>default fits the flags (offset 12)</summary>
     public float Height;
 }
 
-/// <summary>cui_feature_flags_result, 8 bytes.</summary>
+/// <summary>cui_feature_flags_result (8 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeFeatureFlagsResult
 {
-    /// <summary>int (offset 0)</summary>
+    /// <summary>changed this frame, or -1 (offset 0)</summary>
     public int Flag;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>changed this frame, or -1 (offset 4)</summary>
     public int Env;
 }
 
-/// <summary>cui_api_param, 40 bytes.</summary>
+/// <summary>Endpoints grouped by tag, each with its method, its path (parameters marked) and its summary; deprecated ones are struck through. A click opens an endpoint&apos;s parameters and a Try it button. A field filters by path or summary. Up and Down move, Enter opens. (40 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeApiParam
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>the parameter&apos;s name, in the code font (offset 0)</summary>
     public nint Name;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>where it goes: &quot;path&quot;, &quot;query&quot;, &quot;header&quot; or &quot;body&quot; (offset 8)</summary>
     public nint In;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>e.g. &quot;string&quot;; shown before where it goes (offset 16)</summary>
     public nint Type;
-    /// <summary>_Bool (offset 24)</summary>
+    /// <summary>a red asterisk after the name (offset 24)</summary>
     public byte Required;
-    /// <summary>const char * (offset 32)</summary>
+    /// <summary>what the parameter is for, shown after its type and place; may be `NULL` (offset 32)</summary>
     public nint Description;
 }
 
-/// <summary>cui_api_endpoint, 56 bytes.</summary>
+/// <summary>cui_api_endpoint (56 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeApiEndpoint
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>&quot;GET&quot; (offset 0)</summary>
     public nint Method;
-    /// <summary>const char * (offset 8)</summary>
+    /// <summary>&quot;/users/{id}&quot; (offset 8)</summary>
     public nint Path;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>one line after the path; the filter field searches it (offset 16)</summary>
     public nint Summary;
-    /// <summary>const char * (offset 24)</summary>
+    /// <summary>groups the list; NULL groups as &quot;Other&quot; (offset 24)</summary>
     public nint Tag;
-    /// <summary>_Bool (offset 32)</summary>
+    /// <summary>struck through and muted, with a &quot;Deprecated&quot; badge (offset 32)</summary>
     public byte Deprecated;
-    /// <summary>const cui_api_param * (offset 40)</summary>
+    /// <summary>the parameters listed when the endpoint is opened; may be `NULL` (offset 40)</summary>
     public nint Params;
-    /// <summary>int (offset 48)</summary>
+    /// <summary>number of `params` (offset 48)</summary>
     public int ParamCount;
 }
 
-/// <summary>cui_api_explorer_opts, 24 bytes.</summary>
+/// <summary>cui_api_explorer_opts (24 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeApiExplorerOpts
 {
@@ -5014,21 +5036,175 @@ public unsafe struct NativeApiExplorerOpts
     public NativeSize Width;
     /// <summary>float (offset 12)</summary>
     public float Height;
-    /// <summary>int * (offset 16)</summary>
+    /// <summary>the selected endpoint or -1, kept by you; `NULL` keeps it in the component (offset 16)</summary>
     public nint Selected;
 }
 
-/// <summary>cui_api_explorer_result, 8 bytes.</summary>
+/// <summary>cui_api_explorer_result (8 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeApiExplorerResult
 {
-    /// <summary>int (offset 0)</summary>
+    /// <summary>the selected endpoint, or -1 (offset 0)</summary>
     public int Selected;
-    /// <summary>int (offset 4)</summary>
+    /// <summary>endpoint, or -1 (offset 4)</summary>
     public int TryIt;
 }
 
-/// <summary>cui_corners, 16 bytes.</summary>
+/// <summary>Dot-matrix chart: values drawn as a grid of dots, lit up to each column&apos;s value and dim above it. Several series stack, each in its own band, and an `accent` series is drawn in the accent color: the item being edited, or the part that matters. The pointer, or the arrow keys once it is focused, show a readout of the value under it, and a click returns where it landed, so an app can add something there. (24 bytes)</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeDotSeries
+{
+    /// <summary>`count` values, one per sample; negative values count as 0 (offset 0)</summary>
+    public nint Values;
+    /// <summary>names the series in the readout when there are several (offset 8)</summary>
+    public nint Name;
+    /// <summary>drawn in the accent color (offset 16)</summary>
+    public byte Accent;
+}
+
+/// <summary>cui_dot_chart_opts (104 bytes)</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeDotChartOpts
+{
+    /// <summary>int (offset 0)</summary>
+    public int Sentinel;
+    /// <summary>cui_size (offset 4)</summary>
+    public NativeSize Width;
+    /// <summary>the plot and its labels, default 200 (offset 12)</summary>
+    public float Height;
+    /// <summary>what the first and last sample stand for; equal: 0 to count - 1 (offset 16)</summary>
+    public double XMin;
+    /// <summary>what the first and last sample stand for; equal: 0 to count - 1 (offset 24)</summary>
+    public double XMax;
+    /// <summary>cui_axis_units (offset 32)</summary>
+    public AxisUnits XUnits;
+    /// <summary>x labels with CUI_AXIS_NUMBER, default &quot;%g&quot; (offset 40)</summary>
+    public nint XFormat;
+    /// <summary>spacing of the x labels in x units; 0 picks one that fits (offset 48)</summary>
+    public double XStep;
+    /// <summary>value range when min != max; otherwise 0 to the largest stacked value (offset 56)</summary>
+    public float Min;
+    /// <summary>value range when min != max; otherwise 0 to the largest stacked value (offset 60)</summary>
+    public float Max;
+    /// <summary>values in the readout, default &quot;%.0f&quot; (offset 64)</summary>
+    public nint Format;
+    /// <summary>after values in the readout, e.g. &quot;MG&quot; (offset 72)</summary>
+    public nint Unit;
+    /// <summary>distance between dot centers in points, default 6 (offset 80)</summary>
+    public float Pitch;
+    /// <summary>hides the dim dots of the empty grid (offset 84)</summary>
+    public byte NoGrid;
+    /// <summary>hides the x labels, e.g. when an event track under the chart has them (offset 85)</summary>
+    public byte NoAxis;
+    /// <summary>no value label under the pointer (offset 86)</summary>
+    public byte NoReadout;
+    /// <summary>lines and points drawn over the dots (offset 88)</summary>
+    public nint Annotations;
+    /// <summary>number of `annotations` (offset 96)</summary>
+    public int AnnotationCount;
+}
+
+/// <summary>cui_dot_chart_result (24 bytes)</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeDotChartResult
+{
+    /// <summary>the sample under the pointer or the keyboard cursor, or -1 (offset 0)</summary>
+    public int Hovered;
+    /// <summary>that sample&apos;s x, in x units (offset 8)</summary>
+    public double X;
+    /// <summary>the stacked value there (offset 16)</summary>
+    public float Value;
+    /// <summary>the plot was clicked, or Enter was pressed on it, this frame: `x` is where (offset 20)</summary>
+    public byte Clicked;
+}
+
+/// <summary>Event track: moments on a time axis, as dots you drag along it. A click on an empty spot adds an event there and a double-click on one removes it. You own the array: the track keeps it sorted, edits it in place and never grows it past `capacity`. (64 bytes)</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeEventTrackOpts
+{
+    /// <summary>int (offset 0)</summary>
+    public int Sentinel;
+    /// <summary>cui_size (offset 4)</summary>
+    public NativeSize Width;
+    /// <summary>events snap to multiples of this from `min`; 0 does not snap (offset 16)</summary>
+    public double Step;
+    /// <summary>cui_axis_units (offset 24)</summary>
+    public AxisUnits Units;
+    /// <summary>labels with CUI_AXIS_NUMBER, default &quot;%g&quot; (offset 32)</summary>
+    public nint Format;
+    /// <summary>spacing of the axis labels; 0 picks one that fits (offset 40)</summary>
+    public double LabelStep;
+    /// <summary>the selected event or -1, kept by you; `NULL` keeps it in the track (offset 48)</summary>
+    public nint Selected;
+    /// <summary>clicks and Enter do not add events (offset 56)</summary>
+    public byte NoAdd;
+    /// <summary>double-clicks and Delete do not remove events (offset 57)</summary>
+    public byte NoRemove;
+    /// <summary>hides the axis labels under the dots (offset 58)</summary>
+    public byte NoAxis;
+}
+
+/// <summary>cui_event_track_result (20 bytes)</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeEventTrackResult
+{
+    /// <summary>an event was moved, added or removed this frame (offset 0)</summary>
+    public byte Changed;
+    /// <summary>index of the event added this frame, or -1 (offset 4)</summary>
+    public int Added;
+    /// <summary>index the removed event had, or -1 (offset 8)</summary>
+    public int Removed;
+    /// <summary>the selected event after this frame, or -1 (offset 12)</summary>
+    public int Selected;
+    /// <summary>an event is being dragged (offset 16)</summary>
+    public byte Dragging;
+}
+
+/// <summary>Readout: one figure as an instrument shows it. A small label, the value in the monospaced font with its unit, and a muted line of context under it. (48 bytes)</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeReadoutOpts
+{
+    /// <summary>int (offset 0)</summary>
+    public int Sentinel;
+    /// <summary>after the value, smaller and muted, e.g. &quot;MG&quot; (offset 8)</summary>
+    public nint Unit;
+    /// <summary>a muted line under the value; `NULL` for none (offset 16)</summary>
+    public nint Detail;
+    /// <summary>the value&apos;s size: CUI_SIZE_SM 17, CUI_SIZE_MD 28 (default), CUI_SIZE_LG 44 points (offset 24)</summary>
+    public ControlSize Size;
+    /// <summary>the value&apos;s color; 0 is the foreground (offset 28)</summary>
+    public Tone Tone;
+    /// <summary>the value in the accent color (offset 32)</summary>
+    public byte Accent;
+    /// <summary>default start (offset 36)</summary>
+    public TextAlign Align;
+    /// <summary>default fit (offset 40)</summary>
+    public NativeSize Width;
+}
+
+/// <summary>Dot-matrix display: text drawn with a 5 by 7 dot font, for clocks, counters and status lines. Printable ASCII, the degree sign and the middle dot have glyphs; anything else is a box. Unlit dots show dimly unless `no_dim` is set. In a box narrower than the text, the dots shrink to fit, or with `marquee` the text scrolls. (28 bytes)</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeDotDisplayOpts
+{
+    /// <summary>int (offset 0)</summary>
+    public int Sentinel;
+    /// <summary>distance between dot centers in points, default 4 (offset 4)</summary>
+    public float Pitch;
+    /// <summary>lit dots; unset: the foreground (offset 8)</summary>
+    public NativeColor Color;
+    /// <summary>lit dots in the accent color (offset 12)</summary>
+    public byte Accent;
+    /// <summary>hides the unlit dots (offset 13)</summary>
+    public byte NoDim;
+    /// <summary>scrolls text that is wider than the box instead of shrinking it (offset 14)</summary>
+    public byte Marquee;
+    /// <summary>where the text sits in a wider box, default start (offset 16)</summary>
+    public TextAlign Align;
+    /// <summary>default fit to the text (offset 20)</summary>
+    public NativeSize Width;
+}
+
+/// <summary>cui_corners (16 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeCorners
 {
@@ -5042,7 +5218,7 @@ public unsafe struct NativeCorners
     public float Bl;
 }
 
-/// <summary>cui_canvas_result, 28 bytes.</summary>
+/// <summary>cui_canvas_result (28 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeCanvasResult
 {
@@ -5058,51 +5234,51 @@ public unsafe struct NativeCanvasResult
     public NativeVec2 Mouse;
 }
 
-/// <summary>cui_vertex, 64 bytes.</summary>
+/// <summary>cui_vertex (64 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeVertex
 {
-    /// <summary>float (offset 0)</summary>
+    /// <summary>position in pixels (offset 0)</summary>
     public float X;
-    /// <summary>float (offset 4)</summary>
+    /// <summary>position in pixels (offset 4)</summary>
     public float Y;
-    /// <summary>float (offset 8)</summary>
+    /// <summary>texture coordinate (offset 8)</summary>
     public float U;
-    /// <summary>float (offset 12)</summary>
+    /// <summary>texture coordinate (offset 12)</summary>
     public float V;
-    /// <summary>float (offset 16)</summary>
+    /// <summary>position relative to the shape center, pixels (offset 16)</summary>
     public float Lx;
-    /// <summary>float (offset 20)</summary>
+    /// <summary>position relative to the shape center, pixels (offset 20)</summary>
     public float Ly;
-    /// <summary>float (offset 24)</summary>
+    /// <summary>half size of the shape, pixels (offset 24)</summary>
     public float Hw;
-    /// <summary>float (offset 28)</summary>
+    /// <summary>half size of the shape, pixels (offset 28)</summary>
     public float Hh;
-    /// <summary>float (offset 32)</summary>
+    /// <summary>corner radii, pixels (offset 32)</summary>
     public float RTl;
-    /// <summary>float (offset 36)</summary>
+    /// <summary>corner radii, pixels (offset 36)</summary>
     public float RTr;
-    /// <summary>float (offset 40)</summary>
+    /// <summary>corner radii, pixels (offset 40)</summary>
     public float RBr;
-    /// <summary>float (offset 44)</summary>
+    /// <summary>corner radii, pixels (offset 44)</summary>
     public float RBl;
-    /// <summary>float (offset 48)</summary>
+    /// <summary>border width (RRECT) or blur sigma (SHADOW) (offset 48)</summary>
     public float Border;
-    /// <summary>float (offset 52)</summary>
+    /// <summary>CUI_SHADE_* (offset 52)</summary>
     public float Mode;
-    /// <summary>cui_color (offset 56)</summary>
+    /// <summary>fill (offset 56)</summary>
     public NativeColor Color;
     /// <summary>cui_color (offset 60)</summary>
     public NativeColor BorderColor;
 }
 
-/// <summary>cui_draw_cmd, 32 bytes.</summary>
+/// <summary>cui_draw_cmd (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeDrawCmd
 {
-    /// <summary>cui_rect (offset 0)</summary>
+    /// <summary>pixels (offset 0)</summary>
     public NativeRect Clip;
-    /// <summary>cui_texture (offset 16)</summary>
+    /// <summary>0 = font atlas (offset 16)</summary>
     public nuint Texture;
     /// <summary>uint32_t (offset 24)</summary>
     public uint IndexOffset;
@@ -5110,7 +5286,7 @@ public unsafe struct NativeDrawCmd
     public uint IndexCount;
 }
 
-/// <summary>cui_draw_data, 64 bytes.</summary>
+/// <summary>cui_draw_data (64 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeDrawData
 {
@@ -5126,9 +5302,9 @@ public unsafe struct NativeDrawData
     public nint Commands;
     /// <summary>int (offset 40)</summary>
     public int CommandCount;
-    /// <summary>int (offset 44)</summary>
+    /// <summary>framebuffer size (offset 44)</summary>
     public int WidthPx;
-    /// <summary>int (offset 48)</summary>
+    /// <summary>framebuffer size (offset 48)</summary>
     public int HeightPx;
     /// <summary>cui_color (offset 52)</summary>
     public NativeColor ClearColor;
@@ -5136,27 +5312,27 @@ public unsafe struct NativeDrawData
     public nuint FontAtlas;
 }
 
-/// <summary>cui_app_desc, 48 bytes.</summary>
+/// <summary>cui_app_desc (56 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeAppDesc
 {
-    /// <summary>const char * (offset 0)</summary>
+    /// <summary>default &quot;CUI&quot; (offset 0)</summary>
     public nint Title;
-    /// <summary>int (offset 8)</summary>
+    /// <summary>logical size, default 1080 x 720 (offset 8)</summary>
     public int Width;
-    /// <summary>int (offset 12)</summary>
+    /// <summary>logical size, default 1080 x 720 (offset 12)</summary>
     public int Height;
-    /// <summary>int (offset 16)</summary>
+    /// <summary>default 360 x 280 (offset 16)</summary>
     public int MinWidth;
-    /// <summary>int (offset 20)</summary>
+    /// <summary>default 360 x 280 (offset 20)</summary>
     public int MinHeight;
-    /// <summary>_Bool (offset 24)</summary>
+    /// <summary>not resizable (offset 24)</summary>
     public byte FixedSize;
-    /// <summary>_Bool (offset 25)</summary>
+    /// <summary>render every frame even when idle (games, video) (offset 25)</summary>
     public byte Continuous;
-    /// <summary>_Bool (offset 26)</summary>
+    /// <summary>OpenGL: do not wait for the display; frames are capped at 120 Hz or the refresh rate (offset 26)</summary>
     public byte NoVsync;
-    /// <summary>_Bool (offset 27)</summary>
+    /// <summary>create the window hidden (tests) (offset 27)</summary>
     public byte Hidden;
     /// <summary>cui_renderer_kind (offset 28)</summary>
     public Renderer Renderer;
@@ -5164,11 +5340,13 @@ public unsafe struct NativeAppDesc
     public Theme Theme;
     /// <summary>cui_accent (offset 36)</summary>
     public Accent Accent;
-    /// <summary>_Bool (offset 40)</summary>
+    /// <summary>use the OS light/dark setting where available (offset 40)</summary>
     public byte FollowSystemTheme;
+    /// <summary>Linux: the app&apos;s ID, which is the name of its .desktop file without &quot;.desktop&quot;, e.g. &quot;org.example.Notes&quot;. The desktop uses it to show the app&apos;s name and icon for the window (taskbar, dock, Alt+Tab) and to group its windows. Sets WM_CLASS on X11 and the app_id on Wayland (SDL2, and GLFW 3.4). Read when the window is created; ignored on Windows and macOS. Default: none (the X11 backend then sets WM_CLASS to the title and &quot;CUI&quot;). (offset 48)</summary>
+    public nint AppId;
 }
 
-/// <summary>cui_file_dialog_opts, 40 bytes.</summary>
+/// <summary>cui_file_dialog_opts (40 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeFileDialogOpts
 {
@@ -5176,10 +5354,10 @@ public unsafe struct NativeFileDialogOpts
     public FileDialogKind Kind;
     /// <summary>const char * (offset 8)</summary>
     public nint Title;
-    /// <summary>const char * (offset 16)</summary>
+    /// <summary>e.g. &quot;Images&quot; (offset 16)</summary>
     public nint FilterName;
-    /// <summary>const char * (offset 24)</summary>
+    /// <summary>extensions separated by &apos;;&apos;, e.g. &quot;png;jpg&quot; (offset 24)</summary>
     public nint Filter;
-    /// <summary>const char * (offset 32)</summary>
+    /// <summary>save dialogs (offset 32)</summary>
     public nint DefaultName;
 }

@@ -17,7 +17,7 @@ protected override void Draw(Ui ui)
 ## `KvEditor`
 
 ```csharp
-public bool KvEditor(UiText id, Span<KeyValue> pairs, ref int count, int capacity, KvEditorOpts o = default)
+public bool KvEditor(UiText id, Span<KeyValue> pairs, ref int count, KvEditorOpts o = default)
 ```
 
 cui_kv_editor_ex

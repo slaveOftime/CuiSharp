@@ -13,7 +13,7 @@ public static unsafe class AppChromeMenuBarToolbarStatusBarDocumentTabsUiExtensi
 {
     extension(Ui ui)
     {
-        /// <summary>cui_menu_bar_begin</summary>
+        /// <summary>Menu bar: File / Edit / View along the top of a window. Each menu holds the usual menu items (cui_menu_item, cui_menu_separator, cui_menu_label). Once a menu is open, hovering another one switches to it. Alt (on its own) or F10 focuses the bar; arrows move between menus and items, Enter chooses, Esc steps back. Alt + a menu&apos;s mnemonic letter opens it (the first letter of its label unless `mnemonic` says otherwise).</summary>
         public LayoutScope MenuBar(UiText id, MenuBarOpts o = default)
         {
             var __opts = o.ToNative();
@@ -21,7 +21,7 @@ public static unsafe class AppChromeMenuBarToolbarStatusBarDocumentTabsUiExtensi
             return new LayoutScope(ui.Handle, &Native.MenuBarEnd, "MenuBar", id);
         }
 
-        /// <summary>cui_menu_bar_menu_begin</summary>
+        /// <summary>One menu of the bar. Returns true while its items should be built; call cui_menu_bar_menu_end only then.</summary>
         public OpenScope MenuBarMenu(UiText label, MenuBarMenuOpts o = default)
         {
             var __opts = o.ToNative();
@@ -37,7 +37,7 @@ public static unsafe class AppChromeMenuBarToolbarStatusBarDocumentTabsUiExtensi
             if (scope) body(ui);
         }
 
-        /// <summary>cui_toolbar_begin</summary>
+        /// <summary>Toolbar: a row of compact icon buttons, toggles, separators and small text buttons. Icon only buttons show their tooltip as their name. Items that do not fit collapse, from the end, into a &quot;more&quot; menu; an item chosen there returns true on the next frame.</summary>
         public LayoutScope Toolbar(UiText id, ToolbarOpts o = default)
         {
             var __opts = o.ToNative();
@@ -62,13 +62,13 @@ public static unsafe class AppChromeMenuBarToolbarStatusBarDocumentTabsUiExtensi
             Native.ToolbarSeparator(ui.Handle);
         }
 
-        /// <summary>cui_toolbar_spacer</summary>
+        /// <summary>pushes the following items to the right</summary>
         public void ToolbarSpacer()
         {
             Native.ToolbarSpacer(ui.Handle);
         }
 
-        /// <summary>cui_status_bar_begin</summary>
+        /// <summary>Status bar: a thin bar along the bottom of a window, with a hairline on top and no fill of its own (put it in a box with the background you want). Items go left to right; cui_status_bar_spacer sends the rest to the right edge.</summary>
         public LayoutScope StatusBar(UiText id, StatusBarOpts o = default)
         {
             var __opts = o.ToNative();
@@ -99,14 +99,14 @@ public static unsafe class AppChromeMenuBarToolbarStatusBarDocumentTabsUiExtensi
             return __result != 0;
         }
 
-        /// <summary>cui_status_bar_progress_ex</summary>
+        /// <summary>A small progress bar with an optional label. value is 0..1.</summary>
         public void StatusBarProgress(float value, StatusProgressOpts o = default)
         {
             var __opts = o.ToNative();
             Native.StatusBarProgress(ui.Handle, value, in __opts);
         }
 
-        /// <summary>cui_doc_tabs_ex</summary>
+        /// <summary>Document tabs: editor style tabs. Clicking selects (*selected is updated), the x or a middle click asks to close, dragging reorders, and the strip scrolls sideways when the tabs do not fit. A dirty tab shows a dot that turns into the close button under the pointer. The selected tab is filled with the surface color so it joins the content below; the strip itself has no fill, like the other bars. Tabs keep their state by title, so give two tabs with the same name a key: &quot;main.c##src&quot;. The component never removes or moves your tabs itself: it reports a close or a move in the result and you apply it (selection already follows a move). With keyboard focus on the strip, Left and Right select, Home and End jump, Shift+Left/Right move the tab and Delete closes it. With `shortcuts` set it also answers Ctrl+Tab, Ctrl+Shift+Tab, Ctrl+PageUp/Down and Ctrl+W (Cmd+W on macOS) from anywhere in the window.</summary>
         public DocTabsResult DocTabs(UiText id, ReadOnlySpan<DocTab> tabs, ref int selected, DocTabsOpts o = default)
         {
             var __tabs = Utf8.AllocFrame<NativeDocTab>(tabs.Length);

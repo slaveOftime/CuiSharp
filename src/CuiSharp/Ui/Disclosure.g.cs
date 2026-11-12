@@ -13,7 +13,7 @@ public static unsafe class DisclosureUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_hover_card_begin</summary>
+        /// <summary>Hover card: rich content that appears when the pointer rests on the previous component, and stays while the pointer is over either.</summary>
         public OpenScope HoverCard(UiText id, HoverCardOpts o = default)
         {
             var __opts = o.ToNative();
@@ -29,7 +29,7 @@ public static unsafe class DisclosureUiExtensions
             if (scope) body(ui);
         }
 
-        /// <summary>cui_confirm_popover_ex</summary>
+        /// <summary>Confirm popover: a small question anchored to the previous component. Open it with cui_popover_open(ui, id). Returns true when confirmed.</summary>
         public bool ConfirmPopover(UiText id, ConfirmPopoverOpts o = default)
         {
             var __opts = o.ToNative();
@@ -38,7 +38,7 @@ public static unsafe class DisclosureUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_expandable_text_ex</summary>
+        /// <summary>Text clamped to a few lines with a fade and Show more / Show less.</summary>
         public bool ExpandableText(UiText id, UiText text, ExpandableTextOpts o = default)
         {
             var __opts = o.ToNative();
@@ -47,7 +47,7 @@ public static unsafe class DisclosureUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_expandable_card_begin</summary>
+        /// <summary>Expandable card: a card whose header opens a body with a height spring.</summary>
         public OpenScope ExpandableCard(UiText title, ref bool open, ExpandableCardOpts o = default)
         {
             byte __open = (byte)(open ? 1 : 0);
@@ -65,7 +65,7 @@ public static unsafe class DisclosureUiExtensions
             if (scope) body(ui);
         }
 
-        /// <summary>cui_toc</summary>
+        /// <summary>Table of contents for a scroll area: highlights the section in view on a progress rail, and scrolls to a section when clicked. Put cui_toc_anchor(ui, &quot;anchor&quot;) at each heading inside the scroll area, and call cui_toc in the same scope as the scroll area. Returns the active index.</summary>
         public int Toc(UiText scrollId, ReadOnlySpan<TocItem> items)
         {
             var __items = Utf8.AllocFrame<NativeTocItem>(items.Length);

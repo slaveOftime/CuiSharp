@@ -20,7 +20,7 @@ protected override void Draw(Ui ui)
 public void CodeBlock(UiText id, UiText code, CodeOpts o = default)
 ```
 
-* left to right in any interface: see cui__keep_ltr
+Code block with syntax highlighting (lang: "c", "cpp", "js", "ts", "python", "rust", "go", "json", "shell", or "text" for none), line numbers, a title bar and a copy button. Long lines scroll sideways.
 
 ## `JsonView`
 
@@ -28,4 +28,4 @@ public void CodeBlock(UiText id, UiText code, CodeOpts o = default)
 public bool JsonView(UiText id, UiText json, JsonOpts o = default)
 ```
 
-* left to right in any interface: see cui__keep_ltr
+JSON viewer: a collapsible tree with typed colors and item counts. Returns false when the text is not valid JSON (and shows the error).

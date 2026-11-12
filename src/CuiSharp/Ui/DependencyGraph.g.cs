@@ -13,7 +13,7 @@ public static unsafe class DependencyGraphUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_graph_view_ex</summary>
+        /// <summary>Nodes and directed edges laid out in layers (each edge points to a later layer, cycles are broken), for build targets, packages, services or call graphs. The layout is computed when the graph changes. Wheel zooms, drag pans, click selects; hovering a node lights up what it depends on and what depends on it. F fits the graph.</summary>
         public GraphResult GraphView(UiText id, ReadOnlySpan<GraphNode> nodes, ReadOnlySpan<GraphEdge> edges, ref int selected, GraphOpts o = default)
         {
             var __nodes = Utf8.AllocFrame<NativeGraphNode>(nodes.Length);

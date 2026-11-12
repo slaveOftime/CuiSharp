@@ -48,14 +48,14 @@ public static unsafe class DataDisplayUiExtensions
             if (scope) body(ui);
         }
 
-        /// <summary>cui_tree_clicked</summary>
+        /// <summary>the node created by the last cui_tree_begin was clicked</summary>
         public bool TreeClicked()
         {
             var __result = Native.TreeClicked(ui.Handle);
             return __result != 0;
         }
 
-        /// <summary>cui_list_item_ex</summary>
+        /// <summary>List item: a selectable row with optional icon, subtitle and trailing text.</summary>
         public bool ListItem(UiText title, ListItemOpts o = default)
         {
             var __opts = o.ToNative();

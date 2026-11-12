@@ -13,7 +13,7 @@ public static unsafe class NodeEditorUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_node_editor_begin_ex</summary>
+        /// <summary>Node editor: nodes with input and output pins on a canvas that pans and zooms, joined by curved links. You own the nodes, pins and links; the editor moves the node positions you pass and reports what the user did:</summary>
         public OpenScope NodeEditor(UiText id, ref NodeView view, NodeEditorOpts o = default)
         {
             var __view = view.ToNative();
@@ -31,7 +31,7 @@ public static unsafe class NodeEditorUiExtensions
             if (scope) body(ui);
         }
 
-        /// <summary>cui_node_begin_ex</summary>
+        /// <summary>A node at canvas position (*x, *y), updated while it is dragged. Returns true while the node is selected.</summary>
         public OpenScope Node(int nodeId, ref float x, ref float y, UiText title, NodeOpts o = default)
         {
             var __opts = o.ToNative();
@@ -47,7 +47,7 @@ public static unsafe class NodeEditorUiExtensions
             if (scope) body(ui);
         }
 
-        /// <summary>cui_node_input_ex</summary>
+        /// <summary>A row with a pin on the left (input) or right (output). type picks the pin color from the series palette and limits links to pins of the same type (0 connects to anything). Returns true when the pin has a link.</summary>
         public bool NodeInput(int pinId, UiText label, PinOpts o = default)
         {
             var __opts = o.ToNative();
@@ -56,7 +56,7 @@ public static unsafe class NodeEditorUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_node_output_ex</summary>
+        /// <summary>A row with a pin on the left (input) or right (output). type picks the pin color from the series palette and limits links to pins of the same type (0 connects to anything). Returns true when the pin has a link.</summary>
         public bool NodeOutput(int pinId, UiText label, PinOpts o = default)
         {
             var __opts = o.ToNative();

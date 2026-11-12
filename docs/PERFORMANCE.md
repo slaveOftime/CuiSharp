@@ -38,11 +38,16 @@ on every pull request, every shape in the on-demand job.
 | Gallery frame, 1240x820, software raster | **0.83 ms** mean (p50 0.69, p95 1.16, p99 1.39) | budget 0.90 ms, `--fps 900` |
 | Build only (a GPU would rasterize) | 0.02 ms | same run |
 | Managed allocation per frame | **0 B** | `FrameLifecycleTests`, `NewComponentTests` |
-| Gallery AOT executable, win-x64 | **2 878 976 B** | budget 2.95 MB |
+| Gallery AOT executable, win-x64 | **2 918 400 B** | budget 2.95 MB |
 | A million virtual list rows | ~12 µs | `--scale` |
 | A million chart points, undecimated | 45.9 ms | why decimation exists |
 | A million chart points, decimated to 800 | 0.018 ms | same |
 | Idle window CPU | 0 % | by construction: CUI sleeps between frames |
+
+The executable grew again with CUI 1.4, from 2 878 976 B to 2 918 400 B: the five instrument
+components, and the header comments CUI 1.4 wrote for every field of every options struct, which
+reach the gallery as generated documentation. Frame time is unchanged (p50 0.68, p95 1.10, p99
+1.33 ms) and a frame still allocates nothing.
 
 The executable grew from 2 141 184 B to 2 579 456 B with CUI 1.3, and the growth is upstream's: the
 twenty components it added are about 5 000 lines of new C (`cui_devtools.c`, `cui_devpanels.c`,
@@ -61,7 +66,7 @@ What is inside the executable, and what each widget family costs: [SIZE.md](SIZE
 
 ## Gallery, page by page
 
-`tools/page-costs.ps1` walks all twenty-eight pages in one headless process: it clicks each page,
+`tools/page-costs.ps1` walks all twenty-nine pages in one headless process: it clicks each page,
 proves the heading says the page opened, parks the pointer, and then *dwells* — holding the page
 for three seconds while it really draws, through the silent `pulse` command, so the measurement
 never pays for serialising the tree it is measuring — while `dotnet cui` samples the app's
@@ -111,7 +116,7 @@ What the table says:
   page burns ~3 000 cpu-ms per 3 000 wall-ms. It becomes a signal only when a page cannot keep
   a core fed — none today.
 - **ws and priv climb across the walk, not per page**: the steps are Tools (+21 MB) and Social
-  and media (+4 MB), both one-time native state. Walking the same twenty-eight pages a second time
+  and media (+4 MB), both one-time native state. Walking the same twenty-nine pages a second time
   in the same process adds **2.6 MB** (62.5 → 65.1), so nothing accumulates — the first walk is the
   process meeting each page for the first time.
 - **The 21 MB at Tools is the colour-emoji font**, and it is the only large one. CUI draws emoji

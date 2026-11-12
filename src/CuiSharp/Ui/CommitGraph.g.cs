@@ -13,7 +13,7 @@ public static unsafe class CommitGraphUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_commit_graph_ex</summary>
+        /// <summary>Version history: the branch lanes drawn beside each commit, newest first, with its message, branch and tag names, author, date and short hash. Each commit names its parents by row (parents come later in the array), so merges and branches draw as lines between lanes. Only the rows in view are built. Up and Down move the selection; Enter or a double-click activates.</summary>
         public CommitGraphResult CommitGraph(UiText id, ReadOnlySpan<Commit> commits, ref int selected, CommitGraphOpts o = default)
         {
             var __commits = Utf8.AllocFrame<NativeCommit>(commits.Length);

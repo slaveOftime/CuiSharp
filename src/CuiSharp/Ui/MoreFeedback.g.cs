@@ -13,7 +13,7 @@ public static unsafe class MoreFeedbackUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_banner_ex</summary>
+        /// <summary>Announcement banner across the top of a view. Collapses smoothly when dismissed (*open becomes false). Returns true when the action is clicked.</summary>
         public bool Banner(UiText text, ref bool open, BannerOpts o = default)
         {
             byte __open = (byte)(open ? 1 : 0);
@@ -24,7 +24,7 @@ public static unsafe class MoreFeedbackUiExtensions
             return __result != 0;
         }
 
-        /// <summary>* left to right in any interface: see cui__keep_ltr</summary>
+        /// <summary>Countdown: days, hours, minutes and seconds as tiles whose digits roll.</summary>
         public void Countdown(UiText id, double secondsLeft, CountdownOpts o = default)
         {
             var __opts = o.ToNative();
@@ -32,7 +32,7 @@ public static unsafe class MoreFeedbackUiExtensions
             WidgetRecorder.Note(ui.Handle, "Countdown", id);
         }
 
-        /// <summary>cui_checklist_ex</summary>
+        /// <summary>Onboarding checklist: a card with progress and steps. The first open step shows its description and action. Clicking a step&apos;s circle toggles done. Returns the index whose action was clicked, or -1.</summary>
         public int Checklist(UiText id, ReadOnlySpan<CheckStep> steps, ChecklistOpts o = default)
         {
             var __steps = Utf8.AllocFrame<NativeCheckStep>(steps.Length);

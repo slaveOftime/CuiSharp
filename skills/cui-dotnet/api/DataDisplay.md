@@ -60,7 +60,7 @@ Returns true when the view changed.
 public bool ListItem(UiText title, ListItemOpts o = default)
 ```
 
-cui_list_item_ex
+List item: a selectable row with optional icon, subtitle and trailing text.
 
 ## `Sparkline`
 
@@ -116,7 +116,7 @@ cui_tree_begin
 public bool TreeClicked()
 ```
 
-cui_tree_clicked
+the node created by the last cui_tree_begin was clicked
 
 ## `VirtualList`
 

@@ -158,7 +158,6 @@ C `cui_candlestick_opts`.
 - `Labels`: string[]? (default `UiMarshal.Strings(Labels)`)
 - `Format`: string? (default `Utf8.Get(Format)`)
 - `Overlays`: Series[]? (default `Series.ToFrameArray(Overlays)`)
-- `OverlayCount`: int (default `OverlayCount`)
 - `NoVolume`: bool (default `(byte)(NoVolume ? 1 : 0)`)
 - `Ohlc`: bool (default `(byte)(Ohlc ? 1 : 0)`)
 - `Up`: Color (default `UiMarshal.ToNative(Up)`)
@@ -218,6 +217,7 @@ C `cui_chart_opts`.
 - `Format`: string? (default `Utf8.Get(Format)`)
 - `Min`: float (default `Min`)
 - `Max`: float (default `Max`)
+- `Annotations`: ChartAnnotation[]? (default `ChartAnnotation.ToFrameArray(Annotations)`)
 
 ## `ChatOpts`
 
@@ -269,7 +269,6 @@ C `cui_code_editor_opts`.
 - `Autofocus`: bool (default `(byte)(Autofocus ? 1 : 0)`)
 - `Placeholder`: string? (default `Utf8.Get(Placeholder)`)
 - `Marks`: TextMark[]? (default `TextMark.ToFrameArray(Marks)`)
-- `MarkCount`: int (default `MarkCount`)
 
 ## `CodeOpts`
 
@@ -318,7 +317,6 @@ C `cui_composer_opts`.
 - `Busy`: bool (default `(byte)(Busy ? 1 : 0)`)
 - `Attachments`: string[]? (default `UiMarshal.Strings(Attachments)`)
 - `Models`: Model[]? (default `Model.ToFrameArray(Models)`)
-- `ModelCount`: int (default `ModelCount`)
 - `MaxLines`: int (default `MaxLines`)
 - `Width`: Size (default `UiMarshal.ToNative(Width)`)
 
@@ -348,7 +346,6 @@ C `cui_confirm_popover_opts`.
 C `cui_context_opts`.
 
 - `Parts`: VizItem[]? (default `VizItem.ToFrameArray(Parts)`)
-- `PartCount`: int (default `PartCount`)
 - `Unit`: string? (default `Utf8.Get(Unit)`)
 
 ## `CountdownOpts`
@@ -488,6 +485,39 @@ C `cui_dockspace_opts`.
 - `MinPanelHeight`: float (default `MinPanelHeight`)
 - `Shortcuts`: bool (default `(byte)(Shortcuts ? 1 : 0)`)
 
+## `DotChartOpts`
+
+C `cui_dot_chart_opts`.
+
+- `Width`: Size (default `UiMarshal.ToNative(Width)`)
+- `Height`: float (default `Height`)
+- `XMin`: double (default `XMin`)
+- `XMax`: double (default `XMax`)
+- `XUnits`: AxisUnits (default `XUnits`)
+- `XFormat`: string? (default `Utf8.Get(XFormat)`)
+- `XStep`: double (default `XStep`)
+- `Min`: float (default `Min`)
+- `Max`: float (default `Max`)
+- `Format`: string? (default `Utf8.Get(Format)`)
+- `Unit`: string? (default `Utf8.Get(Unit)`)
+- `Pitch`: float (default `Pitch`)
+- `NoGrid`: bool (default `(byte)(NoGrid ? 1 : 0)`)
+- `NoAxis`: bool (default `(byte)(NoAxis ? 1 : 0)`)
+- `NoReadout`: bool (default `(byte)(NoReadout ? 1 : 0)`)
+- `Annotations`: ChartAnnotation[]? (default `ChartAnnotation.ToFrameArray(Annotations)`)
+
+## `DotDisplayOpts`
+
+C `cui_dot_display_opts`.
+
+- `Pitch`: float (default `Pitch`)
+- `Color`: Color (default `UiMarshal.ToNative(Color)`)
+- `Accent`: bool (default `(byte)(Accent ? 1 : 0)`)
+- `NoDim`: bool (default `(byte)(NoDim ? 1 : 0)`)
+- `Marquee`: bool (default `(byte)(Marquee ? 1 : 0)`)
+- `Align`: TextAlign (default `Align`)
+- `Width`: Size (default `UiMarshal.ToNative(Width)`)
+
 ## `DropzoneOpts`
 
 C `cui_dropzone_opts`.
@@ -522,6 +552,19 @@ C `cui_empty_opts`.
 - `Icon`: string? (default `Utf8.Get(Icon)`)
 - `Description`: string? (default `Utf8.Get(Description)`)
 - `Action`: string? (default `Utf8.Get(Action)`)
+
+## `EventTrackOpts`
+
+C `cui_event_track_opts`.
+
+- `Width`: Size (default `UiMarshal.ToNative(Width)`)
+- `Step`: double (default `Step`)
+- `Units`: AxisUnits (default `Units`)
+- `Format`: string? (default `Utf8.Get(Format)`)
+- `LabelStep`: double (default `LabelStep`)
+- `NoAdd`: bool (default `(byte)(NoAdd ? 1 : 0)`)
+- `NoRemove`: bool (default `(byte)(NoRemove ? 1 : 0)`)
+- `NoAxis`: bool (default `(byte)(NoAxis ? 1 : 0)`)
 
 ## `ExpandableCardOpts`
 
@@ -685,7 +728,6 @@ C `cui_hex_view_opts`.
 - `Base`: ulong (default `Base`)
 - `BytesPerRow`: int (default `BytesPerRow`)
 - `Ranges`: HexRange[]? (default `HexRange.ToFrameArray(Ranges)`)
-- `RangeCount`: int (default `RangeCount`)
 - `NoAscii`: bool (default `(byte)(NoAscii ? 1 : 0)`)
 - `NoHeader`: bool (default `(byte)(NoHeader ? 1 : 0)`)
 - `Size`: float (default `Size`)
@@ -1101,7 +1143,6 @@ C `cui_radial_gauge_opts`.
 - `Size`: float (default `Size`)
 - `Sweep`: float (default `Sweep`)
 - `Bands`: GaugeBand[]? (default `GaugeBand.ToFrameArray(Bands)`)
-- `BandCount`: int (default `BandCount`)
 - `Ticks`: int (default `Ticks`)
 - `Target`: float (default `Target`)
 - `ShowTarget`: bool (default `(byte)(ShowTarget ? 1 : 0)`)
@@ -1112,6 +1153,18 @@ C `cui_radial_gauge_opts`.
 C `cui_radio_cards_opts`.
 
 - `Columns`: int (default `Columns`)
+
+## `ReadoutOpts`
+
+C `cui_readout_opts`.
+
+- `Unit`: string? (default `Utf8.Get(Unit)`)
+- `Detail`: string? (default `Utf8.Get(Detail)`)
+- `Size`: ControlSize (default `Size`)
+- `Tone`: Tone (default `Tone`)
+- `Accent`: bool (default `(byte)(Accent ? 1 : 0)`)
+- `Align`: TextAlign (default `Align`)
+- `Width`: Size (default `UiMarshal.ToNative(Width)`)
 
 ## `ReasoningOpts`
 
@@ -1564,7 +1617,6 @@ C `cui_trace_opts`.
 - `Height`: float (default `Height`)
 - `RowHeight`: float (default `RowHeight`)
 - `Markers`: TraceMarker[]? (default `TraceMarker.ToFrameArray(Markers)`)
-- `MarkerCount`: int (default `MarkerCount`)
 
 ## `TreeOpts`
 
