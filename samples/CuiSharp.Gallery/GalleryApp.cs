@@ -16,6 +16,11 @@ internal sealed partial class GalleryApp : IDisposable
 {
     public const int PageCount = 29;
 
+    /// <summary>The release this gallery shows. A literal on purpose: bump it by hand with
+    /// <c>Directory.Build.props</c>, and every host that links these sources — desktop and
+    /// browser — shows the same number.</summary>
+    internal const string ReleaseVersion = "0.4.0";
+
     /// <summary>The first page ported from <c>examples/gallery_more.c</c>; from here on every
     /// page draws inside its own id scope, as the C gallery's second half does.</summary>
     private const int FirstExtendedPage = 13;

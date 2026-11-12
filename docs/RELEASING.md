@@ -14,6 +14,11 @@ promise.
 <Version>0.1.0</Version>
 ```
 
+Two more files carry the version and are edited by hand at a bump: the template's `defaultValue`,
+which is the pin a scaffolded app writes into its csproj (`TemplateVersionTests` fails if the two
+disagree), and the gallery's `ReleaseVersion`. `pwsh tools/regen.ps1` moves `catalog.json`, which is
+generated.
+
 ## 2. Run every gate
 
 ```sh

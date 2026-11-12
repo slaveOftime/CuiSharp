@@ -157,9 +157,9 @@ internal sealed partial class GalleryApp
                             LineHeight = 1f,
                         });
                     }
-                    ui.Text("CUI", new TextOpts { Font = Font.Medium, Size = 15, NoWrap = true });
+                    ui.Text("CuiSharp", new TextOpts { Font = Font.Medium, Size = 15, NoWrap = true });
                     ui.Spacer();
-                    ui.Badge("v1.0", new BadgeOpts { Size = ControlSize.Sm });
+                    ui.Badge($"v{ReleaseVersion}", new BadgeOpts { Size = ControlSize.Sm });
                 }
             }
 

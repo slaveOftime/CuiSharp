@@ -23,6 +23,9 @@ registered in `.pi/settings.json`, so `pi` offers it as `/skill:cui-sync`.
   `src/CuiSharp/Icons.g.cs`, `src/CuiSharp.Tests/*.g.cs`, `skills/cui-dotnet/{llms.txt,api/*.md}`,
   `bindings/{api.json,coverage.txt}`. Change `tools/bindgen.cs` or `bindings/overrides.json`, then
   `pwsh tools/regen.ps1`.
+- **A version bump has three hand-edited copies.** `Directory.Build.props` is the source; edit the
+  template's `defaultValue` and the gallery's `ReleaseVersion` beside it. `pwsh tools/regen.ps1`
+  moves the generated `catalog.json`.
 - **Never edit `native/CUI/`** — it is a pinned upstream submodule, and `native/patches/` is empty on
   purpose. Native behaviour belongs upstream; if you think you need a patch, stop and ask.
 - **`Ui` and every scope are `ref struct`.** No fields, no capture, no boxing, no `await`. A frame
@@ -42,7 +45,7 @@ registered in `.pi/settings.json`, so `pi` offers it as `/skill:cui-sync`.
 dotnet build CuiSharp.slnx -c Release -warnaserror
 dotnet test  CuiSharp.slnx -c Release
 dotnet format CuiSharp.slnx --verify-no-changes
-pwsh tools/regen.ps1 -NoNative -NoDiff      # generated output is fresh, 13 generator self-checks
+pwsh tools/regen.ps1 -NoNative -NoDiff      # generated output is fresh
 pwsh tools/verify-template.ps1              # dotnet new -> build -> test -> AOT -> dotnet cui
 pwsh tools/budget-check.ps1 -Benchmark b.txt -AotBytes 2862592   # frame time + size, against PERFORMANCE.md
 pwsh tools/size-report.ps1 -All -Widths shipped -Csv artifacts/size.csv   # every app shape

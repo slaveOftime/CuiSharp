@@ -4,7 +4,7 @@ Every user-visible change, newest first. Pre-1.0 the minor number carries new su
 carries fixes. The section for a tag is what the GitHub release publishes, so the two cannot say
 different things.
 
-## [0.4.0] — 2026-11-13
+## [0.4.0] — 2026-11-12
 
 CUI 1.3.1 → 1.4.0. Four functions, four components, and one option array the generator had never
 had to express.
