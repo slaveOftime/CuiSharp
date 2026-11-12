@@ -2821,7 +2821,7 @@ sealed class Idiomatic
         sb.AppendLine("- `HeadlessApp` — the same driver in the framework, which `TestApp` names; `dotnet cui` drives it in a real process.");
         sb.AppendLine("- A tab strip and a segmented control record one control per item (`Tab \"Markets\"`, `Segment \"Dark\"`), so an item is found and clicked like any other control.");
         sb.AppendLine("- `surface.LastFrame` -> `FrameSample` — what the last frame that surface drew cost: `DrawMs`, `AllocatedBytes`, `FrameMs`, `Fps`, `IsLive`. `FrameStats` holds the same for the one window in the process, which is what a footer reads.");
-        sb.AppendLine("- `dotnet cui tree|find|click|type|key|focus|move|frame|faults|png` — one command per line, `--stdin` for a session, `--app` for a published build, `--no-build`, `--frames N`. Any app opts in by running headless (`CUISHARP_HEADLESS=1` or `--headless`).");
+        sb.AppendLine("- `dotnet cui tree|find|click|type|key|focus|move|frame|faults|png` — one command per line; `dotnet cui session` relays a whole script against one build; `--app` for a published build, `--no-build`, `--frames N`. Any app opts in by running headless (`CUISHARP_HEADLESS=1` or `--headless`).");
         sb.AppendLine();
         sb.AppendLine("## Core API (hand-written, in `src/CuiSharp/Ui`)");
         sb.AppendLine();

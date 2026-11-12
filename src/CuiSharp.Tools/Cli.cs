@@ -60,11 +60,13 @@ internal static class Cli
         {
             Options options = parsed.Options!;
 
-            if (options.Command is "api" or "icons")
-                return AnswerCatalog(options, output, error);
+            // The offline answers return before any project is resolved: they read resources in
+            // this assembly, so they work in an empty directory with nothing built or running.
+            if (options.Command is "docs" or "docs.read" or "docs.search")
+                return AnswerDocs(options, output);
 
-            if (options.Command == "docs")
-                return AnswerDocs(options, output, error);
+            if (options.Command is "api" or "icons")
+                return AnswerCatalog(options, output);
 
             if (options.Command == "ps")
             {
@@ -78,10 +80,11 @@ internal static class Cli
 
             if (!PassPreconditions(client, options, error)) return 1;
 
-            if (options.Streaming) return Relay(client, input, output, error);
+            if (options.Command == "session") return Relay(client, input, output, error);
 
-            if (TryReadDwell(options.Line, out double seconds))
-                return Dwell(client, output, error, seconds) ? 0 : 1;
+            // `dwell` is the one command the tool answers itself: it keeps the app drawing and
+            // reports what that cost.
+            if (options.Command == "dwell") return Dwell(client, output, error, options.Seconds) ? 0 : 1;
 
             Answer answer = Ask(client, options.Line);
             if (!answer.Ok)
@@ -116,51 +119,22 @@ internal static class Cli
         .Replace("as expected type 'a number'", "as a number", StringComparison.Ordinal);
 
     /// <summary>
-    /// Answers a <c>docs</c> call: a topic, a document, a section, or a search. Like the catalog
-    /// commands this returns before any project is resolved, so it works in an empty directory.
+    /// Answers a <c>docs</c> call: the index, one topic or section, or a ranked search. Like the
+    /// catalog commands this returns before any project is resolved, so it works in an empty
+    /// directory with nothing built.
     /// </summary>
-    private static int AnswerDocs(Options options, TextWriter output, TextWriter error)
+    private static int AnswerDocs(Options options, TextWriter output)
     {
-        (CatalogResult? answer, string? usage) = DocsAnswer(BundledDocs.Value, options.Argument);
-        if (usage is not null)
+        DocLibrary docs = BundledDocs.Value;
+        CatalogResult answer = options.Command switch
         {
-            error.WriteLine(usage);
-            return 2;
-        }
+            "docs.read" => docs.Read(options.Argument),
+            "docs.search" => docs.Search(options.Argument),
+            _ => docs.List(),
+        };
 
-        output.WriteLine(options.Json ? answer!.RenderJson() : answer!.Render());
-        return answer!.IsExact ? 0 : 1;
-    }
-
-    /// <summary>
-    /// The <c>docs</c> grammar, separated from the writers so the grammar is testable on its own:
-    /// no argument is the index, <c>search</c> and <c>read</c> are the two verbs, and anything else
-    /// is the thing to read — an assistant that drops <c>read</c> gets the page, not a correction.
-    /// </summary>
-    internal static (CatalogResult? Answer, string? Usage) DocsAnswer(DocLibrary docs, string argument)
-    {
-        string line = argument.Trim();
-        if (line.Length == 0) return (docs.List(), null);
-
-        int space = line.IndexOfAny([' ', '\t']);
-        string verb = space < 0 ? line : line[..space];
-        string rest = space < 0 ? "" : line[(space + 1)..].Trim();
-
-        if (verb.Equals("search", StringComparison.OrdinalIgnoreCase))
-        {
-            return rest.Length > 0
-                ? (docs.Search(rest), null)
-                : (null, "`docs search` needs words to look for: `dotnet cui docs search dialog keyboard`.");
-        }
-
-        if (verb.Equals("read", StringComparison.OrdinalIgnoreCase))
-        {
-            return rest.Length > 0
-                ? (docs.Read(rest), null)
-                : (null, "`docs read` needs a topic, a document or a section: `dotnet cui docs read debugging`.");
-        }
-
-        return (docs.Read(line), null);
+        output.WriteLine(options.Json ? answer.RenderJson() : answer.Render());
+        return answer.IsExact ? 0 : 1;
     }
 
     private static HeadlessClient StartHeadless(Options options, TextWriter error)
@@ -177,16 +151,8 @@ internal static class Cli
             host, hostArgs, echo: options.Quiet ? null : error.WriteLine);
     }
 
-    private static int AnswerCatalog(Options options, TextWriter output, TextWriter error)
+    private static int AnswerCatalog(Options options, TextWriter output)
     {
-        if (options.Command == "api" && options.Argument.Length == 0)
-        {
-            error.WriteLine(
-                "`api` needs a name to look up: `dotnet cui api ChartOpts`, `dotnet cui api Ui.LineChart`, "
-                + "or `dotnet cui icons` for the glyph list.");
-            return 2;
-        }
-
         ApiCatalog catalog = EmbeddedCatalog.Value;
         CatalogResult answer = options.Command == "icons"
             ? catalog.IconsResult(options.Argument.Length == 0 ? null : options.Argument)
@@ -342,16 +308,11 @@ internal static class Cli
 
         internal bool Quiet { get; init; }
 
-        /// <summary>True when no verb was given: either the help, or `--wait ready` alone.</summary>
-        internal bool NoCommand { get; init; }
-
         internal bool Json { get; init; }
 
         internal bool Attach { get; init; }
 
         internal string? AttachTarget { get; init; }
-
-        internal bool Streaming { get; init; }
 
         internal bool NoBuild { get; init; }
 
@@ -364,6 +325,9 @@ internal static class Cli
         internal string[] AppArgs { get; init; } = [];
 
         internal string Line => Argument.Length == 0 ? Command : $"{Command} {Argument}";
+
+        /// <summary>How long <c>dwell</c> should keep drawing.</summary>
+        internal double Seconds { get; init; }
 
         internal double WaitSeconds { get; init; }
 

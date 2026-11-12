@@ -4,6 +4,40 @@ Every user-visible change, newest first. Pre-1.0 the minor number carries new su
 carries fixes. The section for a tag is what the GitHub release publishes, so the two cannot say
 different things.
 
+## [0.4.0] — unreleased
+
+`dotnet cui` answers offline and reads its own command line properly.
+
+### Added
+
+- **`dotnet cui docs`** prints the guide, the reference and the behaviour pages that ship *inside*
+  the tool: no repository, no network, nothing built and nothing started. `docs read <topic|doc|doc#section>`
+  reads one of fourteen task topics or any page whole, `docs search <words>` ranks the sections that
+  answer a question and names the read that opens each one, and `--json` makes any of them
+  machine-readable. The topics are pointers into the shipped pages, so the tool cannot say anything
+  the documentation does not.
+- **`dotnet cui session`** relays one protocol command per line from stdin against a single build,
+  replacing the `--stdin` flag.
+
+### Changed
+
+- **The command line is declared with System.CommandLine**, so `dotnet cui <command> --help` and the
+  parser cannot disagree. What the old hand-written help promised and the parser ignored now works:
+  `-a <pid|title>` takes its value, `-t/--target` is gone in its favour, `--version` answers with a
+  version, and a mistyped verb is answered with the verb that was meant (`clik` → ``Did you mean
+  `dotnet cui click`?``). Usage errors exit 2 with the reason on stderr; a failed launch exits 1 with
+  one sentence instead of a stack trace.
+- **Options belong to the commands that honour them.** `docs`, `api`, `icons` and `ps` answer
+  offline and declare no `--project`, `--app`, `--attach`, `--no-build`, `--frames` or `--wait`, so
+  they cannot be given one that would be ignored. Options follow the command they belong to:
+  `dotnet cui tree --frames 2`, not `dotnet cui --frames 2 tree`.
+- **A query is one quoted argument.** `dotnet cui click "Button Save"` is a click on the button
+  labelled *Save*; the unquoted `dotnet cui click Button Save` was two words and is now a usage
+  error rather than a different query. `dotnet cui click "editor > Save"` quotes the path separator
+  that the shell would otherwise read as redirection.
+- **`dwell` and `waittext` require their duration**, which the protocol always needed: bare `dwell`
+  used to start an app and then fail with an unknown command.
+
 ## [0.3.2] — 2026-11-11
 
 The gallery now draws everything CUI ships, and a published binary carries only what it uses.

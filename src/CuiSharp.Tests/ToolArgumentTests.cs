@@ -76,10 +76,25 @@ public class ToolArgumentTests
     public void NoCommandIsHelp()
     {
         Assert.True(Grammar.Parse([]).Help);
-        Assert.True(Grammar.Parse(["--frames", "2"]).Help);
-        // Streaming supplies its commands on stdin, so it needs no command word.
-        Assert.False(Grammar.Parse(["--stdin"]).Help);
-        Assert.True(Grammar.Parse(["--stdin"]).Options!.Streaming);
+        Assert.True(Grammar.Parse([]).NothingAsked);
+
+        // A session supplies its own commands on stdin, so it needs no verb of its own.
+        Grammar.Parsed session = Grammar.Parse(["session", "--app", "x.exe"]);
+        Assert.Empty(session.Errors);
+        Assert.Equal("session", session.Options!.Command);
+        Assert.False(session.Help);
+    }
+
+    [Fact]
+    public void TheRootTakesNoOptionsSoABareLineCannotMeanSomethingElse()
+    {
+        // `dotnet cui --wait ready` used to invent a `tree`. With the options on the commands
+        // that honour them, the line is a usage error with the ordering to fix it — which is
+        // cheaper to read than an answer for a command nobody typed.
+        Grammar.Parsed parsed = Grammar.Parse(["--wait", "ready"]);
+
+        Assert.NotEmpty(parsed.Errors);
+        Assert.Contains("belongs after the command", string.Join(" ", parsed.Errors), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -136,42 +151,49 @@ public class ToolArgumentTests
         // The help is generated from this grammar, so this walks exactly what a reader is shown:
         // every command with its required arguments, and every option in both its spellings. An
         // option the help advertises as taking a value but the parser ignores fails here.
-        foreach (CliCommand command in Grammar.Root.Subcommands)
+        // Every command, by its own name and by each alias: the help names both, so both work.
+        foreach (string name in Grammar.Root.Subcommands.SelectMany(c => c.Aliases.Prepend(c.Name)))
         {
-            var argv = new List<string> { command.Name };
+            CliCommand command = Grammar.Root.Subcommands.First(c => c.Name == name || c.Aliases.Contains(name));
+            var argv = new List<string> { name };
             // Every declared slot, optional ones included: the point is the position, and a
             // value in an optional slot is still a legal command line.
             foreach (CliArgument argument in command.Arguments) argv.Add(SampleArgument(argument));
-            // A timeout without a wait to bound is a different mistake, tested on its own.
-            if (command.Name is not "tree") argv.AddRange([]);
 
             Grammar.Parsed bare = Grammar.Parse([.. argv]);
             Assert.True(bare.Errors.Count == 0, $"`{string.Join(' ', argv)}` did not parse: {string.Join("; ", bare.Errors)}");
         }
 
-        // The help and version switches are the parser's own, and root-only: `tree --version`
-        // is not a command line anyone means.
-        foreach (CliOption option in Grammar.Root.Options.Where(o => o is not CliHelpOption and not VersionOption))
+        // Every option every command declares, in both spellings, on the command that declares
+        // it: an option the help advertises as taking a value but the parser ignores fails here,
+        // and so does an option the help lists on a command that cannot honour it.
+        foreach (CliCommand command in Grammar.Root.Subcommands)
         {
-            foreach (string spelling in new[] { option.Name }.Concat(option.Aliases))
+            foreach (CliOption option in command.Options.Where(o => o is not CliHelpOption and not VersionOption))
             {
-                var argv = new List<string> { "tree", spelling };
-                if (option.ValueType != typeof(bool)) argv.Add(SampleOption(option));
-                // `--wait-timeout` bounds a wait, so it is only legal beside one.
-                if (spelling is "--wait-timeout") argv.InsertRange(1, ["--wait", "ready"]);
+                foreach (string spelling in new[] { option.Name }.Concat(option.Aliases))
+                {
+                    var argv = new List<string> { command.Name };
+                    foreach (CliArgument argument in command.Arguments) argv.Add(SampleArgument(argument));
+                    argv.Add(spelling);
+                    if (option.ValueType != typeof(bool)) argv.Add(SampleOption(option));
+                    // A timeout bounds a wait, so it is only legal beside one.
+                    if (spelling is "--wait-timeout") argv.InsertRange(1, ["--wait", "ready"]);
 
-                Grammar.Parsed parsed = Grammar.Parse([.. argv]);
-                Assert.True(parsed.Errors.Count == 0, $"`{spelling}` did not parse: {string.Join("; ", parsed.Errors)}");
+                    Grammar.Parsed parsed = Grammar.Parse([.. argv]);
+                    Assert.True(parsed.Errors.Count == 0, $"`{spelling}` on `{command.Name}` did not parse: {string.Join("; ", parsed.Errors)}");
+                }
             }
         }
-
     }
 
     /// <summary>A value the argument's declared type can hold, so the test walks the grammar's
     /// shape without hard-coding which slot is a number today.</summary>
     private static string SampleArgument(CliArgument argument) => argument.ValueType switch
     {
-        Type t when t == typeof(int?) || t == typeof(float?) || t == typeof(double?) => "2",
+        Type t when t == typeof(int) || t == typeof(int?)
+            || t == typeof(float) || t == typeof(float?)
+            || t == typeof(double) || t == typeof(double?) => "2",
         _ => "x",
     };
 
@@ -243,9 +265,9 @@ public class ToolArgumentTests
     }
 
     [Fact]
-    public void AWaitWithNoCommandWaitsForTheTreeItPrints()
+    public void AWaitIsWrittenAfterTheCommandItGates()
     {
-        Grammar.Parsed parsed = Grammar.Parse(["--wait", "ready", "--wait-timeout", "30"]);
+        Grammar.Parsed parsed = Grammar.Parse(["tree", "--wait", "ready", "--wait-timeout", "30"]);
 
         Assert.Empty(parsed.Errors);
         Assert.Equal("tree", parsed.Options!.Line);
@@ -268,25 +290,35 @@ public class ToolArgumentTests
     }
 
     [Fact]
-    public void AWaitCoexistsWithFramesAndStdin()
+    public void AWaitCoexistsWithFramesInASession()
     {
-        Grammar.Parsed parsed = Grammar.Parse(["--frames", "3", "--wait", "ready", "--stdin"]);
+        Grammar.Parsed parsed = Grammar.Parse(["session", "--frames", "3", "--wait", "ready"]);
 
         Assert.Empty(parsed.Errors);
-        Assert.Equal(3, parsed.Options!.Frames);
-        Assert.True(parsed.Options.Streaming);
-        // In a session the gate passes before any stdin line is relayed, and no command word
-        // is invented for it — stdin carries the commands.
+        Assert.Equal("session", parsed.Options!.Command);
+        Assert.Equal(3, parsed.Options.Frames);
+        // The gate passes before any stdin line is relayed, and stdin carries the commands: no
+        // protocol line is invented for the session itself.
         Assert.Equal("wait 10", parsed.Options.WaitLine);
-        Assert.Equal("", parsed.Options.Line);
+    }
+
+    [Fact]
+    public void ASessionCannotBeGivenACommandWordToIgnore()
+    {
+        // `tree --stdin` used to read stdin and drop the `tree`. The session is a command now,
+        // so the only way to reach it is to ask for it.
+        Grammar.Parsed parsed = Grammar.Parse(["tree", "--stdin"]);
+
+        Assert.NotEmpty(parsed.Errors);
+        Assert.Contains("'--stdin'", string.Join(" ", parsed.Errors), StringComparison.Ordinal);
     }
 
     [Fact]
     public void AWaitOptionThatContradictsItselfIsRefused()
     {
-        Assert.NotEmpty(Grammar.Parse(["--wait", "busy"]).Errors);
-        Assert.NotEmpty(Grammar.Parse(["--wait", "ready", "--wait-text", "Save"]).Errors);
-        Assert.NotEmpty(Grammar.Parse(["--wait-timeout", "3"]).Errors);
+        Assert.NotEmpty(Grammar.Parse(["tree", "--wait", "busy"]).Errors);
+        Assert.NotEmpty(Grammar.Parse(["tree", "--wait", "ready", "--wait-text", "Save"]).Errors);
+        Assert.NotEmpty(Grammar.Parse(["tree", "--wait-timeout", "3"]).Errors);
     }
 
     [Theory]
@@ -303,7 +335,7 @@ public class ToolArgumentTests
         var output = new StringWriter();
         var error = new StringWriter();
 
-        Assert.Equal(2, Cli.Run(["--wait", "ready", "--wait-timeout", value, "tree"], output, error));
+        Assert.Equal(2, Cli.Run(["tree", "--wait", "ready", "--wait-timeout", value], output, error));
         Assert.Contains("wait-timeout", error.ToString(), StringComparison.Ordinal);
     }
 
@@ -371,7 +403,7 @@ public class ToolArgumentTests
             var output = new StringWriter();
             var error = new StringWriter();
             int exit = Cli.Run(
-                ["--project", project, "--wait", "ready", "--wait-timeout", "20", "png", png, "--", "--ready-after", "3"],
+                ["png", png, "--project", project, "--wait", "ready", "--wait-timeout", "20", "--", "--ready-after", "3"],
                 output,
                 error);
 
@@ -385,7 +417,7 @@ public class ToolArgumentTests
             // gate rather than re-entering MSBuild on the shared project reference.
             var missError = new StringWriter();
             int miss = Cli.Run(
-                ["--project", project, "--no-build", "--wait", "ready", "--wait-timeout", "1", "png", late, "--", "--ready-after", "0"],
+                ["png", late, "--project", project, "--no-build", "--wait", "ready", "--wait-timeout", "1", "--", "--ready-after", "0"],
                 new StringWriter(),
                 missError);
 
@@ -398,7 +430,7 @@ public class ToolArgumentTests
             // the miss still exits 1 with the reason.
             var directError = new StringWriter();
             int direct = Cli.Run(
-                ["--project", project, "--no-build", "wait", "0.1", "--", "--ready-after", "0"],
+                ["wait", "0.1", "--project", project, "--no-build", "--", "--ready-after", "0"],
                 new StringWriter(),
                 directError);
             Assert.Equal(1, direct);
@@ -450,7 +482,7 @@ public class ToolArgumentTests
     public void ARelayedWaitBuysItsOwnDeadlineToo()
     {
         // The per-command deadline is not a one-shot-only rule. The same slow server sits
-        // behind a --stdin session: the relayed `wait 3` has to get the override its grammar
+        // behind a `session`: the relayed `wait 3` has to get the override its grammar
         // asks for, or the session dies of the client's default give-up while the app is
         // still answering honestly.
         using var client = HeadlessClient.Attach(
@@ -570,14 +602,14 @@ public class ToolArgumentTests
             string png = Path.Combine(scratch, "ready.png");
             (int exit, _, string errors) = RunFrom(
                 scratch, tool,
-                ["--project", project, "--wait", "ready", "--wait-timeout", "20", "png", png, "--", "--ready-after", "3"]);
+                ["png", png, "--project", project, "--wait", "ready", "--wait-timeout", "20", "--", "--ready-after", "3"]);
             Assert.True(exit == 0, $"a ready-marking probe should pass its gate from an empty cwd: {errors}");
             Assert.True(File.Exists(png), "the PNG is the proof the app ran on its own native payload");
 
             string late = Path.Combine(scratch, "late.png");
             (int miss, _, string missErrors) = RunFrom(
                 scratch, tool,
-                ["--project", project, "--no-build", "--wait", "ready", "--wait-timeout", "1", "png", late, "--", "--ready-after", "0"]);
+                ["png", late, "--project", project, "--no-build", "--wait", "ready", "--wait-timeout", "1", "--", "--ready-after", "0"]);
             Assert.Equal(1, miss);
             Assert.Contains("ready", missErrors, StringComparison.Ordinal);
             Assert.False(File.Exists(late), "an unsatisfied gate must still stop the command from a foreign cwd");

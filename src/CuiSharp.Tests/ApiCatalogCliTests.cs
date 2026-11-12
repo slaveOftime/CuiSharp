@@ -16,21 +16,38 @@ namespace CuiSharp.Tests;
 /// </summary>
 public class ApiCatalogCliTests
 {
-    /// <summary>A path with no project and no app, for the proof described above.</summary>
+    /// <summary>A path with no project and no app, for the proofs that need a real one.</summary>
     private static readonly string NoProjectHere = Path.Combine(Path.GetTempPath(), "cui-api-offline-" + Guid.NewGuid());
 
     private static (int Exit, string Out, string Err) Run(params string[] args)
     {
         var output = new StringWriter();
         var error = new StringWriter();
-        int exit = Cli.Run([.. args, "--project", NoProjectHere], output, error);
+        int exit = Cli.Run(args, output, error);
         return (exit, output.ToString(), error.ToString());
+    }
+
+    [Fact]
+    public void TheCatalogCommandsCannotBePointedAtAnApp()
+    {
+        // What was a promise in a comment is now the grammar: `api` and `icons` declare no way to
+        // name a project, a published build or a live window, so no spelling of the line can make
+        // the catalog resolve one.
+        foreach (string argument in new[] { "--project", "--app", "--attach", "--no-build" })
+        {
+            (int exit, _, string error) = Run("api", "ChartOpts", argument);
+
+            Assert.Equal(2, exit);
+            Assert.Contains($"'{argument}'", error, StringComparison.Ordinal);
+        }
     }
 
     [Fact]
     public void AnExactOptionTypeAnswersWithItsFieldDeclarationsWithoutAnyProject()
     {
-        (int exit, string output, _) = Run("api", "ChartOpts", "-q");
+        // Asked for as JSON-free text, with the only output switch a catalog command declares:
+        // `-q` and `--frames` are app-command options now, and `api` refuses them outright.
+        (int exit, string output, _) = Run("api", "ChartOpts", "--json=false");
 
         Assert.Equal(0, exit);
         Assert.Contains("ChartOpts  [struct]", output, StringComparison.Ordinal);
@@ -211,24 +228,20 @@ public class ApiCatalogCliTests
         // `--frames --json` used to lose its number and eat the flag behind it, answering a
         // different command than the one that was typed and calling that success. A typed
         // option now says what it wanted: a count, not `--json`.
-        (int exit, _, string error) = Run("api", "ChartOpts", "--frames", "--json");
+        (int exit, _, string error) = Run("tree", "--frames", "--json");
         Assert.Equal(2, exit);
         Assert.Contains("'--frames'", error, StringComparison.Ordinal);
         Assert.Contains("whole number", error, StringComparison.Ordinal);
 
-        (exit, _, error) = Run("api", "ChartOpts", "--wait-timeout", "--pgae");
+        (exit, _, error) = Run("tree", "--wait-timeout", "--pgae");
         Assert.Equal(2, exit);
         Assert.Contains("'--wait-timeout'", error, StringComparison.Ordinal);
         Assert.Contains("a number", error, StringComparison.Ordinal);
 
-        // A value missing at the end of the line is the same mistake. No --project is needed
-        // here: the catalog path never looks at a project, so the parse error is all there is.
-        var answers = new StringWriter();
-        var errors = new StringWriter();
-        exit = Cli.Run(["api", "ChartOpts", "--app"], answers, errors);
+        // A value missing at the end of the line is the same mistake.
+        (exit, _, error) = Run("tree", "--app");
         Assert.Equal(2, exit);
-        Assert.Contains("'--app'", errors.ToString(), StringComparison.Ordinal);
-        Assert.Equal("", answers.ToString());
+        Assert.Contains("'--app'", error, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -241,7 +254,7 @@ public class ApiCatalogCliTests
         Assert.Equal("tree", parsed.Options!.Command);
         Assert.Equal("waittext 10 -loading", parsed.Options.WaitLine);
 
-        (int exit, _, string error) = Run("tree", "--wait-text", "-loading");
+        (int exit, _, string error) = Run("tree", "--project", NoProjectHere, "--wait-text", "-loading");
         Assert.Equal(1, exit);
         Assert.DoesNotContain("needs a value", error, StringComparison.Ordinal);
         Assert.Contains(NoProjectHere, error, StringComparison.Ordinal);
@@ -260,13 +273,13 @@ public class ApiCatalogCliTests
         // that rule — so what is refused is a value the option's declared type cannot hold.
         var output = new StringWriter();
         var errors = new StringWriter();
-        int exit = Cli.Run(["api", "ChartOpts", "--wait-timeout", "abc"], output, errors);
+        int exit = Cli.Run(["tree", "--wait-timeout", "abc"], output, errors);
         Assert.Equal(2, exit);
         Assert.Contains("'--wait-timeout'", errors.ToString(), StringComparison.Ordinal);
         Assert.Contains("abc", errors.ToString(), StringComparison.Ordinal);
         Assert.Equal("", output.ToString());
 
-        (int badExit, _, string badError) = Run("api", "ChartOpts", "--frames", "many");
+        (int badExit, _, string badError) = Run("tree", "--frames", "many");
         Assert.Equal(2, badExit);
         Assert.Contains("whole number", badError, StringComparison.Ordinal);
     }
@@ -279,27 +292,29 @@ public class ApiCatalogCliTests
         var output = new StringWriter();
         var errors = new StringWriter();
 
-        Assert.Equal(2, Cli.Run(["api", "ChartOpts", "--wait", "ready", "--wait", "ready"], output, errors));
-        Assert.Contains("'--wait'", errors.ToString(), StringComparison.Ordinal);
+        Assert.Equal(2, Cli.Run(["tree", "--frames", "2", "--frames", "3"], output, errors));
+        Assert.Contains("'--frames'", errors.ToString(), StringComparison.Ordinal);
         Assert.Equal("", output.ToString());
 
         // A wrong value for a one-value option is the same class of mistake, said differently.
         output = new StringWriter();
         errors = new StringWriter();
-        Assert.Equal(2, Cli.Run(["api", "ChartOpts", "--wait", "invalid"], output, errors));
+        Assert.Equal(2, Cli.Run(["tree", "--wait", "invalid"], output, errors));
         Assert.Contains("'ready'", errors.ToString(), StringComparison.Ordinal);
         Assert.Equal("", output.ToString());
     }
 
     [Fact]
-    public void JsonAndIgnoredAppFlagsAnswerTheSameOffline()
+    public void JsonAndTextAnswerTheSameQuestionsOffline()
     {
         (int exit, string output, _) = Run("api", "ChartOpts", "--json");
         Assert.Equal(0, exit);
         using (JsonDocument json = JsonDocument.Parse(output))
             Assert.Equal("exact", json.RootElement.GetProperty("match").GetString());
 
-        (exit, output, _) = Run("api", "ChartOpts", "--app", "nowhere.exe");
+        // The same name in text, from the same call, with nothing built or started: an app flag
+        // is not accepted at all now, so there is no "ignored" path left to be identical to.
+        (exit, output, _) = Run("api", "ChartOpts");
         Assert.Equal(0, exit);
         Assert.Contains("ChartOpts  [struct]", output, StringComparison.Ordinal);
     }

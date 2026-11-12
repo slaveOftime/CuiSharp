@@ -585,15 +585,15 @@ dotnet cui tree                     # the controls of the last frame, nested
 dotnet cui find Save                # one control: kind, label, rectangle
 dotnet cui find id:draft            # or by the id the app gave it, in any language
 dotnet cui click Save               # click it, print the frame that reacted
-dotnet cui click Button "Save type" # be specific when a label is ambiguous
-dotnet cui click editor > Save      # or name the path to the control
+dotnet cui click "Button Save type"  # be specific when a label is ambiguous
+dotnet cui click "editor > Save"     # or the path to the control
 dotnet cui type Milk                # type into the focused control
 dotnet cui key Tab                  # a key by name
 dotnet cui png frame.png            # the frame as a PNG, to look at
-dotnet cui --stdin < commands.txt   # many commands against one build, in order
+dotnet cui session < commands.txt   # many commands against one build, in order
 ```
 
-`--stdin` is the cheapest way to explore an app you have not read: one build, one startup, a page of
+`session` is the cheapest way to explore an app you have not read: one build, one startup, a page of
 answers. State carries across the commands because it is one process — but a run leaves nothing
 behind, so anything that should be checked twice belongs in a test instead.
 

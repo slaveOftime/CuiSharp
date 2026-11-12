@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
@@ -106,7 +107,18 @@ internal sealed class HeadlessClient : IDisposable
         foreach (string argument in arguments) info.ArgumentList.Add(argument);
         info.Environment[CuiSharpEnvironmentVariable] = "1";
 
-        Process process = Process.Start(info) ?? throw new ToolException($"Could not start {host}.");
+        Process process;
+        try
+        {
+            process = Process.Start(info) ?? throw new ToolException($"Could not start {host}.");
+        }
+        catch (Win32Exception failed)
+        {
+            // A path that is not there is the most likely --app/--project mistake, and the answer
+            // belongs in one line with exit 1, not in a stack trace out of the tool's own frame.
+            throw new ToolException($"Could not start \"{host}\": {failed.Message}");
+        }
+
         var client = new HeadlessClient(
             process,
             ownsProcess: true,

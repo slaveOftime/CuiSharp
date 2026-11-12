@@ -15,80 +15,95 @@ namespace CuiSharp.Tools;
 /// <c>click</c> an arity, <c>frame</c> an <see cref="int"/>, a mistyped verb a suggestion, and
 /// <c>-a 15036</c> its value.
 /// </para>
+/// <para>
+/// Every option lives on the commands that can honour it. A window target, a draw count and a
+/// readiness gate are meaningless to <c>docs</c> and <c>api</c>, which answer offline without
+/// starting anything; leaving them on the root as inherited options would have put them in those
+/// commands' help pages, where a reader would reasonably type them and be silently ignored.
+/// </para>
 /// </summary>
 internal static class Grammar
 {
     /// <summary>What to say after a usage error, so a reader (or an agent) has the next step.</summary>
     internal const string UsageHint = "Run `dotnet cui --help`, or `dotnet cui <command> --help`.";
 
-    /// <summary>The verbs the app answers: name, description, and one argument per protocol slot.</summary>
-    private static readonly (string Name, string Description, Argument[] Arguments)[] Verbs =
+    /// <summary>The verbs the app answers: name, aliases, description, and one argument per slot.</summary>
+    private static readonly (string Name, string[] Aliases, string Description, Argument[] Arguments)[] Verbs =
     [
-        ("tree", "the controls the last frame drew, nested (`print` is an alias)", []),
-        ("layout", "layout rectangles, observed union bounds and overflow diagnostics", []),
-        ("focus", "report that the window has focus (needed before typing)", []),
-        ("faults", "what the app threw while drawing, if anything", []),
-        ("quit", "close a live attached window", []),
+        ("tree", ["print"], "the controls the last frame drew, nested", []),
+        ("layout", [], "layout rectangles, observed union bounds and overflow diagnostics", []),
+        ("focus", [], "report that the window has focus (needed before typing)", []),
+        ("faults", [], "what the app threw while drawing, if anything", []),
+        ("quit", [], "close the app, or a live attached window", []),
 
-        ("find", "one control: kind, label and rectangle", [Text("text", "the label, text or id to find")]),
-        ("click", "click a control, then print the frame it produced", [Text("text", "the label, text or id to click")]),
-        ("type", "type into the focused control, then print the frame", [Text("text", "the text to type")]),
-        ("key", "press a key, e.g. `key Tab`", [Text("name", "the key: Tab, Enter, F1, Ctrl+S")]),
+        ("find", [], "one control: kind, label and rectangle", [Text("text", "the label, text or id to find")]),
+        ("click", [], "click a control, then print the frame it produced", [Text("text", "the label, text or id to click")]),
+        ("type", [], "type into the focused control, then print the frame", [Text("text", "the text to type")]),
+        ("key", [], "press a key by the name a person would use", [Text("name", "the key: Tab, Enter, Escape, F1, PageDown")]),
 
-        ("move", "put the pointer somewhere without clicking (hover, tooltips)",
-            [Number("x", required: true), Number("y", required: true)]),
-        ("wheel", "scroll at a point, in wheel notches (negative dy scrolls down)",
-            [Number("x", required: true), Number("y", required: true), Number("dy", required: true), Number("dx", required: false)]),
+        ("move", [], "put the pointer somewhere without clicking (hover, tooltips)",
+            [Number("x", true, "the column to point at, from the window's left edge"),
+             Number("y", true, "the row to point at, from the window's top edge")]),
+        ("wheel", [], "scroll at a point, in wheel notches (negative dy scrolls down)",
+            [Number("x", true, "the column to scroll at"),
+             Number("y", true, "the row to scroll at"),
+             Number("dy", true, "notches up (negative) or down (positive)"),
+             Number("dx", false, "notches left (negative) or right (positive)")]),
 
-        ("frame", "draw more frames, then print the tree", [Count("how many frames (default 1)")]),
-        ("pulse", "draw frames without printing the tree (answers: count, heap bytes)", [Count("how many frames (default 1)")]),
-        ("wait", "keep drawing until a frame marks itself ready (ui.MarkReady)", [Seconds("how long to keep waiting (default: the app's own budget)")]),
-        ("waittext", "keep drawing until a frame draws this text or query",
-            [Seconds("how long to keep waiting"), Text("query", "the text or query to wait for")]),
+        ("frame", [], "draw more frames, then print the tree", [Count("how many frames (default 1)")]),
+        ("pulse", [], "draw frames without printing the tree (answers: count, heap bytes)", [Count("how many frames (default 1)")]),
+        ("wait", [], "keep drawing until a frame marks itself ready (ui.MarkReady)",
+            [OptionalSeconds("how long to keep waiting (default: the app's own budget)")]),
+        ("waittext", [], "keep drawing until a frame draws this text or query",
+            [RequiredSeconds("how long to keep waiting"), Text("query", "the text or query to wait for")]),
 
-        ("png", "save the last frame as a PNG", [OptionalText("path", "where to write it (default: a temporary file)")]),
-        ("dwell", "keep the app drawing, then answer with one STATS line", [Seconds("how long to draw for")]),
+        ("png", [], "save the last frame as a PNG", [OptionalText("path", "where to write it (default: a temporary file)")]),
+        ("dwell", [], "keep the app drawing, then answer with one STATS line", [RequiredSeconds("how long to draw for")]),
     ];
 
     /// <summary>Every symbol the resolver needs, in one place.</summary>
     private sealed class Symbols
     {
+        // ---- what to drive ------------------------------------------------------------------
+
         internal Option<string?> Project = new("--project", "-p")
         {
             Description = "the app to drive: a directory, a .csproj, or a file-based .cs app (default: here)",
             HelpName = "path",
-            Recursive = true,
         };
 
         internal Option<string?> App = new("--app")
         {
-            Description = "drive a published build instead of building",
+            Description = "drive a published build instead of building one",
             HelpName = "exe",
-            Recursive = true,
         };
 
         internal Option<string?> Framework = new("--framework", "-f")
         {
             Description = "the target framework, when the project has more than one",
             HelpName = "tfm",
-            Recursive = true,
         };
+
+        internal Option<bool> NoBuild = new("--no-build")
+        {
+            Description = "reuse the last build of the project instead of rebuilding it",
+        };
+
+        internal Option<string?> Attach = new("--attach", "-a")
+        {
+            Description = "drive a running live window (started with --live) over its named pipe; "
+                + "the value is its pid or title, or leave it out when only one window is open",
+            HelpName = "pid|title",
+            Arity = ArgumentArity.ZeroOrOne,
+        };
+
+        // ---- what has to be true before the command runs ------------------------------------
 
         internal Option<int?> Frames = new("--frames")
         {
             Description = "draw this many frames before the command runs",
             HelpName = "count",
             Arity = ArgumentArity.ExactlyOne,
-            Recursive = true,
-        };
-
-        internal Option<string?> Attach = new("--attach", "-a")
-        {
-            Description = "drive a running live window (started with --live) over its named pipe, "
-                + "instead of starting a new headless process; the value is its pid or title",
-            HelpName = "pid|title",
-            Arity = ArgumentArity.ZeroOrOne,
-            Recursive = true,
         };
 
         internal Option<string?> Wait = new("--wait")
@@ -96,39 +111,25 @@ internal static class Grammar
             Description = "precondition: draw until a frame marks itself ready (ui.MarkReady)",
             HelpName = "ready",
             Arity = ArgumentArity.ExactlyOne,
-            Recursive = true,
         };
 
         internal Option<string?> WaitText = new("--wait-text")
         {
             Description = "precondition: draw until a frame draws this text or query",
             HelpName = "text",
-            Recursive = true,
         };
 
         internal Option<double?> WaitTimeout = new("--wait-timeout")
         {
             Description = "the window for --wait and --wait-text, in seconds (default 10, max 3600)",
             HelpName = "seconds",
-            Recursive = true,
         };
+
+        // ---- output -------------------------------------------------------------------------
 
         internal Option<bool> Quiet = new("--quiet", "-q")
         {
             Description = "print only the payload, never the tool's own progress",
-            Recursive = true,
-        };
-
-        internal Option<bool> Stdin = new("--stdin", "-s")
-        {
-            Description = "read one protocol command per line from stdin, with no command word",
-            Recursive = true,
-        };
-
-        internal Option<bool> NoBuild = new("--no-build")
-        {
-            Description = "reuse the last build instead of rebuilding",
-            Recursive = true,
         };
 
         /// <summary>
@@ -137,24 +138,26 @@ internal static class Grammar
         /// </summary>
         internal Option<bool> Json() => new("--json") { Description = "answer as JSON instead of text" };
 
+        // ---- offline arguments --------------------------------------------------------------
+
         internal Argument<string> ApiName = new("name") { Description = "a type or member: ChartOpts, Ui.LineChart, Button" };
 
         internal Argument<string?> IconsFilter = OptionalText("filter", "only the icons whose name contains this");
 
-        /// <summary>
-        /// The shorthand `docs testing`. Hidden from the usage lines because it belongs to the
-        /// `docs` command, and rendering it would suggest `docs testing search <words>`.
-        /// </summary>
-        internal Argument<string?> DocsWhat = OptionalText("what", "a topic, a document, or a document#section");
-
-
-        internal Argument<string> DocsReadWhat = new("what") { Description = "a topic, a document, or a document#section" };
+        internal Argument<string> DocsWhat = new("what") { Description = "a topic, a document, or a document#section" };
 
         internal Argument<string[]> DocsWords = new("words")
         {
             Description = "the words to look for",
             Arity = ArgumentArity.OneOrMore,
         };
+
+        /// <summary>
+        /// The options every command that drives an app shares, in the order the help reads them:
+        /// what to drive, what to draw first, then how loud to be.
+        /// </summary>
+        internal Option[] AppOptions =>
+            [Project, App, Framework, NoBuild, Attach, Frames, Wait, WaitText, WaitTimeout, Quiet];
 
         internal void Validate()
         {
@@ -198,13 +201,13 @@ internal static class Grammar
             double.IsFinite(seconds) && seconds > 0 && seconds <= Cli.Options.MaxWaitSeconds;
     }
 
-    // One initializer, because field initializers run in textual order: two separate ones could
-    // leave Root assigned before the symbols that give it its meaning.
     private static void NoOp(ParseResult _)
     {
         // Dispatch happens in Cli.Run; an action exists only so a parent command can be terminal.
     }
 
+    // One initializer, because field initializers run in textual order: two separate ones could
+    // leave Root assigned before the symbols that give it its meaning.
     private static readonly (Symbols Symbols, RootCommand Root) Built = Build();
 
     private static Symbols S => Built.Symbols;
@@ -216,38 +219,41 @@ internal static class Grammar
         var symbols = new Symbols();
         symbols.Validate();
 
-        var root = new RootCommand("drive a CuiSharp app from a shell or an agent, and read its rules offline.");
-        // Without an action a parent command is only a namespace; `dotnet cui --stdin` and the
-        // help path need the root itself to be a valid terminal.
+        var root = new RootCommand("inspect and drive a CuiSharp app, and read its rules offline.");
+        // Without an action a parent command is only a namespace; the root and `docs` are both
+        // terminal (the help, and the docs index).
         root.SetAction(NoOp);
 
-        foreach ((string name, string description, Argument[] arguments) in Verbs)
+        foreach ((string name, string[] aliases, string description, Argument[] arguments) in Verbs)
         {
             var command = new Command(name, description);
+            foreach (string alias in aliases) command.Aliases.Add(alias);
             foreach (Argument argument in arguments) command.Arguments.Add(argument);
+            foreach (Option option in symbols.AppOptions) command.Options.Add(option);
             root.Subcommands.Add(command);
         }
 
-        var ps = new Command("ps", "list running live CuiSharp windows (started with --live)");
-        ps.Options.Add(symbols.Json());
-        ps.SetAction(NoOp);
-        root.Subcommands.Add(ps);
+        var session = new Command(
+            "session",
+            "read one protocol command per line from stdin, against one build and one app: "
+                + "`dotnet cui session < commands.txt`");
+        foreach (Option option in symbols.AppOptions) session.Options.Add(option);
+        root.Subcommands.Add(session);
 
+        root.Subcommands.Add(Ps(symbols));
         root.Subcommands.Add(Api(symbols));
         root.Subcommands.Add(Icons(symbols));
         root.Subcommands.Add(Docs(symbols));
 
-        foreach (Option option in new Option[]
-                 {
-                     symbols.Project, symbols.App, symbols.Framework, symbols.Frames, symbols.Attach,
-                     symbols.Wait, symbols.WaitText, symbols.WaitTimeout, symbols.Quiet, symbols.Stdin,
-                     symbols.NoBuild,
-                 })
-        {
-            root.Options.Add(option);
-        }
-
         return (symbols, root);
+    }
+
+    private static Command Ps(Symbols symbols)
+    {
+        var ps = new Command("ps", "list running live CuiSharp windows (started with --live)");
+        ps.Options.Add(symbols.Json());
+        ps.SetAction(NoOp);
+        return ps;
     }
 
     private static Command Api(Symbols symbols)
@@ -268,29 +274,20 @@ internal static class Grammar
 
     private static Command Docs(Symbols symbols)
     {
-        symbols.DocsWhat.Hidden = true;
-        var docs = new Command(
-            "docs",
-            "the guide and the reference bundled with this tool, read offline; "
-                + "`docs <topic>` is shorthand for `docs read <topic>`")
-        {
-            symbols.DocsWhat,
-        };
+        var docs = new Command("docs", "the guide and the reference bundled with this tool, read offline");
         docs.Options.Add(symbols.Json());
         // A command with subcommands still has to be usable on its own: `dotnet cui docs` is the
-        // index, and `dotnet cui docs SKILL#pitfalls` is one section.
+        // index of every topic and document.
         docs.SetAction(NoOp);
 
         var read = new Command("read", "print one topic, one document, or one #section of one");
-        read.Arguments.Add(symbols.DocsReadWhat);
+        read.Arguments.Add(symbols.DocsWhat);
         read.Options.Add(symbols.Json());
-        read.SetAction(NoOp);
         docs.Subcommands.Add(read);
 
         var search = new Command("search", "the sections that answer a question, ranked");
         search.Arguments.Add(symbols.DocsWords);
         search.Options.Add(symbols.Json());
-        search.SetAction(NoOp);
         docs.Subcommands.Add(search);
 
         return docs;
@@ -304,8 +301,21 @@ internal static class Grammar
     private static Argument<string?> OptionalText(string name, string description) =>
         new(name) { Description = description, Arity = ArgumentArity.ZeroOrOne };
 
-    private static Argument<float?> Number(string name, bool required) =>
-        new(name) { Description = name, Arity = required ? ArgumentArity.ExactlyOne : ArgumentArity.ZeroOrOne };
+    private static Argument<float?> Number(string name, bool required, string description)
+    {
+        var number = new Argument<float?>(name)
+        {
+            Description = description,
+            Arity = required ? ArgumentArity.ExactlyOne : ArgumentArity.ZeroOrOne,
+        };
+        // float.Parse accepts NaN and Infinity; neither is a place on the screen to point at.
+        number.Validators.Add(result =>
+        {
+            if (Symbols.Peek<float>(result) is { } value && !float.IsFinite(value))
+                result.AddError($"<{name}> needs a finite number");
+        });
+        return number;
+    }
 
     private static Argument<int?> Count(string description)
     {
@@ -318,7 +328,18 @@ internal static class Grammar
         return count;
     }
 
-    private static Argument<double?> Seconds(string description)
+    private static Argument<double> RequiredSeconds(string description)
+    {
+        var seconds = new Argument<double>("seconds") { Description = description };
+        seconds.Validators.Add(result =>
+        {
+            if (Symbols.Peek<double>(result) is { } value && !Symbols.InRange(value))
+                result.AddError($"needs seconds above 0 and at most {Cli.Options.MaxWaitSeconds:0}");
+        });
+        return seconds;
+    }
+
+    private static Argument<double?> OptionalSeconds(string description)
     {
         var seconds = new Argument<double?>("seconds") { Description = description, Arity = ArgumentArity.ZeroOrOne };
         seconds.Validators.Add(result =>
@@ -356,12 +377,7 @@ internal static class Grammar
         var errors = new List<string>();
         foreach (ParseError parseError in result.Errors) errors.Add(Cli.Humanize(parseError.Message));
         if (errors.Count == 0 && !TryCheckCombinations(result, out string conflict)) errors.Add(conflict);
-        if (errors.Count > 0 && NearestCommand(grammarArgs) is { } meant)
-        {
-            // One unknown verb leaves every following token unrecognised too. Only the verb is
-            // the mistake, so say that once and name the verb that was meant.
-            errors = [errors[0], $"Did you mean `dotnet cui {meant}`? Run `dotnet cui --help` for the rest."];
-        }
+        if (errors.Count > 0 && Hint(result, grammarArgs) is { } hint) errors = [errors[0], hint];
         if (errors.Count > 0) return new Parsed(false, false, false, null, errors, result);
 
         // `--version` is System.CommandLine's own action, and it is root-only: answering it
@@ -374,37 +390,80 @@ internal static class Grammar
         // is about to explain: `dotnet cui click --help` must not require a label.
         if (result.Action is HelpAction) return new Parsed(true, false, false, null, [], result);
 
-        Cli.Options options = Resolve(result, appArguments);
-        if (options.NoCommand && !options.Streaming)
-        {
-            // A bare `--wait ready` still means "wait, then show me the tree"; anything else has
-            // no command to run, and guessing would hide a typo.
-            if (options.WaitLine is null) return new Parsed(true, false, true, null, [], result);
-            options = options with { Command = "tree", NoCommand = false };
-        }
+        // Nothing was asked for: the root is terminal, so there is no command to resolve.
+        if (ReferenceEquals(result.CommandResult.Command, Root)) return new Parsed(true, false, true, null, [], result);
 
-        return new Parsed(false, false, false, options, [], result);
+        return new Parsed(false, false, false, Resolve(result, appArguments), [], result);
     }
 
     /// <summary>
-    /// The verb a mistyped first word was probably meant to be: same opening letters, or a
-    /// near miss. A suggestion is worth this much arithmetic because the alternative is a reader
-    /// (or an agent) spending a turn re-reading the help to find out it typed one letter wrong.
+    /// What a rejected command line was probably meant to be. One line only: a wrong verb leaves
+    /// every following token unrecognised, so repeating the list buries the one mistake that
+    /// matters under the tokens that were never the problem.
     /// </summary>
-    private static string? NearestCommand(string[] args)
+    private static string? Hint(ParseResult result, string[] grammarArgs)
     {
-        string? token = args.FirstOrDefault(word => word.Length > 0 && word[0] != '-');
-        if (token is null || Root.Subcommands.Any(command => command.Name == token)) return null;
+        string? unknown = result.UnmatchedTokens.FirstOrDefault(token => token.Length > 0 && token[0] != '-');
 
+        // Options belong to a command now, so they are read after it. There are two ways to get
+        // that wrong, and they need different answers: an option written before its own command,
+        // and an option this command does not have at all.
+        Command matched = result.CommandResult.Command;
+        if (result.UnmatchedTokens.FirstOrDefault(token => IsOptionOf(matched, token)) is { } misordered)
+            return $"`{misordered}` belongs after the command, as in `dotnet cui {matched.Name} {misordered} ...`.";
+
+        if (result.UnmatchedTokens.FirstOrDefault(token => token.StartsWith('-')) is { } orphan)
+        {
+            Command? owner = Root.Subcommands.FirstOrDefault(command => IsOptionOf(command, orphan));
+            if (owner is not null && ReferenceEquals(matched, Root))
+                return $"`{orphan}` belongs after the command, as in `dotnet cui {owner.Name} {orphan} ...`.";
+
+            if (owner is not null)
+                return $"`{orphan}` is not an option of `{matched.Name}`: run `dotnet cui {matched.Name} --help` for the ones it takes.";
+        }
+
+        if (unknown is null) return null;
+
+        // `docs testing` is the shorthand a reader reaches for; the page is one word away.
+        if (result.CommandResult.Command.Name == "docs" && result.CommandResult.Parent is not null)
+            return $"Did you mean `dotnet cui docs read {unknown}`? Run `dotnet cui docs` for every topic.";
+
+        if (NearestCommand(unknown) is { } meant)
+            return $"Did you mean `dotnet cui {meant}`? Run `dotnet cui --help` for the rest.";
+
+        return null;
+    }
+
+    /// <summary>Whether an unmatched token names an option the given command declares.</summary>
+    private static bool IsOptionOf(Command command, string token)
+    {
+        if (!token.StartsWith('-')) return false;
+
+        string name = token.Split('=')[0];
+        return command.Options.Any(option => option.Name == name || option.Aliases.Contains(name));
+    }
+
+    /// <summary>
+    /// The verb a mistyped word was probably meant to be. A suggestion is worth this much
+    /// arithmetic because the alternative is a reader (or an agent) spending a turn re-reading
+    /// the help to find out it typed one letter wrong.
+    /// </summary>
+    private static string? NearestCommand(string token)
+    {
         string? best = null;
         int bestDistance = int.MaxValue;
         foreach (Command command in Root.Subcommands)
         {
-            int distance = Distance(token, command.Name);
-            if (distance < bestDistance)
+            foreach (string name in command.Aliases.Prepend(command.Name))
             {
-                bestDistance = distance;
-                best = command.Name;
+                if (name == token) return null;
+
+                int distance = Distance(token, name);
+                if (distance < bestDistance)
+                {
+                    bestDistance = distance;
+                    best = command.Name;
+                }
             }
         }
 
@@ -456,8 +515,9 @@ internal static class Grammar
     }
 
     /// <summary>
-    /// Rules that span two options. They live here rather than in a <c>Command.Validators</c> on
-    /// the root because root validators do not run when a subcommand is the one being invoked.
+    /// Rules that span two options. They live here rather than in per-command validators because
+    /// every app command shares one instance of each option, so the question "was this typed?"
+    /// has a single answer wherever it is asked.
     /// </summary>
     internal static bool TryCheckCombinations(ParseResult result, out string message)
     {
@@ -475,6 +535,32 @@ internal static class Grammar
             return false;
         }
 
+        bool published = result.GetResult(S.App) is not null;
+        bool attached = result.GetResult(S.Attach) is not null;
+        bool project = result.GetResult(S.Project) is not null;
+        int targets = (published ? 1 : 0) + (attached ? 1 : 0) + (project ? 1 : 0);
+        if (targets > 1)
+        {
+            message = "--project, --app and --attach are three ways to say what to drive: choose one";
+            return false;
+        }
+
+        // A bool option gets a result even when nobody typed it, so presence is `Implicit: false`.
+        if (result.GetResult(S.NoBuild) is { Implicit: false } && (published || attached))
+        {
+            message = published
+                ? "--no-build reuses a project build; there is nothing to build for --app"
+                : "--no-build reuses a project build; a live window is already running";
+            return false;
+        }
+
+        if (result.GetResult(S.Framework) is not null && (published || attached))
+        {
+            message = "--framework picks among a project's target frameworks: it does not apply to "
+                + (published ? "--app" : "--attach");
+            return false;
+        }
+
         message = "";
         return true;
     }
@@ -487,17 +573,17 @@ internal static class Grammar
         // so "nothing was asked for" is decided by identity, never by an empty string.
         string name = ReferenceEquals(matched.Command, Root) ? "" : matched.Command.Name;
 
-        (string command, string argument) = name switch
+        // Each offline command gets its own name so the dispatcher switches on one value instead
+        // of re-reading a joined string: `docs read X` and `docs search W` are different answers.
+        string command = name switch
         {
-            // `docs read X` and `docs search a b` are subcommands so their help is per-verb; the
-            // docs reader still takes one line, so the verb goes back on the front here.
-            "read" or "search" => ("docs", $"{name} {Join(result, matched)}"),
-            "api" => ("api", Join(result, matched)),
-            "icons" => ("icons", Join(result, matched)),
-            "docs" => ("docs", Join(result, matched)),
-            "ps" => ("ps", ""),
-            _ => (name, Join(result, matched)),
+            "read" => "docs.read",
+            "search" => "docs.search",
+            _ => name,
         };
+        // `Join` is "" for a command with no arguments, so one line covers every command: the
+        // offline ones take a name or words, the app verbs take their protocol slots.
+        string argument = name.Length == 0 ? "" : Join(result, matched);
 
         bool waiting = result.GetResult(S.Wait) is not null || result.GetResult(S.WaitText) is not null;
         double waitSeconds = result.GetValue(S.WaitTimeout) ?? Cli.Options.DefaultWaitSeconds;
@@ -511,14 +597,10 @@ internal static class Grammar
         }
 
         OptionResult? attach = result.GetResult(S.Attach);
-        bool streaming = result.GetValue(S.Stdin);
         return new Cli.Options
         {
             Command = command,
             Argument = argument,
-            // `--wait ready` with no command means "wait, then show me the tree".
-            NoCommand = command.Length == 0,
-            Streaming = streaming,
             Frames = result.GetValue(S.Frames) ?? 0,
             Quiet = result.GetValue(S.Quiet),
             Json = JsonRequested(result, matched),
@@ -529,6 +611,7 @@ internal static class Grammar
             Host = result.GetValue(S.App),
             Framework = result.GetValue(S.Framework),
             AppArgs = appArguments,
+            Seconds = command == "dwell" ? double.Parse(argument, CultureInfo.InvariantCulture) : 0,
             WaitSeconds = waiting ? waitSeconds : 0,
             WaitLine = waitLine,
         };
@@ -536,13 +619,11 @@ internal static class Grammar
 
     /// <summary>
     /// Whether the command that ran was asked for JSON. Each command owns its own <c>--json</c>,
-    /// so the answer is looked up on the command that was actually matched, never globally.
+    /// so the answer is looked up on the command that was actually matched, and the value decides:
+    /// <c>--json=false</c> is a request for text, not a request for JSON that nobody can undo.
     /// </summary>
     private static bool JsonRequested(ParseResult result, CommandResult matched) =>
-        matched.Command.Options.Any(option =>
-            // A bool option gets a result even when nobody typed it, and carries no tokens even
-            // when somebody did: only Implicit tells the two apart.
-            option.Name == "--json" && result.GetResult(option) is { Implicit: false });
+        matched.Command.Options.Any(option => option is Option<bool> { Name: "--json" } flag && result.GetValue(flag));
 
     /// <summary>
     /// One protocol line from a command's arguments, in declaration order: the wire protocol is a
@@ -561,6 +642,7 @@ internal static class Grammar
                 Argument<int?> number => result.GetValue(number)?.ToString(CultureInfo.InvariantCulture),
                 Argument<float?> number => result.GetValue(number)?.ToString("R", CultureInfo.InvariantCulture),
                 Argument<double?> number => result.GetValue(number)?.ToString("R", CultureInfo.InvariantCulture),
+                Argument<double> number => result.GetValue(number).ToString("R", CultureInfo.InvariantCulture),
                 Argument<string> one => result.GetValue(one),
                 _ => null,
             };

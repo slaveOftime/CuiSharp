@@ -218,13 +218,20 @@ Assert.True(app.PaintedAnything());
 `dotnet cui` does the same thing to a real app process from a shell, with nothing added to the app:
 
 ```sh
-dotnet cui tree                  # the controls of the last frame, nested
-dotnet cui click Save            # click a control, print the frame it produced
-dotnet cui click Button "Save"   # …when a heading says the same word
-dotnet cui click editor > Save   # …or name the path to the control
-dotnet cui type Milk             # type into the focused field
-dotnet cui png shot.png          # the frame as a PNG, for a person or a model
+dotnet cui tree                          # the controls of the last frame, nested
+dotnet cui click Save                    # click a control, print the frame it produced
+dotnet cui click "Button Save"           # …when a heading says the same word
+dotnet cui click "editor > Save"         # …or the path to the control
+dotnet cui type Milk                     # type into the focused field
+dotnet cui png shot.png                  # the frame as a PNG, for a person or a model
+dotnet cui tree -a 15036                 # the same, on a live window a person is watching
+dotnet cui session < script.txt          # many commands, one build, one app
 ```
+
+The query is **one quoted argument** — `click "Button Save"`, not `click Button Save` — because the
+app parses that little grammar and this tool hands it over untouched. The tool's own options follow
+the command they belong to (`dotnet cui tree --frames 2`, not `dotnet cui --frames 2 tree`), and
+`dotnet cui <command> --help` lists exactly the options that command honours.
 
 ```
 Frame

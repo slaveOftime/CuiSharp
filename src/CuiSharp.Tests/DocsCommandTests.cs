@@ -6,21 +6,32 @@ namespace CuiSharp.Tests;
 
 /// <summary>
 /// <c>dotnet cui docs</c>: the guide, the reference and the behaviour pages answered from bytes
-/// inside the tool. Like the catalog commands, every call here passes <c>--project</c> pointing at
-/// a directory that does not exist — an ordinary command would fail there with "No app found", so
-/// an answer with exit 0 is itself the proof that reading the documentation discovered no project,
-/// built nothing, started no process and opened no socket.
+/// inside the tool. Offline by construction rather than by promise — these commands declare no
+/// <c>--project</c>, <c>--app</c> or <c>--attach</c>, so a run of one cannot reach a build, a
+/// process or a socket even by accident (see <see cref="TheDocsCommandsCannotBePointedAtAnApp"/>).
 /// </summary>
 public class DocsCommandTests
 {
-    private static readonly string NoProjectHere = Path.Combine(Path.GetTempPath(), "cui-docs-offline-" + Guid.NewGuid());
-
     private static (int Exit, string Out, string Err) Run(params string[] args)
     {
         var output = new StringWriter();
         var error = new StringWriter();
-        int exit = Cli.Run([.. args, "--project", NoProjectHere], output, error);
+        int exit = Cli.Run(args, output, error);
         return (exit, output.ToString(), error.ToString());
+    }
+
+    [Fact]
+    public void TheDocsCommandsCannotBePointedAtAnApp()
+    {
+        // The strongest form of the offline promise: there is no option here that could name a
+        // project, so the documentation cannot resolve one, however the line is spelled.
+        foreach (string argument in new[] { "--project", "--app", "--attach", "--frames" })
+        {
+            (int exit, _, string error) = Run("docs", argument);
+
+            Assert.Equal(2, exit);
+            Assert.Contains($"'{argument}'", error, StringComparison.Ordinal);
+        }
     }
 
     [Fact]
@@ -211,7 +222,7 @@ public class DocsCommandTests
         Assert.Contains("SKILL.md § How to work on a UI", debugging, StringComparison.Ordinal);
         Assert.Contains("SKILL.md § Driving a running app", debugging, StringComparison.Ordinal);
         // Headless one-shots, one process for a script, and a live window a person is watching.
-        Assert.Contains("--stdin", debugging, StringComparison.Ordinal);
+        Assert.Contains("dotnet cui session", debugging, StringComparison.Ordinal);
         Assert.Contains("-a <pid|title>", debugging, StringComparison.Ordinal);
         Assert.Contains("one process", debugging, StringComparison.Ordinal);
         // And the rule that keeps a debugging session from being the only evidence.
@@ -272,17 +283,16 @@ public class DocsCommandTests
     }
 
     /// <summary>
-    /// An assistant that drops the verb still gets the page: `docs debugging` is the same request
-    /// as `docs read debugging`, and correcting the grammar instead would be a wasted turn.
+    /// A reader who drops the verb gets a sentence naming the call that works, not a glossary of
+    /// what `docs` accepts: the page is one word away, and a correction is cheaper than a search.
     /// </summary>
     [Fact]
-    public void TheVerbMayBeDroppedEntirely()
+    public void ADroppedVerbIsAnsweredWithTheReadThatWouldWork()
     {
-        (int exit, string output, _) = Run("docs", "testing");
+        (int exit, _, string error) = Run("docs", "testing");
 
-        Assert.Equal(0, exit);
-        Assert.StartsWith("Topic: testing", output, StringComparison.Ordinal);
-        Assert.Contains("TestApp.Start", output, StringComparison.Ordinal);
+        Assert.Equal(2, exit);
+        Assert.Contains("dotnet cui docs read testing", error, StringComparison.Ordinal);
     }
 
     [Fact]
