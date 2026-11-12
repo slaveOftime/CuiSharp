@@ -20,8 +20,11 @@
          resolved. The shim is literally `dotnet-cui(.exe)` on every OS. -->
     <ToolCommandName>dotnet-cui</ToolCommandName>
     <PackageId>CuiSharp.Tools</PackageId>
-    <Title>CuiSharp.Tools - drive a CuiSharp app from the command line</Title>
-    <Description>Screenshot a CuiSharp app, print the controls of its last frame, and click or type into it - without a window, an agent or a test project.</Description>
+    <!-- The README is the page that says "install this, then run dotnet cui docs", so the
+         package carries it as its readme rather than as an anonymous file in the root. -->
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Title>CuiSharp.Tools - drive a CuiSharp app and read its docs from the command line</Title>
+    <Description>Bundle of the CuiSharp guide and API reference for offline reading, plus a driver that prints a CuiSharp app's controls, clicks and types into it, and saves its frame as a PNG - without a window, an agent SDK or a test project.</Description>
     <PackageTags>cui;ui;tools;dotnet-tool;agent</PackageTags>
   </PropertyGroup>
 
@@ -37,6 +40,23 @@
       project only carries it, which is why the logical name is fixed here and in ApiCatalog.
     -->
     <EmbeddedResource Include="..\..\skills\cui-dotnet\api\catalog.json" LogicalName="CuiSharp.Tools.api-catalog.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <!--
+      The documentation bundle `dotnet cui docs` answers from. These are the same files the
+      CuiSharp package ships in skills/cui-dotnet, embedded rather than copied, so the tool and
+      the package cannot disagree and neither can drift from the guide. The logical names are
+      how DocLibrary derives an id — `…docs.api.Layout.md` is `api/Layout`, `…docs.SKILL.md` is
+      `SKILL` — so this block and DocLibrary.DocId are one contract, checked by a test that
+      reads the embedded bytes back and compares them with the checked-in files.
+    -->
+    <EmbeddedResource Include="..\..\skills\cui-dotnet\SKILL.md" LogicalName="CuiSharp.Tools.docs.SKILL.md" />
+    <EmbeddedResource Include="..\..\skills\cui-dotnet\llms.txt" LogicalName="CuiSharp.Tools.docs.llms.txt" />
+    <EmbeddedResource Include="..\..\skills\cui-dotnet\widgets.md" LogicalName="CuiSharp.Tools.docs.widgets.md" />
+    <EmbeddedResource Include="..\..\skills\cui-dotnet\widgets-more.md" LogicalName="CuiSharp.Tools.docs.widgets-more.md" />
+    <EmbeddedResource Include="..\..\skills\cui-dotnet\hosting.md" LogicalName="CuiSharp.Tools.docs.hosting.md" />
+    <EmbeddedResource Include="..\..\skills\cui-dotnet\native-abi.md" LogicalName="CuiSharp.Tools.docs.native-abi.md" />
+    <EmbeddedResource Include="..\..\skills\cui-dotnet\api\*.md" LogicalName="CuiSharp.Tools.docs.api.%(Filename).md" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />

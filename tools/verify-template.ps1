@@ -251,8 +251,37 @@ internal static class AnalyzerProbe
             if (-not $catalog.HasExited) { $catalog.Kill($true); $catalog.WaitForExit() }
             $catalog.Dispose()
         }
+
+        # And the documentation has to be inside the tool as well, not just beside the repository.
+        # An agent that installs the tool reads the guide from it in a directory that holds no
+        # project; `docs read testing` is the page it is pointed at first, so this asks for it and
+        # requires the rules of that page back.
+        $docsPsi = [System.Diagnostics.ProcessStartInfo]::new('dotnet')
+        $docsPsi.WorkingDirectory = $work
+        foreach ($argument in @('cui', 'docs', 'read', 'testing')) { $docsPsi.ArgumentList.Add($argument) }
+        $docsPsi.UseShellExecute = $false
+        $docsPsi.RedirectStandardOutput = $true
+        $docsPsi.RedirectStandardError = $true
+        $docsPsi.StandardOutputEncoding = [System.Text.UTF8Encoding]::new($false, $true)
+        $docsPsi.StandardErrorEncoding = [System.Text.UTF8Encoding]::new($false, $true)
+        $docs = [System.Diagnostics.Process]::Start($docsPsi)
+        try {
+            $docsOut = $docs.StandardOutput.ReadToEndAsync()
+            $docsErr = $docs.StandardError.ReadToEndAsync()
+            if (-not $docs.WaitForExit(60000)) { throw 'installed dotnet cui docs timed out' }
+            $page = $docsOut.GetAwaiter().GetResult()
+            $errors = $docsErr.GetAwaiter().GetResult()
+            if ($docs.ExitCode -ne 0) { throw "installed dotnet cui docs failed: $errors" }
+            if ($page -notmatch 'Topic: testing' -or $page -notmatch 'TestApp\.Start') {
+                throw "installed dotnet cui docs returned no testing topic: $page"
+            }
+        }
+        finally {
+            if (-not $docs.HasExited) { $docs.Kill($true); $docs.WaitForExit() }
+            $docs.Dispose()
+        }
     } finally { $env:PATH = $savedPath }
-    Write-Host "    $shimName installed, and dotnet cui resolves through it" -ForegroundColor Green
+    Write-Host "    $shimName installed, and dotnet cui resolves through it, offline api and docs included" -ForegroundColor Green
 
     Step 'generating and running a file-based app'
     $defaultMini = Join-Path $work 'demo1'

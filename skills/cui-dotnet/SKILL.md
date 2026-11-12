@@ -515,6 +515,11 @@ evidence behind.
 The rule underneath all four: **one reproduction per task, in a file.** If a check mattered once, it
 belongs in the test suite, not in a shell history.
 
+This guide and the pages beside it are also inside the tool, so a reader with no repository can ask
+for them: `dotnet cui docs` lists the topics by task (`testing`, `debugging`, `layout`,
+`publishing`, …), `dotnet cui docs search <words>` ranks sections, and `dotnet cui docs read <topic>`
+prints one — `docs read debugging` is the two sections above that this tool drives the app with.
+
 ## Testing without a window
 
 `CuiSharp.Testing` drives the real component with no window. Frames happen when the test asks, so a
@@ -684,6 +689,7 @@ Everything below is in this folder, beside this guide; nothing here points outsi
 | records used as array items | `api/Records.md` |
 | the whole API paged, one file per section | `api/` |
 | every declaration as data, for offline lookup | `api/catalog.json` (`dotnet cui api <name> --json`) |
+| the whole folder, offline, with nothing installed but the tool | `dotnet tool install -g CuiSharp.Tools` then `dotnet cui docs` |
 | what each widget does, and its keyboard | `widgets.md`, `widgets-more.md` |
 | hosting: components, mutations, DI | `hosting.md` |
 | which RIDs the package carries, and the glibc floor | `native-abi.md` |

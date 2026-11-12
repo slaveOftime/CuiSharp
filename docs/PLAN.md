@@ -28,6 +28,9 @@ in [ARCHITECTURE.md](ARCHITECTURE.md). Every item here passes the same gates as 
 
 - **Accessibility.** CUI publishes no accessibility tree, so there is no UIA, AT-SPI or
   NSAccessibility. The semantic tree is the foundation to build on, not a substitute.
+- **Installing a skill into a particular agent harness.** `dotnet cui docs` is the portable form of
+  the guide: it works in any shell, for any tool. Per-harness registration (a `skills/` folder, a
+  plugin manifest, a system prompt) stays a local convention, and none of it is generated.
 - **One window per app.** CUI creates one window; multi-window is an upstream question.
 - **IME coverage** beyond what upstream implements.
 - **Chart time axes and gaps.** The managed `NormalizeMode` is a y-value transform; CUI still spaces

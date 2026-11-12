@@ -35,12 +35,19 @@ internal static class Cli
                               line: wall and cpu milliseconds, frames, fps, and the app's
                               heap, working-set and private bytes
 
-        Commands answered offline, from the API catalog inside this tool:
+        Commands answered offline, from the pages and the API catalog inside this tool:
+          docs                the topics and documents bundled here, and what to run next.
+                              Reads no project, builds nothing, starts nothing, needs no network.
+          docs read <what>    one topic, one document or one section: `docs read testing`,
+                              `docs read SKILL`, `docs read SKILL#pitfalls`.
+          docs search <words> the sections that answer a question, ranked, each with the
+                              `docs read` line that opens it.
           api <name>          one declaration: `api ChartOpts`, `api Ui.LineChart`, `api Button`.
                               An exact answer exits 0; an ambiguous or unknown one names the
                               qualified or nearest names and exits nonzero.
           icons [filter]      every icon constant: name, code point, and the literal to paste.
-          Both take --json for machine-readable output; neither builds, launches or loads anything.
+          All of these take --json for machine-readable output; none builds, launches or loads
+          anything.
 
         Options:
           -a, --attach [id]     drive a running live window (--live) over its named pipe instead
@@ -76,6 +83,8 @@ internal static class Cli
         }
     });
 
+    private static readonly Lazy<DocLibrary> BundledDocs = new(DocLibrary.LoadEmbedded);
+
     /// <summary>Runs the tool; the return value is the process exit code.</summary>
     internal static int Run(string[] args, TextWriter output, TextWriter error, TextReader? input = null)
     {
@@ -90,6 +99,9 @@ internal static class Cli
 
             if (options.Command is "api" or "icons")
                 return AnswerCatalog(options, output, error);
+
+            if (options.Command == "docs")
+                return AnswerDocs(options, output, error);
 
             if (options.Command == "ps")
             {
@@ -123,6 +135,54 @@ internal static class Cli
             error.WriteLine(failure.Message);
             return 1;
         }
+    }
+
+    /// <summary>
+    /// Answers a <c>docs</c> call: a topic, a document, a section, or a search. Like the catalog
+    /// commands this returns before any project is resolved, so it works in an empty directory.
+    /// </summary>
+    private static int AnswerDocs(Options options, TextWriter output, TextWriter error)
+    {
+        (CatalogResult? answer, string? usage) = DocsAnswer(BundledDocs.Value, options.Argument);
+        if (usage is not null)
+        {
+            error.WriteLine(usage);
+            return 2;
+        }
+
+        output.WriteLine(options.Json ? answer!.RenderJson() : answer!.Render());
+        return answer!.IsExact ? 0 : 1;
+    }
+
+    /// <summary>
+    /// The <c>docs</c> grammar, separated from the writers so the grammar is testable on its own:
+    /// no argument is the index, <c>search</c> and <c>read</c> are the two verbs, and anything else
+    /// is the thing to read — an assistant that drops <c>read</c> gets the page, not a correction.
+    /// </summary>
+    internal static (CatalogResult? Answer, string? Usage) DocsAnswer(DocLibrary docs, string argument)
+    {
+        string line = argument.Trim();
+        if (line.Length == 0) return (docs.List(), null);
+
+        int space = line.IndexOfAny([' ', '\t']);
+        string verb = space < 0 ? line : line[..space];
+        string rest = space < 0 ? "" : line[(space + 1)..].Trim();
+
+        if (verb.Equals("search", StringComparison.OrdinalIgnoreCase))
+        {
+            return rest.Length > 0
+                ? (docs.Search(rest), null)
+                : (null, "`docs search` needs words to look for: `dotnet cui docs search dialog keyboard`.");
+        }
+
+        if (verb.Equals("read", StringComparison.OrdinalIgnoreCase))
+        {
+            return rest.Length > 0
+                ? (docs.Read(rest), null)
+                : (null, "`docs read` needs a topic, a document or a section: `dotnet cui docs read debugging`.");
+        }
+
+        return (docs.Read(line), null);
     }
 
     private static HeadlessClient StartHeadless(Options options, TextWriter error)
@@ -440,8 +500,8 @@ internal static class Cli
             string argument = words.Count > 1 ? string.Join(' ', words.Skip(1)) : "";
 
             bool showHelp = help || (words.Count == 0 && !streaming && !waiting);
-            if (json && !showHelp && command is not ("api" or "icons" or "ps"))
-                throw new ToolException("Unknown option \"--json\". Only `api`, `icons`, and `ps` support --json.");
+            if (json && !showHelp && command is not ("api" or "icons" or "ps" or "docs"))
+                throw new ToolException("Unknown option \"--json\". Only `docs`, `api`, `icons`, and `ps` support --json.");
 
             return new Options
             {

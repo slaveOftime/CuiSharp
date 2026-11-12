@@ -485,6 +485,13 @@ internal sealed class CatalogResult
     internal static CatalogResult Answer(CatalogMatch match, string term, IReadOnlyList<string> lines) => new(match, term, lines, []);
 
     /// <summary>
+    /// A miss whose explanation was written by the caller: <c>docs</c> answers in its own voice —
+    /// nearest topic, nearest section — where the catalog answers in its own.
+    /// </summary>
+    internal static CatalogResult Missing(string term, IReadOnlyList<string> lines, IReadOnlyList<string> suggestions) =>
+        new(CatalogMatch.Unknown, term, lines, suggestions);
+
+    /// <summary>
     /// Unknown is never dead air: the explanation is the answer even when no name is close,
     /// so the caller learns to re-ask rather than reading silence as "no such API".
     /// </summary>

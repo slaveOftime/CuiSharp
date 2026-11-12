@@ -161,6 +161,46 @@ internal static class MyControls
 ui.Spark(Monthly.Revenue);
 ```
 
+## Give an agent the whole thing
+
+An assistant needs two commands, and the project's instruction file needs one paragraph — never a
+copy of this README:
+
+```sh
+dotnet tool install -g CuiSharp.Tools   # exposes `dotnet cui`
+dotnet cui docs                        # the topics, the documents, and what to run next
+```
+
+Then this is the whole of what a project's `AGENTS.md` has to say about CuiSharp:
+
+> This project uses CuiSharp. Run `dotnet cui docs` before writing UI code. Use
+> `dotnet cui docs search "<question>"` and `dotnet cui docs read <topic>` for the rules and the
+> pitfalls, `dotnet cui api <Name>` for an exact signature, and `dotnet cui tree` / `find` / `click` /
+> `png` to see what a build actually draws. Anything that must keep holding belongs in the test
+> project, not in a shell history.
+
+`dotnet cui docs` answers from the guide, the reference and the behaviour pages **inside the tool**:
+no repository, no NuGet cache, no network, nothing built and nothing started. Fourteen topics cover
+the tasks an assistant arrives with — `getting-started`, `writing-ui`, `custom-controls`, `hosting`,
+`testing`, `debugging`, `layout`, `live-debugging`, `performance`, `theming`, `translation`,
+`publishing`, `signatures`, `widgets` — and each one is a named set of sections of the shipped pages,
+so the tool cannot say anything the documentation does not.
+
+```sh
+dotnet cui docs                          # topics, documents, and the commands that come next
+dotnet cui docs read testing             # one topic, whole
+dotnet cui docs read SKILL               # the guide
+dotnet cui docs read SKILL#pitfalls      # one section of it
+dotnet cui docs search "decimate chart"  # ranked sections, each with the read that opens it
+dotnet cui api ChartOpts                 # exact declarations
+dotnet cui icons chart                   # the glyph index
+```
+
+Every answer names the command that goes deeper, an unknown topic names the nearest one, and
+`--json` turns any of them into machine-readable output. That is why a beginner's project file can be
+short: the framework's rules are versioned with the tool that ships them, instead of being re-explained
+in every repository that uses it.
+
 ## Test it, and let an agent drive it
 
 `CuiSharp.Testing` runs the real component with no window: find a control by what it says, click it,
@@ -256,7 +296,7 @@ src/CuiSharp/            the library: Interop (generated), Ui, Runtime, Semantic
 src/CuiSharp.Analyzers/  CUI001-CUI008, packed into CuiSharp
 src/CuiSharp.CodeFixes/  IDE quick fixes, packed beside the analyzers
 src/CuiSharp.Testing/    TestApp: drive a component without a window
-src/CuiSharp.Tools/      dotnet cui
+src/CuiSharp.Tools/      dotnet cui: the guide and the API offline, plus build, run headless, relay one command
 src/CuiSharp.Templates/  dotnet new cui-app / cui-mini
 samples/CuiSharp.Gallery/           twenty-eight pages, one file per page
 samples/CuiSharp.Gallery.Browser/   the same gallery on a software canvas in WebAssembly
@@ -287,7 +327,9 @@ below works in either place.
 | RIDs carried, glibc floor, provenance | [skills/cui-dotnet/native-abi.md](skills/cui-dotnet/native-abi.md) |
 | Rules and decisions, before changing the framework | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 
-An assistant needs the first two: point it at the folder and say "read `SKILL.md`". `widgets.md` and
+An assistant needs the first two: point it at the folder and say "read `SKILL.md`", or — with
+nothing but the tool installed — tell it to run `dotnet cui docs`, which carries that same folder.
+`widgets.md` and
 `native-abi.md` are copies of CUI's documentation and of the ABI promise, regenerated with
 `pwsh tools/regen.ps1`; the rest of the folder is hand-written or generated from the headers.
 
