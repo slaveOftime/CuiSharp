@@ -391,6 +391,19 @@ internal static class AnalyzerProbe
             throw "a publish of $miniFile must leave exactly one file, $miniExe; found: $($published.Name -join ', ')"
         }
         Write-Host ("    one file, {0:N0} B: {1}" -f $published[0].Length, $miniExe) -ForegroundColor Green
+
+        # The other half of the promise: launching that one file opens the window with no console
+        # behind it. Whether it does is recorded in the apphost's PE subsystem, so the check reads
+        # the published binary rather than trusting the property list that produced it.
+        if ($IsWindows) {
+            $exeBytes = [System.IO.File]::ReadAllBytes($published[0].FullName)
+            $peOffset = [System.BitConverter]::ToInt32($exeBytes, 0x3C)
+            $subsystem = [System.BitConverter]::ToUInt16($exeBytes, $peOffset + 24 + 68)
+            if ($subsystem -ne 2) {
+                throw "the published $miniExe is PE subsystem $subsystem, not 2 (Windows GUI); running it opens a console window"
+            }
+            Write-Host '    GUI-subsystem executable: no console window when launched' -ForegroundColor Green
+        }
     }
 
     if ($IsWindows) {

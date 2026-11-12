@@ -16,11 +16,14 @@
 //   A publish also trims the binary, and that includes the channel `dotnet cui` drives an app
 //   with: add -p:CuiSharpHeadless=true if a tool should inspect the published exe.
 //
-// The five properties below are what makes that binary small: no ICU tables (this app formats the
-// invariant way), size rather than speed in the generated code, and no debug symbols — that last
-// pair is the difference between one file and an exe next to a six-megabyte .pdb.
+// The six properties below: OutputType=WinExe makes the exe a GUI-subsystem binary, so the
+// published app opens its window without a console behind it. The other five make that binary
+// small: no ICU tables (this app formats the invariant way), size rather than speed in the
+// generated code, and no debug symbols — that last pair is the difference between one file and
+// an exe next to a six-megabyte .pdb.
 // 'dotnet new cui-app' sets the same ones in its project file, for the same reasons.
 #:property PublishAot=true
+#:property OutputType=WinExe
 #:property OptimizationPreference=Size
 #:property InvariantGlobalization=true
 #:property StripSymbols=true

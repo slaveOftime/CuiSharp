@@ -4,6 +4,15 @@ Every user-visible change, newest first. Pre-1.0 the minor number carries new su
 carries fixes. The section for a tag is what the GitHub release publishes, so the two cannot say
 different things.
 
+## [Unreleased]
+
+### Fixed
+
+- **`dotnet new cui-mini` no longer opens a console window.** The generated file-based app now
+  sets `#:property OutputType=WinExe`, so `dotnet publish` produces a GUI-subsystem executable
+  like the one `dotnet new cui-app` builds; `tools/verify-template.ps1` reads that subsystem out
+  of the published binary.
+
 ## [0.3.2] — 2026-11-11
 
 The gallery now draws everything CUI ships, and a published binary carries only what it uses.
