@@ -884,6 +884,7 @@ public unsafe class GeneratedOptionMappingTests
             Format = "é",
             Min = 2.5f,
             Max = 2.5f,
+            Annotations = [new ChartAnnotation()],
         };
         var native = value.ToNative();
         Assert.Equal(SizeKind.Fixed, native.Width.Kind);
@@ -899,6 +900,7 @@ public unsafe class GeneratedOptionMappingTests
         Assert.Equal("é", Marshal.PtrToStringUTF8(native.Format));
         Assert.Equal(value.Min, native.Min);
         Assert.Equal(value.Max, native.Max);
+        Assert.NotEqual((nint)0, native.Annotations);
         var zero = default(ChartOpts).ToNative();
         Assert.Equal((nint)0, zero.Labels);
         Assert.Equal((byte)0, zero.Area);
@@ -907,6 +909,7 @@ public unsafe class GeneratedOptionMappingTests
         Assert.Equal((byte)0, zero.Stacked);
         Assert.Equal((byte)0, zero.Smooth);
         Assert.Equal((nint)0, zero.Format);
+        Assert.Equal((nint)0, zero.Annotations);
         }
 
         // cui_image_opts
@@ -1413,7 +1416,6 @@ public unsafe class GeneratedOptionMappingTests
             Autofocus = true,
             Placeholder = "é",
             Marks = [new TextMark()],
-            MarkCount = (int)1,
         };
         var native = value.ToNative();
         Assert.Equal("é", Marshal.PtrToStringUTF8(native.Lang));
@@ -1428,7 +1430,6 @@ public unsafe class GeneratedOptionMappingTests
         Assert.Equal((byte)1, native.Autofocus);
         Assert.Equal("é", Marshal.PtrToStringUTF8(native.Placeholder));
         Assert.NotEqual((nint)0, native.Marks);
-        Assert.Equal(value.MarkCount, native.MarkCount);
         var zero = default(CodeEditorOpts).ToNative();
         Assert.Equal((nint)0, zero.Lang);
         Assert.Equal((byte)0, zero.UseTabs);
@@ -1888,7 +1889,6 @@ public unsafe class GeneratedOptionMappingTests
             Size = 2.5f,
             Sweep = 2.5f,
             Bands = [new GaugeBand()],
-            BandCount = (int)1,
             Ticks = (int)1,
             Target = 2.5f,
             ShowTarget = true,
@@ -1901,7 +1901,6 @@ public unsafe class GeneratedOptionMappingTests
         Assert.Equal(value.Size, native.Size);
         Assert.Equal(value.Sweep, native.Sweep);
         Assert.NotEqual((nint)0, native.Bands);
-        Assert.Equal(value.BandCount, native.BandCount);
         Assert.Equal(value.Ticks, native.Ticks);
         Assert.Equal(value.Target, native.Target);
         Assert.Equal((byte)1, native.ShowTarget);
@@ -1924,7 +1923,6 @@ public unsafe class GeneratedOptionMappingTests
             Labels = ["one", "two"],
             Format = "é",
             Overlays = [new Series()],
-            OverlayCount = (int)1,
             NoVolume = true,
             Ohlc = true,
             Up = new Color(12, 34, 56, 78),
@@ -1938,7 +1936,6 @@ public unsafe class GeneratedOptionMappingTests
         Assert.Equal("two", Marshal.PtrToStringUTF8(((nint*)native.Labels)[1]));
         Assert.Equal("é", Marshal.PtrToStringUTF8(native.Format));
         Assert.NotEqual((nint)0, native.Overlays);
-        Assert.Equal(value.OverlayCount, native.OverlayCount);
         Assert.Equal((byte)1, native.NoVolume);
         Assert.Equal((byte)1, native.Ohlc);
         Assert.Equal((byte)12, native.Up.R);
@@ -2248,12 +2245,10 @@ public unsafe class GeneratedOptionMappingTests
         var value = new ContextOpts
         {
             Parts = [new VizItem()],
-            PartCount = (int)1,
             Unit = "é",
         };
         var native = value.ToNative();
         Assert.NotEqual((nint)0, native.Parts);
-        Assert.Equal(value.PartCount, native.PartCount);
         Assert.Equal("é", Marshal.PtrToStringUTF8(native.Unit));
         var zero = default(ContextOpts).ToNative();
         Assert.Equal((nint)0, zero.Parts);
@@ -2312,7 +2307,6 @@ public unsafe class GeneratedOptionMappingTests
             Busy = true,
             Attachments = ["one", "two"],
             Models = [new Model()],
-            ModelCount = (int)1,
             MaxLines = (int)1,
             Width = Size.Px(24),
         };
@@ -2323,7 +2317,6 @@ public unsafe class GeneratedOptionMappingTests
         Assert.Equal("two", Marshal.PtrToStringUTF8(((nint*)native.Attachments)[1]));
         Assert.Equal((nint)123, native.Removed);
         Assert.NotEqual((nint)0, native.Models);
-        Assert.Equal(value.ModelCount, native.ModelCount);
         Assert.Equal((nint)123, native.Model);
         Assert.Equal(value.MaxLines, native.MaxLines);
         Assert.Equal(SizeKind.Fixed, native.Width.Kind);
@@ -3307,7 +3300,6 @@ public unsafe class GeneratedOptionMappingTests
             Base = (ulong)1,
             BytesPerRow = (int)1,
             Ranges = [new HexRange()],
-            RangeCount = (int)1,
             NoAscii = true,
             NoHeader = true,
             Size = 2.5f,
@@ -3319,7 +3311,6 @@ public unsafe class GeneratedOptionMappingTests
         Assert.Equal(value.Base, native.Base);
         Assert.Equal(value.BytesPerRow, native.BytesPerRow);
         Assert.NotEqual((nint)0, native.Ranges);
-        Assert.Equal(value.RangeCount, native.RangeCount);
         Assert.Equal((byte)1, native.NoAscii);
         Assert.Equal((byte)1, native.NoHeader);
         Assert.Equal(value.Size, native.Size);
@@ -3616,7 +3607,6 @@ public unsafe class GeneratedOptionMappingTests
             Height = 2.5f,
             RowHeight = 2.5f,
             Markers = [new TraceMarker()],
-            MarkerCount = (int)1,
         };
         var native = value.ToNative();
         Assert.Equal(SizeKind.Fixed, native.Width.Kind);
@@ -3624,7 +3614,6 @@ public unsafe class GeneratedOptionMappingTests
         Assert.Equal(value.Height, native.Height);
         Assert.Equal(value.RowHeight, native.RowHeight);
         Assert.NotEqual((nint)0, native.Markers);
-        Assert.Equal(value.MarkerCount, native.MarkerCount);
         var zero = default(TraceOpts).ToNative();
         Assert.Equal((nint)0, zero.Markers);
         }
@@ -3794,6 +3783,143 @@ public unsafe class GeneratedOptionMappingTests
         Assert.Equal(value.Height, native.Height);
         Assert.Equal((nint)123, native.Selected);
         var zero = default(ApiExplorerOpts).ToNative((nint)123);
+        }
+
+        // cui_dot_chart_opts
+        {
+        var value = new DotChartOpts
+        {
+            Width = Size.Px(24),
+            Height = 2.5f,
+            XMin = 2.5,
+            XMax = 2.5,
+            XUnits = (AxisUnits)1,
+            XFormat = "é",
+            XStep = 2.5,
+            Min = 2.5f,
+            Max = 2.5f,
+            Format = "é",
+            Unit = "é",
+            Pitch = 2.5f,
+            NoGrid = true,
+            NoAxis = true,
+            NoReadout = true,
+            Annotations = [new ChartAnnotation()],
+        };
+        var native = value.ToNative();
+        Assert.Equal(SizeKind.Fixed, native.Width.Kind);
+        Assert.Equal(24f, native.Width.Value);
+        Assert.Equal(value.Height, native.Height);
+        Assert.Equal(value.XMin, native.XMin);
+        Assert.Equal(value.XMax, native.XMax);
+        Assert.Equal(value.XUnits, native.XUnits);
+        Assert.Equal("é", Marshal.PtrToStringUTF8(native.XFormat));
+        Assert.Equal(value.XStep, native.XStep);
+        Assert.Equal(value.Min, native.Min);
+        Assert.Equal(value.Max, native.Max);
+        Assert.Equal("é", Marshal.PtrToStringUTF8(native.Format));
+        Assert.Equal("é", Marshal.PtrToStringUTF8(native.Unit));
+        Assert.Equal(value.Pitch, native.Pitch);
+        Assert.Equal((byte)1, native.NoGrid);
+        Assert.Equal((byte)1, native.NoAxis);
+        Assert.Equal((byte)1, native.NoReadout);
+        Assert.NotEqual((nint)0, native.Annotations);
+        var zero = default(DotChartOpts).ToNative();
+        Assert.Equal((nint)0, zero.XFormat);
+        Assert.Equal((nint)0, zero.Format);
+        Assert.Equal((nint)0, zero.Unit);
+        Assert.Equal((byte)0, zero.NoGrid);
+        Assert.Equal((byte)0, zero.NoAxis);
+        Assert.Equal((byte)0, zero.NoReadout);
+        Assert.Equal((nint)0, zero.Annotations);
+        }
+
+        // cui_event_track_opts
+        {
+        var value = new EventTrackOpts
+        {
+            Width = Size.Px(24),
+            Step = 2.5,
+            Units = (AxisUnits)1,
+            Format = "é",
+            LabelStep = 2.5,
+            NoAdd = true,
+            NoRemove = true,
+            NoAxis = true,
+        };
+        var native = value.ToNative((nint)123);
+        Assert.Equal(SizeKind.Fixed, native.Width.Kind);
+        Assert.Equal(24f, native.Width.Value);
+        Assert.Equal(value.Step, native.Step);
+        Assert.Equal(value.Units, native.Units);
+        Assert.Equal("é", Marshal.PtrToStringUTF8(native.Format));
+        Assert.Equal(value.LabelStep, native.LabelStep);
+        Assert.Equal((nint)123, native.Selected);
+        Assert.Equal((byte)1, native.NoAdd);
+        Assert.Equal((byte)1, native.NoRemove);
+        Assert.Equal((byte)1, native.NoAxis);
+        var zero = default(EventTrackOpts).ToNative((nint)123);
+        Assert.Equal((nint)0, zero.Format);
+        Assert.Equal((byte)0, zero.NoAdd);
+        Assert.Equal((byte)0, zero.NoRemove);
+        Assert.Equal((byte)0, zero.NoAxis);
+        }
+
+        // cui_readout_opts
+        {
+        var value = new ReadoutOpts
+        {
+            Unit = "é",
+            Detail = "é",
+            Size = (ControlSize)1,
+            Tone = (Tone)1,
+            Accent = true,
+            Align = (TextAlign)1,
+            Width = Size.Px(24),
+        };
+        var native = value.ToNative();
+        Assert.Equal("é", Marshal.PtrToStringUTF8(native.Unit));
+        Assert.Equal("é", Marshal.PtrToStringUTF8(native.Detail));
+        Assert.Equal(value.Size, native.Size);
+        Assert.Equal(value.Tone, native.Tone);
+        Assert.Equal((byte)1, native.Accent);
+        Assert.Equal(value.Align, native.Align);
+        Assert.Equal(SizeKind.Fixed, native.Width.Kind);
+        Assert.Equal(24f, native.Width.Value);
+        var zero = default(ReadoutOpts).ToNative();
+        Assert.Equal((nint)0, zero.Unit);
+        Assert.Equal((nint)0, zero.Detail);
+        Assert.Equal((byte)0, zero.Accent);
+        }
+
+        // cui_dot_display_opts
+        {
+        var value = new DotDisplayOpts
+        {
+            Pitch = 2.5f,
+            Color = new Color(12, 34, 56, 78),
+            Accent = true,
+            NoDim = true,
+            Marquee = true,
+            Align = (TextAlign)1,
+            Width = Size.Px(24),
+        };
+        var native = value.ToNative();
+        Assert.Equal(value.Pitch, native.Pitch);
+        Assert.Equal((byte)12, native.Color.R);
+        Assert.Equal((byte)34, native.Color.G);
+        Assert.Equal((byte)56, native.Color.B);
+        Assert.Equal((byte)78, native.Color.A);
+        Assert.Equal((byte)1, native.Accent);
+        Assert.Equal((byte)1, native.NoDim);
+        Assert.Equal((byte)1, native.Marquee);
+        Assert.Equal(value.Align, native.Align);
+        Assert.Equal(SizeKind.Fixed, native.Width.Kind);
+        Assert.Equal(24f, native.Width.Value);
+        var zero = default(DotDisplayOpts).ToNative();
+        Assert.Equal((byte)0, zero.Accent);
+        Assert.Equal((byte)0, zero.NoDim);
+        Assert.Equal((byte)0, zero.Marquee);
         }
 
         // cui_file_dialog_opts

@@ -68,7 +68,7 @@ or holding them across an `await`. Nothing can outlive the frame, so nothing can
 
 | | |
 |---|---|
-| **One executable** | NativeAOT links CUI in statically: no runtime, no `cui.dll`, no VC++ redistributable. The gallery, all twenty-eight pages, is 2.9 MB. |
+| **One executable** | NativeAOT links CUI in statically: no runtime, no `cui.dll`, no VC++ redistributable. The gallery, all twenty-nine pages, is 2.9 MB. |
 | **No UI framework** | CUI creates the window, owns the message loop and the GL context. `CuiApp.Run` is the entire host. |
 | **Sub-millisecond frames** | 0.85 ms mean for the live gallery, software rasterizer, 1240×820 (`--fps 900`). |
 | **0 B per frame** | Labels, options and interpolated text come from a per-frame arena. A live chart with a million samples allocates nothing. |
@@ -306,7 +306,7 @@ src/CuiSharp.CodeFixes/  IDE quick fixes, packed beside the analyzers
 src/CuiSharp.Testing/    TestApp: drive a component without a window
 src/CuiSharp.Tools/      dotnet cui: the guide and the API offline, plus build, run headless, relay one command
 src/CuiSharp.Templates/  dotnet new cui-app / cui-mini
-samples/CuiSharp.Gallery/           twenty-eight pages, one file per page
+samples/CuiSharp.Gallery/           twenty-nine pages, one file per page
 samples/CuiSharp.Gallery.Browser/   the same gallery on a software canvas in WebAssembly
 native/                              the CUI submodule and the two build scripts
 tools/                               bindgen.cs, regen.ps1, verify-template.ps1,

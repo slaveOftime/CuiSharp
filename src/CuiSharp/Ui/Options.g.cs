@@ -126,7 +126,7 @@ public partial struct Box
 /// <summary>cui_card_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct Card
 {
-    /// <summary>const char * id</summary>
+    /// <summary>identity of the card, for its hover state (defaults to an automatic id)</summary>
     public string? Id;
     /// <summary>cui_size width</summary>
     public Size Width;
@@ -138,9 +138,9 @@ public partial struct Card
     public float MaxWidth;
     /// <summary>float pad</summary>
     public float Pad;
-    /// <summary>float pad_x</summary>
+    /// <summary>left and right padding in points; 0 uses `pad`</summary>
     public float PadX;
-    /// <summary>float pad_y</summary>
+    /// <summary>top and bottom padding in points; 0 uses `pad`</summary>
     public float PadY;
     /// <summary>float gap</summary>
     public float Gap;
@@ -415,7 +415,7 @@ public partial struct InputOpts
     public string? Hint;
     /// <summary>error text below (red)</summary>
     public string? Error;
-    /// <summary>_Bool password</summary>
+    /// <summary>shows dots instead of the text, with an eye button that reveals it</summary>
     public bool Password;
     /// <summary>_Bool disabled</summary>
     public bool Disabled;
@@ -470,7 +470,7 @@ public partial struct NumberOpts
     public bool Disabled;
     /// <summary>cui_size width</summary>
     public Size Width;
-    /// <summary>const char * suffix</summary>
+    /// <summary>muted text after the value, before the - and + buttons, e.g. &quot;kg&quot;</summary>
     public string? Suffix;
 
     internal readonly NativeNumberOpts ToNative() => new()
@@ -556,11 +556,11 @@ public partial struct NavOpts
 {
     /// <summary>const char * icon</summary>
     public string? Icon;
-    /// <summary>const char * badge</summary>
+    /// <summary>small text at the right edge of the item, e.g. a count</summary>
     public string? Badge;
-    /// <summary>_Bool selected</summary>
+    /// <summary>the current page: medium weight text, and the group&apos;s highlight glides to it</summary>
     public bool Selected;
-    /// <summary>const char * group</summary>
+    /// <summary>items with the same group name share one highlight; `NULL` puts them in one common group</summary>
     public string? Group;
 
     internal readonly NativeNavOpts ToNative() => new()
@@ -637,7 +637,7 @@ public partial struct MenuOpts
     public Placement Placement;
     /// <summary>float width</summary>
     public float Width;
-    /// <summary>_Bool icon_only</summary>
+    /// <summary>an icon button (the ellipsis unless `icon` is set) with the label as its tooltip</summary>
     public bool IconOnly;
 
     internal readonly NativeMenuOpts ToNative() => new()
@@ -662,7 +662,7 @@ public partial struct MenuItemOpts
     public bool Danger;
     /// <summary>_Bool disabled</summary>
     public bool Disabled;
-    /// <summary>_Bool checked</summary>
+    /// <summary>a check mark at the right edge of the item</summary>
     public bool Checked;
 
     internal readonly NativeMenuItemOpts ToNative() => new()
@@ -683,7 +683,7 @@ public partial struct DialogOpts
     public string? Description;
     /// <summary>default 440</summary>
     public float Width;
-    /// <summary>_Bool no_close_button</summary>
+    /// <summary>hides the x in the corner (Esc and a click outside still close it unless `persistent`)</summary>
     public bool NoCloseButton;
     /// <summary>clicking outside or Esc does not close</summary>
     public bool Persistent;
@@ -797,9 +797,9 @@ public partial struct BadgeOpts
 {
     /// <summary>cui_tone tone</summary>
     public Tone Tone;
-    /// <summary>_Bool dot</summary>
+    /// <summary>a small dot before the text, in the tone&apos;s color</summary>
     public bool Dot;
-    /// <summary>_Bool solid</summary>
+    /// <summary>filled with the tone&apos;s color instead of a light tint of it</summary>
     public bool Solid;
     /// <summary>const char * icon</summary>
     public string? Icon;
@@ -822,11 +822,11 @@ public partial struct AvatarOpts
 {
     /// <summary>float size</summary>
     public float Size;
-    /// <summary>cui_texture image</summary>
+    /// <summary>picture to show instead of the initials of the name</summary>
     public ulong Image;
-    /// <summary>const char * status</summary>
+    /// <summary>a dot at the bottom right: &quot;online&quot; green, &quot;busy&quot; red, &quot;away&quot; amber, anything else gray</summary>
     public string? Status;
-    /// <summary>_Bool square</summary>
+    /// <summary>rounded square instead of a circle</summary>
     public bool Square;
 
     internal readonly NativeAvatarOpts ToNative() => new()
@@ -846,7 +846,7 @@ public partial struct EmptyOpts
     public string? Icon;
     /// <summary>const char * description</summary>
     public string? Description;
-    /// <summary>const char * action</summary>
+    /// <summary>label of a button under the text; the call returns true when it is clicked</summary>
     public string? Action;
 
     internal readonly NativeEmptyOpts ToNative() => new()
@@ -861,11 +861,11 @@ public partial struct EmptyOpts
 /// <summary>cui_metric_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct MetricOpts
 {
-    /// <summary>float delta</summary>
+    /// <summary>change shown beside the value with a trend arrow, as a percentage (4.2 shows +4.2%); 0 hides it</summary>
     public float Delta;
-    /// <summary>const char * delta_label</summary>
+    /// <summary>text shown instead of the percentage, e.g. &quot;+12 this week&quot;; `delta` still sets arrow and color</summary>
     public string? DeltaLabel;
-    /// <summary>const float * spark</summary>
+    /// <summary>values for a sparkline under the value; needs at least 2</summary>
     public float[]? Spark;
     /// <summary>const char * icon</summary>
     public string? Icon;
@@ -892,9 +892,9 @@ public partial struct TreeOpts
 {
     /// <summary>const char * icon</summary>
     public string? Icon;
-    /// <summary>_Bool leaf</summary>
+    /// <summary>a node without children: no chevron, a file icon, and `*open` is left alone</summary>
     public bool Leaf;
-    /// <summary>_Bool selected</summary>
+    /// <summary>drawn with the active background and medium weight text</summary>
     public bool Selected;
 
     internal readonly NativeTreeOpts ToNative() => new()
@@ -911,13 +911,13 @@ public partial struct ListItemOpts
 {
     /// <summary>const char * icon</summary>
     public string? Icon;
-    /// <summary>const char * subtitle</summary>
+    /// <summary>second line under the title, smaller; makes the row taller</summary>
     public string? Subtitle;
-    /// <summary>const char * trailing</summary>
+    /// <summary>muted text at the right edge, e.g. a time or a count</summary>
     public string? Trailing;
-    /// <summary>_Bool selected</summary>
+    /// <summary>drawn with the active background</summary>
     public bool Selected;
-    /// <summary>const char * avatar</summary>
+    /// <summary>a name: shows that person&apos;s avatar (initials) in place of the icon</summary>
     public string? Avatar;
 
     internal readonly NativeListItemOpts ToNative() => new()
@@ -938,9 +938,9 @@ public partial struct TableOpts
     public Size Height;
     /// <summary>_Bool striped</summary>
     public bool Striped;
-    /// <summary>_Bool compact</summary>
+    /// <summary>rows at least 36 points tall instead of 44</summary>
     public bool Compact;
-    /// <summary>_Bool selectable</summary>
+    /// <summary>rows take keyboard focus and show the hand cursor (pass the chosen row&apos;s state to `cui_table_row`)</summary>
     public bool Selectable;
 
     internal readonly NativeTableOpts ToNative(nint sort) => new()
@@ -979,6 +979,8 @@ public partial struct ChartOpts
     public float Min;
     /// <summary>fixed y range when min != max</summary>
     public float Max;
+    /// <summary>lines and points drawn over the chart (line and bar charts)</summary>
+    public ChartAnnotation[]? Annotations;
     /// <summary>C# only: Upper bound on drawn points. 0 derives twice the viewport width; longer series are min/max decimated into the frame arena.</summary>
     public int MaxPoints;
     /// <summary>C# only: Scale each series against its own first finite nonzero sample so series of different magnitudes compare by shape; see ChartNormalizer.</summary>
@@ -999,6 +1001,8 @@ public partial struct ChartOpts
         Format = Utf8.Get(Format),
         Min = Min,
         Max = Max,
+        Annotations = ChartAnnotation.ToFrameArray(Annotations),
+        AnnotationCount = Annotations?.Length ?? 0,
     };
 }
 
@@ -1009,9 +1013,9 @@ public partial struct ImageOpts
     public Size Width;
     /// <summary>cui_size height</summary>
     public Size Height;
-    /// <summary>float radius</summary>
+    /// <summary>corner radius in points</summary>
     public float Radius;
-    /// <summary>cui_color tint</summary>
+    /// <summary>color the image is multiplied by; unset draws it as it is</summary>
     public Color Tint;
 
     internal readonly NativeImageOpts ToNative() => new()
@@ -1077,7 +1081,7 @@ public partial struct CropperOpts
 /// <summary>cui_radio_cards_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct RadioCardsOpts
 {
-    /// <summary>int columns</summary>
+    /// <summary>cards per row; 0 puts up to 3 choices in one row and more in 2 columns</summary>
     public int Columns;
 
     internal readonly NativeRadioCardsOpts ToNative() => new()
@@ -1094,7 +1098,7 @@ public partial struct TagOpts
     public string? Label;
     /// <summary>const char * placeholder</summary>
     public string? Placeholder;
-    /// <summary>int max_tags</summary>
+    /// <summary>most tags the field holds; once reached it takes no more typing. 0 means no limit</summary>
     public int MaxTags;
     /// <summary>cui_size width</summary>
     public Size Width;
@@ -1112,7 +1116,7 @@ public partial struct TagOpts
 /// <summary>cui_hold_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct HoldOpts
 {
-    /// <summary>float duration</summary>
+    /// <summary>seconds the button must be held before it fires, default 1.2</summary>
     public float Duration;
     /// <summary>const char * icon</summary>
     public string? Icon;
@@ -1131,7 +1135,7 @@ public partial struct HoldOpts
 /// <summary>cui_timeline_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct TimelineOpts
 {
-    /// <summary>const char * time</summary>
+    /// <summary>muted text at the right of the title, e.g. &quot;2h ago&quot;</summary>
     public string? Time;
     /// <summary>const char * description</summary>
     public string? Description;
@@ -1139,7 +1143,7 @@ public partial struct TimelineOpts
     public string? Icon;
     /// <summary>cui_tone tone</summary>
     public Tone Tone;
-    /// <summary>_Bool last</summary>
+    /// <summary>the final item: no connector line below its dot and no space after it</summary>
     public bool Last;
 
     internal readonly NativeTimelineOpts ToNative() => new()
@@ -1162,7 +1166,7 @@ public partial struct SplitButtonOpts
     public ControlSize Size;
     /// <summary>const char * icon</summary>
     public string? Icon;
-    /// <summary>const char *const * item_icons</summary>
+    /// <summary>one icon per menu item, in the order of the items; `NULL` for none</summary>
     public string[]? ItemIcons;
     /// <summary>_Bool disabled</summary>
     public bool Disabled;
@@ -1183,9 +1187,9 @@ public partial struct ToggleGroupOpts
 {
     /// <summary>const char *const * icons</summary>
     public string[]? Icons;
-    /// <summary>_Bool exclusive</summary>
+    /// <summary>clicking an item turns it on and every other one off, like radio buttons</summary>
     public bool Exclusive;
-    /// <summary>_Bool icon_only</summary>
+    /// <summary>items that have an icon show only the icon, with their label as the tooltip</summary>
     public bool IconOnly;
     /// <summary>cui_control_size size</summary>
     public ControlSize Size;
@@ -1275,13 +1279,13 @@ public partial struct SpeedDialOpts
 /// <summary>cui_user_menu_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct UserMenuOpts
 {
-    /// <summary>const char * detail</summary>
+    /// <summary>second line under the name, e.g. an email address; also in the menu&apos;s header</summary>
     public string? Detail;
-    /// <summary>const char * status</summary>
+    /// <summary>status dot on the avatar: &quot;online&quot;, &quot;busy&quot;, &quot;away&quot; or anything else (gray)</summary>
     public string? Status;
-    /// <summary>cui_texture avatar</summary>
+    /// <summary>picture for the avatar instead of the name&apos;s initials</summary>
     public ulong Avatar;
-    /// <summary>_Bool compact</summary>
+    /// <summary>only the avatar as the button, as wide as it needs; the menu then opens below it</summary>
     public bool Compact;
     /// <summary>cui_placement placement</summary>
     public Placement Placement;
@@ -1398,13 +1402,13 @@ public partial struct FileBrowserOpts
     public Size Height;
     /// <summary>patterns that files must match, e.g. &quot;*.png;*.jpg&quot;; folders always show</summary>
     public string? Filter;
-    /// <summary>_Bool folders_only</summary>
+    /// <summary>lists folders and leaves the files out</summary>
     public bool FoldersOnly;
     /// <summary>show hidden files</summary>
     public bool Hidden;
     /// <summary>the sidebar of places</summary>
     public bool NoPlaces;
-    /// <summary>sidebar paths, default home, desktop, documents, downloads and the root</summary>
+    /// <summary>full paths for the sidebar, each shown by its last part; at most 6</summary>
     public string[]? Places;
     /// <summary>default 20,000</summary>
     public int MaxEntries;
@@ -1462,11 +1466,11 @@ public partial struct FilePickerOpts
 /// <summary>cui_code_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct CodeOpts
 {
-    /// <summary>const char * lang</summary>
+    /// <summary>&quot;c&quot;, &quot;cpp&quot;, &quot;js&quot;, &quot;ts&quot;, &quot;python&quot;, &quot;rust&quot;, &quot;go&quot;, &quot;json&quot;, &quot;shell&quot; or &quot;text&quot; (no colors); shown in the title bar</summary>
     public string? Lang;
     /// <summary>e.g. a file name</summary>
     public string? Title;
-    /// <summary>_Bool line_numbers</summary>
+    /// <summary>a column of line numbers on the left</summary>
     public bool LineNumbers;
     /// <summary>1 based line range to emphasize</summary>
     public int HighlightFrom;
@@ -1496,9 +1500,9 @@ public partial struct CodeOpts
 /// <summary>cui_json_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct JsonOpts
 {
-    /// <summary>int expand_depth</summary>
+    /// <summary>levels of the tree that start open, default 2</summary>
     public int ExpandDepth;
-    /// <summary>float max_height</summary>
+    /// <summary>points; taller content scrolls. 0 shows everything</summary>
     public float MaxHeight;
 
     internal readonly NativeJsonOpts ToNative() => new()
@@ -1557,7 +1561,7 @@ public partial struct CodeEditorOpts
     public bool UseTabs;
     /// <summary>_Bool read_only</summary>
     public bool ReadOnly;
-    /// <summary>_Bool no_line_numbers</summary>
+    /// <summary>hides the gutter of line numbers</summary>
     public bool NoLineNumbers;
     /// <summary>_Bool autofocus</summary>
     public bool Autofocus;
@@ -1565,8 +1569,6 @@ public partial struct CodeEditorOpts
     public string? Placeholder;
     /// <summary>ranges to highlight (search results, regex matches), sorted by start</summary>
     public TextMark[]? Marks;
-    /// <summary>int mark_count</summary>
-    public int MarkCount;
 
     internal readonly NativeCodeEditorOpts ToNative() => new()
     {
@@ -1582,7 +1584,7 @@ public partial struct CodeEditorOpts
         Autofocus = (byte)(Autofocus ? 1 : 0),
         Placeholder = Utf8.Get(Placeholder),
         Marks = TextMark.ToFrameArray(Marks),
-        MarkCount = MarkCount,
+        MarkCount = Marks?.Length ?? 0,
     };
 }
 
@@ -1637,7 +1639,7 @@ public partial struct ChatOpts
     public bool Mine;
     /// <summary>name above the first bubble of a group</summary>
     public string? Author;
-    /// <summary>const char * time</summary>
+    /// <summary>shown after the author&apos;s name; on your own messages after `status`</summary>
     public string? Time;
     /// <summary>under your own last message, e.g. &quot;Read&quot;</summary>
     public string? Status;
@@ -1645,7 +1647,7 @@ public partial struct ChatOpts
     public bool Grouped;
     /// <summary>shows the avatar (others) and status (mine)</summary>
     public bool LastInGroup;
-    /// <summary>cui_texture avatar</summary>
+    /// <summary>picture for the sender&apos;s avatar instead of initials (other people&apos;s messages)</summary>
     public ulong Avatar;
     /// <summary>render the text with cui_markdown (compact, as wide as it needs)</summary>
     public bool Markdown;
@@ -1668,13 +1670,13 @@ public partial struct ChatOpts
 /// <summary>cui_comment_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct CommentOpts
 {
-    /// <summary>const char * time</summary>
+    /// <summary>muted text after the author&apos;s name, e.g. &quot;2h ago&quot;</summary>
     public string? Time;
-    /// <summary>int depth</summary>
+    /// <summary>0 for a top level comment; each level indents a reply 44 points under a connector line</summary>
     public int Depth;
-    /// <summary>_Bool edited</summary>
+    /// <summary>adds &quot;edited&quot; after the time</summary>
     public bool Edited;
-    /// <summary>const char * badge</summary>
+    /// <summary>small badge after the author&apos;s name, e.g. &quot;Author&quot;</summary>
     public string? Badge;
 
     internal readonly NativeCommentOpts ToNative(nint likes, nint liked) => new()
@@ -1694,15 +1696,15 @@ public partial struct CarouselOpts
 {
     /// <summary>float height</summary>
     public float Height;
-    /// <summary>float auto_advance</summary>
+    /// <summary>seconds on a slide before it moves to the next, paused while hovered; 0 turns it off</summary>
     public float AutoAdvance;
     /// <summary>float gap</summary>
     public float Gap;
-    /// <summary>_Bool no_arrows</summary>
+    /// <summary>hides the previous and next arrows that show on hover</summary>
     public bool NoArrows;
-    /// <summary>_Bool no_dots</summary>
+    /// <summary>hides the row of page dots under the slides</summary>
     public bool NoDots;
-    /// <summary>_Bool loop</summary>
+    /// <summary>past the last slide comes the first again, and back from the first the last</summary>
     public bool Loop;
 
     internal readonly NativeCarouselOpts ToNative() => new()
@@ -1724,9 +1726,9 @@ public partial struct CompareOpts
     public Size Width;
     /// <summary>float height</summary>
     public float Height;
-    /// <summary>const char * before_label</summary>
+    /// <summary>caption in the top left corner, default &quot;Before&quot;</summary>
     public string? BeforeLabel;
-    /// <summary>const char * after_label</summary>
+    /// <summary>caption in the top right corner, default &quot;After&quot;</summary>
     public string? AfterLabel;
     /// <summary>the images&apos; width / height: they are cropped to fill, never stretched</summary>
     public float Aspect;
@@ -1749,7 +1751,7 @@ public partial struct CardStackOpts
     public Size Width;
     /// <summary>float height</summary>
     public float Height;
-    /// <summary>int visible</summary>
+    /// <summary>cards of the deck that show at once, default 3</summary>
     public int Visible;
 
     internal readonly NativeCardStackOpts ToNative() => new()
@@ -1768,11 +1770,11 @@ public partial struct CounterOpts
     public string? Format;
     /// <summary>float size</summary>
     public float Size;
-    /// <summary>cui_font font</summary>
+    /// <summary>default `CUI_FONT_DISPLAY`</summary>
     public Font Font;
     /// <summary>cui_color color</summary>
     public Color Color;
-    /// <summary>_Bool group_thousands</summary>
+    /// <summary>commas between thousands: 48210 shows as 48,210</summary>
     public bool GroupThousands;
 
     internal readonly NativeCounterOpts ToNative() => new()
@@ -1789,7 +1791,7 @@ public partial struct CounterOpts
 /// <summary>cui_ticker_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct TickerOpts
 {
-    /// <summary>float speed</summary>
+    /// <summary>points per second, default 40</summary>
     public float Speed;
     /// <summary>float height</summary>
     public float Height;
@@ -1805,9 +1807,9 @@ public partial struct TickerOpts
 /// <summary>cui_heatmap_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct HeatmapOpts
 {
-    /// <summary>const char *const * row_labels</summary>
+    /// <summary>one label per row, left of the grid; `NULL` for none</summary>
     public string[]? RowLabels;
-    /// <summary>const char *const * col_labels</summary>
+    /// <summary>one label per column, under the grid; labels that would overlap are skipped</summary>
     public string[]? ColLabels;
     /// <summary>cell size, default fits the width</summary>
     public float Cell;
@@ -1839,7 +1841,7 @@ public partial struct HeatmapOpts
 /// <summary>cui_calendar_heatmap_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct CalendarHeatmapOpts
 {
-    /// <summary>float cell</summary>
+    /// <summary>size of a day&apos;s square in points, default 11</summary>
     public float Cell;
     /// <summary>cui_color color</summary>
     public Color Color;
@@ -1882,7 +1884,7 @@ public partial struct RadarOpts
 {
     /// <summary>float size</summary>
     public float Size;
-    /// <summary>float max</summary>
+    /// <summary>value at the outer ring; 0 picks a round number above the largest value</summary>
     public float Max;
     /// <summary>const char * format</summary>
     public string? Format;
@@ -1930,7 +1932,7 @@ public partial struct SankeyOpts
     public float Height;
     /// <summary>const char * format</summary>
     public string? Format;
-    /// <summary>float node_width</summary>
+    /// <summary>width of the node bars in points, default 12</summary>
     public float NodeWidth;
 
     internal readonly NativeSankeyOpts ToNative() => new()
@@ -1946,11 +1948,11 @@ public partial struct SankeyOpts
 /// <summary>cui_waffle_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct WaffleOpts
 {
-    /// <summary>float cell</summary>
+    /// <summary>size of a square in points, default 18</summary>
     public float Cell;
-    /// <summary>int columns</summary>
+    /// <summary>squares per row, at most 60; default 10</summary>
     public int Columns;
-    /// <summary>int rows</summary>
+    /// <summary>rows of squares, at most 60; default 10</summary>
     public int Rows;
     /// <summary>const char * format</summary>
     public string? Format;
@@ -1994,9 +1996,9 @@ public partial struct BarListOpts
     public Size Width;
     /// <summary>const char * format</summary>
     public string? Format;
-    /// <summary>int max_rows</summary>
+    /// <summary>shows only this many rows from the top; 0 shows all</summary>
     public int MaxRows;
-    /// <summary>_Bool keep_order</summary>
+    /// <summary>keeps the items in the order given instead of sorting them largest first</summary>
     public bool KeepOrder;
     /// <summary>cui_color color</summary>
     public Color Color;
@@ -2015,13 +2017,13 @@ public partial struct BarListOpts
 /// <summary>cui_rings_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct RingsOpts
 {
-    /// <summary>names and shares beside the rings</summary>
+    /// <summary>float size</summary>
     public float Size;
-    /// <summary>names and shares beside the rings</summary>
+    /// <summary>width of each ring in points; 0 uses a tenth of `size`, at least 8</summary>
     public float Thickness;
-    /// <summary>names and shares beside the rings</summary>
+    /// <summary>large text in the middle of the rings, e.g. a total</summary>
     public string? Center;
-    /// <summary>names and shares beside the rings</summary>
+    /// <summary>small muted text under `center`; shown only with `center`</summary>
     public string? Caption;
     /// <summary>names and shares beside the rings</summary>
     public bool Legend;
@@ -2044,13 +2046,13 @@ public partial struct ScatterOpts
     public Size Width;
     /// <summary>float height</summary>
     public float Height;
-    /// <summary>const char * x_label</summary>
+    /// <summary>title under the x axis; also names the x value in the tooltip</summary>
     public string? XLabel;
-    /// <summary>const char * y_label</summary>
+    /// <summary>title above the y axis; also names the y value in the tooltip</summary>
     public string? YLabel;
-    /// <summary>const char * x_format</summary>
+    /// <summary>printf format for the x axis labels and the tooltip</summary>
     public string? XFormat;
-    /// <summary>const char * y_format</summary>
+    /// <summary>printf format for the y axis labels and the tooltip</summary>
     public string? YFormat;
     /// <summary>_Bool no_legend</summary>
     public bool NoLegend;
@@ -2081,15 +2083,13 @@ public partial struct RadialGaugeOpts
     public float Size;
     /// <summary>degrees of arc, default 240 (90 to 300)</summary>
     public float Sweep;
-    /// <summary>const cui_gauge_band * bands</summary>
+    /// <summary>colored stretches of the arc, each from the one before up to its `to`; at most 16</summary>
     public GaugeBand[]? Bands;
-    /// <summary>int band_count</summary>
-    public int BandCount;
     /// <summary>labelled divisions, default 5; -1 hides the ticks</summary>
     public int Ticks;
     /// <summary>a marker on the arc, when show_target is set</summary>
     public float Target;
-    /// <summary>_Bool show_target</summary>
+    /// <summary>draws the marker at `target`</summary>
     public bool ShowTarget;
     /// <summary>a thick arc filled to the value instead of a needle</summary>
     public bool NoNeedle;
@@ -2103,7 +2103,7 @@ public partial struct RadialGaugeOpts
         Size = Size,
         Sweep = Sweep,
         Bands = GaugeBand.ToFrameArray(Bands),
-        BandCount = BandCount,
+        BandCount = Bands?.Length ?? 0,
         Ticks = Ticks,
         Target = Target,
         ShowTarget = (byte)(ShowTarget ? 1 : 0),
@@ -2122,10 +2122,8 @@ public partial struct CandlestickOpts
     public string[]? Labels;
     /// <summary>prices, default &quot;%.2f&quot;</summary>
     public string? Format;
-    /// <summary>lines with one value per candle, e.g. moving averages</summary>
+    /// <summary>series drawn as lines over the candles; at most 4</summary>
     public Series[]? Overlays;
-    /// <summary>lines with one value per candle, e.g. moving averages</summary>
-    public int OverlayCount;
     /// <summary>volume bars show when any candle has volume</summary>
     public bool NoVolume;
     /// <summary>OHLC bars instead of candle bodies</summary>
@@ -2143,7 +2141,7 @@ public partial struct CandlestickOpts
         Labels = UiMarshal.Strings(Labels),
         Format = Utf8.Get(Format),
         Overlays = Series.ToFrameArray(Overlays),
-        OverlayCount = OverlayCount,
+        OverlayCount = Overlays?.Length ?? 0,
         NoVolume = (byte)(NoVolume ? 1 : 0),
         Ohlc = (byte)(Ohlc ? 1 : 0),
         Up = UiMarshal.ToNative(Up),
@@ -2154,7 +2152,7 @@ public partial struct CandlestickOpts
 /// <summary>cui_text_fx_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct TextFxOpts
 {
-    /// <summary>cui_font font</summary>
+    /// <summary>default `CUI_FONT_BODY` (0)</summary>
     public Font Font;
     /// <summary>float size</summary>
     public float Size;
@@ -2162,7 +2160,7 @@ public partial struct TextFxOpts
     public Color Color;
     /// <summary>cui_size width</summary>
     public Size Width;
-    /// <summary>_Bool nowrap</summary>
+    /// <summary>keeps the text on one line instead of wrapping it</summary>
     public bool Nowrap;
     /// <summary>shimmer: sweeps per second; typewriter: characters per second</summary>
     public float Speed;
@@ -2188,15 +2186,15 @@ public partial struct TextFxOpts
 /// <summary>cui_gradient_text_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct GradientTextOpts
 {
-    /// <summary>cui_font font</summary>
+    /// <summary>default `CUI_FONT_BODY` (0)</summary>
     public Font Font;
     /// <summary>float size</summary>
     public float Size;
-    /// <summary>cui_color from</summary>
+    /// <summary>color at the left edge; default the accent, or the text color under the neutral accent</summary>
     public Color From;
-    /// <summary>cui_color to</summary>
+    /// <summary>color at the right edge, default `from` blended toward the foreground color</summary>
     public Color To;
-    /// <summary>_Bool animate</summary>
+    /// <summary>the gradient drifts along the text</summary>
     public bool Animate;
     /// <summary>cui_size width</summary>
     public Size Width;
@@ -2226,7 +2224,7 @@ public partial struct SpotlightOpts
     public float Gap;
     /// <summary>cui_color color</summary>
     public Color Color;
-    /// <summary>_Bool beam</summary>
+    /// <summary>a light travels around the card&apos;s edge all the time</summary>
     public bool Beam;
 
     internal readonly NativeSpotlightOpts ToNative() => new()
@@ -2265,7 +2263,7 @@ public partial struct DockOpts
 {
     /// <summary>float size</summary>
     public float Size;
-    /// <summary>float magnify</summary>
+    /// <summary>how much the icon under the pointer grows, default 1.55</summary>
     public float Magnify;
 
     internal readonly NativeDockOpts ToNative() => new()
@@ -2281,9 +2279,9 @@ public partial struct DockItemOpts
 {
     /// <summary>cui_color color</summary>
     public Color Color;
-    /// <summary>_Bool running</summary>
+    /// <summary>a small dot under the icon</summary>
     public bool Running;
-    /// <summary>int badge</summary>
+    /// <summary>a count badge on the icon (&quot;99+&quot; above 99); 0 for none</summary>
     public int Badge;
 
     internal readonly NativeDockItemOpts ToNative() => new()
@@ -2300,7 +2298,7 @@ public partial struct TabBarOpts
 {
     /// <summary>cui_size width</summary>
     public Size Width;
-    /// <summary>_Bool labels_on_selected_only</summary>
+    /// <summary>only the selected tab shows its label; the others show just their icon</summary>
     public bool LabelsOnSelectedOnly;
 
     internal readonly NativeTabBarOpts ToNative() => new()
@@ -2316,13 +2314,13 @@ public partial struct TileOpts
 {
     /// <summary>const char * icon</summary>
     public string? Icon;
-    /// <summary>const char * detail</summary>
+    /// <summary>the state line under the label, default &quot;On&quot; or &quot;Off&quot;</summary>
     public string? Detail;
     /// <summary>cui_color color</summary>
     public Color Color;
     /// <summary>cui_size width</summary>
     public Size Width;
-    /// <summary>_Bool wide</summary>
+    /// <summary>icon beside the text in a lower tile, instead of above it</summary>
     public bool Wide;
 
     internal readonly NativeTileOpts ToNative() => new()
@@ -2343,7 +2341,7 @@ public partial struct WaveformOpts
     public Size Width;
     /// <summary>float height</summary>
     public float Height;
-    /// <summary>float bar</summary>
+    /// <summary>width of each bar in points, default 3</summary>
     public float Bar;
     /// <summary>float gap</summary>
     public float Gap;
@@ -2366,7 +2364,7 @@ public partial struct NowPlayingOpts
 {
     /// <summary>cui_size width</summary>
     public Size Width;
-    /// <summary>_Bool compact</summary>
+    /// <summary>smaller artwork and padding, and no previous button</summary>
     public bool Compact;
 
     internal readonly NativeNowPlayingOpts ToNative() => new()
@@ -2380,11 +2378,11 @@ public partial struct NowPlayingOpts
 /// <summary>cui_reasoning_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct ReasoningOpts
 {
-    /// <summary>_Bool thinking</summary>
+    /// <summary>still thinking: the header shimmers and the body opens; it folds when this turns false</summary>
     public bool Thinking;
-    /// <summary>float seconds</summary>
+    /// <summary>time spent, for the header: &quot;Thinking for 12s&quot;, then &quot;Thought for 12s&quot;</summary>
     public float Seconds;
-    /// <summary>const char * title</summary>
+    /// <summary>header text to show instead of the &quot;Thinking&quot; and &quot;Thought for&quot; lines</summary>
     public string? Title;
 
     internal readonly NativeReasoningOpts ToNative() => new()
@@ -2403,13 +2401,13 @@ public partial struct ToolCallOpts
     public CuiTaskStatus Status;
     /// <summary>const char * icon</summary>
     public string? Icon;
-    /// <summary>const char * detail</summary>
+    /// <summary>muted text after the tool&apos;s name, e.g. the file or query it works on</summary>
     public string? Detail;
-    /// <summary>const char * input</summary>
+    /// <summary>what was sent to the tool; the row then opens to show it (as JSON when it parses)</summary>
     public string? Input;
-    /// <summary>const char * output</summary>
+    /// <summary>what the tool returned, shown when open; labelled &quot;Error&quot; when the status is failed</summary>
     public string? Output;
-    /// <summary>float seconds</summary>
+    /// <summary>how long the call took, shown at the end of the row unless it is pending; 0 hides it</summary>
     public float Seconds;
 
     internal readonly NativeToolCallOpts ToNative() => new()
@@ -2427,7 +2425,7 @@ public partial struct ToolCallOpts
 /// <summary>cui_agent_plan_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct AgentPlanOpts
 {
-    /// <summary>const char * title</summary>
+    /// <summary>heading of the plan, default &quot;Plan&quot;</summary>
     public string? Title;
 
     internal readonly NativeAgentPlanOpts ToNative() => new()
@@ -2442,7 +2440,7 @@ public partial struct AgentStatusOpts
 {
     /// <summary>cui_task_status status</summary>
     public CuiTaskStatus Status;
-    /// <summary>float seconds</summary>
+    /// <summary>elapsed time shown after the text, as 42s or 1m 05s; 0 hides it</summary>
     public float Seconds;
     /// <summary>const char * icon</summary>
     public string? Icon;
@@ -2459,10 +2457,8 @@ public partial struct AgentStatusOpts
 /// <summary>cui_context_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct ContextOpts
 {
-    /// <summary>const cui_viz_item * parts</summary>
+    /// <summary>what fills the context (label, amount, color), for the breakdown on hover</summary>
     public VizItem[]? Parts;
-    /// <summary>int part_count</summary>
-    public int PartCount;
     /// <summary>const char * unit</summary>
     public string? Unit;
 
@@ -2470,7 +2466,7 @@ public partial struct ContextOpts
     {
         Sentinel = 0,
         Parts = VizItem.ToFrameArray(Parts),
-        PartCount = PartCount,
+        PartCount = Parts?.Length ?? 0,
         Unit = Utf8.Get(Unit),
     };
 }
@@ -2478,11 +2474,11 @@ public partial struct ContextOpts
 /// <summary>cui_response_actions_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct ResponseActionsOpts
 {
-    /// <summary>const char * copy_text</summary>
+    /// <summary>the text the copy button copies; `NULL` leaves the button out</summary>
     public string? CopyText;
-    /// <summary>_Bool no_regenerate</summary>
+    /// <summary>hides the regenerate button</summary>
     public bool NoRegenerate;
-    /// <summary>_Bool no_share</summary>
+    /// <summary>hides the share button</summary>
     public bool NoShare;
 
     internal readonly NativeResponseActionsOpts ToNative(nint vote) => new()
@@ -2498,7 +2494,7 @@ public partial struct ResponseActionsOpts
 /// <summary>cui_prompt_suggestions_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct PromptSuggestionsOpts
 {
-    /// <summary>int columns</summary>
+    /// <summary>cards per row, default 2</summary>
     public int Columns;
 
     internal readonly NativePromptSuggestionsOpts ToNative() => new()
@@ -2511,7 +2507,7 @@ public partial struct PromptSuggestionsOpts
 /// <summary>cui_model_picker_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct ModelPickerOpts
 {
-    /// <summary>_Bool ghost</summary>
+    /// <summary>no border or fill on the button until hovered, for use inside another control</summary>
     public bool Ghost;
     /// <summary>cui_placement placement</summary>
     public Placement Placement;
@@ -2529,14 +2525,12 @@ public partial struct ComposerOpts
 {
     /// <summary>const char * placeholder</summary>
     public string? Placeholder;
-    /// <summary>_Bool busy</summary>
+    /// <summary>a reply is being generated: the send button becomes stop and Enter does not send</summary>
     public bool Busy;
-    /// <summary>const char *const * attachments</summary>
+    /// <summary>names of the attached files, shown as chips above the text, each with an x</summary>
     public string[]? Attachments;
-    /// <summary>const cui_model * models</summary>
+    /// <summary>models for a picker beside the attach button; `NULL` for no picker</summary>
     public Model[]? Models;
-    /// <summary>int model_count</summary>
-    public int ModelCount;
     /// <summary>default 8</summary>
     public int MaxLines;
     /// <summary>cui_size width</summary>
@@ -2551,7 +2545,7 @@ public partial struct ComposerOpts
         AttachmentCount = Attachments?.Length ?? 0,
         Removed = removed,
         Models = Model.ToFrameArray(Models),
-        ModelCount = ModelCount,
+        ModelCount = Models?.Length ?? 0,
         Model = model,
         MaxLines = MaxLines,
         Width = UiMarshal.ToNative(Width),
@@ -2577,9 +2571,9 @@ public partial struct VoiceOrbOpts
 /// <summary>cui_kanban_column_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct KanbanColumnOpts
 {
-    /// <summary>cui_color dot</summary>
+    /// <summary>a small dot of this color before the title; unset for none</summary>
     public Color Dot;
-    /// <summary>int limit</summary>
+    /// <summary>work in progress limit: the count reads &quot;3 / 5&quot; and turns red above it; 0 for none</summary>
     public int Limit;
     /// <summary>float width</summary>
     public float Width;
@@ -2596,11 +2590,11 @@ public partial struct KanbanColumnOpts
 /// <summary>cui_week_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct WeekOpts
 {
-    /// <summary>float start_hour</summary>
+    /// <summary>first hour shown, default 7; set together with `end_hour`</summary>
     public float StartHour;
-    /// <summary>float end_hour</summary>
+    /// <summary>last hour shown, default 21; used only when it is greater than `start_hour`</summary>
     public float EndHour;
-    /// <summary>float hour_height</summary>
+    /// <summary>points per hour, default 52</summary>
     public float HourHeight;
     /// <summary>cui_size height</summary>
     public Size Height;
@@ -2650,13 +2644,13 @@ public partial struct MonthOpts
 /// <summary>cui_gantt_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct GanttOpts
 {
-    /// <summary>float day_width</summary>
+    /// <summary>points per day, default 30</summary>
     public float DayWidth;
-    /// <summary>float row_height</summary>
+    /// <summary>points per task row, default 40</summary>
     public float RowHeight;
     /// <summary>cui_size height</summary>
     public Size Height;
-    /// <summary>int today</summary>
+    /// <summary>day to mark as today, counted from `origin`; 0 marks none</summary>
     public int Today;
     /// <summary>_Bool read_only</summary>
     public bool ReadOnly;
@@ -2679,7 +2673,7 @@ public partial struct HoverCardOpts
     public Placement Placement;
     /// <summary>float width</summary>
     public float Width;
-    /// <summary>float delay</summary>
+    /// <summary>seconds the pointer must rest on the component before the card shows, default 0.45</summary>
     public float Delay;
 
     internal readonly NativeHoverCardOpts ToNative() => new()
@@ -2694,7 +2688,7 @@ public partial struct HoverCardOpts
 /// <summary>cui_confirm_popover_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct ConfirmPopoverOpts
 {
-    /// <summary>const char * title</summary>
+    /// <summary>the question, in medium weight at the top, e.g. &quot;Delete this file?&quot;</summary>
     public string? Title;
     /// <summary>const char * description</summary>
     public string? Description;
@@ -2722,13 +2716,13 @@ public partial struct ConfirmPopoverOpts
 /// <summary>cui_expandable_text_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct ExpandableTextOpts
 {
-    /// <summary>int lines</summary>
+    /// <summary>lines shown while collapsed, default 3</summary>
     public int Lines;
     /// <summary>float size</summary>
     public float Size;
     /// <summary>cui_color color</summary>
     public Color Color;
-    /// <summary>cui_color fade_to</summary>
+    /// <summary>color the last line fades into; set it to the surface behind the text, default the background</summary>
     public Color FadeTo;
 
     internal readonly NativeExpandableTextOpts ToNative() => new()
@@ -2748,7 +2742,7 @@ public partial struct ExpandableCardOpts
     public string? Description;
     /// <summary>const char * icon</summary>
     public string? Icon;
-    /// <summary>const char * badge</summary>
+    /// <summary>small badge in the header before the chevron, colored by `badge_tone`; `NULL` for none</summary>
     public string? Badge;
     /// <summary>cui_tone badge_tone</summary>
     public Tone BadgeTone;
@@ -2770,7 +2764,7 @@ public partial struct BannerOpts
     public Tone Tone;
     /// <summary>const char * icon</summary>
     public string? Icon;
-    /// <summary>const char * action</summary>
+    /// <summary>label of a button in the banner; the call returns true when it is clicked</summary>
     public string? Action;
     /// <summary>_Bool dismissible</summary>
     public bool Dismissible;
@@ -2788,9 +2782,9 @@ public partial struct BannerOpts
 /// <summary>cui_countdown_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct CountdownOpts
 {
-    /// <summary>_Bool hide_days</summary>
+    /// <summary>no days tile; the hours tile counts the days in (49 hours, not 2 days and 1 hour)</summary>
     public bool HideDays;
-    /// <summary>_Bool compact</summary>
+    /// <summary>small tiles joined by colons, without the unit names under them</summary>
     public bool Compact;
 
     internal readonly NativeCountdownOpts ToNative() => new()
@@ -2804,7 +2798,7 @@ public partial struct CountdownOpts
 /// <summary>cui_checklist_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct ChecklistOpts
 {
-    /// <summary>const char * title</summary>
+    /// <summary>heading of the card, default &quot;Get started&quot;</summary>
     public string? Title;
     /// <summary>const char * description</summary>
     public string? Description;
@@ -2826,7 +2820,7 @@ public partial struct MultiSelectOpts
     public string? Placeholder;
     /// <summary>const char *const * icons</summary>
     public string[]? Icons;
-    /// <summary>_Bool searchable</summary>
+    /// <summary>a search field at the top of the list that filters the items as you type</summary>
     public bool Searchable;
     /// <summary>chips before &quot;+N&quot;, default 3</summary>
     public int MaxChips;
@@ -2854,7 +2848,7 @@ public partial struct DateRangeOpts
     public string? Placeholder;
     /// <summary>cui_size width</summary>
     public Size Width;
-    /// <summary>_Bool no_presets</summary>
+    /// <summary>hides the list of preset ranges beside (or above) the calendar</summary>
     public bool NoPresets;
 
     internal readonly NativeDateRangeOpts ToNative() => new()
@@ -2872,9 +2866,9 @@ public partial struct TimeOpts
 {
     /// <summary>const char * label</summary>
     public string? Label;
-    /// <summary>_Bool twelve_hour</summary>
+    /// <summary>shows 1 to 12 with AM and PM (as in &quot;2:30 PM&quot;); `*hour` stays 0..23</summary>
     public bool TwelveHour;
-    /// <summary>int minute_step</summary>
+    /// <summary>minutes between the entries of the minute column, default 5</summary>
     public int MinuteStep;
     /// <summary>cui_size width</summary>
     public Size Width;
@@ -2892,15 +2886,15 @@ public partial struct TimeOpts
 /// <summary>cui_wheel_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct WheelOpts
 {
-    /// <summary>int rows</summary>
+    /// <summary>rows in view, made odd so the selected one sits in the middle; default 5</summary>
     public int Rows;
     /// <summary>cui_size width</summary>
     public Size Width;
-    /// <summary>_Bool loop</summary>
+    /// <summary>the items wrap around: after the last comes the first again</summary>
     public bool Loop;
-    /// <summary>_Bool join_left</summary>
+    /// <summary>squares off the left end of the selection band, to join a wheel on that side</summary>
     public bool JoinLeft;
-    /// <summary>_Bool join_right</summary>
+    /// <summary>squares off the right end of the selection band, to join a wheel on that side</summary>
     public bool JoinRight;
 
     internal readonly NativeWheelOpts ToNative() => new()
@@ -2919,9 +2913,9 @@ public partial struct RulerOpts
 {
     /// <summary>float step</summary>
     public float Step;
-    /// <summary>int major_every</summary>
+    /// <summary>every Nth tick is long and labelled, default 10; Shift+arrows move this many steps</summary>
     public int MajorEvery;
-    /// <summary>float spacing</summary>
+    /// <summary>points between two ticks (one `step` apart), default 9</summary>
     public float Spacing;
     /// <summary>const char * format</summary>
     public string? Format;
@@ -3012,15 +3006,15 @@ public partial struct FaderOpts
     public string? Unit;
     /// <summary>track length, default 160</summary>
     public float Length;
-    /// <summary>_Bool horizontal</summary>
+    /// <summary>the track runs left to right, with the label before it, instead of bottom to top</summary>
     public bool Horizontal;
     /// <summary>float step</summary>
     public float Step;
     /// <summary>double-click value, default 0 (clamped to the range)</summary>
     public float Reset;
-    /// <summary>scale marks in value units, labelled beside the track</summary>
+    /// <summary>values to mark and label beside the track, e.g. dB marks; at most 32</summary>
     public float[]? Ticks;
-    /// <summary>a level meter beside the track (linear peaks, up to 8); a dB fader&apos;s range sets its scale</summary>
+    /// <summary>linear sample peaks, one per channel, for a level meter beside the track; `NULL` for none</summary>
     public float[]? Meter;
     /// <summary>_Bool hide_value</summary>
     public bool HideValue;
@@ -3057,7 +3051,7 @@ public partial struct LevelMeterOpts
     public float Length;
     /// <summary>each channel&apos;s bar, default 6</summary>
     public float Thickness;
-    /// <summary>_Bool horizontal</summary>
+    /// <summary>bars run left to right instead of bottom to top</summary>
     public bool Horizontal;
     /// <summary>dB labels beside the bars</summary>
     public bool Scale;
@@ -3092,7 +3086,7 @@ public partial struct SignatureOpts
     public float Height;
     /// <summary>const char * placeholder</summary>
     public string? Placeholder;
-    /// <summary>cui_color ink</summary>
+    /// <summary>color of the strokes, default the foreground color</summary>
     public Color Ink;
 
     internal readonly NativeSignatureOpts ToNative() => new()
@@ -3114,7 +3108,7 @@ public partial struct DropzoneOpts
     public string? Description;
     /// <summary>const char * icon</summary>
     public string? Icon;
-    /// <summary>const char * accept</summary>
+    /// <summary>extensions it takes, separated by semicolons, e.g. &quot;png;jpg;pdf&quot;; `NULL` takes any file</summary>
     public string? Accept;
     /// <summary>default 160</summary>
     public float Height;
@@ -3139,7 +3133,7 @@ public partial struct DropzoneOpts
 /// <summary>cui_inline_edit_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct InlineEditOpts
 {
-    /// <summary>cui_font font</summary>
+    /// <summary>font of the text and of the field, default `CUI_FONT_MEDIUM`</summary>
     public Font Font;
     /// <summary>float size</summary>
     public float Size;
@@ -3188,15 +3182,15 @@ public partial struct MoneyOpts
 {
     /// <summary>const char * label</summary>
     public string? Label;
-    /// <summary>const char * symbol</summary>
+    /// <summary>currency symbol before the amount, default &quot;$&quot;</summary>
     public string? Symbol;
-    /// <summary>const char * code</summary>
+    /// <summary>currency code after the amount, e.g. &quot;USD&quot;</summary>
     public string? Code;
     /// <summary>int decimals</summary>
     public int Decimals;
     /// <summary>cui_size width</summary>
     public Size Width;
-    /// <summary>const char * hint</summary>
+    /// <summary>helper text below the field</summary>
     public string? Hint;
 
     internal readonly NativeMoneyOpts ToNative() => new()
@@ -3274,7 +3268,7 @@ public partial struct NodeOpts
 /// <summary>cui_pin_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct PinOpts
 {
-    /// <summary>int type</summary>
+    /// <summary>0 links to any pin; another number links only to pins of that type and picks their color</summary>
     public int Type;
 
     internal readonly NativePinOpts ToNative() => new()
@@ -3300,7 +3294,7 @@ public partial struct MenuBarOpts
 /// <summary>cui_menu_bar_menu_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct MenuBarMenuOpts
 {
-    /// <summary>char mnemonic</summary>
+    /// <summary>letter that opens the menu with Alt; 0 uses the first letter or digit of the label</summary>
     public sbyte Mnemonic;
     /// <summary>float width</summary>
     public float Width;
@@ -3409,11 +3403,11 @@ public partial struct StatusProgressOpts
 /// <summary>cui_doc_tabs_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct DocTabsOpts
 {
-    /// <summary>_Bool shortcuts</summary>
+    /// <summary>Ctrl+Tab, Ctrl+Shift+Tab, Ctrl+PageUp/Down and Ctrl+W (Cmd+W on macOS) work from anywhere in the window</summary>
     public bool Shortcuts;
-    /// <summary>_Bool no_close</summary>
+    /// <summary>tabs have no x and cannot be closed (middle click, Delete and Ctrl+W do nothing)</summary>
     public bool NoClose;
-    /// <summary>_Bool no_reorder</summary>
+    /// <summary>tabs cannot be dragged or moved with Shift+Left/Right</summary>
     public bool NoReorder;
 
     internal readonly NativeDocTabsOpts ToNative() => new()
@@ -3458,7 +3452,7 @@ public partial struct DockPanelOpts
 {
     /// <summary>const char * icon</summary>
     public string? Icon;
-    /// <summary>_Bool dirty</summary>
+    /// <summary>unsaved changes: the panel&apos;s tab shows a dot in place of its x</summary>
     public bool Dirty;
 
     internal readonly NativeDockPanelOpts ToNative() => new()
@@ -3589,11 +3583,11 @@ public partial struct EmojiPickerOpts
     public string? Hint;
     /// <summary>10 names: recent, then Unicode&apos;s nine groups</summary>
     public string[]? GroupNames;
-    /// <summary>_Bool no_search</summary>
+    /// <summary>hides the search field</summary>
     public bool NoSearch;
-    /// <summary>_Bool no_preview</summary>
+    /// <summary>hides the row at the bottom that shows the hovered emoji and its name</summary>
     public bool NoPreview;
-    /// <summary>_Bool no_tone</summary>
+    /// <summary>hides the skin tone button</summary>
     public bool NoTone;
 
     internal readonly NativeEmojiPickerOpts ToNative(nint recent, nuint recentCap, nint tone) => new()
@@ -3626,10 +3620,8 @@ public partial struct HexViewOpts
     public ulong Base;
     /// <summary>8, 16 (default) or 32</summary>
     public int BytesPerRow;
-    /// <summary>drawn in order, later ones on top</summary>
+    /// <summary>byte ranges to highlight, each with a tone and a tooltip label</summary>
     public HexRange[]? Ranges;
-    /// <summary>drawn in order, later ones on top</summary>
-    public int RangeCount;
     /// <summary>hide the ASCII column</summary>
     public bool NoAscii;
     /// <summary>hide the column header (00 01 .. 0F)</summary>
@@ -3645,7 +3637,7 @@ public partial struct HexViewOpts
         Base = Base,
         BytesPerRow = BytesPerRow,
         Ranges = HexRange.ToFrameArray(Ranges),
-        RangeCount = RangeCount,
+        RangeCount = Ranges?.Length ?? 0,
         Edit = default,
         NoAscii = (byte)(NoAscii ? 1 : 0),
         NoHeader = (byte)(NoHeader ? 1 : 0),
@@ -3702,7 +3694,7 @@ public partial struct CurveOpts
     public bool Snap;
     /// <summary>a marker at x = playhead</summary>
     public bool ShowPlayhead;
-    /// <summary>float playhead</summary>
+    /// <summary>x of the playhead marker, drawn when `show_playhead` is set</summary>
     public float Playhead;
 
     internal readonly NativeCurveOpts ToNative(nint selected) => new()
@@ -3822,7 +3814,7 @@ public partial struct ProblemsOpts
     public Size Width;
     /// <summary>float height</summary>
     public float Height;
-    /// <summary>_Bool no_toolbar</summary>
+    /// <summary>hides the severity toggles and the filter field above the list</summary>
     public bool NoToolbar;
 
     internal readonly NativeProblemsOpts ToNative() => new()
@@ -3851,9 +3843,9 @@ public partial struct PipelineOpts
 /// <summary>cui_query_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct QueryOpts
 {
-    /// <summary>default 3</summary>
+    /// <summary>cui_size width</summary>
     public Size Width;
-    /// <summary>default 3</summary>
+    /// <summary>how deep groups may nest, default 3</summary>
     public int MaxDepth;
     /// <summary>_Bool read_only</summary>
     public bool ReadOnly;
@@ -3896,7 +3888,7 @@ public partial struct KeymapOpts
     public Size Width;
     /// <summary>names for the legend</summary>
     public string[]? Categories;
-    /// <summary>_Bool no_function_row</summary>
+    /// <summary>leaves out the row of function keys</summary>
     public bool NoFunctionRow;
 
     internal readonly NativeKeymapOpts ToNative(nint mods) => new()
@@ -3934,7 +3926,7 @@ public partial struct GraphOpts
     public Size Width;
     /// <summary>float height</summary>
     public float Height;
-    /// <summary>_Bool top_down</summary>
+    /// <summary>layers stack from top to bottom instead of running side by side</summary>
     public bool TopDown;
 
     internal readonly NativeGraphOpts ToNative(nint selected) => new()
@@ -3950,9 +3942,9 @@ public partial struct GraphOpts
 /// <summary>cui_waterfall_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct WaterfallOpts
 {
-    /// <summary>seconds; 0: no line</summary>
+    /// <summary>cui_size width</summary>
     public Size Width;
-    /// <summary>seconds; 0: no line</summary>
+    /// <summary>float height</summary>
     public float Height;
     /// <summary>seconds; 0: no line</summary>
     public double DomLoaded;
@@ -3979,10 +3971,8 @@ public partial struct TraceOpts
     public float Height;
     /// <summary>default 20</summary>
     public float RowHeight;
-    /// <summary>const cui_trace_marker * markers</summary>
+    /// <summary>moments drawn as lines across every lane, named in a strip under the ruler</summary>
     public TraceMarker[]? Markers;
-    /// <summary>int marker_count</summary>
-    public int MarkerCount;
 
     internal readonly NativeTraceOpts ToNative() => new()
     {
@@ -3991,7 +3981,7 @@ public partial struct TraceOpts
         Height = Height,
         RowHeight = RowHeight,
         Markers = TraceMarker.ToFrameArray(Markers),
-        MarkerCount = MarkerCount,
+        MarkerCount = Markers?.Length ?? 0,
     };
 }
 
@@ -4055,7 +4045,7 @@ public partial struct RequestBarOpts
 {
     /// <summary>cui_size width</summary>
     public Size Width;
-    /// <summary>_Bool loading</summary>
+    /// <summary>a request is in flight: the button reads Cancel and Enter does not send</summary>
     public bool Loading;
     /// <summary>const char * placeholder</summary>
     public string? Placeholder;
@@ -4088,11 +4078,11 @@ public partial struct UptimeOpts
 /// <summary>cui_time_histogram_opts. All fields are optional; zero selects native defaults.</summary>
 public partial struct TimeHistogramOpts
 {
-    /// <summary>default 140</summary>
+    /// <summary>cui_size width</summary>
     public Size Width;
     /// <summary>default 140</summary>
     public float Height;
-    /// <summary>_Bool utc</summary>
+    /// <summary>label times in UTC instead of local time</summary>
     public bool Utc;
 
     internal readonly NativeTimeHistogramOpts ToNative() => new()
@@ -4181,6 +4171,162 @@ public partial struct ApiExplorerOpts
         Width = UiMarshal.ToNative(Width),
         Height = Height,
         Selected = selected,
+    };
+}
+
+/// <summary>cui_dot_chart_opts. All fields are optional; zero selects native defaults.</summary>
+public partial struct DotChartOpts
+{
+    /// <summary>cui_size width</summary>
+    public Size Width;
+    /// <summary>the plot and its labels, default 200</summary>
+    public float Height;
+    /// <summary>what the first and last sample stand for; equal: 0 to count - 1</summary>
+    public double XMin;
+    /// <summary>what the first and last sample stand for; equal: 0 to count - 1</summary>
+    public double XMax;
+    /// <summary>cui_axis_units x_units</summary>
+    public AxisUnits XUnits;
+    /// <summary>x labels with CUI_AXIS_NUMBER, default &quot;%g&quot;</summary>
+    public string? XFormat;
+    /// <summary>spacing of the x labels in x units; 0 picks one that fits</summary>
+    public double XStep;
+    /// <summary>value range when min != max; otherwise 0 to the largest stacked value</summary>
+    public float Min;
+    /// <summary>value range when min != max; otherwise 0 to the largest stacked value</summary>
+    public float Max;
+    /// <summary>values in the readout, default &quot;%.0f&quot;</summary>
+    public string? Format;
+    /// <summary>after values in the readout, e.g. &quot;MG&quot;</summary>
+    public string? Unit;
+    /// <summary>distance between dot centers in points, default 6</summary>
+    public float Pitch;
+    /// <summary>hides the dim dots of the empty grid</summary>
+    public bool NoGrid;
+    /// <summary>hides the x labels, e.g. when an event track under the chart has them</summary>
+    public bool NoAxis;
+    /// <summary>no value label under the pointer</summary>
+    public bool NoReadout;
+    /// <summary>lines and points drawn over the dots</summary>
+    public ChartAnnotation[]? Annotations;
+
+    internal readonly NativeDotChartOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Width = UiMarshal.ToNative(Width),
+        Height = Height,
+        XMin = XMin,
+        XMax = XMax,
+        XUnits = XUnits,
+        XFormat = Utf8.Get(XFormat),
+        XStep = XStep,
+        Min = Min,
+        Max = Max,
+        Format = Utf8.Get(Format),
+        Unit = Utf8.Get(Unit),
+        Pitch = Pitch,
+        NoGrid = (byte)(NoGrid ? 1 : 0),
+        NoAxis = (byte)(NoAxis ? 1 : 0),
+        NoReadout = (byte)(NoReadout ? 1 : 0),
+        Annotations = ChartAnnotation.ToFrameArray(Annotations),
+        AnnotationCount = Annotations?.Length ?? 0,
+    };
+}
+
+/// <summary>cui_event_track_opts. All fields are optional; zero selects native defaults.</summary>
+public partial struct EventTrackOpts
+{
+    /// <summary>cui_size width</summary>
+    public Size Width;
+    /// <summary>events snap to multiples of this from `min`; 0 does not snap</summary>
+    public double Step;
+    /// <summary>cui_axis_units units</summary>
+    public AxisUnits Units;
+    /// <summary>labels with CUI_AXIS_NUMBER, default &quot;%g&quot;</summary>
+    public string? Format;
+    /// <summary>spacing of the axis labels; 0 picks one that fits</summary>
+    public double LabelStep;
+    /// <summary>clicks and Enter do not add events</summary>
+    public bool NoAdd;
+    /// <summary>double-clicks and Delete do not remove events</summary>
+    public bool NoRemove;
+    /// <summary>hides the axis labels under the dots</summary>
+    public bool NoAxis;
+
+    internal readonly NativeEventTrackOpts ToNative(nint selected) => new()
+    {
+        Sentinel = 0,
+        Width = UiMarshal.ToNative(Width),
+        Step = Step,
+        Units = Units,
+        Format = Utf8.Get(Format),
+        LabelStep = LabelStep,
+        Selected = selected,
+        NoAdd = (byte)(NoAdd ? 1 : 0),
+        NoRemove = (byte)(NoRemove ? 1 : 0),
+        NoAxis = (byte)(NoAxis ? 1 : 0),
+    };
+}
+
+/// <summary>cui_readout_opts. All fields are optional; zero selects native defaults.</summary>
+public partial struct ReadoutOpts
+{
+    /// <summary>after the value, smaller and muted, e.g. &quot;MG&quot;</summary>
+    public string? Unit;
+    /// <summary>a muted line under the value; `NULL` for none</summary>
+    public string? Detail;
+    /// <summary>the value&apos;s size: CUI_SIZE_SM 17, CUI_SIZE_MD 28 (default), CUI_SIZE_LG 44 points</summary>
+    public ControlSize Size;
+    /// <summary>the value&apos;s color; 0 is the foreground</summary>
+    public Tone Tone;
+    /// <summary>the value in the accent color</summary>
+    public bool Accent;
+    /// <summary>default start</summary>
+    public TextAlign Align;
+    /// <summary>default fit</summary>
+    public Size Width;
+
+    internal readonly NativeReadoutOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Unit = Utf8.Get(Unit),
+        Detail = Utf8.Get(Detail),
+        Size = Size,
+        Tone = Tone,
+        Accent = (byte)(Accent ? 1 : 0),
+        Align = Align,
+        Width = UiMarshal.ToNative(Width),
+    };
+}
+
+/// <summary>cui_dot_display_opts. All fields are optional; zero selects native defaults.</summary>
+public partial struct DotDisplayOpts
+{
+    /// <summary>distance between dot centers in points, default 4</summary>
+    public float Pitch;
+    /// <summary>lit dots; unset: the foreground</summary>
+    public Color Color;
+    /// <summary>lit dots in the accent color</summary>
+    public bool Accent;
+    /// <summary>hides the unlit dots</summary>
+    public bool NoDim;
+    /// <summary>scrolls text that is wider than the box instead of shrinking it</summary>
+    public bool Marquee;
+    /// <summary>where the text sits in a wider box, default start</summary>
+    public TextAlign Align;
+    /// <summary>default fit to the text</summary>
+    public Size Width;
+
+    internal readonly NativeDotDisplayOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Pitch = Pitch,
+        Color = UiMarshal.ToNative(Color),
+        Accent = (byte)(Accent ? 1 : 0),
+        NoDim = (byte)(NoDim ? 1 : 0),
+        Marquee = (byte)(Marquee ? 1 : 0),
+        Align = Align,
+        Width = UiMarshal.ToNative(Width),
     };
 }
 

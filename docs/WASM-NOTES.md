@@ -35,7 +35,7 @@ still needs a full validation before adoption.
   pack also failed in `wasm-opt` (`Unknown option --enable-bulk-memory-opt`); the matching 3.1.56
   archive publishes with Release `-Oz` and runs in Chrome.
 - **The full gallery and browser host run under the interpreter.**
-  `samples/CuiSharp.Gallery.Browser` links the real 28-page gallery and presents it to a canvas. A
+  `samples/CuiSharp.Gallery.Browser` links the real 29-page gallery and presents it to a canvas. A
   separate all-pages loop reported `GALLERY-28-PAGES-OK faults=0` with the .NET 10.0.403 optimized
   build. Headless Chrome screenshots show the rendered Overview and Buttons pages; a click changes
   the selected page, and an input smoke types `Browser Input` into the gallery's Full name field.
@@ -58,7 +58,7 @@ artifacts have been removed from `docs/wasm-probe/` and replaced with the direct
 
 ## Size and dependency evidence
 
-An earlier standalone **non-AOT** .NET 11 browser app using the current 28-page gallery,
+An earlier standalone **non-AOT** .NET 11 browser app using the current 29-page gallery,
 `CuiSharp`, invariant culture/timezone, the size profile, the software-only CUI archive, and Release
 `-Oz` produced:
 

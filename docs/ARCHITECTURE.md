@@ -43,7 +43,7 @@ src/CuiSharp.Tools/           dotnet cui: the docs and API offline, then build, 
 src/CuiSharp.Templates/       dotnet new cui-app / cui-mini
 src/CuiSharp.Tests/           ABI, enums, marshalling, frame behaviour, hosting, tools, docs drift
 src/CuiSharp.Benchmarks/      BenchmarkDotNet suites + --fps and --scale harnesses
-samples/CuiSharp.Gallery/     twenty-eight pages of every component, one file per page
+samples/CuiSharp.Gallery/     twenty-nine pages of every component, one file per page
 native/                       submodule + the two build scripts
 tools/                        bindgen.cs, regen.ps1, verify-template.ps1, api-surface.ps1, snapshots.ps1
 bindings/                     api.json (generated IR), overrides.json (inputs), coverage.txt (report)
@@ -93,7 +93,14 @@ The convention table the generator's default rules implement:
 An array is a `const` pointer, and a widget that writes one value back through a pointer says so
 with a non-const one: `float *pos` is the compare divider, not a list of positions. That is why
 the plural-name heuristic in `Parameter()` is narrowed to const pointers — `pos` and `progress` end
-in an `s` and are still one number.
+in an `s` and are still one number. An `arrayParams` or `inOutArrays` entry overrides the heuristic
+outright, which is how `double *times` on the event track is read as the array it is.
+
+**A length is passed once, never twice.** A count is derived from the array (`x`/`x_count`, or an
+`optionFieldCounts` pair) and a `capacity` is the array's own length (`capacityParams`), so the
+parameter leaves the signature. Two numbers for one buffer is a disagreement waiting to happen, and
+the widget writes up to the number it was told: a capacity larger than the array is a buffer
+overrun the type system would not catch.
 
 An `int` return is the last thing callers should have to decode. When the header documents it as
 one of `CUI_TOUR_*` or a `CUI_PLAYER_*` word, the wrapper returns that enum (`returnTypes` in

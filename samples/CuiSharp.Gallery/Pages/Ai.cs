@@ -110,7 +110,6 @@ internal sealed partial class GalleryApp
                     ui.ContextMeter("ctx", 113400, 200000, new ContextOpts
                     {
                         Parts = ContextParts,
-                        PartCount = ContextParts.Length,
                     });
                 }
                 ComposerEvents ce = ui.ChatComposer("composer", ref _aiDraft, 512, ref _aiRemoved, ref _aiModel, new ComposerOpts
@@ -118,7 +117,6 @@ internal sealed partial class GalleryApp
                     Placeholder = "Ask a follow up",
                     Busy = _aiBusy,
                     Attachments = _aiAttachments,
-                    ModelCount = AiModels.Length,
                     Models = AiModels,
                 });
                 if ((ce & ComposerEvents.Send) != 0)

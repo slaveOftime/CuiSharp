@@ -312,6 +312,14 @@ public enum Tone
     Accent = 8,
 }
 
+/// <summary>cui_annotation_kind</summary>
+public enum AnnotationKind
+{
+    X = 0,
+    Y = 1,
+    Point = 2,
+}
+
 /// <summary>cui_status</summary>
 public enum Status
 {
@@ -434,6 +442,13 @@ public enum HttpMethod
     Delete = 4,
     Head = 5,
     Options = 6,
+}
+
+/// <summary>cui_axis_units</summary>
+public enum AxisUnits
+{
+    Number = 0,
+    Hours = 1,
 }
 
 /// <summary>cui_renderer_kind</summary>

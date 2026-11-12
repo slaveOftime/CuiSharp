@@ -17,7 +17,7 @@ protected override void Draw(Ui ui)
 ## `QueryBuilder`
 
 ```csharp
-public bool QueryBuilder(UiText id, ReadOnlySpan<QueryField> fields, Span<QueryNode> nodes, ref int count, int capacity, QueryOpts o = default)
+public bool QueryBuilder(UiText id, ReadOnlySpan<QueryField> fields, Span<QueryNode> nodes, ref int count, QueryOpts o = default)
 ```
 
 cui_query_builder_ex

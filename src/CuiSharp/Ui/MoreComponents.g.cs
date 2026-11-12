@@ -31,7 +31,7 @@ public static unsafe class MoreComponentsUiExtensions
             return new LayoutScope(ui.Handle, &Native.ButtonGroupEnd, "ButtonGroup", null);
         }
 
-        /// <summary>Icon button that copies text to the clipboard and confirms with a check.</summary>
+        /// <summary>Icon button that copies text to the clipboard and confirms with a check. Keyboard focus stays on the button when the check appears or disappears.</summary>
         public bool CopyButton(UiText id, UiText text)
         {
             var __result = Native.CopyButton(ui.Handle, Utf8.Get(id), Utf8.Get(text));

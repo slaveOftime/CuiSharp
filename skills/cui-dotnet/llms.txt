@@ -110,8 +110,8 @@
 - `ui.Presence(UiText id, ReadOnlySpan<PresenceUser> users, int maxVisible, float size)` → `void`  ([Conversation](api/Conversation.md))
 - `ui.TypingIndicator(UiText name)` → `void`  ([Conversation](api/Conversation.md))
 - `ui.Coverage(UiText id, ReadOnlySpan<CoverageFile> files, CoverageOpts o = default)` → `CoverageResult`  ([Coverage](api/Coverage.md))
-- `ui.CurveEditor(UiText id, Span<CurveKey> keys, ref int count, int capacity, ref int selected, CurveOpts o = default)` → `CurveResult`  ([Curve and gradient editors](api/CurveAndGradientEditors.md))
-- `ui.GradientEditor(UiText id, Span<GradientStop> stops, ref int count, int capacity, ref int selected, GradientOpts o = default)` → `GradientResult`  ([Curve and gradient editors](api/CurveAndGradientEditors.md))
+- `ui.CurveEditor(UiText id, Span<CurveKey> keys, ref int count, ref int selected, CurveOpts o = default)` → `CurveResult`  ([Curve and gradient editors](api/CurveAndGradientEditors.md))
+- `ui.GradientEditor(UiText id, Span<GradientStop> stops, ref int count, ref int selected, GradientOpts o = default)` → `GradientResult`  ([Curve and gradient editors](api/CurveAndGradientEditors.md))
 - `ui.Accordion(UiText title, ref bool open)` → `OpenScope` — Accordion / disclosure. Content animates its height.  ([Data display](api/DataDisplay.md))
 - `ui.Cropper(UiText id, ulong tex, int imageW, int imageH, ref RectF crop, CropperOpts o = default)` → `bool` — Returns true when the crop changed.  ([Data display](api/DataDisplay.md))
 - `ui.Gauge(UiText label, float value, float size = 130)` → `void`  ([Data display](api/DataDisplay.md))
@@ -182,7 +182,10 @@
 - `ui.RequestBar(UiText id, ref HttpMethod method, ref string url, int cap = 2048, RequestBarOpts o = default)` → `RequestBarResult`  ([HTTP request bar](api/HttpRequestBar.md))
 - `ui.ResponseStatus(int status, double seconds, double bytes)` → `void`  ([HTTP request bar](api/HttpRequestBar.md))
 - `ui.HexViewGoto(UiText id, ulong offset)` → `void` — Go to offset: on the view's next frame its cursor moves to offset, that byte becomes the selection and it scrolls into view (to the middle when it was out of sight). Wire a "Go to" field to it; it is safe to call every frame.  ([Hex viewer](api/HexViewer.md))
-- `ui.KvEditor(UiText id, Span<KeyValue> pairs, ref int count, int capacity, KvEditorOpts o = default)` → `bool`  ([Key-value editor](api/KeyValueEditor.md))
+- `ui.DotDisplay(UiText text, DotDisplayOpts o = default)` → `void`  ([Instruments: dot-matrix chart, event track, readout, dot-matrix display](api/Instruments.md))
+- `ui.EventTrack(UiText id, Span<double> times, ref int count, double min, double max, ref int selected, EventTrackOpts o = default)` → `EventTrackResult`  ([Instruments: dot-matrix chart, event track, readout, dot-matrix display](api/Instruments.md))
+- `ui.Readout(UiText label, UiText value, ReadoutOpts o = default)` → `void`  ([Instruments: dot-matrix chart, event track, readout, dot-matrix display](api/Instruments.md))
+- `ui.KvEditor(UiText id, Span<KeyValue> pairs, ref int count, KvEditorOpts o = default)` → `bool`  ([Key-value editor](api/KeyValueEditor.md))
 - `ui.Keymap(UiText id, ReadOnlySpan<KeymapBinding> bindings, ref Mods mods, KeymapOpts o = default)` → `KeymapResult`  ([Keymap](api/Keymap.md))
 - `ui.Box(Box o = default)` → `LayoutScope`  ([Layout](api/Layout.md))
 - `ui.Card(Card o = default)` → `LayoutScope`  ([Layout](api/Layout.md))
@@ -238,7 +241,7 @@
 - `ui.Treemap(UiText id, ReadOnlySpan<VizItem> items, TreemapOpts o = default)` → `int`  ([More charts](api/MoreCharts.md))
 - `ui.Waffle(UiText id, ReadOnlySpan<VizItem> items, WaffleOpts o = default)` → `int`  ([More charts](api/MoreCharts.md))
 - `ui.ButtonGroup()` → `LayoutScope` — Connected buttons. Put buttons between begin and end.  ([More components](api/MoreComponents.md))
-- `ui.CopyButton(UiText id, UiText text)` → `bool` — Icon button that copies text to the clipboard and confirms with a check.  ([More components](api/MoreComponents.md))
+- `ui.CopyButton(UiText id, UiText text)` → `bool` — Icon button that copies text to the clipboard and confirms with a check. Keyboard focus stays on the button when the check appears or disappears.  ([More components](api/MoreComponents.md))
 - `ui.HoldButton(UiText label, HoldOpts o = default)` → `bool`  ([More components](api/MoreComponents.md))
 - `ui.PasswordStrength(UiText password)` → `int` — Password strength meter (0 weak .. 4 strong). Returns the score.  ([More components](api/MoreComponents.md))
 - `ui.ProgressRing(UiText label, float value, float size = 104)` → `void` — Circular progress with the value in the middle.  ([More components](api/MoreComponents.md))
@@ -301,7 +304,7 @@
 - `ui.MonthCalendar(UiText id, ref Date month, ReadOnlySpan<MonthEvent> events, ref Date selected, MonthOpts o = default)` → `MonthResult`  ([Planning](api/Planning.md))
 - `ui.WeekCalendar(UiText id, Date weekStart, Span<CalendarEvent> events, WeekOpts o = default)` → `int` — * left to right in any interface: see cui__keep_ltr  ([Planning](api/Planning.md))
 - `ui.Problems(UiText id, ReadOnlySpan<ProblemItem> diags, ProblemsOpts o = default)` → `ProblemsResult`  ([Problems panel](api/ProblemsPanel.md))
-- `ui.QueryBuilder(UiText id, ReadOnlySpan<QueryField> fields, Span<QueryNode> nodes, ref int count, int capacity, QueryOpts o = default)` → `bool`  ([Query builder](api/QueryBuilder.md))
+- `ui.QueryBuilder(UiText id, ReadOnlySpan<QueryField> fields, Span<QueryNode> nodes, ref int count, QueryOpts o = default)` → `bool`  ([Query builder](api/QueryBuilder.md))
 - `ui.RegexTester(UiText id, ref string pattern, int patternCap, ref string text, int textCap, ref RegexFlags flags, RegexTesterOpts o = default)` → `RegexTesterResult`  ([Regular expressions and the regex tester](api/RegularExpressionsAndTheRegexTester.md))
 - `ui.CronDescribe(UiText cron)` → `string?` — "Every weekday at 09:30", in frame memory; NULL when invalid.  ([Schedule picker](api/SchedulePicker.md))
 - `ui.SchedulePicker(UiText id, ref string cron, int cap = 128, ScheduleOpts o = default)` → `ScheduleResult`  ([Schedule picker](api/SchedulePicker.md))
@@ -362,6 +365,7 @@ Hand-written, because the wrapper needs state a C call cannot carry; they are pa
 - `ui.DiffRows(...)` — hand-written in `Ui/Ui.Diff.cs`
 - `ui.Disabled(...)` — hand-written in `Ui/Ui.Frame.cs`
 - `ui.Dispose(...)` — hand-written in `Ui/Ui.DataGrid.cs`
+- `ui.DotChart(...)` — hand-written in `Ui/Ui.Instruments.cs`
 - `ui.DrawArc(...)` — hand-written in `Ui/Ui.Draw.cs`
 - `ui.DrawCircle(...)` — hand-written in `Ui/Ui.Draw.cs`
 - `ui.DrawIcon(...)` — hand-written in `Ui/Ui.Draw.cs`

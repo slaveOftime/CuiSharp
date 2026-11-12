@@ -41,4 +41,5 @@ $GalleryPages = @(
     [pscustomobject]@{ Number = '26'; Key = 'ai';          Label = 'AI';                   Heading = 'AI'; Scrolled = $true }
     [pscustomobject]@{ Number = '27'; Key = 'audio';       Label = 'Audio';                Heading = 'Audio'; Scrolled = $true }
     [pscustomobject]@{ Number = '28'; Key = 'files';       Label = 'Files';                Heading = 'Files'; Scrolled = $true }
+    [pscustomobject]@{ Number = '29'; Key = 'instruments'; Label = 'Instruments';          Heading = 'Instruments';        Scrolled = $true }
 )

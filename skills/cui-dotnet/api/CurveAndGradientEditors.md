@@ -17,7 +17,7 @@ protected override void Draw(Ui ui)
 ## `CurveEditor`
 
 ```csharp
-public CurveResult CurveEditor(UiText id, Span<CurveKey> keys, ref int count, int capacity, ref int selected, CurveOpts o = default)
+public CurveResult CurveEditor(UiText id, Span<CurveKey> keys, ref int count, ref int selected, CurveOpts o = default)
 ```
 
 cui_curve_editor_ex
@@ -25,7 +25,7 @@ cui_curve_editor_ex
 ## `GradientEditor`
 
 ```csharp
-public GradientResult GradientEditor(UiText id, Span<GradientStop> stops, ref int count, int capacity, ref int selected, GradientOpts o = default)
+public GradientResult GradientEditor(UiText id, Span<GradientStop> stops, ref int count, ref int selected, GradientOpts o = default)
 ```
 
 cui_gradient_editor_ex

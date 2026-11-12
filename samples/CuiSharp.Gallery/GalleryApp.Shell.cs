@@ -119,6 +119,7 @@ internal sealed partial class GalleryApp
             case 24: PageMotion(ui); break;
             case 25: PageAi(ui); break;
             case 26: PageAudio(ui); break;
+            case 28: PageInstruments(ui); break;
             default: PageFiles(ui); break;
         }
     }

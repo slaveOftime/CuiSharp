@@ -181,14 +181,14 @@ internal sealed partial class GalleryApp
         Section(ui, "Key-value editor", "The checkbox turns a pair on or off, typing in the empty row adds one, the x removes one.");
         using (ui.Card(new Card()))
         {
-            ui.KvEditor("headers", _headers, ref _headerCount, _headers.Length,
+            ui.KvEditor("headers", _headers, ref _headerCount,
                 new KvEditorOpts { KeyPlaceholder = "Header", ValuePlaceholder = "Value" });
         }
 
         Section(ui, "Query builder", "Conditions joined by all or any, in groups you can nest.");
         using (ui.Card(new Card()))
         {
-            if (ui.QueryBuilder("query", QueryFields, _queryNodes, ref _queryCount, _queryNodes.Length))
+            if (ui.QueryBuilder("query", QueryFields, _queryNodes, ref _queryCount))
             {
                 // Rendering the sentence builds a string, so it happens on a change and not every frame.
                 _queryText = CuiQuery.Text(QueryFields, _queryNodes.AsSpan(0, _queryCount));

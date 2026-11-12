@@ -9,6 +9,138 @@ using CuiSharp.Interop;
 
 namespace CuiSharp;
 
+/// <summary>cui_event_track_result. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct EventTrackResult
+{
+    /// <summary>an event was moved, added or removed this frame</summary>
+    public bool Changed;
+    /// <summary>index of the event added this frame, or -1</summary>
+    public int Added;
+    /// <summary>index the removed event had, or -1</summary>
+    public int Removed;
+    /// <summary>the selected event after this frame, or -1</summary>
+    public int Selected;
+    /// <summary>an event is being dragged</summary>
+    public bool Dragging;
+
+    public EventTrackResult(bool Changed, int Added = default, int Removed = default, int Selected = default, bool Dragging = default) { this.Changed = Changed; this.Added = Added; this.Removed = Removed; this.Selected = Selected; this.Dragging = Dragging; }
+
+    internal readonly NativeEventTrackResult ToNative() => new()
+    {
+        Changed = (byte)(Changed ? 1 : 0),
+        Added = Added,
+        Removed = Removed,
+        Selected = Selected,
+        Dragging = (byte)(Dragging ? 1 : 0),
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(EventTrackResult[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeEventTrackResult>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static EventTrackResult FromNative(NativeEventTrackResult n) => new()
+    {
+        Changed = n.Changed != 0,
+        Added = n.Added,
+        Removed = n.Removed,
+        Selected = n.Selected,
+        Dragging = n.Dragging != 0,
+    };
+}
+
+/// <summary>cui_dot_chart_result. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct DotChartResult
+{
+    /// <summary>the sample under the pointer or the keyboard cursor, or -1</summary>
+    public int Hovered;
+    /// <summary>that sample&apos;s x, in x units</summary>
+    public double X;
+    /// <summary>the stacked value there</summary>
+    public float Value;
+    /// <summary>the plot was clicked, or Enter was pressed on it, this frame: `x` is where</summary>
+    public bool Clicked;
+
+    public DotChartResult(int Hovered, double X = default, float Value = default, bool Clicked = default) { this.Hovered = Hovered; this.X = X; this.Value = Value; this.Clicked = Clicked; }
+
+    internal readonly NativeDotChartResult ToNative() => new()
+    {
+        Hovered = Hovered,
+        X = X,
+        Value = Value,
+        Clicked = (byte)(Clicked ? 1 : 0),
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(DotChartResult[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeDotChartResult>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static DotChartResult FromNative(NativeDotChartResult n) => new()
+    {
+        Hovered = n.Hovered,
+        X = n.X,
+        Value = n.Value,
+        Clicked = n.Clicked != 0,
+    };
+}
+
+/// <summary>cui_chart_annotation. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct ChartAnnotation
+{
+    /// <summary>cui_annotation_kind kind</summary>
+    public AnnotationKind Kind;
+    /// <summary>in the chart&apos;s x units: the point&apos;s index for line and bar charts, x_min to x_max for the dot chart</summary>
+    public double X;
+    /// <summary>a value, in the chart&apos;s value units</summary>
+    public double Y;
+    /// <summary>first line, e.g. &quot;PEAK 203 MG&quot;; `NULL` for a line with no label</summary>
+    public string? Label;
+    /// <summary>second line, muted, e.g. &quot;13:06&quot;; `NULL` for none</summary>
+    public string? Detail;
+    /// <summary>the line, dot and label in the accent color</summary>
+    public bool Accent;
+
+    public ChartAnnotation(AnnotationKind Kind, double X = default, double Y = default, string? Label = null, string? Detail = null, bool Accent = default) { this.Kind = Kind; this.X = X; this.Y = Y; this.Label = Label; this.Detail = Detail; this.Accent = Accent; }
+
+    internal readonly NativeChartAnnotation ToNative() => new()
+    {
+        Kind = Kind,
+        X = X,
+        Y = Y,
+        Label = Utf8.Get(Label),
+        Detail = Utf8.Get(Detail),
+        Accent = (byte)(Accent ? 1 : 0),
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(ChartAnnotation[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeChartAnnotation>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static ChartAnnotation FromNative(NativeChartAnnotation n) => new()
+    {
+        Kind = n.Kind,
+        X = n.X,
+        Y = n.Y,
+        Label = Marshal.PtrToStringUTF8(n.Label),
+        Detail = Marshal.PtrToStringUTF8(n.Detail),
+        Accent = n.Accent != 0,
+    };
+}
+
 /// <summary>cui_trace_view. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct TraceViewState
 {
@@ -56,7 +188,7 @@ public unsafe partial struct TraceViewState
 /// <summary>cui_api_explorer_result. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct ApiExplorerResult
 {
-    /// <summary>endpoint, or -1</summary>
+    /// <summary>the selected endpoint, or -1</summary>
     public int Selected;
     /// <summary>endpoint, or -1</summary>
     public int TryIt;
@@ -120,7 +252,7 @@ public unsafe partial struct FeatureFlagsResult
 /// <summary>cui_blame_result. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct BlameResult
 {
-    /// <summary>commits, or -1</summary>
+    /// <summary>commit whose gutter entry was clicked this frame, or -1</summary>
     public int Clicked;
     /// <summary>commits, or -1</summary>
     public int Hovered;
@@ -152,7 +284,7 @@ public unsafe partial struct BlameResult
 /// <summary>cui_coverage_result. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct CoverageResult
 {
-    /// <summary>file, or -1</summary>
+    /// <summary>file opened this frame (Enter or a double-click), or -1</summary>
     public int Activated;
     /// <summary>percent of all lines covered</summary>
     public float Lines;
@@ -184,7 +316,7 @@ public unsafe partial struct CoverageResult
 /// <summary>cui_time_histogram_result. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct TimeHistogramResult
 {
-    /// <summary>bucket, or -1</summary>
+    /// <summary>`*sel_start` or `*sel_end` changed this frame (a drag, or a click that cleared it)</summary>
     public bool SelectionChanged;
     /// <summary>bucket, or -1</summary>
     public int Hovered;
@@ -248,11 +380,11 @@ public unsafe partial struct UptimeResult
 /// <summary>cui_request_bar_result. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct RequestBarResult
 {
-    /// <summary>_Bool send</summary>
+    /// <summary>Send was pressed, or Enter in the URL: start the request</summary>
     public bool Send;
-    /// <summary>_Bool cancel</summary>
+    /// <summary>Cancel was pressed while `loading`</summary>
     public bool Cancel;
-    /// <summary>_Bool changed</summary>
+    /// <summary>the method or the URL was edited this frame</summary>
     public bool Changed;
 
     public RequestBarResult(bool Send, bool Cancel = default, bool Changed = default) { this.Send = Send; this.Cancel = Cancel; this.Changed = Changed; }
@@ -318,7 +450,7 @@ public unsafe partial struct TestExplorerResult
     public int Activated;
     /// <summary>item whose run button was pressed this frame, or -1</summary>
     public int Run;
-    /// <summary>_Bool run_all</summary>
+    /// <summary>the Run all button was pressed this frame</summary>
     public bool RunAll;
     /// <summary>tests, not suites</summary>
     public int Passed;
@@ -368,11 +500,11 @@ public unsafe partial struct TestExplorerResult
 /// <summary>cui_regex_tester_result. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct RegexTesterResult
 {
-    /// <summary>_Bool valid</summary>
+    /// <summary>the pattern is valid and matching finished in time</summary>
     public bool Valid;
-    /// <summary>int matches</summary>
+    /// <summary>matches found in the test text</summary>
     public int Matches;
-    /// <summary>const char * error</summary>
+    /// <summary>why, when `valid` is false; otherwise `NULL`</summary>
     public string? Error;
 
     public RegexTesterResult(bool Valid, int Matches = default, string? Error = null) { this.Valid = Valid; this.Matches = Matches; this.Error = Error; }
@@ -404,11 +536,11 @@ public unsafe partial struct RegexTesterResult
 /// <summary>cui_trace_result. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct TraceResult
 {
-    /// <summary>_Bool selection_changed</summary>
+    /// <summary>`*selected` changed this frame (click or keys)</summary>
     public bool SelectionChanged;
-    /// <summary>_Bool view_changed</summary>
+    /// <summary>the visible time range or the scroll in `*view` changed (zoom, pan, fit)</summary>
     public bool ViewChanged;
-    /// <summary>int hovered</summary>
+    /// <summary>span under the pointer, or -1</summary>
     public int Hovered;
 
     public TraceResult(bool SelectionChanged, bool ViewChanged = default, int Hovered = default) { this.SelectionChanged = SelectionChanged; this.ViewChanged = ViewChanged; this.Hovered = Hovered; }
@@ -440,11 +572,11 @@ public unsafe partial struct TraceResult
 /// <summary>cui_waterfall_result. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct WaterfallResult
 {
-    /// <summary>int clicked</summary>
+    /// <summary>request clicked this frame, or -1</summary>
     public int Clicked;
-    /// <summary>int activated</summary>
+    /// <summary>request double-clicked or chosen with Enter this frame, or -1</summary>
     public int Activated;
-    /// <summary>int hovered</summary>
+    /// <summary>request under the pointer, or -1</summary>
     public int Hovered;
 
     public WaterfallResult(int Clicked, int Activated = default, int Hovered = default) { this.Clicked = Clicked; this.Activated = Activated; this.Hovered = Hovered; }
@@ -476,11 +608,11 @@ public unsafe partial struct WaterfallResult
 /// <summary>cui_graph_result. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct GraphResult
 {
-    /// <summary>int clicked</summary>
+    /// <summary>node clicked this frame, or -1</summary>
     public int Clicked;
-    /// <summary>int activated</summary>
+    /// <summary>node double-clicked or chosen with Enter this frame, or -1</summary>
     public int Activated;
-    /// <summary>int hovered</summary>
+    /// <summary>node under the pointer, or -1</summary>
     public int Hovered;
 
     public GraphResult(int Clicked, int Activated = default, int Hovered = default) { this.Clicked = Clicked; this.Activated = Activated; this.Hovered = Hovered; }
@@ -512,11 +644,11 @@ public unsafe partial struct GraphResult
 /// <summary>cui_commit_graph_result. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct CommitGraphResult
 {
-    /// <summary>int clicked</summary>
+    /// <summary>row clicked this frame, or -1</summary>
     public int Clicked;
-    /// <summary>int activated</summary>
+    /// <summary>row double-clicked or chosen with Enter this frame, or -1</summary>
     public int Activated;
-    /// <summary>int hovered</summary>
+    /// <summary>row under the pointer, or -1</summary>
     public int Hovered;
 
     public CommitGraphResult(int Clicked, int Activated = default, int Hovered = default) { this.Clicked = Clicked; this.Activated = Activated; this.Hovered = Hovered; }
@@ -548,9 +680,9 @@ public unsafe partial struct CommitGraphResult
 /// <summary>cui_keymap_result. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct KeymapResult
 {
-    /// <summary>cui_key clicked</summary>
+    /// <summary>key clicked this frame, or `CUI_KEY_NONE`</summary>
     public Key Clicked;
-    /// <summary>int conflicts</summary>
+    /// <summary>bindings that repeat a combination another binding already uses</summary>
     public int Conflicts;
 
     public KeymapResult(Key Clicked, int Conflicts = default) { this.Clicked = Clicked; this.Conflicts = Conflicts; }
@@ -580,9 +712,9 @@ public unsafe partial struct KeymapResult
 /// <summary>cui_schedule_result. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct ScheduleResult
 {
-    /// <summary>the next run, Unix seconds, 0 none</summary>
+    /// <summary>`cron` was edited this frame</summary>
     public bool Changed;
-    /// <summary>the next run, Unix seconds, 0 none</summary>
+    /// <summary>`cron` is a valid expression</summary>
     public bool Valid;
     /// <summary>the next run, Unix seconds, 0 none</summary>
     public long Next;
@@ -616,9 +748,9 @@ public unsafe partial struct ScheduleResult
 /// <summary>cui_pipeline_result. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct PipelineResult
 {
-    /// <summary>job indices, or -1</summary>
+    /// <summary>job clicked this frame (or chosen with Enter or Space), or -1</summary>
     public int Clicked;
-    /// <summary>job indices, or -1</summary>
+    /// <summary>job under the pointer, or -1</summary>
     public int Hovered;
 
     public PipelineResult(int Clicked, int Hovered = default) { this.Clicked = Clicked; this.Hovered = Hovered; }
@@ -720,13 +852,13 @@ public unsafe partial struct TextMark
 /// <summary>cui_kv_pair. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct KeyValue
 {
-    /// <summary>char[64] key</summary>
+    /// <summary>the name, e.g. &quot;Accept&quot;; edited in place</summary>
     public string? Key;
-    /// <summary>char[256] value</summary>
+    /// <summary>the value, e.g. &quot;application/json&quot;; edited in place</summary>
     public string? Value;
-    /// <summary>_Bool enabled</summary>
+    /// <summary>the pair is in use; its checkbox toggles this</summary>
     public bool Enabled;
-    /// <summary>_Bool secret</summary>
+    /// <summary>the value shows as dots, with an eye to reveal it; the lock button toggles this</summary>
     public bool Secret;
 
     public KeyValue(string? Key, string? Value = null, bool Enabled = default, bool Secret = default) { this.Key = Key; this.Value = Value; this.Enabled = Enabled; this.Secret = Secret; }
@@ -764,15 +896,15 @@ public unsafe partial struct KeyValue
 /// <summary>cui_api_param. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct ApiParam
 {
-    /// <summary>&quot;path&quot;, &quot;query&quot;, &quot;header&quot;, &quot;body&quot;</summary>
+    /// <summary>the parameter&apos;s name, in the code font</summary>
     public string? Name;
-    /// <summary>&quot;path&quot;, &quot;query&quot;, &quot;header&quot;, &quot;body&quot;</summary>
+    /// <summary>where it goes: &quot;path&quot;, &quot;query&quot;, &quot;header&quot; or &quot;body&quot;</summary>
     public string? In;
-    /// <summary>const char * type</summary>
+    /// <summary>e.g. &quot;string&quot;; shown before where it goes</summary>
     public string? Type;
-    /// <summary>_Bool required</summary>
+    /// <summary>a red asterisk after the name</summary>
     public bool Required;
-    /// <summary>const char * description</summary>
+    /// <summary>what the parameter is for, shown after its type and place; may be `NULL`</summary>
     public string? Description;
 
     public ApiParam(string? Name, string? In = null, string? Type = null, bool Required = default, string? Description = null) { this.Name = Name; this.In = In; this.Type = Type; this.Required = Required; this.Description = Description; }
@@ -812,13 +944,13 @@ public unsafe partial struct ApiEndpoint
     public string? Method;
     /// <summary>&quot;/users/{id}&quot;</summary>
     public string? Path;
-    /// <summary>const char * summary</summary>
+    /// <summary>one line after the path; the filter field searches it</summary>
     public string? Summary;
     /// <summary>groups the list; NULL groups as &quot;Other&quot;</summary>
     public string? Tag;
-    /// <summary>_Bool deprecated</summary>
+    /// <summary>struck through and muted, with a &quot;Deprecated&quot; badge</summary>
     public bool Deprecated;
-    /// <summary>const cui_api_param * params</summary>
+    /// <summary>the parameters listed when the endpoint is opened; may be `NULL`</summary>
     public ApiParam[]? Params;
 
     public ApiEndpoint(string? Method, string? Path = null, string? Summary = null, string? Tag = null, bool Deprecated = default, ApiParam[]? Params = default) { this.Method = Method; this.Path = Path; this.Summary = Summary; this.Tag = Tag; this.Deprecated = Deprecated; this.Params = Params; }
@@ -857,11 +989,11 @@ public unsafe partial struct ApiEndpoint
 /// <summary>cui_feature_flag. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct FeatureFlag
 {
-    /// <summary>const char * key</summary>
+    /// <summary>the flag&apos;s name, in the code font; the filter field searches it</summary>
     public string? Key;
     /// <summary>const char * description</summary>
     public string? Description;
-    /// <summary>_Bool[8] on</summary>
+    /// <summary>the flag&apos;s switch in each environment, in the order of `envs`</summary>
     public bool[]? On;
     /// <summary>percent of users while on; 0 and 100 mean everyone</summary>
     public int[]? Rollout;
@@ -901,11 +1033,11 @@ public unsafe partial struct FeatureFlag
 /// <summary>cui_blame_commit. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct BlameCommit
 {
-    /// <summary>Unix seconds</summary>
+    /// <summary>the commit id; its first 7 characters are shown</summary>
     public string? Hash;
-    /// <summary>Unix seconds</summary>
+    /// <summary>shown in the gutter; on a phone as initials</summary>
     public string? Author;
-    /// <summary>Unix seconds</summary>
+    /// <summary>the commit&apos;s message line, shown in the gutter&apos;s tooltip</summary>
     public string? Summary;
     /// <summary>Unix seconds</summary>
     public long Time;
@@ -943,17 +1075,17 @@ public unsafe partial struct CoverageFile
 {
     /// <summary>&quot;src/core/layout.c&quot;</summary>
     public string? Path;
-    /// <summary>int lines</summary>
+    /// <summary>lines that can be covered</summary>
     public int Lines;
-    /// <summary>int lines_hit</summary>
+    /// <summary>lines the tests ran</summary>
     public int LinesHit;
     /// <summary>0 branches: not measured</summary>
     public int Branches;
     /// <summary>0 branches: not measured</summary>
     public int BranchesHit;
-    /// <summary>int functions</summary>
+    /// <summary>functions in the file</summary>
     public int Functions;
-    /// <summary>int functions_hit</summary>
+    /// <summary>functions the tests called</summary>
     public int FunctionsHit;
 
     public CoverageFile(string? Path, int Lines = default, int LinesHit = default, int Branches = default, int BranchesHit = default, int Functions = default, int FunctionsHit = default) { this.Path = Path; this.Lines = Lines; this.LinesHit = LinesHit; this.Branches = Branches; this.BranchesHit = BranchesHit; this.Functions = Functions; this.FunctionsHit = FunctionsHit; }
@@ -993,9 +1125,9 @@ public unsafe partial struct CoverageFile
 /// <summary>cui_histogram_series. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct HistogramSeries
 {
-    /// <summary>const char * name</summary>
+    /// <summary>shown in the legend and in the hover tooltip</summary>
     public string? Name;
-    /// <summary>const float * counts</summary>
+    /// <summary>one count per bucket; `NULL` counts as zeros</summary>
     public float[]? Counts;
     /// <summary>cui_tone tone</summary>
     public Tone Tone;
@@ -1029,7 +1161,7 @@ public unsafe partial struct HistogramSeries
 /// <summary>cui_uptime_service. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct UptimeService
 {
-    /// <summary>const char * name</summary>
+    /// <summary>shown above the service&apos;s bars</summary>
     public string? Name;
     /// <summary>oldest first: the fraction of the day it was up, 0..1; negative: no data</summary>
     public float[]? Days;
@@ -1062,9 +1194,9 @@ public unsafe partial struct UptimeService
 /// <summary>cui_stack_frame. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct StackFrame
 {
-    /// <summary>const char * function</summary>
+    /// <summary>name of the function; `NULL` or &quot;&quot; shows as &lt;anonymous&gt;</summary>
     public string? Function;
-    /// <summary>const char * file</summary>
+    /// <summary>path shown with the line and column; on a phone only the file&apos;s name</summary>
     public string? File;
     /// <summary>1 based; 0 leaves it out</summary>
     public int Line;
@@ -1115,7 +1247,7 @@ public unsafe partial struct StackFrame
 /// <summary>cui_test_item. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct TestItem
 {
-    /// <summary>const char * name</summary>
+    /// <summary>name of the suite or test; the toolbar&apos;s field filters by it</summary>
     public string? Name;
     /// <summary>0 for the top suites</summary>
     public int Depth;
@@ -1195,17 +1327,17 @@ public unsafe partial struct TraceMarker
 /// <summary>cui_trace_span. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct TraceSpan
 {
-    /// <summary>const char * name</summary>
+    /// <summary>drawn in the span when it fits, and in its tooltip</summary>
     public string? Name;
-    /// <summary>double start</summary>
+    /// <summary>when the span begins, in seconds</summary>
     public double Start;
-    /// <summary>double end</summary>
+    /// <summary>when the span ends, in seconds; end &gt;= start</summary>
     public double End;
-    /// <summary>int track</summary>
+    /// <summary>index into the tracks: the lane the span is drawn in</summary>
     public int Track;
-    /// <summary>int depth</summary>
+    /// <summary>row within the lane, 0 = top; a child lies within its parent</summary>
     public int Depth;
-    /// <summary>uint32_t color_key</summary>
+    /// <summary>picks the color; 0: hashed from the name</summary>
     public uint ColorKey;
 
     public TraceSpan(string? Name, double Start = default, double End = default, int Track = default, int Depth = default, uint ColorKey = default) { this.Name = Name; this.Start = Start; this.End = End; this.Track = Track; this.Depth = Depth; this.ColorKey = ColorKey; }
@@ -1243,9 +1375,9 @@ public unsafe partial struct TraceSpan
 /// <summary>cui_trace_track. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct TraceTrack
 {
-    /// <summary>const char * name</summary>
+    /// <summary>the lane&apos;s name, in the column on the left</summary>
     public string? Name;
-    /// <summary>_Bool collapsed</summary>
+    /// <summary>the lane shows only its top row; a click on its name toggles this</summary>
     public bool Collapsed;
 
     public TraceTrack(string? Name, bool Collapsed = default) { this.Name = Name; this.Collapsed = Collapsed; }
@@ -1331,9 +1463,9 @@ public unsafe partial struct NetRequest
 /// <summary>cui_graph_edge. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct GraphEdge
 {
-    /// <summary>int from</summary>
+    /// <summary>index of the node the arrow starts at</summary>
     public int From;
-    /// <summary>int to</summary>
+    /// <summary>index of the node the arrow points to</summary>
     public int To;
 
     public GraphEdge(int From, int To = default) { this.From = From; this.To = To; }
@@ -1365,7 +1497,7 @@ public unsafe partial struct GraphNode
 {
     /// <summary>const char * label</summary>
     public string? Label;
-    /// <summary>const char * detail</summary>
+    /// <summary>smaller second line under the label, e.g. the node&apos;s kind; `NULL` for none</summary>
     public string? Detail;
     /// <summary>cui_tone tone</summary>
     public Tone Tone;
@@ -1399,11 +1531,11 @@ public unsafe partial struct GraphNode
 /// <summary>cui_commit. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct Commit
 {
-    /// <summary>const char * hash</summary>
+    /// <summary>the commit id; its first 7 characters are shown</summary>
     public string? Hash;
     /// <summary>the first line is shown</summary>
     public string? Message;
-    /// <summary>const char * author</summary>
+    /// <summary>shown in its own column, which a narrow panel leaves out</summary>
     public string? Author;
     /// <summary>already formatted: &quot;2 hours ago&quot;, &quot;Mar 3&quot;</summary>
     public string? Date;
@@ -1453,7 +1585,7 @@ public unsafe partial struct QueryNode
 {
     /// <summary>0 for the outer group</summary>
     public int Depth;
-    /// <summary>_Bool group</summary>
+    /// <summary>a group of the nodes after it that are one level deeper; otherwise a rule</summary>
     public bool Group;
     /// <summary>group: any rule (or) instead of all (and)</summary>
     public bool Any;
@@ -1503,7 +1635,7 @@ public unsafe partial struct QueryNode
 /// <summary>cui_query_field. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct QueryField
 {
-    /// <summary>const char * name</summary>
+    /// <summary>shown in the field select and in the text `cui_query_text` writes</summary>
     public string? Name;
     /// <summary>cui_query_type type</summary>
     public QueryType Type;
@@ -1540,7 +1672,7 @@ public unsafe partial struct QueryField
 /// <summary>cui_pipeline_job. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct PipelineJob
 {
-    /// <summary>const char * name</summary>
+    /// <summary>shown on the job&apos;s row and in its tooltip</summary>
     public string? Name;
     /// <summary>index into the stage names</summary>
     public int Stage;
@@ -1586,7 +1718,7 @@ public unsafe partial struct ProblemItem
 {
     /// <summary>cui_severity severity</summary>
     public Severity Severity;
-    /// <summary>const char * message</summary>
+    /// <summary>the text of the row; the whole message shows on hover</summary>
     public string? Message;
     /// <summary>groups the rows; NULL or &quot;&quot; groups as &quot;No file&quot;</summary>
     public string? File;
@@ -1824,7 +1956,7 @@ public unsafe partial struct MonthResult
 /// <summary>cui_month_event. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct MonthEvent
 {
-    /// <summary>const char * title</summary>
+    /// <summary>shown on the event&apos;s bar, or after the time of a timed event</summary>
     public string? Title;
     /// <summary>inclusive; an unset or earlier end means one day</summary>
     public Date Start;
@@ -1874,9 +2006,9 @@ public unsafe partial struct TourStep
 {
     /// <summary>the control to point at (cui_last_id after it); 0: a card in the middle</summary>
     public uint Target;
-    /// <summary>const char * title</summary>
+    /// <summary>heading of the step&apos;s card; `NULL` or &quot;&quot; leaves it out</summary>
     public string? Title;
-    /// <summary>const char * body</summary>
+    /// <summary>the explanation under the title; wraps to the card&apos;s width</summary>
     public string? Body;
     /// <summary>the card&apos;s side of the target, default below it</summary>
     public Placement Placement;
@@ -1912,15 +2044,15 @@ public unsafe partial struct TourStep
 /// <summary>cui_candle. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct Candle
 {
-    /// <summary>float open</summary>
+    /// <summary>price at the start of the period</summary>
     public float Open;
-    /// <summary>float high</summary>
+    /// <summary>highest price in the period</summary>
     public float High;
-    /// <summary>float low</summary>
+    /// <summary>lowest price in the period</summary>
     public float Low;
-    /// <summary>float close</summary>
+    /// <summary>price at the end of the period</summary>
     public float Close;
-    /// <summary>float volume</summary>
+    /// <summary>amount traded in the period, drawn as a bar under the candle; 0 for none</summary>
     public float Volume;
 
     public Candle(float Open, float High = default, float Low = default, float Close = default, float Volume = default) { this.Open = Open; this.High = High; this.Low = Low; this.Close = Close; this.Volume = Volume; }
@@ -2100,13 +2232,13 @@ public unsafe partial struct TimelineView
 /// <summary>cui_kanban_move. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct KanbanMove
 {
-    /// <summary>int card</summary>
+    /// <summary>the `card_id` of the card that was dropped</summary>
     public int Card;
-    /// <summary>int from_column</summary>
+    /// <summary>index of the column it came from, in the order the columns were begun</summary>
     public int FromColumn;
-    /// <summary>int to_column</summary>
+    /// <summary>index of the column it was dropped in</summary>
     public int ToColumn;
-    /// <summary>int to_index</summary>
+    /// <summary>its position in that column, counted with the dragged card left out</summary>
     public int ToIndex;
 
     public KanbanMove(int Card, int FromColumn = default, int ToColumn = default, int ToIndex = default) { this.Card = Card; this.FromColumn = FromColumn; this.ToColumn = ToColumn; this.ToIndex = ToIndex; }
@@ -2148,9 +2280,9 @@ public unsafe partial struct TimelineEditorResult
     public bool Scrubbing;
     /// <summary>Space: start or stop playback</summary>
     public bool PlayToggled;
-    /// <summary>_Bool selection_changed</summary>
+    /// <summary>a key or clip was selected or unselected this frame</summary>
     public bool SelectionChanged;
-    /// <summary>_Bool view_changed</summary>
+    /// <summary>the visible time range or the row scroll changed (zoom, pan, fit)</summary>
     public bool ViewChanged;
     /// <summary>selected keys moved this frame (drag or Alt+arrows)</summary>
     public bool KeysMoved;
@@ -2168,9 +2300,9 @@ public unsafe partial struct TimelineEditorResult
     public int Clip;
     /// <summary>the track whose collapsed, muted or locked flag changed, or -1</summary>
     public int Toggled;
-    /// <summary>int current_track</summary>
+    /// <summary>track of the key last clicked or added, or -1</summary>
     public int CurrentTrack;
-    /// <summary>int current_key</summary>
+    /// <summary>index of that key in its track, or -1</summary>
     public int CurrentKey;
     /// <summary>the key under the pointer, or -1</summary>
     public int HoveredTrack;
@@ -2236,13 +2368,13 @@ public unsafe partial struct TimelineEditorResult
 /// <summary>cui_log_line. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct LogLine
 {
-    /// <summary>uint32_t offset</summary>
+    /// <summary>where the line&apos;s text starts in the buffer&apos;s `text`</summary>
     public uint Offset;
-    /// <summary>uint32_t len</summary>
+    /// <summary>bytes of text, not counting the terminator</summary>
     public uint Len;
-    /// <summary>double time</summary>
+    /// <summary>the timestamp it was appended with, in seconds</summary>
     public double Time;
-    /// <summary>uint8_t level</summary>
+    /// <summary>a `cui_log_level`</summary>
     public byte Level;
 
     public LogLine(uint Offset, uint Len = default, double Time = default, byte Level = default) { this.Offset = Offset; this.Len = Len; this.Time = Time; this.Level = Level; }
@@ -2276,9 +2408,9 @@ public unsafe partial struct LogLine
 /// <summary>cui_gradient_stop. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct GradientStop
 {
-    /// <summary>pos 0..1</summary>
+    /// <summary>position along the ramp, 0..1</summary>
     public float Pos;
-    /// <summary>pos 0..1</summary>
+    /// <summary>cui_color color</summary>
     public Color Color;
 
     public GradientStop(float Pos, Color Color = default) { this.Pos = Pos; this.Color = Color; }
@@ -2308,9 +2440,9 @@ public unsafe partial struct GradientStop
 /// <summary>cui_curve_key. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct CurveKey
 {
-    /// <summary>float x</summary>
+    /// <summary>position along the horizontal axis, in curve units (seconds in a timeline track)</summary>
     public float X;
-    /// <summary>float y</summary>
+    /// <summary>the curve&apos;s value at the key</summary>
     public float Y;
     /// <summary>handle toward the previous key, relative to the key (FREE)</summary>
     public float InDx;
@@ -2428,13 +2560,13 @@ public unsafe partial struct FlameView
 /// <summary>cui_presence_user. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct PresenceUser
 {
-    /// <summary>const char * name</summary>
+    /// <summary>shown in the tooltip, and as initials when there is no avatar</summary>
     public string? Name;
     /// <summary>cui_color color</summary>
     public Color Color;
-    /// <summary>cui_texture avatar</summary>
+    /// <summary>picture to show instead of the initials</summary>
     public ulong Avatar;
-    /// <summary>_Bool idle</summary>
+    /// <summary>away: the avatar dims, its ring turns gray and the tooltip adds &quot;(away)&quot;</summary>
     public bool Idle;
 
     public PresenceUser(string? Name, Color Color = default, ulong Avatar = default, bool Idle = default) { this.Name = Name; this.Color = Color; this.Avatar = Avatar; this.Idle = Idle; }
@@ -2468,11 +2600,11 @@ public unsafe partial struct PresenceUser
 /// <summary>cui_series. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct Series
 {
-    /// <summary>const char * name</summary>
+    /// <summary>shown in the legend and in the hover tooltip</summary>
     public string? Name;
-    /// <summary>const float * values</summary>
+    /// <summary>the series&apos; data, one value per point</summary>
     public float[]? Values;
-    /// <summary>int count</summary>
+    /// <summary>number of `values`</summary>
     public int Count;
     /// <summary>default: series palette</summary>
     public Color Color;
@@ -2508,11 +2640,11 @@ public unsafe partial struct Series
 /// <summary>cui_filter_field. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct FilterField
 {
-    /// <summary>const char * name</summary>
+    /// <summary>the field&apos;s name, on its chip and in the &quot;+ Filter&quot; menu</summary>
     public string? Name;
     /// <summary>const char * icon</summary>
     public string? Icon;
-    /// <summary>const char *const * options</summary>
+    /// <summary>the values to choose from; at most 32, one bit of the mask each</summary>
     public string[]? Options;
 
     public FilterField(string? Name, string? Icon = null, string[]? Options = default) { this.Name = Name; this.Icon = Icon; this.Options = Options; }
@@ -2545,11 +2677,11 @@ public unsafe partial struct FilterField
 /// <summary>cui_node_view. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct NodeView
 {
-    /// <summary>pan in points; zoom 0 means 1</summary>
+    /// <summary>where the canvas origin sits, in points from the editor&apos;s left edge; panning changes it</summary>
     public float X;
-    /// <summary>pan in points; zoom 0 means 1</summary>
+    /// <summary>where the canvas origin sits, in points from the editor&apos;s top edge</summary>
     public float Y;
-    /// <summary>pan in points; zoom 0 means 1</summary>
+    /// <summary>scale of the canvas; 0 means 1. Kept between `min_zoom` and `max_zoom`</summary>
     public float Zoom;
 
     public NodeView(float X, float Y = default, float Zoom = default) { this.X = X; this.Y = Y; this.Zoom = Zoom; }
@@ -2613,9 +2745,9 @@ public unsafe partial struct KeyCombo
 /// <summary>cui_date_range. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct DateRange
 {
-    /// <summary>cui_date start</summary>
+    /// <summary>first day of the range; a zero date means nothing is chosen</summary>
     public Date Start;
-    /// <summary>cui_date end</summary>
+    /// <summary>last day of the range, inclusive</summary>
     public Date End;
 
     public DateRange(Date Start, Date End = default) { this.Start = Start; this.End = End; }
@@ -2645,19 +2777,19 @@ public unsafe partial struct DateRange
 /// <summary>cui_now_playing. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct NowPlayingState
 {
-    /// <summary>const char * title</summary>
+    /// <summary>name of the track, in medium weight</summary>
     public string? Title;
-    /// <summary>const char * artist</summary>
+    /// <summary>shown under the title</summary>
     public string? Artist;
-    /// <summary>cui_texture art</summary>
+    /// <summary>artwork texture; 0 shows a tile in `art_color` with a note icon</summary>
     public ulong Art;
-    /// <summary>cui_color art_color</summary>
+    /// <summary>color of the tile behind (or in place of) the artwork</summary>
     public Color ArtColor;
-    /// <summary>float position</summary>
+    /// <summary>seconds played; written when the user seeks</summary>
     public float Position;
-    /// <summary>float duration</summary>
+    /// <summary>length of the track in seconds</summary>
     public float Duration;
-    /// <summary>_Bool playing</summary>
+    /// <summary>shows pause instead of play; the play button flips it</summary>
     public bool Playing;
 
     public NowPlayingState(string? Title, string? Artist = null, ulong Art = default, Color ArtColor = default, float Position = default, float Duration = default, bool Playing = default) { this.Title = Title; this.Artist = Artist; this.Art = Art; this.ArtColor = ArtColor; this.Position = Position; this.Duration = Duration; this.Playing = Playing; }
@@ -2697,11 +2829,11 @@ public unsafe partial struct NowPlayingState
 /// <summary>cui_hex_selection. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct HexSelection
 {
-    /// <summary>size_t start</summary>
+    /// <summary>offset of the first selected byte</summary>
     public ulong Start;
-    /// <summary>size_t length</summary>
+    /// <summary>bytes selected; 0 means nothing is selected</summary>
     public ulong Length;
-    /// <summary>size_t cursor</summary>
+    /// <summary>the byte the keys move from; one end of the selection</summary>
     public ulong Cursor;
 
     public HexSelection(ulong Start, ulong Length = default, ulong Cursor = default) { this.Start = Start; this.Length = Length; this.Cursor = Cursor; }
@@ -2733,7 +2865,7 @@ public unsafe partial struct HexSelection
 /// <summary>cui_flame_span. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct FlameSpan
 {
-    /// <summary>const char * name</summary>
+    /// <summary>drawn in the span when it fits, and in its tooltip</summary>
     public string? Name;
     /// <summary>seconds, end &gt;= start</summary>
     public double Start;
@@ -2777,13 +2909,13 @@ public unsafe partial struct FlameSpan
 /// <summary>cui_doc_tab. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct DocTab
 {
-    /// <summary>const char * title</summary>
+    /// <summary>the tab&apos;s text and its identity; add &quot;##key&quot; to tell two tabs with one name apart</summary>
     public string? Title;
     /// <summary>const char * icon</summary>
     public string? Icon;
     /// <summary>const char * tooltip</summary>
     public string? Tooltip;
-    /// <summary>_Bool dirty</summary>
+    /// <summary>unsaved changes: a dot in place of the x, which returns under the pointer</summary>
     public bool Dirty;
 
     public DocTab(string? Title, string? Icon = null, string? Tooltip = null, bool Dirty = default) { this.Title = Title; this.Icon = Icon; this.Tooltip = Tooltip; this.Dirty = Dirty; }
@@ -3181,7 +3313,7 @@ public unsafe partial struct PathBarResult
     public int Clicked;
     /// <summary>the typed path after Enter, else NULL; valid this frame</summary>
     public string? Submitted;
-    /// <summary>_Bool editing</summary>
+    /// <summary>the bar is showing its text field for typing a path</summary>
     public bool Editing;
 
     public PathBarResult(int Clicked, string? Submitted = null, bool Editing = default) { this.Clicked = Clicked; this.Submitted = Submitted; this.Editing = Editing; }
@@ -3213,11 +3345,11 @@ public unsafe partial struct PathBarResult
 /// <summary>cui_sankey_link. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct SankeyLink
 {
-    /// <summary>int from</summary>
+    /// <summary>index of the node the flow leaves</summary>
     public int From;
-    /// <summary>int to</summary>
+    /// <summary>index of the node the flow enters</summary>
     public int To;
-    /// <summary>float value</summary>
+    /// <summary>size of the flow: sets the link&apos;s thickness</summary>
     public float Value;
 
     public SankeyLink(int From, int To = default, float Value = default) { this.From = From; this.To = To; this.Value = Value; }
@@ -3249,7 +3381,7 @@ public unsafe partial struct SankeyLink
 /// <summary>cui_grid_column. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct GridColumn
 {
-    /// <summary>const char * title</summary>
+    /// <summary>text of the column&apos;s header</summary>
     public string? Title;
     /// <summary>initial width in points, default 150</summary>
     public float Width;
@@ -3341,21 +3473,21 @@ public unsafe partial struct DiffRow
 /// <summary>cui_gantt_task. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct GanttTask
 {
-    /// <summary>const char * name</summary>
+    /// <summary>shown in the task list and, when it fits, on the bar</summary>
     public string? Name;
-    /// <summary>const char * owner</summary>
+    /// <summary>a name: shows that person&apos;s avatar in the task list; `NULL` for none</summary>
     public string? Owner;
-    /// <summary>int start</summary>
+    /// <summary>day the bar starts, counted from `origin`; dragging the bar changes it</summary>
     public int Start;
-    /// <summary>int end</summary>
+    /// <summary>day the bar ends, counted from `origin` (it is end - start days long); dragging changes it</summary>
     public int End;
-    /// <summary>float progress</summary>
+    /// <summary>0..1: the part of the bar drawn darker, as done</summary>
     public float Progress;
     /// <summary>cui_tone tone</summary>
     public Tone Tone;
-    /// <summary>int depends_on</summary>
+    /// <summary>index of the task this one waits for: an arrow runs from its end to this start. -1 for none</summary>
     public int DependsOn;
-    /// <summary>_Bool milestone</summary>
+    /// <summary>a diamond at `start` instead of a bar; it cannot be resized</summary>
     public bool Milestone;
 
     public GanttTask(string? Name, string? Owner = null, int Start = default, int End = default, float Progress = default, Tone Tone = default, int DependsOn = default, bool Milestone = default) { this.Name = Name; this.Owner = Owner; this.Start = Start; this.End = End; this.Progress = Progress; this.Tone = Tone; this.DependsOn = DependsOn; this.Milestone = Milestone; }
@@ -3397,15 +3529,15 @@ public unsafe partial struct GanttTask
 /// <summary>cui_cal_event. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct CalendarEvent
 {
-    /// <summary>const char * title</summary>
+    /// <summary>shown on the event</summary>
     public string? Title;
-    /// <summary>const char * detail</summary>
+    /// <summary>a second line such as the place, shown when the event is tall enough; may be `NULL`</summary>
     public string? Detail;
-    /// <summary>int day</summary>
+    /// <summary>day column, 0 (the day of `week_start`) to 6; dragging the event changes it</summary>
     public int Day;
-    /// <summary>float start</summary>
+    /// <summary>start in hours (13.5 is 13:30); dragging the event changes it</summary>
     public float Start;
-    /// <summary>float end</summary>
+    /// <summary>end in hours; moving or resizing the event changes it</summary>
     public float End;
     /// <summary>cui_tone tone</summary>
     public Tone Tone;
@@ -3445,13 +3577,13 @@ public unsafe partial struct CalendarEvent
 /// <summary>cui_check_step. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct CheckStep
 {
-    /// <summary>const char * title</summary>
+    /// <summary>the step&apos;s text; muted once the step is done</summary>
     public string? Title;
     /// <summary>const char * description</summary>
     public string? Description;
-    /// <summary>const char * action</summary>
+    /// <summary>label of the button shown under the first step that is not done; `NULL` for none</summary>
     public string? Action;
-    /// <summary>_Bool done</summary>
+    /// <summary>the step is complete; clicking its circle flips this</summary>
     public bool Done;
 
     public CheckStep(string? Title, string? Description = null, string? Action = null, bool Done = default) { this.Title = Title; this.Description = Description; this.Action = Action; this.Done = Done; }
@@ -3485,11 +3617,11 @@ public unsafe partial struct CheckStep
 /// <summary>cui_toc_item. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct TocItem
 {
-    /// <summary>const char * title</summary>
+    /// <summary>the entry&apos;s text in the list</summary>
     public string? Title;
-    /// <summary>const char * anchor</summary>
+    /// <summary>the name given to `cui_toc_anchor` at that section&apos;s heading</summary>
     public string? Anchor;
-    /// <summary>int level</summary>
+    /// <summary>indentation: 0 for a top level section, up to 4 (12 points each)</summary>
     public int Level;
 
     public TocItem(string? Title, string? Anchor = null, int Level = default) { this.Title = Title; this.Anchor = Anchor; this.Level = Level; }
@@ -3521,11 +3653,11 @@ public unsafe partial struct TocItem
 /// <summary>cui_model. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct Model
 {
-    /// <summary>const char * name</summary>
+    /// <summary>shown on the button and as the row&apos;s heading in the list</summary>
     public string? Name;
-    /// <summary>const char * detail</summary>
+    /// <summary>smaller muted line under the name in the list, e.g. what the model is good at</summary>
     public string? Detail;
-    /// <summary>const char * badge</summary>
+    /// <summary>small accent badge after the name, e.g. &quot;New&quot;; `NULL` for none</summary>
     public string? Badge;
     /// <summary>const char * icon</summary>
     public string? Icon;
@@ -3563,9 +3695,9 @@ public unsafe partial struct PromptSuggestion
 {
     /// <summary>const char * icon</summary>
     public string? Icon;
-    /// <summary>const char * title</summary>
+    /// <summary>the card&apos;s heading, in medium weight</summary>
     public string? Title;
-    /// <summary>const char * detail</summary>
+    /// <summary>smaller muted text under the title; may be `NULL`</summary>
     public string? Detail;
 
     public PromptSuggestion(string? Icon, string? Title = null, string? Detail = null) { this.Icon = Icon; this.Title = Title; this.Detail = Detail; }
@@ -3597,11 +3729,11 @@ public unsafe partial struct PromptSuggestion
 /// <summary>cui_source. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct Source
 {
-    /// <summary>const char * title</summary>
+    /// <summary>the card&apos;s heading; `NULL` shows the URL&apos;s domain</summary>
     public string? Title;
-    /// <summary>const char * url</summary>
+    /// <summary>the address: its domain is shown, and the whole URL as the card&apos;s tooltip</summary>
     public string? Url;
-    /// <summary>const char * snippet</summary>
+    /// <summary>an excerpt, shown in the hover card of a citation</summary>
     public string? Snippet;
 
     public Source(string? Title, string? Url = null, string? Snippet = null) { this.Title = Title; this.Url = Url; this.Snippet = Snippet; }
@@ -3633,9 +3765,9 @@ public unsafe partial struct Source
 /// <summary>cui_plan_step. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct PlanStep
 {
-    /// <summary>const char * title</summary>
+    /// <summary>the step&apos;s text; shimmers while the step is running</summary>
     public string? Title;
-    /// <summary>const char * detail</summary>
+    /// <summary>smaller muted line under the title (red when the step failed); may be `NULL`</summary>
     public string? Detail;
     /// <summary>cui_task_status status</summary>
     public CuiTaskStatus Status;
@@ -3669,13 +3801,13 @@ public unsafe partial struct PlanStep
 /// <summary>cui_ticker_item. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct TickerItem
 {
-    /// <summary>a fall is good: shown green</summary>
+    /// <summary>const char * label</summary>
     public string? Label;
-    /// <summary>a fall is good: shown green</summary>
+    /// <summary>text after the label in medium weight, e.g. a price; may be `NULL`</summary>
     public string? Value;
-    /// <summary>a fall is good: shown green</summary>
+    /// <summary>percent change, shown with a trend arrow in green or red; 0 hides it</summary>
     public float Delta;
-    /// <summary>a fall is good: shown green</summary>
+    /// <summary>a fall in `delta` is good news: it shows green, and a rise red</summary>
     public bool LowerIsBetter;
 
     public TickerItem(string? Label, string? Value = null, float Delta = default, bool LowerIsBetter = default) { this.Label = Label; this.Value = Value; this.Delta = Delta; this.LowerIsBetter = LowerIsBetter; }
@@ -3743,9 +3875,9 @@ public unsafe partial struct Reaction
 {
     /// <summary>const char * icon</summary>
     public string? Icon;
-    /// <summary>int count</summary>
+    /// <summary>the number beside the icon; a click adds or takes away 1</summary>
     public int Count;
-    /// <summary>_Bool active</summary>
+    /// <summary>the user has reacted: the pill is highlighted; a click flips it</summary>
     public bool Active;
 
     public Reaction(string? Icon, int Count = default, bool Active = default) { this.Icon = Icon; this.Count = Count; this.Active = Active; }
@@ -3781,7 +3913,7 @@ public unsafe partial struct TabBarItem
     public string? Icon;
     /// <summary>const char * label</summary>
     public string? Label;
-    /// <summary>int badge</summary>
+    /// <summary>a count on the icon (&quot;9+&quot; above 9); 0 for none</summary>
     public int Badge;
 
     public TabBarItem(string? Icon, string? Label = null, int Badge = default) { this.Icon = Icon; this.Label = Label; this.Badge = Badge; }
@@ -3815,7 +3947,7 @@ public unsafe partial struct VizItem
 {
     /// <summary>const char * label</summary>
     public string? Label;
-    /// <summary>float value</summary>
+    /// <summary>the item&apos;s amount: its area, length or share, by chart (activity rings: 1 is a full turn)</summary>
     public float Value;
     /// <summary>cui_color color</summary>
     public Color Color;
@@ -3881,7 +4013,7 @@ public unsafe partial struct TableSort
 /// <summary>cui_table_column. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct TableColumn
 {
-    /// <summary>const char * title</summary>
+    /// <summary>text of the column&apos;s header</summary>
     public string? Title;
     /// <summary>default fill</summary>
     public Size Width;
@@ -3921,11 +4053,11 @@ public unsafe partial struct TableColumn
 /// <summary>cui_command. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct Command
 {
-    /// <summary>const char * title</summary>
+    /// <summary>the command&apos;s text in the list; what typing in the palette searches</summary>
     public string? Title;
     /// <summary>const char * icon</summary>
     public string? Icon;
-    /// <summary>const char * group</summary>
+    /// <summary>heading above a run of commands with the same group, shown while the search is empty</summary>
     public string? Group;
     /// <summary>const char * shortcut</summary>
     public string? Shortcut;
@@ -3961,13 +4093,13 @@ public unsafe partial struct Command
 /// <summary>cui_choice. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct Choice
 {
-    /// <summary>const char * title</summary>
+    /// <summary>the card&apos;s heading, in medium weight; wraps when long</summary>
     public string? Title;
     /// <summary>const char * description</summary>
     public string? Description;
     /// <summary>const char * icon</summary>
     public string? Icon;
-    /// <summary>const char * badge</summary>
+    /// <summary>small accent badge beside the title, e.g. &quot;Popular&quot;; `NULL` for none</summary>
     public string? Badge;
 
     public Choice(string? Title, string? Description = null, string? Icon = null, string? Badge = null) { this.Title = Title; this.Description = Description; this.Icon = Icon; this.Badge = Badge; }
@@ -4001,9 +4133,9 @@ public unsafe partial struct Choice
 /// <summary>cui_keymap_binding. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct KeymapBinding
 {
-    /// <summary>cui_key_combo combo</summary>
+    /// <summary>the modifiers and key the action is bound to</summary>
     public KeyCombo Combo;
-    /// <summary>const char * action</summary>
+    /// <summary>name of the action, shown on the key and in its tooltip</summary>
     public string? Action;
     /// <summary>index into the categories, colors the key</summary>
     public int Category;
@@ -4037,13 +4169,13 @@ public unsafe partial struct KeymapBinding
 /// <summary>cui_scatter_series. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct ScatterSeries
 {
-    /// <summary>const char * name</summary>
+    /// <summary>shown in the legend, which appears with two or more series</summary>
     public string? Name;
-    /// <summary>const cui_vec2 * points</summary>
+    /// <summary>the points, x and y in data units</summary>
     public Vec2[]? Points;
-    /// <summary>const float * sizes</summary>
+    /// <summary>optional, one per point: makes a bubble chart, each bubble sized against the largest</summary>
     public float[]? Sizes;
-    /// <summary>int count</summary>
+    /// <summary>number of `points` (and of `sizes`)</summary>
     public int Count;
     /// <summary>cui_color color</summary>
     public Color Color;
@@ -4087,9 +4219,9 @@ public unsafe partial struct HexResult
     public bool SelectionChanged;
     /// <summary>bytes in .edit were overwritten this frame</summary>
     public bool Edited;
-    /// <summary>size_t edit_offset</summary>
+    /// <summary>with `edited`: offset of the first byte overwritten this frame</summary>
     public ulong EditOffset;
-    /// <summary>size_t edit_length</summary>
+    /// <summary>with `edited`: bytes from `edit_offset` up to the last one overwritten</summary>
     public ulong EditLength;
     /// <summary>byte under the pointer, or -1</summary>
     public long Hovered;

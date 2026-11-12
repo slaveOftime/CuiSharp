@@ -1602,7 +1602,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "identity of the card, for its hover state (defaults to an automatic id)"
         },
         {
           "CName": "width",
@@ -1674,7 +1674,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "left and right padding in points; 0 uses `pad`"
         },
         {
           "CName": "pad_y",
@@ -1686,7 +1686,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "top and bottom padding in points; 0 uses `pad`"
         },
         {
           "CName": "gap",
@@ -2664,7 +2664,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "shows dots instead of the text, with an eye button that reveals it"
         },
         {
           "CName": "disabled",
@@ -2883,7 +2883,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "muted text after the value, before the - and + buttons, e.g. \"kg\""
         }
       ]
     },
@@ -3220,7 +3220,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "small text at the right edge of the item, e.g. a count"
         },
         {
           "CName": "selected",
@@ -3232,7 +3232,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "the current page: medium weight text, and the group's highlight glides to it"
         },
         {
           "CName": "group",
@@ -3249,7 +3249,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "items with the same group name share one highlight; `NULL` puts them in one common group"
         }
       ]
     },
@@ -3352,7 +3352,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "heading of the step's card; `NULL` or \"\" leaves it out"
         },
         {
           "CName": "body",
@@ -3369,7 +3369,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "the explanation under the title; wraps to the card's width"
         },
         {
           "CName": "placement",
@@ -3588,7 +3588,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "an icon button (the ellipsis unless `icon` is set) with the label as its tooltip"
         }
       ]
     },
@@ -3677,7 +3677,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "a check mark at the right edge of the item"
         }
       ]
     },
@@ -3737,7 +3737,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "hides the x in the corner (Esc and a click outside still close it unless `persistent`)"
         },
         {
           "CName": "persistent",
@@ -4114,7 +4114,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "a small dot before the text, in the tone's color"
         },
         {
           "CName": "solid",
@@ -4126,7 +4126,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "filled with the tone's color instead of a light tint of it"
         },
         {
           "CName": "icon",
@@ -4198,7 +4198,7 @@
             "Spelling": "cui_texture",
             "Kind": "ULongLong"
           },
-          "Doc": ""
+          "Doc": "picture to show instead of the initials of the name"
         },
         {
           "CName": "status",
@@ -4215,7 +4215,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "a dot at the bottom right: \"online\" green, \"busy\" red, \"away\" amber, anything else gray"
         },
         {
           "CName": "square",
@@ -4227,7 +4227,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "rounded square instead of a circle"
         }
       ]
     },
@@ -4297,7 +4297,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "label of a button under the text; the call returns true when it is clicked"
         }
       ]
     },
@@ -4328,7 +4328,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "change shown beside the value with a trend arrow, as a percentage (4.2 shows +4.2%); 0 hides it"
         },
         {
           "CName": "delta_label",
@@ -4345,7 +4345,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "text shown instead of the percentage, e.g. \"+12 this week\"; `delta` still sets arrow and color"
         },
         {
           "CName": "spark",
@@ -4362,7 +4362,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "values for a sparkline under the value; needs at least 2"
         },
         {
           "CName": "spark_count",
@@ -4374,7 +4374,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "number of values in `spark`"
         },
         {
           "CName": "icon",
@@ -4463,7 +4463,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "a node without children: no chevron, a file icon, and `*open` is left alone"
         },
         {
           "CName": "selected",
@@ -4475,7 +4475,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "drawn with the active background and medium weight text"
         }
       ]
     },
@@ -4528,7 +4528,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "second line under the title, smaller; makes the row taller"
         },
         {
           "CName": "trailing",
@@ -4545,7 +4545,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "muted text at the right edge, e.g. a time or a count"
         },
         {
           "CName": "selected",
@@ -4557,7 +4557,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "drawn with the active background"
         },
         {
           "CName": "avatar",
@@ -4574,7 +4574,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "a name: shows that person's avatar (initials) in place of the icon"
         }
       ]
     },
@@ -4598,7 +4598,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "text of the column's header"
         },
         {
           "CName": "width",
@@ -4736,7 +4736,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "rows at least 36 points tall instead of 44"
         },
         {
           "CName": "selectable",
@@ -4748,7 +4748,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "rows take keyboard focus and show the hand cursor (pass the chosen row's state to `cui_table_row`)"
         }
       ]
     },
@@ -4772,7 +4772,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "shown in the legend and in the hover tooltip"
         },
         {
           "CName": "values",
@@ -4789,7 +4789,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "the series' data, one value per point"
         },
         {
           "CName": "count",
@@ -4801,7 +4801,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "number of `values`"
         },
         {
           "CName": "color",
@@ -4818,9 +4818,98 @@
       ]
     },
     {
+      "CName": "cui_chart_annotation",
+      "CsName": "NativeChartAnnotation",
+      "Size": 48,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "kind",
+          "CsName": "Kind",
+          "CsType": "AnnotationKind",
+          "CType": "cui_annotation_kind",
+          "Type": {
+            "Spelling": "cui_annotation_kind",
+            "Kind": "Enum"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "x",
+          "CsName": "X",
+          "CsType": "double",
+          "CType": "double",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "double",
+            "Kind": "Double"
+          },
+          "Doc": "in the chart's x units: the point's index for line and bar charts, x_min to x_max for the dot chart"
+        },
+        {
+          "CName": "y",
+          "CsName": "Y",
+          "CsType": "double",
+          "CType": "double",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "double",
+            "Kind": "Double"
+          },
+          "Doc": "a value, in the chart's value units"
+        },
+        {
+          "CName": "label",
+          "CsName": "Label",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "first line, e.g. \"PEAK 203 MG\"; `NULL` for a line with no label"
+        },
+        {
+          "CName": "detail",
+          "CsName": "Detail",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "second line, muted, e.g. \"13:06\"; `NULL` for none"
+        },
+        {
+          "CName": "accent",
+          "CsName": "Accent",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 40,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "the line, dot and label in the accent color"
+        }
+      ]
+    },
+    {
       "CName": "cui_chart_opts",
       "CsName": "NativeChartOpts",
-      "Size": 56,
+      "Size": 72,
       "Helpers": [],
       "Fields": [
         {
@@ -4890,7 +4979,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "number of `labels`; 0 means one per data point"
         },
         {
           "CName": "area",
@@ -4992,6 +5081,35 @@
             "Kind": "Float"
           },
           "Doc": "fixed y range when min != max"
+        },
+        {
+          "CName": "annotations",
+          "CsName": "Annotations",
+          "CsType": "nint",
+          "CType": "const cui_chart_annotation *",
+          "Offset": 56,
+          "Type": {
+            "Spelling": "const cui_chart_annotation *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_chart_annotation",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          },
+          "Doc": "lines and points drawn over the chart (line and bar charts)"
+        },
+        {
+          "CName": "annotation_count",
+          "CsName": "AnnotationCount",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 64,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "number of `annotations`"
         }
       ]
     },
@@ -5046,7 +5164,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "corner radius in points"
         },
         {
           "CName": "tint",
@@ -5058,7 +5176,7 @@
             "Spelling": "cui_color",
             "Kind": "Record"
           },
-          "Doc": ""
+          "Doc": "color the image is multiplied by; unset draws it as it is"
         }
       ]
     },
@@ -5283,7 +5401,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "the command's text in the list; what typing in the palette searches"
         },
         {
           "CName": "icon",
@@ -5317,7 +5435,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "heading above a run of commands with the same group, shown while the search is empty"
         },
         {
           "CName": "shortcut",
@@ -5358,7 +5476,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "the card's heading, in medium weight; wraps when long"
         },
         {
           "CName": "description",
@@ -5409,7 +5527,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "small accent badge beside the title, e.g. \"Popular\"; `NULL` for none"
         }
       ]
     },
@@ -5440,7 +5558,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "cards per row; 0 puts up to 3 choices in one row and more in 2 columns"
         }
       ]
     },
@@ -5505,7 +5623,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "most tags the field holds; once reached it takes no more typing. 0 means no limit"
         },
         {
           "CName": "width",
@@ -5548,7 +5666,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "seconds the button must be held before it fires, default 1.2"
         },
         {
           "CName": "icon",
@@ -5613,7 +5731,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "muted text at the right of the title, e.g. \"2h ago\""
         },
         {
           "CName": "description",
@@ -5671,7 +5789,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "the final item: no connector line below its dot and no space after it"
         }
       ]
     },
@@ -5753,7 +5871,7 @@
               }
             }
           },
-          "Doc": ""
+          "Doc": "one icon per menu item, in the order of the items; `NULL` for none"
         },
         {
           "CName": "disabled",
@@ -5818,7 +5936,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "clicking an item turns it on and every other one off, like radio buttons"
         },
         {
           "CName": "icon_only",
@@ -5830,7 +5948,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "items that have an icon show only the icon, with their label as the tooltip"
         },
         {
           "CName": "size",
@@ -6078,7 +6196,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "the number beside the icon; a click adds or takes away 1"
         },
         {
           "CName": "active",
@@ -6090,7 +6208,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "the user has reacted: the pill is highlighted; a click flips it"
         }
       ]
     },
@@ -6232,7 +6350,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "second line under the name, e.g. an email address; also in the menu's header"
         },
         {
           "CName": "status",
@@ -6249,7 +6367,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "status dot on the avatar: \"online\", \"busy\", \"away\" or anything else (gray)"
         },
         {
           "CName": "avatar",
@@ -6261,7 +6379,7 @@
             "Spelling": "cui_texture",
             "Kind": "ULongLong"
           },
-          "Doc": ""
+          "Doc": "picture for the avatar instead of the name's initials"
         },
         {
           "CName": "compact",
@@ -6273,7 +6391,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "only the avatar as the button, as wide as it needs; the menu then opens below it"
         },
         {
           "CName": "placement",
@@ -6374,7 +6492,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "text of the column's header"
         },
         {
           "CName": "width",
@@ -6521,7 +6639,7 @@
               "Kind": "Record"
             }
           },
-          "Doc": ""
+          "Doc": "optional; a click on a sortable header updates it and the header shows its arrow. Sort the rows yourself"
         },
         {
           "CName": "striped",
@@ -6601,7 +6719,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "the field's name, on its chip and in the \"+ Filter\" menu"
         },
         {
           "CName": "icon",
@@ -6640,7 +6758,7 @@
               }
             }
           },
-          "Doc": ""
+          "Doc": "the values to choose from; at most 32, one bit of the mask each"
         },
         {
           "CName": "option_count",
@@ -6652,7 +6770,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "number of `options`"
         }
       ]
     },
@@ -6850,7 +6968,7 @@
               "Kind": "Void"
             }
           },
-          "Doc": ""
+          "Doc": "passed to `label` as its first argument"
         }
       ]
     },
@@ -6922,7 +7040,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "number of nodes in `load`; at most 64 a frame"
         },
         {
           "CName": "selection_changed",
@@ -6934,7 +7052,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "a node's `CUI_TREE_SELECTED` flag changed this frame"
         },
         {
           "CName": "sort_changed",
@@ -7112,7 +7230,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "the bar is showing its text field for typing a path"
         }
       ]
     },
@@ -7244,7 +7362,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "lists folders and leaves the files out"
         },
         {
           "CName": "hidden",
@@ -7290,7 +7408,7 @@
               }
             }
           },
-          "Doc": "sidebar paths, default home, desktop, documents, downloads and the root"
+          "Doc": "full paths for the sidebar, each shown by its last part; at most 6"
         },
         {
           "CName": "place_count",
@@ -7302,7 +7420,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": "sidebar paths, default home, desktop, documents, downloads and the root"
+          "Doc": "entries in `places`; with `places` NULL the sidebar shows home, desktop, documents, downloads and the root"
         },
         {
           "CName": "list",
@@ -7318,7 +7436,7 @@
               "Kind": "FunctionProto"
             }
           },
-          "Doc": "default cui_fs_list"
+          "Doc": "function that lists a folder; set it to browse something other than the local disk"
         },
         {
           "CName": "list_user",
@@ -7334,7 +7452,7 @@
               "Kind": "Void"
             }
           },
-          "Doc": "default cui_fs_list"
+          "Doc": "passed to `list` as its first argument; `list` defaults to cui_fs_list, the local disk"
         },
         {
           "CName": "max_entries",
@@ -7555,7 +7673,7 @@
               "Kind": "FunctionProto"
             }
           },
-          "Doc": ""
+          "Doc": "function that lists a folder (the local disk unless set); default `cui_fs_list`"
         },
         {
           "CName": "list_user",
@@ -7571,7 +7689,7 @@
               "Kind": "Void"
             }
           },
-          "Doc": ""
+          "Doc": "passed to `list` as its first argument"
         }
       ]
     },
@@ -7607,7 +7725,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "\"c\", \"cpp\", \"js\", \"ts\", \"python\", \"rust\", \"go\", \"json\", \"shell\" or \"text\" (no colors); shown in the title bar"
         },
         {
           "CName": "title",
@@ -7636,7 +7754,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "a column of line numbers on the left"
         },
         {
           "CName": "highlight_from",
@@ -7727,7 +7845,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "levels of the tree that start open, default 2"
         },
         {
           "CName": "max_height",
@@ -7739,7 +7857,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "points; taller content scrolls. 0 shows everything"
         }
       ]
     },
@@ -8094,7 +8212,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "hides the gutter of line numbers"
         },
         {
           "CName": "autofocus",
@@ -8152,7 +8270,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "number of `marks`"
         }
       ]
     },
@@ -8921,7 +9039,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "shown after the author's name; on your own messages after `status`"
         },
         {
           "CName": "status",
@@ -8974,7 +9092,7 @@
             "Spelling": "cui_texture",
             "Kind": "ULongLong"
           },
-          "Doc": ""
+          "Doc": "picture for the sender's avatar instead of initials (other people's messages)"
         },
         {
           "CName": "markdown",
@@ -9038,7 +9156,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "muted text after the author's name, e.g. \"2h ago\""
         },
         {
           "CName": "depth",
@@ -9050,7 +9168,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "0 for a top level comment; each level indents a reply 44 points under a connector line"
         },
         {
           "CName": "likes",
@@ -9066,7 +9184,7 @@
               "Kind": "Int"
             }
           },
-          "Doc": ""
+          "Doc": "the like count, shown beside the heart; changed with `*liked`. May be `NULL`"
         },
         {
           "CName": "liked",
@@ -9082,7 +9200,7 @@
               "Kind": "Bool"
             }
           },
-          "Doc": ""
+          "Doc": "whether you liked it: tints the heart and flips on a click. `NULL`: the click is only reported"
         },
         {
           "CName": "edited",
@@ -9094,7 +9212,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "adds \"edited\" after the time"
         },
         {
           "CName": "badge",
@@ -9111,7 +9229,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "small badge after the author's name, e.g. \"Author\""
         }
       ]
     },
@@ -9135,7 +9253,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "shown in the tooltip, and as initials when there is no avatar"
         },
         {
           "CName": "color",
@@ -9159,7 +9277,7 @@
             "Spelling": "cui_texture",
             "Kind": "ULongLong"
           },
-          "Doc": ""
+          "Doc": "picture to show instead of the initials"
         },
         {
           "CName": "idle",
@@ -9171,7 +9289,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "away: the avatar dims, its ring turns gray and the tooltip adds \"(away)\""
         }
       ]
     },
@@ -9214,7 +9332,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "seconds on a slide before it moves to the next, paused while hovered; 0 turns it off"
         },
         {
           "CName": "gap",
@@ -9238,7 +9356,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "hides the previous and next arrows that show on hover"
         },
         {
           "CName": "no_dots",
@@ -9250,7 +9368,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "hides the row of page dots under the slides"
         },
         {
           "CName": "loop",
@@ -9262,7 +9380,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "past the last slide comes the first again, and back from the first the last"
         }
       ]
     },
@@ -9322,7 +9440,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "caption in the top left corner, default \"Before\""
         },
         {
           "CName": "after_label",
@@ -9339,7 +9457,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "caption in the top right corner, default \"After\""
         },
         {
           "CName": "aspect",
@@ -9406,7 +9524,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "cards of the deck that show at once, default 3"
         }
       ]
     },
@@ -9466,7 +9584,7 @@
             "Spelling": "cui_font",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "default `CUI_FONT_DISPLAY`"
         },
         {
           "CName": "color",
@@ -9490,7 +9608,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "commas between thousands: 48210 shows as 48,210"
         }
       ]
     },
@@ -9514,7 +9632,7 @@
               "IsConst": true
             }
           },
-          "Doc": "a fall is good: shown green"
+          "Doc": ""
         },
         {
           "CName": "value",
@@ -9531,7 +9649,7 @@
               "IsConst": true
             }
           },
-          "Doc": "a fall is good: shown green"
+          "Doc": "text after the label in medium weight, e.g. a price; may be `NULL`"
         },
         {
           "CName": "delta",
@@ -9543,7 +9661,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": "a fall is good: shown green"
+          "Doc": "percent change, shown with a trend arrow in green or red; 0 hides it"
         },
         {
           "CName": "lower_is_better",
@@ -9555,7 +9673,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": "a fall is good: shown green"
+          "Doc": "a fall in `delta` is good news: it shows green, and a rise red"
         }
       ]
     },
@@ -9586,7 +9704,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "points per second, default 40"
         },
         {
           "CName": "height",
@@ -9639,7 +9757,7 @@
               }
             }
           },
-          "Doc": ""
+          "Doc": "one label per row, left of the grid; `NULL` for none"
         },
         {
           "CName": "col_labels",
@@ -9661,7 +9779,7 @@
               }
             }
           },
-          "Doc": ""
+          "Doc": "one label per column, under the grid; labels that would overlap are skipped"
         },
         {
           "CName": "cell",
@@ -9769,7 +9887,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "size of a day's square in points, default 11"
         },
         {
           "CName": "color",
@@ -9851,7 +9969,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "the item's amount: its area, length or share, by chart (activity rings: 1 is a full turn)"
         },
         {
           "CName": "color",
@@ -9966,7 +10084,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "value at the outer ring; 0 picks a round number above the largest value"
         },
         {
           "CName": "format",
@@ -10086,7 +10204,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "index of the node the flow leaves"
         },
         {
           "CName": "to",
@@ -10098,7 +10216,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "index of the node the flow enters"
         },
         {
           "CName": "value",
@@ -10110,7 +10228,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "size of the flow: sets the link's thickness"
         }
       ]
     },
@@ -10182,7 +10300,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "width of the node bars in points, default 12"
         }
       ]
     },
@@ -10213,7 +10331,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "size of a square in points, default 18"
         },
         {
           "CName": "columns",
@@ -10225,7 +10343,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "squares per row, at most 60; default 10"
         },
         {
           "CName": "rows",
@@ -10237,7 +10355,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "rows of squares, at most 60; default 10"
         },
         {
           "CName": "format",
@@ -10386,7 +10504,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "shows only this many rows from the top; 0 shows all"
         },
         {
           "CName": "keep_order",
@@ -10398,7 +10516,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "keeps the items in the order given instead of sorting them largest first"
         },
         {
           "CName": "color",
@@ -10429,7 +10547,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": "names and shares beside the rings"
+          "Doc": ""
         },
         {
           "CName": "size",
@@ -10441,7 +10559,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": "names and shares beside the rings"
+          "Doc": ""
         },
         {
           "CName": "thickness",
@@ -10453,7 +10571,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": "names and shares beside the rings"
+          "Doc": "width of each ring in points; 0 uses a tenth of `size`, at least 8"
         },
         {
           "CName": "center",
@@ -10470,7 +10588,7 @@
               "IsConst": true
             }
           },
-          "Doc": "names and shares beside the rings"
+          "Doc": "large text in the middle of the rings, e.g. a total"
         },
         {
           "CName": "caption",
@@ -10487,7 +10605,7 @@
               "IsConst": true
             }
           },
-          "Doc": "names and shares beside the rings"
+          "Doc": "small muted text under `center`; shown only with `center`"
         },
         {
           "CName": "legend",
@@ -10523,7 +10641,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "shown in the legend, which appears with two or more series"
         },
         {
           "CName": "points",
@@ -10540,7 +10658,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "the points, x and y in data units"
         },
         {
           "CName": "sizes",
@@ -10557,7 +10675,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "optional, one per point: makes a bubble chart, each bubble sized against the largest"
         },
         {
           "CName": "count",
@@ -10569,7 +10687,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "number of `points` (and of `sizes`)"
         },
         {
           "CName": "color",
@@ -10641,7 +10759,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "title under the x axis; also names the x value in the tooltip"
         },
         {
           "CName": "y_label",
@@ -10658,7 +10776,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "title above the y axis; also names the y value in the tooltip"
         },
         {
           "CName": "x_format",
@@ -10675,7 +10793,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "printf format for the x axis labels and the tooltip"
         },
         {
           "CName": "y_format",
@@ -10692,7 +10810,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "printf format for the y axis labels and the tooltip"
         },
         {
           "CName": "no_legend",
@@ -10846,7 +10964,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "colored stretches of the arc, each from the one before up to its `to`; at most 16"
         },
         {
           "CName": "band_count",
@@ -10858,7 +10976,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "number of `bands`"
         },
         {
           "CName": "ticks",
@@ -10894,7 +11012,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "draws the marker at `target`"
         },
         {
           "CName": "no_needle",
@@ -10925,7 +11043,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "price at the start of the period"
         },
         {
           "CName": "high",
@@ -10937,7 +11055,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "highest price in the period"
         },
         {
           "CName": "low",
@@ -10949,7 +11067,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "lowest price in the period"
         },
         {
           "CName": "close",
@@ -10961,7 +11079,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "price at the end of the period"
         },
         {
           "CName": "volume",
@@ -10973,7 +11091,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "amount traded in the period, drawn as a bar under the candle; 0 for none"
         }
       ]
     },
@@ -11072,7 +11190,7 @@
               "IsConst": true
             }
           },
-          "Doc": "lines with one value per candle, e.g. moving averages"
+          "Doc": "series drawn as lines over the candles; at most 4"
         },
         {
           "CName": "overlay_count",
@@ -11084,7 +11202,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": "lines with one value per candle, e.g. moving averages"
+          "Doc": "entries in `overlays`: lines with one value per candle, e.g. moving averages"
         },
         {
           "CName": "no_volume",
@@ -11163,7 +11281,7 @@
             "Spelling": "cui_font",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "default `CUI_FONT_BODY` (0)"
         },
         {
           "CName": "size",
@@ -11211,7 +11329,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "keeps the text on one line instead of wrapping it"
         },
         {
           "CName": "speed",
@@ -11278,7 +11396,7 @@
             "Spelling": "cui_font",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "default `CUI_FONT_BODY` (0)"
         },
         {
           "CName": "size",
@@ -11302,7 +11420,7 @@
             "Spelling": "cui_color",
             "Kind": "Record"
           },
-          "Doc": ""
+          "Doc": "color at the left edge; default the accent, or the text color under the neutral accent"
         },
         {
           "CName": "to",
@@ -11314,7 +11432,7 @@
             "Spelling": "cui_color",
             "Kind": "Record"
           },
-          "Doc": ""
+          "Doc": "color at the right edge, default `from` blended toward the foreground color"
         },
         {
           "CName": "animate",
@@ -11326,7 +11444,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "the gradient drifts along the text"
         },
         {
           "CName": "width",
@@ -11429,7 +11547,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "a light travels around the card's edge all the time"
         }
       ]
     },
@@ -11527,7 +11645,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "how much the icon under the pointer grows, default 1.55"
         }
       ]
     },
@@ -11570,7 +11688,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "a small dot under the icon"
         },
         {
           "CName": "badge",
@@ -11582,7 +11700,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "a count badge on the icon (\"99+\" above 99); 0 for none"
         }
       ]
     },
@@ -11635,7 +11753,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "a count on the icon (\"9+\" above 9); 0 for none"
         }
       ]
     },
@@ -11678,7 +11796,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "only the selected tab shows its label; the others show just their icon"
         }
       ]
     },
@@ -11731,7 +11849,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "the state line under the label, default \"On\" or \"Off\""
         },
         {
           "CName": "color",
@@ -11767,7 +11885,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "icon beside the text in a lower tile, instead of above it"
         }
       ]
     },
@@ -11822,7 +11940,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "width of each bar in points, default 3"
         },
         {
           "CName": "gap",
@@ -11870,7 +11988,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "name of the track, in medium weight"
         },
         {
           "CName": "artist",
@@ -11887,7 +12005,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "shown under the title"
         },
         {
           "CName": "art",
@@ -11899,7 +12017,7 @@
             "Spelling": "cui_texture",
             "Kind": "ULongLong"
           },
-          "Doc": ""
+          "Doc": "artwork texture; 0 shows a tile in `art_color` with a note icon"
         },
         {
           "CName": "art_color",
@@ -11911,7 +12029,7 @@
             "Spelling": "cui_color",
             "Kind": "Record"
           },
-          "Doc": ""
+          "Doc": "color of the tile behind (or in place of) the artwork"
         },
         {
           "CName": "position",
@@ -11923,7 +12041,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "seconds played; written when the user seeks"
         },
         {
           "CName": "duration",
@@ -11935,7 +12053,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "length of the track in seconds"
         },
         {
           "CName": "playing",
@@ -11947,7 +12065,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "shows pause instead of play; the play button flips it"
         }
       ]
     },
@@ -11990,7 +12108,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "smaller artwork and padding, and no previous button"
         }
       ]
     },
@@ -12021,7 +12139,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "still thinking: the header shimmers and the body opens; it folds when this turns false"
         },
         {
           "CName": "seconds",
@@ -12033,7 +12151,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "time spent, for the header: \"Thinking for 12s\", then \"Thought for 12s\""
         },
         {
           "CName": "title",
@@ -12050,7 +12168,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "header text to show instead of the \"Thinking\" and \"Thought for\" lines"
         }
       ]
     },
@@ -12115,7 +12233,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "muted text after the tool's name, e.g. the file or query it works on"
         },
         {
           "CName": "input",
@@ -12132,7 +12250,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "what was sent to the tool; the row then opens to show it (as JSON when it parses)"
         },
         {
           "CName": "output",
@@ -12149,7 +12267,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "what the tool returned, shown when open; labelled \"Error\" when the status is failed"
         },
         {
           "CName": "seconds",
@@ -12161,7 +12279,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "how long the call took, shown at the end of the row unless it is pending; 0 hides it"
         }
       ]
     },
@@ -12185,7 +12303,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "the step's text; shimmers while the step is running"
         },
         {
           "CName": "detail",
@@ -12202,7 +12320,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "smaller muted line under the title (red when the step failed); may be `NULL`"
         },
         {
           "CName": "status",
@@ -12250,7 +12368,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "heading of the plan, default \"Plan\""
         }
       ]
     },
@@ -12293,7 +12411,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "elapsed time shown after the text, as 42s or 1m 05s; 0 hides it"
         },
         {
           "CName": "icon",
@@ -12334,7 +12452,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "the card's heading; `NULL` shows the URL's domain"
         },
         {
           "CName": "url",
@@ -12351,7 +12469,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "the address: its domain is shown, and the whole URL as the card's tooltip"
         },
         {
           "CName": "snippet",
@@ -12368,7 +12486,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "an excerpt, shown in the hover card of a citation"
         }
       ]
     },
@@ -12404,7 +12522,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "what fills the context (label, amount, color), for the breakdown on hover"
         },
         {
           "CName": "part_count",
@@ -12416,7 +12534,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "number of `parts`"
         },
         {
           "CName": "unit",
@@ -12469,7 +12587,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "the text the copy button copies; `NULL` leaves the button out"
         },
         {
           "CName": "vote",
@@ -12485,7 +12603,7 @@
               "Kind": "Int"
             }
           },
-          "Doc": ""
+          "Doc": "1 thumbs up, -1 thumbs down, 0 none: shown on the buttons and updated on a click"
         },
         {
           "CName": "no_regenerate",
@@ -12497,7 +12615,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "hides the regenerate button"
         },
         {
           "CName": "no_share",
@@ -12509,7 +12627,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "hides the share button"
         }
       ]
     },
@@ -12550,7 +12668,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "the card's heading, in medium weight"
         },
         {
           "CName": "detail",
@@ -12567,7 +12685,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "smaller muted text under the title; may be `NULL`"
         }
       ]
     },
@@ -12598,7 +12716,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "cards per row, default 2"
         }
       ]
     },
@@ -12622,7 +12740,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "shown on the button and as the row's heading in the list"
         },
         {
           "CName": "detail",
@@ -12639,7 +12757,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "smaller muted line under the name in the list, e.g. what the model is good at"
         },
         {
           "CName": "badge",
@@ -12656,7 +12774,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "small accent badge after the name, e.g. \"New\"; `NULL` for none"
         },
         {
           "CName": "icon",
@@ -12704,7 +12822,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "no border or fill on the button until hovered, for use inside another control"
         },
         {
           "CName": "placement",
@@ -12764,7 +12882,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "a reply is being generated: the send button becomes stop and Enter does not send"
         },
         {
           "CName": "attachments",
@@ -12786,7 +12904,7 @@
               }
             }
           },
-          "Doc": ""
+          "Doc": "names of the attached files, shown as chips above the text, each with an x"
         },
         {
           "CName": "attachment_count",
@@ -12798,7 +12916,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "number of `attachments`"
         },
         {
           "CName": "removed",
@@ -12814,7 +12932,7 @@
               "Kind": "Int"
             }
           },
-          "Doc": ""
+          "Doc": "set to the index of the attachment whose x was clicked (with `CUI_COMPOSER_REMOVE`)"
         },
         {
           "CName": "models",
@@ -12831,7 +12949,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "models for a picker beside the attach button; `NULL` for no picker"
         },
         {
           "CName": "model_count",
@@ -12843,7 +12961,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "number of `models`"
         },
         {
           "CName": "model",
@@ -12859,7 +12977,7 @@
               "Kind": "Int"
             }
           },
-          "Doc": ""
+          "Doc": "index of the chosen model, read and written"
         },
         {
           "CName": "max_lines",
@@ -12945,7 +13063,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "the `card_id` of the card that was dropped"
         },
         {
           "CName": "from_column",
@@ -12957,7 +13075,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "index of the column it came from, in the order the columns were begun"
         },
         {
           "CName": "to_column",
@@ -12969,7 +13087,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "index of the column it was dropped in"
         },
         {
           "CName": "to_index",
@@ -12981,7 +13099,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "its position in that column, counted with the dragged card left out"
         }
       ]
     },
@@ -13012,7 +13130,7 @@
             "Spelling": "cui_color",
             "Kind": "Record"
           },
-          "Doc": ""
+          "Doc": "a small dot of this color before the title; unset for none"
         },
         {
           "CName": "limit",
@@ -13024,7 +13142,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "work in progress limit: the count reads \"3 / 5\" and turns red above it; 0 for none"
         },
         {
           "CName": "width",
@@ -13060,7 +13178,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "shown on the event"
         },
         {
           "CName": "detail",
@@ -13077,7 +13195,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "a second line such as the place, shown when the event is tall enough; may be `NULL`"
         },
         {
           "CName": "day",
@@ -13089,7 +13207,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "day column, 0 (the day of `week_start`) to 6; dragging the event changes it"
         },
         {
           "CName": "start",
@@ -13101,7 +13219,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "start in hours (13.5 is 13:30); dragging the event changes it"
         },
         {
           "CName": "end",
@@ -13113,7 +13231,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "end in hours; moving or resizing the event changes it"
         },
         {
           "CName": "tone",
@@ -13156,7 +13274,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "first hour shown, default 7; set together with `end_hour`"
         },
         {
           "CName": "end_hour",
@@ -13168,7 +13286,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "last hour shown, default 21; used only when it is greater than `start_hour`"
         },
         {
           "CName": "hour_height",
@@ -13180,7 +13298,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "points per hour, default 52"
         },
         {
           "CName": "height",
@@ -13228,7 +13346,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "shown on the event's bar, or after the time of a timed event"
         },
         {
           "CName": "start",
@@ -13494,7 +13612,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "shown in the task list and, when it fits, on the bar"
         },
         {
           "CName": "owner",
@@ -13511,7 +13629,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "a name: shows that person's avatar in the task list; `NULL` for none"
         },
         {
           "CName": "start",
@@ -13523,7 +13641,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "day the bar starts, counted from `origin`; dragging the bar changes it"
         },
         {
           "CName": "end",
@@ -13535,7 +13653,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "day the bar ends, counted from `origin` (it is end - start days long); dragging changes it"
         },
         {
           "CName": "progress",
@@ -13547,7 +13665,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "0..1: the part of the bar drawn darker, as done"
         },
         {
           "CName": "tone",
@@ -13571,7 +13689,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "index of the task this one waits for: an arrow runs from its end to this start. -1 for none"
         },
         {
           "CName": "milestone",
@@ -13583,7 +13701,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "a diamond at `start` instead of a bar; it cannot be resized"
         }
       ]
     },
@@ -13614,7 +13732,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "points per day, default 30"
         },
         {
           "CName": "row_height",
@@ -13626,7 +13744,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "points per task row, default 40"
         },
         {
           "CName": "height",
@@ -13650,7 +13768,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "day to mark as today, counted from `origin`; 0 marks none"
         },
         {
           "CName": "read_only",
@@ -13717,7 +13835,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "seconds the pointer must rest on the component before the card shows, default 0.45"
         }
       ]
     },
@@ -13753,7 +13871,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "the question, in medium weight at the top, e.g. \"Delete this file?\""
         },
         {
           "CName": "description",
@@ -13859,7 +13977,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "lines shown while collapsed, default 3"
         },
         {
           "CName": "size",
@@ -13895,7 +14013,7 @@
             "Spelling": "cui_color",
             "Kind": "Record"
           },
-          "Doc": ""
+          "Doc": "color the last line fades into; set it to the surface behind the text, default the background"
         }
       ]
     },
@@ -13965,7 +14083,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "small badge in the header before the chevron, colored by `badge_tone`; `NULL` for none"
         },
         {
           "CName": "badge_tone",
@@ -14001,7 +14119,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "the entry's text in the list"
         },
         {
           "CName": "anchor",
@@ -14018,7 +14136,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "the name given to `cui_toc_anchor` at that section's heading"
         },
         {
           "CName": "level",
@@ -14030,7 +14148,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "indentation: 0 for a top level section, up to 4 (12 points each)"
         }
       ]
     },
@@ -14095,7 +14213,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "label of a button in the banner; the call returns true when it is clicked"
         },
         {
           "CName": "dismissible",
@@ -14138,7 +14256,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "no days tile; the hours tile counts the days in (49 hours, not 2 days and 1 hour)"
         },
         {
           "CName": "compact",
@@ -14150,7 +14268,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "small tiles joined by colons, without the unit names under them"
         }
       ]
     },
@@ -14174,7 +14292,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "the step's text; muted once the step is done"
         },
         {
           "CName": "description",
@@ -14208,7 +14326,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "label of the button shown under the first step that is not done; `NULL` for none"
         },
         {
           "CName": "done",
@@ -14220,7 +14338,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "the step is complete; clicking its circle flips this"
         }
       ]
     },
@@ -14256,7 +14374,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "heading of the card, default \"Get started\""
         },
         {
           "CName": "description",
@@ -14360,7 +14478,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "a search field at the top of the list that filters the items as you type"
         },
         {
           "CName": "max_chips",
@@ -14403,7 +14521,7 @@
             "Spelling": "cui_date",
             "Kind": "Record"
           },
-          "Doc": ""
+          "Doc": "first day of the range; a zero date means nothing is chosen"
         },
         {
           "CName": "end",
@@ -14415,7 +14533,7 @@
             "Spelling": "cui_date",
             "Kind": "Record"
           },
-          "Doc": ""
+          "Doc": "last day of the range, inclusive"
         }
       ]
     },
@@ -14492,7 +14610,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "hides the list of preset ranges beside (or above) the calendar"
         }
       ]
     },
@@ -14540,7 +14658,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "shows 1 to 12 with AM and PM (as in \"2:30 PM\"); `*hour` stays 0..23"
         },
         {
           "CName": "minute_step",
@@ -14552,7 +14670,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "minutes between the entries of the minute column, default 5"
         },
         {
           "CName": "width",
@@ -14595,7 +14713,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "rows in view, made odd so the selected one sits in the middle; default 5"
         },
         {
           "CName": "width",
@@ -14619,7 +14737,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "the items wrap around: after the last comes the first again"
         },
         {
           "CName": "join_left",
@@ -14631,7 +14749,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "squares off the left end of the selection band, to join a wheel on that side"
         },
         {
           "CName": "join_right",
@@ -14643,7 +14761,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "squares off the right end of the selection band, to join a wheel on that side"
         }
       ]
     },
@@ -14686,7 +14804,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "every Nth tick is long and labelled, default 10; Shift+arrows move this many steps"
         },
         {
           "CName": "spacing",
@@ -14698,7 +14816,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "points between two ticks (one `step` apart), default 9"
         },
         {
           "CName": "format",
@@ -15052,7 +15170,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "the track runs left to right, with the label before it, instead of bottom to top"
         },
         {
           "CName": "step",
@@ -15093,7 +15211,7 @@
               "IsConst": true
             }
           },
-          "Doc": "scale marks in value units, labelled beside the track"
+          "Doc": "values to mark and label beside the track, e.g. dB marks; at most 32"
         },
         {
           "CName": "tick_count",
@@ -15105,7 +15223,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": "scale marks in value units, labelled beside the track"
+          "Doc": "entries in `ticks`"
         },
         {
           "CName": "meter",
@@ -15122,7 +15240,7 @@
               "IsConst": true
             }
           },
-          "Doc": "a level meter beside the track (linear peaks, up to 8); a dB fader's range sets its scale"
+          "Doc": "linear sample peaks, one per channel, for a level meter beside the track; `NULL` for none"
         },
         {
           "CName": "meter_channels",
@@ -15134,7 +15252,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": "a level meter beside the track (linear peaks, up to 8); a dB fader's range sets its scale"
+          "Doc": "entries in `meter`, up to 8; a dB fader's range sets the meter's scale"
         },
         {
           "CName": "hide_value",
@@ -15237,7 +15355,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "bars run left to right instead of bottom to top"
         },
         {
           "CName": "scale",
@@ -15357,7 +15475,7 @@
             "Spelling": "cui_color",
             "Kind": "Record"
           },
-          "Doc": ""
+          "Doc": "color of the strokes, default the foreground color"
         }
       ]
     },
@@ -15444,7 +15562,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "extensions it takes, separated by semicolons, e.g. \"png;jpg;pdf\"; `NULL` takes any file"
         },
         {
           "CName": "height",
@@ -15511,7 +15629,7 @@
             "Spelling": "cui_font",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "font of the text and of the field, default `CUI_FONT_MEDIUM`"
         },
         {
           "CName": "size",
@@ -15699,7 +15817,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "currency symbol before the amount, default \"$\""
         },
         {
           "CName": "code",
@@ -15716,7 +15834,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "currency code after the amount, e.g. \"USD\""
         },
         {
           "CName": "decimals",
@@ -15757,7 +15875,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "helper text below the field"
         }
       ]
     },
@@ -15855,7 +15973,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": "pan in points; zoom 0 means 1"
+          "Doc": "where the canvas origin sits, in points from the editor's left edge; panning changes it"
         },
         {
           "CName": "y",
@@ -15867,7 +15985,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": "pan in points; zoom 0 means 1"
+          "Doc": "where the canvas origin sits, in points from the editor's top edge"
         },
         {
           "CName": "zoom",
@@ -15879,7 +15997,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": "pan in points; zoom 0 means 1"
+          "Doc": "scale of the canvas; 0 means 1. Kept between `min_zoom` and `max_zoom`"
         }
       ]
     },
@@ -16049,7 +16167,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "0 links to any pin; another number links only to pins of that type and picks their color"
         }
       ]
     },
@@ -16111,7 +16229,7 @@
             "Spelling": "char",
             "Kind": "Char_S"
           },
-          "Doc": ""
+          "Doc": "letter that opens the menu with Alt; 0 uses the first letter or digit of the label"
         },
         {
           "CName": "width",
@@ -16456,7 +16574,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "the tab's text and its identity; add \"##key\" to tell two tabs with one name apart"
         },
         {
           "CName": "icon",
@@ -16502,7 +16620,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "unsaved changes: a dot in place of the x, which returns under the pointer"
         }
       ]
     },
@@ -16533,7 +16651,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "Ctrl+Tab, Ctrl+Shift+Tab, Ctrl+PageUp/Down and Ctrl+W (Cmd+W on macOS) work from anywhere in the window"
         },
         {
           "CName": "no_close",
@@ -16545,7 +16663,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "tabs have no x and cannot be closed (middle click, Delete and Ctrl+W do nothing)"
         },
         {
           "CName": "no_reorder",
@@ -16557,7 +16675,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "tabs cannot be dragged or moved with Shift+Left/Right"
         }
       ]
     },
@@ -16756,7 +16874,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "unsaved changes: the panel's tab shows a dot in place of its x"
         }
       ]
     },
@@ -16965,7 +17083,7 @@
             "Spelling": "uint32_t",
             "Kind": "UInt"
           },
-          "Doc": ""
+          "Doc": "where the line's text starts in the buffer's `text`"
         },
         {
           "CName": "len",
@@ -16977,7 +17095,7 @@
             "Spelling": "uint32_t",
             "Kind": "UInt"
           },
-          "Doc": ""
+          "Doc": "bytes of text, not counting the terminator"
         },
         {
           "CName": "time",
@@ -16989,7 +17107,7 @@
             "Spelling": "double",
             "Kind": "Double"
           },
-          "Doc": ""
+          "Doc": "the timestamp it was appended with, in seconds"
         },
         {
           "CName": "level",
@@ -17001,7 +17119,7 @@
             "Spelling": "uint8_t",
             "Kind": "UChar"
           },
-          "Doc": ""
+          "Doc": "a `cui_log_level`"
         }
       ]
     },
@@ -17036,7 +17154,7 @@
               "Kind": "Record"
             }
           },
-          "Doc": "everything below is managed by cui_log_*; read it, do not write it"
+          "Doc": "the line records given to `cui_log_init`"
         },
         {
           "CName": "line_cap",
@@ -17048,7 +17166,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "how many records `lines` has room for"
         },
         {
           "CName": "text",
@@ -17064,7 +17182,7 @@
               "Kind": "Char_S"
             }
           },
-          "Doc": ""
+          "Doc": "the bytes given to `cui_log_init`, holding the text of the lines"
         },
         {
           "CName": "text_cap",
@@ -17076,7 +17194,7 @@
             "Spelling": "uint32_t",
             "Kind": "UInt"
           },
-          "Doc": ""
+          "Doc": "size of `text` in bytes"
         },
         {
           "CName": "first",
@@ -17142,7 +17260,7 @@
               "Kind": "Int"
             }
           },
-          "Doc": ""
+          "Doc": "lines of each level now in the buffer, indexed by `cui_log_level`"
         }
       ]
     },
@@ -17240,7 +17358,7 @@
             "Spelling": "uint32_t",
             "Kind": "UInt"
           },
-          "Doc": ""
+          "Doc": "where the line's bytes start in the buffer's `text`"
         },
         {
           "CName": "len",
@@ -17252,7 +17370,7 @@
             "Spelling": "uint32_t",
             "Kind": "UInt"
           },
-          "Doc": ""
+          "Doc": "bytes of the line, with its color sequences"
         },
         {
           "CName": "cols",
@@ -17264,7 +17382,7 @@
             "Spelling": "uint32_t",
             "Kind": "UInt"
           },
-          "Doc": ""
+          "Doc": "character cells the line takes, before wrapping"
         }
       ]
     },
@@ -17287,7 +17405,7 @@
               "Kind": "Char_S"
             }
           },
-          "Doc": "managed by cui_terminal_*; read it, do not write it"
+          "Doc": "the bytes given to `cui_terminal_init`, holding the lines and their color sequences"
         },
         {
           "CName": "text_cap",
@@ -17299,7 +17417,7 @@
             "Spelling": "uint32_t",
             "Kind": "UInt"
           },
-          "Doc": ""
+          "Doc": "size of `text` in bytes"
         },
         {
           "CName": "lines",
@@ -17315,7 +17433,7 @@
               "Kind": "Record"
             }
           },
-          "Doc": ""
+          "Doc": "the line records given to `cui_terminal_init`"
         },
         {
           "CName": "line_cap",
@@ -17327,7 +17445,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "how many records `lines` has room for; 0 when the buffer cannot be used"
         },
         {
           "CName": "first",
@@ -17399,7 +17517,7 @@
             "Spelling": "uint8_t",
             "Kind": "UChar"
           },
-          "Doc": "the escape sequence being read, so a write can split one"
+          "Doc": "bytes of `seq` read so far"
         },
         {
           "CName": "seq",
@@ -17620,7 +17738,7 @@
               "Kind": "Char_S"
             }
           },
-          "Doc": "the app's copy of recent emoji, newest first, space separated"
+          "Doc": "buffer for the recent emoji, read and updated here so the app can save it; `NULL` keeps them in the picker"
         },
         {
           "CName": "recent_cap",
@@ -17632,7 +17750,7 @@
             "Spelling": "size_t",
             "Kind": "ULongLong"
           },
-          "Doc": "the app's copy of recent emoji, newest first, space separated"
+          "Doc": "size of the `recent` buffer in bytes; it holds the recent emoji newest first, space separated"
         },
         {
           "CName": "tone",
@@ -17733,7 +17851,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "hides the search field"
         },
         {
           "CName": "no_preview",
@@ -17745,7 +17863,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "hides the row at the bottom that shows the hovered emoji and its name"
         },
         {
           "CName": "no_tone",
@@ -17757,7 +17875,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "hides the skin tone button"
         }
       ]
     },
@@ -17836,7 +17954,7 @@
             "Spelling": "size_t",
             "Kind": "ULongLong"
           },
-          "Doc": ""
+          "Doc": "offset of the first selected byte"
         },
         {
           "CName": "length",
@@ -17848,7 +17966,7 @@
             "Spelling": "size_t",
             "Kind": "ULongLong"
           },
-          "Doc": ""
+          "Doc": "bytes selected; 0 means nothing is selected"
         },
         {
           "CName": "cursor",
@@ -17860,7 +17978,7 @@
             "Spelling": "size_t",
             "Kind": "ULongLong"
           },
-          "Doc": ""
+          "Doc": "the byte the keys move from; one end of the selection"
         }
       ]
     },
@@ -17944,7 +18062,7 @@
               "IsConst": true
             }
           },
-          "Doc": "drawn in order, later ones on top"
+          "Doc": "byte ranges to highlight, each with a tone and a tooltip label"
         },
         {
           "CName": "range_count",
@@ -17956,7 +18074,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": "drawn in order, later ones on top"
+          "Doc": "entries in `ranges`, drawn in order with later ones on top"
         },
         {
           "CName": "edit",
@@ -18063,7 +18181,7 @@
             "Spelling": "size_t",
             "Kind": "ULongLong"
           },
-          "Doc": ""
+          "Doc": "with `edited`: offset of the first byte overwritten this frame"
         },
         {
           "CName": "edit_length",
@@ -18075,7 +18193,7 @@
             "Spelling": "size_t",
             "Kind": "ULongLong"
           },
-          "Doc": ""
+          "Doc": "with `edited`: bytes from `edit_offset` up to the last one overwritten"
         },
         {
           "CName": "hovered",
@@ -18123,7 +18241,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "drawn in the span when it fits, and in its tooltip"
         },
         {
           "CName": "start",
@@ -18355,7 +18473,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "position along the horizontal axis, in curve units (seconds in a timeline track)"
         },
         {
           "CName": "y",
@@ -18367,7 +18485,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "the curve's value at the key"
         },
         {
           "CName": "in_dx",
@@ -18638,7 +18756,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "x of the playhead marker, drawn when `show_playhead` is set"
         }
       ]
     },
@@ -18748,7 +18866,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": "pos 0..1"
+          "Doc": "position along the ramp, 0..1"
         },
         {
           "CName": "color",
@@ -18760,7 +18878,7 @@
             "Spelling": "cui_color",
             "Kind": "Record"
           },
-          "Doc": "pos 0..1"
+          "Doc": ""
         }
       ]
     },
@@ -18934,7 +19052,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "drawn in the clip's bar when it fits, and in its tooltip"
         },
         {
           "CName": "selected",
@@ -18946,7 +19064,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "the clip is selected: set and cleared by clicks, kept by you"
         }
       ]
     },
@@ -18970,7 +19088,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "shown in the track list and in tooltips"
         },
         {
           "CName": "icon",
@@ -19075,7 +19193,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "keys in `keys`; the editor changes it when keys are added or removed"
         },
         {
           "CName": "key_capacity",
@@ -19087,7 +19205,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "room in `keys`; a double click adds no key once it is full (or 0)"
         },
         {
           "CName": "key_selected",
@@ -19131,7 +19249,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "clips in `clips`; lowered when selected clips are removed"
         }
       ]
     },
@@ -19460,7 +19578,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "a key or clip was selected or unselected this frame"
         },
         {
           "CName": "view_changed",
@@ -19472,7 +19590,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "the visible time range or the row scroll changed (zoom, pan, fit)"
         },
         {
           "CName": "keys_moved",
@@ -19580,7 +19698,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "track of the key last clicked or added, or -1"
         },
         {
           "CName": "current_key",
@@ -19592,7 +19710,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "index of that key in its track, or -1"
         },
         {
           "CName": "hovered_track",
@@ -19641,7 +19759,7 @@
               "Kind": "Char_S"
             }
           },
-          "Doc": ""
+          "Doc": "the name, e.g. \"Accept\"; edited in place"
         },
         {
           "CName": "value",
@@ -19659,7 +19777,7 @@
               "Kind": "Char_S"
             }
           },
-          "Doc": ""
+          "Doc": "the value, e.g. \"application/json\"; edited in place"
         },
         {
           "CName": "enabled",
@@ -19671,7 +19789,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "the pair is in use; its checkbox toggles this"
         },
         {
           "CName": "secret",
@@ -19683,7 +19801,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "the value shows as dots, with an eye to reveal it; the lock button toggles this"
         }
       ]
     },
@@ -19820,7 +19938,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "the text of the row; the whole message shows on hover"
         },
         {
           "CName": "file",
@@ -19950,7 +20068,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "hides the severity toggles and the filter field above the list"
         }
       ]
     },
@@ -20017,7 +20135,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "shown on the job's row and in its tooltip"
         },
         {
           "CName": "stage",
@@ -20131,7 +20249,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": "job indices, or -1"
+          "Doc": "job clicked this frame (or chosen with Enter or Space), or -1"
         },
         {
           "CName": "hovered",
@@ -20143,7 +20261,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": "job indices, or -1"
+          "Doc": "job under the pointer, or -1"
         }
       ]
     },
@@ -20167,7 +20285,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "shown in the field select and in the text `cui_query_text` writes"
         },
         {
           "CName": "type",
@@ -20213,7 +20331,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "number of `choices`"
         }
       ]
     },
@@ -20244,7 +20362,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "a group of the nodes after it that are one level deeper; otherwise a rule"
         },
         {
           "CName": "any",
@@ -20317,7 +20435,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": "default 3"
+          "Doc": ""
         },
         {
           "CName": "width",
@@ -20329,7 +20447,7 @@
             "Spelling": "cui_size",
             "Kind": "Record"
           },
-          "Doc": "default 3"
+          "Doc": ""
         },
         {
           "CName": "max_depth",
@@ -20341,7 +20459,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": "default 3"
+          "Doc": "how deep groups may nest, default 3"
         },
         {
           "CName": "read_only",
@@ -20439,7 +20557,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": "the next run, Unix seconds, 0 none"
+          "Doc": "`cron` was edited this frame"
         },
         {
           "CName": "valid",
@@ -20451,7 +20569,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": "the next run, Unix seconds, 0 none"
+          "Doc": "`cron` is a valid expression"
         },
         {
           "CName": "next",
@@ -20482,7 +20600,7 @@
             "Spelling": "cui_key_combo",
             "Kind": "Record"
           },
-          "Doc": ""
+          "Doc": "the modifiers and key the action is bound to"
         },
         {
           "CName": "action",
@@ -20499,7 +20617,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "name of the action, shown on the key and in its tooltip"
         },
         {
           "CName": "category",
@@ -20576,7 +20694,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "number of `categories`"
         },
         {
           "CName": "mods",
@@ -20604,7 +20722,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "leaves out the row of function keys"
         }
       ]
     },
@@ -20623,7 +20741,7 @@
             "Spelling": "cui_key",
             "Kind": "Enum"
           },
-          "Doc": ""
+          "Doc": "key clicked this frame, or `CUI_KEY_NONE`"
         },
         {
           "CName": "conflicts",
@@ -20635,7 +20753,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "bindings that repeat a combination another binding already uses"
         }
       ]
     },
@@ -20659,7 +20777,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "the commit id; its first 7 characters are shown"
         },
         {
           "CName": "message",
@@ -20693,7 +20811,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "shown in its own column, which a narrow panel leaves out"
         },
         {
           "CName": "date",
@@ -20804,7 +20922,7 @@
               "Kind": "Int"
             }
           },
-          "Doc": ""
+          "Doc": "the selected row or -1, kept by you; `NULL` keeps it in the component"
         }
       ]
     },
@@ -20823,7 +20941,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "row clicked this frame, or -1"
         },
         {
           "CName": "activated",
@@ -20835,7 +20953,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "row double-clicked or chosen with Enter this frame, or -1"
         },
         {
           "CName": "hovered",
@@ -20847,7 +20965,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "row under the pointer, or -1"
         }
       ]
     },
@@ -20888,7 +21006,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "smaller second line under the label, e.g. the node's kind; `NULL` for none"
         },
         {
           "CName": "tone",
@@ -20919,7 +21037,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "index of the node the arrow starts at"
         },
         {
           "CName": "to",
@@ -20931,7 +21049,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "index of the node the arrow points to"
         }
       ]
     },
@@ -20986,7 +21104,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "layers stack from top to bottom instead of running side by side"
         },
         {
           "CName": "selected",
@@ -21002,7 +21120,7 @@
               "Kind": "Int"
             }
           },
-          "Doc": ""
+          "Doc": "the selected node or -1, kept by you; `NULL` keeps it in the component"
         }
       ]
     },
@@ -21021,7 +21139,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "node clicked this frame, or -1"
         },
         {
           "CName": "activated",
@@ -21033,7 +21151,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "node double-clicked or chosen with Enter this frame, or -1"
         },
         {
           "CName": "hovered",
@@ -21045,7 +21163,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "node under the pointer, or -1"
         }
       ]
     },
@@ -21176,7 +21294,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": "seconds; 0: no line"
+          "Doc": ""
         },
         {
           "CName": "width",
@@ -21188,7 +21306,7 @@
             "Spelling": "cui_size",
             "Kind": "Record"
           },
-          "Doc": "seconds; 0: no line"
+          "Doc": ""
         },
         {
           "CName": "height",
@@ -21200,7 +21318,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": "seconds; 0: no line"
+          "Doc": ""
         },
         {
           "CName": "selected",
@@ -21216,7 +21334,7 @@
               "Kind": "Int"
             }
           },
-          "Doc": "seconds; 0: no line"
+          "Doc": "the selected request or -1, kept by you; `NULL` keeps it in the component"
         },
         {
           "CName": "dom_loaded",
@@ -21259,7 +21377,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "request clicked this frame, or -1"
         },
         {
           "CName": "activated",
@@ -21271,7 +21389,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "request double-clicked or chosen with Enter this frame, or -1"
         },
         {
           "CName": "hovered",
@@ -21283,7 +21401,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "request under the pointer, or -1"
         }
       ]
     },
@@ -21307,7 +21425,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "the lane's name, in the column on the left"
         },
         {
           "CName": "collapsed",
@@ -21319,7 +21437,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "the lane shows only its top row; a click on its name toggles this"
         }
       ]
     },
@@ -21343,7 +21461,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "drawn in the span when it fits, and in its tooltip"
         },
         {
           "CName": "start",
@@ -21355,7 +21473,7 @@
             "Spelling": "double",
             "Kind": "Double"
           },
-          "Doc": ""
+          "Doc": "when the span begins, in seconds"
         },
         {
           "CName": "end",
@@ -21367,7 +21485,7 @@
             "Spelling": "double",
             "Kind": "Double"
           },
-          "Doc": ""
+          "Doc": "when the span ends, in seconds; end >= start"
         },
         {
           "CName": "track",
@@ -21379,7 +21497,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "index into the tracks: the lane the span is drawn in"
         },
         {
           "CName": "depth",
@@ -21391,7 +21509,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "row within the lane, 0 = top; a child lies within its parent"
         },
         {
           "CName": "color_key",
@@ -21403,7 +21521,7 @@
             "Spelling": "uint32_t",
             "Kind": "UInt"
           },
-          "Doc": ""
+          "Doc": "picks the color; 0: hashed from the name"
         }
       ]
     },
@@ -21590,7 +21708,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "moments drawn as lines across every lane, named in a strip under the ruler"
         },
         {
           "CName": "marker_count",
@@ -21602,7 +21720,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "number of `markers`"
         }
       ]
     },
@@ -21621,7 +21739,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "`*selected` changed this frame (click or keys)"
         },
         {
           "CName": "view_changed",
@@ -21633,7 +21751,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "the visible time range or the scroll in `*view` changed (zoom, pan, fit)"
         },
         {
           "CName": "hovered",
@@ -21645,7 +21763,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "span under the pointer, or -1"
         }
       ]
     },
@@ -21756,7 +21874,7 @@
               }
             }
           },
-          "Doc": ""
+          "Doc": "the name of each `(?<name> )` group, indexed like `group_start`; \"\" when unnamed"
         }
       ]
     },
@@ -21834,7 +21952,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "the pattern is valid and matching finished in time"
         },
         {
           "CName": "matches",
@@ -21846,7 +21964,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "matches found in the test text"
         },
         {
           "CName": "error",
@@ -21863,7 +21981,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "why, when `valid` is false; otherwise `NULL`"
         }
       ]
     },
@@ -21887,7 +22005,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "name of the suite or test; the toolbar's field filters by it"
         },
         {
           "CName": "depth",
@@ -22038,7 +22156,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "the Run all button was pressed this frame"
         },
         {
           "CName": "passed",
@@ -22110,7 +22228,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "name of the function; `NULL` or \"\" shows as <anonymous>"
         },
         {
           "CName": "file",
@@ -22127,7 +22245,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "path shown with the line and column; on a phone only the file's name"
         },
         {
           "CName": "line",
@@ -22197,7 +22315,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "number of lines in `source`"
         },
         {
           "CName": "source_first",
@@ -22353,7 +22471,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "a request is in flight: the button reads Cancel and Enter does not send"
         },
         {
           "CName": "placeholder",
@@ -22389,7 +22507,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "Send was pressed, or Enter in the URL: start the request"
         },
         {
           "CName": "cancel",
@@ -22401,7 +22519,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "Cancel was pressed while `loading`"
         },
         {
           "CName": "changed",
@@ -22413,7 +22531,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "the method or the URL was edited this frame"
         }
       ]
     },
@@ -22437,7 +22555,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "shown above the service's bars"
         },
         {
           "CName": "days",
@@ -22466,7 +22584,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "number of values in `days`"
         }
       ]
     },
@@ -22564,7 +22682,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "shown in the legend and in the hover tooltip"
         },
         {
           "CName": "counts",
@@ -22581,7 +22699,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "one count per bucket; `NULL` counts as zeros"
         },
         {
           "CName": "tone",
@@ -22612,7 +22730,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": "default 140"
+          "Doc": ""
         },
         {
           "CName": "width",
@@ -22624,7 +22742,7 @@
             "Spelling": "cui_size",
             "Kind": "Record"
           },
-          "Doc": "default 140"
+          "Doc": ""
         },
         {
           "CName": "height",
@@ -22648,7 +22766,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "label times in UTC instead of local time"
         }
       ]
     },
@@ -22667,7 +22785,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": "bucket, or -1"
+          "Doc": "`*sel_start` or `*sel_end` changed this frame (a drag, or a click that cleared it)"
         },
         {
           "CName": "hovered",
@@ -22715,7 +22833,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "lines that can be covered"
         },
         {
           "CName": "lines_hit",
@@ -22727,7 +22845,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "lines the tests ran"
         },
         {
           "CName": "branches",
@@ -22763,7 +22881,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "functions in the file"
         },
         {
           "CName": "functions_hit",
@@ -22775,7 +22893,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "functions the tests called"
         }
       ]
     },
@@ -22861,7 +22979,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": "file, or -1"
+          "Doc": "file opened this frame (Enter or a double-click), or -1"
         },
         {
           "CName": "lines",
@@ -22897,7 +23015,7 @@
               "IsConst": true
             }
           },
-          "Doc": "Unix seconds"
+          "Doc": "the commit id; its first 7 characters are shown"
         },
         {
           "CName": "author",
@@ -22914,7 +23032,7 @@
               "IsConst": true
             }
           },
-          "Doc": "Unix seconds"
+          "Doc": "shown in the gutter; on a phone as initials"
         },
         {
           "CName": "summary",
@@ -22931,7 +23049,7 @@
               "IsConst": true
             }
           },
-          "Doc": "Unix seconds"
+          "Doc": "the commit's message line, shown in the gutter's tooltip"
         },
         {
           "CName": "time",
@@ -23046,7 +23164,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": "commits, or -1"
+          "Doc": "commit whose gutter entry was clicked this frame, or -1"
         },
         {
           "CName": "hovered",
@@ -23082,7 +23200,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "the flag's name, in the code font; the filter field searches it"
         },
         {
           "CName": "description",
@@ -23117,7 +23235,7 @@
               "Kind": "Bool"
             }
           },
-          "Doc": ""
+          "Doc": "the flag's switch in each environment, in the order of `envs`"
         },
         {
           "CName": "rollout",
@@ -23233,7 +23351,7 @@
               "IsConst": true
             }
           },
-          "Doc": "\"path\", \"query\", \"header\", \"body\""
+          "Doc": "the parameter's name, in the code font"
         },
         {
           "CName": "in",
@@ -23250,7 +23368,7 @@
               "IsConst": true
             }
           },
-          "Doc": "\"path\", \"query\", \"header\", \"body\""
+          "Doc": "where it goes: \"path\", \"query\", \"header\" or \"body\""
         },
         {
           "CName": "type",
@@ -23267,7 +23385,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "e.g. \"string\"; shown before where it goes"
         },
         {
           "CName": "required",
@@ -23279,7 +23397,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "a red asterisk after the name"
         },
         {
           "CName": "description",
@@ -23296,7 +23414,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "what the parameter is for, shown after its type and place; may be `NULL`"
         }
       ]
     },
@@ -23354,7 +23472,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "one line after the path; the filter field searches it"
         },
         {
           "CName": "tag",
@@ -23383,7 +23501,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "struck through and muted, with a \"Deprecated\" badge"
         },
         {
           "CName": "params",
@@ -23400,7 +23518,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "the parameters listed when the endpoint is opened; may be `NULL`"
         },
         {
           "CName": "param_count",
@@ -23412,7 +23530,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": ""
+          "Doc": "number of `params`"
         }
       ]
     },
@@ -23471,7 +23589,7 @@
               "Kind": "Int"
             }
           },
-          "Doc": ""
+          "Doc": "the selected endpoint or -1, kept by you; `NULL` keeps it in the component"
         }
       ]
     },
@@ -23490,7 +23608,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": "endpoint, or -1"
+          "Doc": "the selected endpoint, or -1"
         },
         {
           "CName": "try_it",
@@ -23503,6 +23621,776 @@
             "Kind": "Int"
           },
           "Doc": "endpoint, or -1"
+        }
+      ]
+    },
+    {
+      "CName": "cui_dot_series",
+      "CsName": "NativeDotSeries",
+      "Size": 24,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "values",
+          "CsName": "Values",
+          "CsType": "nint",
+          "CType": "const float *",
+          "Type": {
+            "Spelling": "const float *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const float",
+              "Kind": "Float",
+              "IsConst": true
+            }
+          },
+          "Doc": "`count` values, one per sample; negative values count as 0"
+        },
+        {
+          "CName": "name",
+          "CsName": "Name",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "names the series in the readout when there are several"
+        },
+        {
+          "CName": "accent",
+          "CsName": "Accent",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "drawn in the accent color"
+        }
+      ]
+    },
+    {
+      "CName": "cui_dot_chart_opts",
+      "CsName": "NativeDotChartOpts",
+      "Size": 104,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "NativeSize",
+          "CType": "cui_size",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "height",
+          "CsName": "Height",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 12,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "the plot and its labels, default 200"
+        },
+        {
+          "CName": "x_min",
+          "CsName": "XMin",
+          "CsType": "double",
+          "CType": "double",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "double",
+            "Kind": "Double"
+          },
+          "Doc": "what the first and last sample stand for; equal: 0 to count - 1"
+        },
+        {
+          "CName": "x_max",
+          "CsName": "XMax",
+          "CsType": "double",
+          "CType": "double",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "double",
+            "Kind": "Double"
+          },
+          "Doc": "what the first and last sample stand for; equal: 0 to count - 1"
+        },
+        {
+          "CName": "x_units",
+          "CsName": "XUnits",
+          "CsType": "AxisUnits",
+          "CType": "cui_axis_units",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "cui_axis_units",
+            "Kind": "Enum"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "x_format",
+          "CsName": "XFormat",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 40,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "x labels with CUI_AXIS_NUMBER, default \"%g\""
+        },
+        {
+          "CName": "x_step",
+          "CsName": "XStep",
+          "CsType": "double",
+          "CType": "double",
+          "Offset": 48,
+          "Type": {
+            "Spelling": "double",
+            "Kind": "Double"
+          },
+          "Doc": "spacing of the x labels in x units; 0 picks one that fits"
+        },
+        {
+          "CName": "min",
+          "CsName": "Min",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 56,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "value range when min != max; otherwise 0 to the largest stacked value"
+        },
+        {
+          "CName": "max",
+          "CsName": "Max",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 60,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "value range when min != max; otherwise 0 to the largest stacked value"
+        },
+        {
+          "CName": "format",
+          "CsName": "Format",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 64,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "values in the readout, default \"%.0f\""
+        },
+        {
+          "CName": "unit",
+          "CsName": "Unit",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 72,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "after values in the readout, e.g. \"MG\""
+        },
+        {
+          "CName": "pitch",
+          "CsName": "Pitch",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 80,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "distance between dot centers in points, default 6"
+        },
+        {
+          "CName": "no_grid",
+          "CsName": "NoGrid",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 84,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "hides the dim dots of the empty grid"
+        },
+        {
+          "CName": "no_axis",
+          "CsName": "NoAxis",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 85,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "hides the x labels, e.g. when an event track under the chart has them"
+        },
+        {
+          "CName": "no_readout",
+          "CsName": "NoReadout",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 86,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "no value label under the pointer"
+        },
+        {
+          "CName": "annotations",
+          "CsName": "Annotations",
+          "CsType": "nint",
+          "CType": "const cui_chart_annotation *",
+          "Offset": 88,
+          "Type": {
+            "Spelling": "const cui_chart_annotation *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_chart_annotation",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          },
+          "Doc": "lines and points drawn over the dots"
+        },
+        {
+          "CName": "annotation_count",
+          "CsName": "AnnotationCount",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 96,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "number of `annotations`"
+        }
+      ]
+    },
+    {
+      "CName": "cui_dot_chart_result",
+      "CsName": "NativeDotChartResult",
+      "Size": 24,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "hovered",
+          "CsName": "Hovered",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "the sample under the pointer or the keyboard cursor, or -1"
+        },
+        {
+          "CName": "x",
+          "CsName": "X",
+          "CsType": "double",
+          "CType": "double",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "double",
+            "Kind": "Double"
+          },
+          "Doc": "that sample's x, in x units"
+        },
+        {
+          "CName": "value",
+          "CsName": "Value",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "the stacked value there"
+        },
+        {
+          "CName": "clicked",
+          "CsName": "Clicked",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 20,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "the plot was clicked, or Enter was pressed on it, this frame: `x` is where"
+        }
+      ]
+    },
+    {
+      "CName": "cui_event_track_opts",
+      "CsName": "NativeEventTrackOpts",
+      "Size": 64,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "NativeSize",
+          "CType": "cui_size",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "step",
+          "CsName": "Step",
+          "CsType": "double",
+          "CType": "double",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "double",
+            "Kind": "Double"
+          },
+          "Doc": "events snap to multiples of this from `min`; 0 does not snap"
+        },
+        {
+          "CName": "units",
+          "CsName": "Units",
+          "CsType": "AxisUnits",
+          "CType": "cui_axis_units",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "cui_axis_units",
+            "Kind": "Enum"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "format",
+          "CsName": "Format",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "labels with CUI_AXIS_NUMBER, default \"%g\""
+        },
+        {
+          "CName": "label_step",
+          "CsName": "LabelStep",
+          "CsType": "double",
+          "CType": "double",
+          "Offset": 40,
+          "Type": {
+            "Spelling": "double",
+            "Kind": "Double"
+          },
+          "Doc": "spacing of the axis labels; 0 picks one that fits"
+        },
+        {
+          "CName": "selected",
+          "CsName": "Selected",
+          "CsType": "nint",
+          "CType": "int *",
+          "Offset": 48,
+          "Type": {
+            "Spelling": "int *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "int",
+              "Kind": "Int"
+            }
+          },
+          "Doc": "the selected event or -1, kept by you; `NULL` keeps it in the track"
+        },
+        {
+          "CName": "no_add",
+          "CsName": "NoAdd",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 56,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "clicks and Enter do not add events"
+        },
+        {
+          "CName": "no_remove",
+          "CsName": "NoRemove",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 57,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "double-clicks and Delete do not remove events"
+        },
+        {
+          "CName": "no_axis",
+          "CsName": "NoAxis",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 58,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "hides the axis labels under the dots"
+        }
+      ]
+    },
+    {
+      "CName": "cui_event_track_result",
+      "CsName": "NativeEventTrackResult",
+      "Size": 20,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "changed",
+          "CsName": "Changed",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "an event was moved, added or removed this frame"
+        },
+        {
+          "CName": "added",
+          "CsName": "Added",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "index of the event added this frame, or -1"
+        },
+        {
+          "CName": "removed",
+          "CsName": "Removed",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "index the removed event had, or -1"
+        },
+        {
+          "CName": "selected",
+          "CsName": "Selected",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 12,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "the selected event after this frame, or -1"
+        },
+        {
+          "CName": "dragging",
+          "CsName": "Dragging",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "an event is being dragged"
+        }
+      ]
+    },
+    {
+      "CName": "cui_readout_opts",
+      "CsName": "NativeReadoutOpts",
+      "Size": 48,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "unit",
+          "CsName": "Unit",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "after the value, smaller and muted, e.g. \"MG\""
+        },
+        {
+          "CName": "detail",
+          "CsName": "Detail",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "a muted line under the value; `NULL` for none"
+        },
+        {
+          "CName": "size",
+          "CsName": "Size",
+          "CsType": "ControlSize",
+          "CType": "cui_control_size",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "cui_control_size",
+            "Kind": "Enum"
+          },
+          "Doc": "the value's size: CUI_SIZE_SM 17, CUI_SIZE_MD 28 (default), CUI_SIZE_LG 44 points"
+        },
+        {
+          "CName": "tone",
+          "CsName": "Tone",
+          "CsType": "Tone",
+          "CType": "cui_tone",
+          "Offset": 28,
+          "Type": {
+            "Spelling": "cui_tone",
+            "Kind": "Enum"
+          },
+          "Doc": "the value's color; 0 is the foreground"
+        },
+        {
+          "CName": "accent",
+          "CsName": "Accent",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "the value in the accent color"
+        },
+        {
+          "CName": "align",
+          "CsName": "Align",
+          "CsType": "TextAlign",
+          "CType": "cui_text_align",
+          "Offset": 36,
+          "Type": {
+            "Spelling": "cui_text_align",
+            "Kind": "Enum"
+          },
+          "Doc": "default start"
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "NativeSize",
+          "CType": "cui_size",
+          "Offset": 40,
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          },
+          "Doc": "default fit"
+        }
+      ]
+    },
+    {
+      "CName": "cui_dot_display_opts",
+      "CsName": "NativeDotDisplayOpts",
+      "Size": 28,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "pitch",
+          "CsName": "Pitch",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "distance between dot centers in points, default 4"
+        },
+        {
+          "CName": "color",
+          "CsName": "Color",
+          "CsType": "NativeColor",
+          "CType": "cui_color",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "cui_color",
+            "Kind": "Record"
+          },
+          "Doc": "lit dots; unset: the foreground"
+        },
+        {
+          "CName": "accent",
+          "CsName": "Accent",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 12,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "lit dots in the accent color"
+        },
+        {
+          "CName": "no_dim",
+          "CsName": "NoDim",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 13,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "hides the unlit dots"
+        },
+        {
+          "CName": "marquee",
+          "CsName": "Marquee",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 14,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "scrolls text that is wider than the box instead of shrinking it"
+        },
+        {
+          "CName": "align",
+          "CsName": "Align",
+          "CsType": "TextAlign",
+          "CType": "cui_text_align",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "cui_text_align",
+            "Kind": "Enum"
+          },
+          "Doc": "where the text sits in a wider box, default start"
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "NativeSize",
+          "CType": "cui_size",
+          "Offset": 20,
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          },
+          "Doc": "default fit to the text"
         }
       ]
     },
@@ -24027,7 +24915,7 @@
     {
       "CName": "cui_app_desc",
       "CsName": "NativeAppDesc",
-      "Size": 48,
+      "Size": 56,
       "Helpers": [],
       "Fields": [
         {
@@ -24189,6 +25077,23 @@
             "Kind": "Bool"
           },
           "Doc": "use the OS light/dark setting where available"
+        },
+        {
+          "CName": "app_id",
+          "CsName": "AppId",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 48,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "Linux: the app's ID, which is the name of its .desktop file without \".desktop\", e.g. \"org.example.Notes\". The desktop uses it to show the app's name and icon for the window (taskbar, dock, Alt+Tab) and to group its windows. Sets WM_CLASS on X11 and the app_id on Wayland (SDL2, and GLFW 3.4). Read when the window is created; ignored on Windows and macOS. Default: none (the X11 backend then sets WM_CLASS to the title and \"CUI\")."
         }
       ]
     },
@@ -25409,6 +26314,27 @@
       ]
     },
     {
+      "CName": "cui_annotation_kind",
+      "CsName": "AnnotationKind",
+      "Values": [
+        {
+          "CName": "CUI_ANNOTATION_X",
+          "CsName": "X",
+          "Value": "0"
+        },
+        {
+          "CName": "CUI_ANNOTATION_Y",
+          "CsName": "Y",
+          "Value": "1"
+        },
+        {
+          "CName": "CUI_ANNOTATION_POINT",
+          "CsName": "Point",
+          "Value": "2"
+        }
+      ]
+    },
+    {
       "CName": "cui_status",
       "CsName": "Status",
       "Values": [
@@ -25778,6 +26704,22 @@
           "CName": "CUI_HTTP_OPTIONS",
           "CsName": "Options",
           "Value": "6"
+        }
+      ]
+    },
+    {
+      "CName": "cui_axis_units",
+      "CsName": "AxisUnits",
+      "Values": [
+        {
+          "CName": "CUI_AXIS_NUMBER",
+          "CsName": "Number",
+          "Value": "0"
+        },
+        {
+          "CName": "CUI_AXIS_HOURS",
+          "CsName": "Hours",
+          "Value": "1"
         }
       ]
     },
@@ -34401,7 +35343,7 @@
         "Kind": "Bool"
       },
       "Module": "More components",
-      "Doc": "Icon button that copies text to the clipboard and confirms with a check."
+      "Doc": "Icon button that copies text to the clipboard and confirms with a check. Keyboard focus stays on the button when the check appears or disappears."
     },
     {
       "CName": "cui_hold_button_ex",
@@ -50375,6 +51317,321 @@
       "Doc": ""
     },
     {
+      "CName": "cui_dot_chart_ex",
+      "CsName": "DotChart",
+      "CsReturn": "NativeDotChartResult",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "series",
+          "CsName": "series",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const cui_dot_series *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_dot_series",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "series_count",
+          "CsName": "seriesCount",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "count",
+          "CsName": "count",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeDotChartOpts",
+          "Type": {
+            "Spelling": "const cui_dot_chart_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_dot_chart_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "cui_dot_chart_result",
+        "Kind": "Record"
+      },
+      "Module": "Instruments: dot-matrix chart, event track, readout, dot-matrix display",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_event_track_ex",
+      "CsName": "EventTrack",
+      "CsReturn": "NativeEventTrackResult",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "times",
+          "CsName": "times",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "double *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "double",
+              "Kind": "Double"
+            }
+          }
+        },
+        {
+          "CName": "count",
+          "CsName": "count",
+          "CsType": "ref int",
+          "Type": {
+            "Spelling": "int *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "int",
+              "Kind": "Int"
+            }
+          }
+        },
+        {
+          "CName": "capacity",
+          "CsName": "capacity",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "min",
+          "CsName": "min",
+          "CsType": "double",
+          "Type": {
+            "Spelling": "double",
+            "Kind": "Double"
+          }
+        },
+        {
+          "CName": "max",
+          "CsName": "max",
+          "CsType": "double",
+          "Type": {
+            "Spelling": "double",
+            "Kind": "Double"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeEventTrackOpts",
+          "Type": {
+            "Spelling": "const cui_event_track_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_event_track_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "cui_event_track_result",
+        "Kind": "Record"
+      },
+      "Module": "Instruments: dot-matrix chart, event track, readout, dot-matrix display",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_readout_ex",
+      "CsName": "Readout",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "label",
+          "CsName": "label",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "value",
+          "CsName": "value",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeReadoutOpts",
+          "Type": {
+            "Spelling": "const cui_readout_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_readout_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "Instruments: dot-matrix chart, event track, readout, dot-matrix display",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_dot_display_ex",
+      "CsName": "DotDisplay",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "text",
+          "CsName": "text",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeDotDisplayOpts",
+          "Type": {
+            "Spelling": "const cui_dot_display_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_dot_display_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "Instruments: dot-matrix chart, event track, readout, dot-matrix display",
+      "Doc": ""
+    },
+    {
       "CName": "cui_draw_rect",
       "CsName": "DrawRect",
       "CsReturn": "void",
@@ -51770,7 +53027,7 @@
         "Kind": "Void"
       },
       "Module": "cui_app",
-      "Doc": ""
+      "Doc": "The functions below take NULL for \"the app that is running\", which is how a cui_app_run callback reaches its window: cui_app_quit(NULL). Ends the loop after the current frame: cui_app_frame returns false, cui_app_run returns."
     },
     {
       "CName": "cui_app_set_title",
@@ -51854,7 +53111,7 @@
         "Kind": "Void"
       },
       "Module": "cui_app",
-      "Doc": ""
+      "Doc": "The window's size in logical points (the same units as cui_app_desc.width)."
     },
     {
       "CName": "cui_app_size",
@@ -51906,7 +53163,7 @@
         "Kind": "Bool"
       },
       "Module": "cui_app",
-      "Doc": ""
+      "Doc": "True when the software renderer is drawing (no usable OpenGL, or it was asked for)."
     },
     {
       "CName": "cui_app_native_window",

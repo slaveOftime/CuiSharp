@@ -59,8 +59,13 @@ The generator stops on the first thing it cannot justify. Each message names its
 | `PENDING x: header section not migrated: <section>` | a real section nobody migrated | `WidgetModules` in `bindgen.cs` |
 | `Unknown module: <file>` | `excludedModules` names a section that no longer exists, because upstream added titles to that file | rename the exclusion to the new section names |
 | `PENDING <opts>: <field>: <type> needs explicit ownership/length semantics` | a pointer field in an options struct | `optionPointers` (`"type": "int"`, a `ref`), `hiddenOptionFields` (a callback) |
-| `PENDING <opts>: <field>: array length depends on widget parameters` | an array field whose count has a different name | `optionFieldCounts` (`{"count": "<field>"}`) |
+| `PENDING <opts>: <field>: array length depends on widget parameters` | an array field whose count has a different name | `optionFieldCounts` (`{"count": "<field>"}`) — or, for `const <record> *`, a `recordNames` entry for the element struct, because a bare struct has no `ToFrameArray` |
+| `PENDING <opts>: <field>: const <struct> * needs explicit ownership/length semantics` | the element struct of a record array is not a record | `recordNames` for that struct (`cui_chart_annotation` → `ChartAnnotation`); the count then derives on its own |
+| `PENDING <fn>: <param> is an in-place array of double *, which has no span type yet` | an `inOutArrays` entry for a primitive whose kind the generator does not map yet | add the kind to `PrimitiveElement` (and `IsDoubleArray` if the whole type is missing) |
+| `PENDING <fn>: <param>: const <struct> * needs explicit pointer semantics` where the struct holds a bare `const float *` and no count | the samples' length is the *call's*, not the struct's, so it can never be a self-describing record | a hand-written wrapper (`manualWidgets`) that builds the native array in the frame arena, as the charts do |
+| `Argument N must be passed with the 'ref' keyword` from the **raw** layer | `Parameter()` read a non-const plural pointer as one moved scalar | an `inOutArrays` (or `arrayParams`) entry: the override is consulted before the heuristic |
 | `PENDING <opts>.<field>` where a field is `char *`/`_Bool *` | an in/out value | `optionTextFields` (buffer + `ref string`), `optionPointers` |
+| `PENDING <opts>`, and a public option struct that vanished from `Options.g.cs` | a pending option is skipped whole, so the hand-written partial that uses it fails to compile somewhere else entirely | the same fix as any other pending option; the coverage test fails on the `PENDING` line itself, not on the missing type |
 | `PENDING <fn>: <param>: char * needs explicit pointer semantics` | editable text: `char *buf, size_t cap` | `textFields` (`"capacity": "<cap>"`, optional `"id"`) |
 | `PENDING <fn>: return needs typed result/ownership semantics` | the widget returns a struct by value, or a `const char *` | `recordNames` (the result struct), `stringResults` (the C string) |
 | `PENDING <fn>: <param>: native record needs conversion/write-back` | an in/out record parameter | `parameterStorage` (`"storage": "value"`) + `recordNames` for the struct |
@@ -76,6 +81,12 @@ Snippets worth knowing:
   holds, so an ungated write-back costs bytes on every frame. The frame-budget test catches it.
 - A **count CUI takes as a pointer** comes back to the caller (`ref int count`); a count it takes by
   value cannot change, so the wrapper copies the records back only.
+- **A capacity is the array's length**, so it never reaches the caller: `capacityParams`
+  (`{"array": "times"}`) drops the parameter and passes `times.Length`. Check any `int capacity` a
+  new function grows — the widget writes up to it.
+- **A primitive in-place array is copied back unconditionally**, even with `changedWhen` set: native
+  sorts and clamps in place before it draws, and the index it reports refers to *its* order. Only a
+  record conversion is gated, because that is the one that allocates.
 - **Result structs are records too.** `recordNames` gives them `FromNative`, and the wrapper returns
   the friendly type instead of a `Native*` struct — that is the whole "typed result" convention.
 - A fixed buffer in a record is text (`char[N]` → `string?`) or an array (`bool[N]` → `bool[]?`),

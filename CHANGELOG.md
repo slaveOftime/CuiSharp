@@ -4,6 +4,41 @@ Every user-visible change, newest first. Pre-1.0 the minor number carries new su
 carries fixes. The section for a tag is what the GitHub release publishes, so the two cannot say
 different things.
 
+## [0.4.0] — 2026-11-13
+
+CUI 1.3.1 → 1.4.0. Four functions, four components, and one option array the generator had never
+had to express.
+
+### Added
+
+- **The instruments**: a group of components that read like a panel rather than a page.
+  `DotChart(id, series, count, opts)` draws values as a grid of dots with the pointer or the arrow
+  keys reading the value under them, and takes `ChartAnnotation`s drawn over it as lines,
+  thresholds and labelled points; `EventTrack(id, times, ref count, min, max, ref selected, opts)`
+  puts moments on a time axis that a click adds to, a double-click removes and a drag moves, and it
+  lines up under a dot chart of the same width; `Readout(label, value, opts)` is one figure with
+  its unit and a line of context; `DotDisplay(text, opts)` draws text in a 5 by 7 dot font that
+  shrinks to fit or scrolls. The gallery's *Instruments* page shows all four on one screen.
+- **`CuiAppDesc.AppId`** names the app to a Linux desktop: the window's `WM_CLASS`, and the Wayland
+  app ID, so the dock, the taskbar and `Alt+Tab` show the app's own name and icon instead of `CUI`.
+- **Generated documentation.** CUI 1.4 documents every field of every options and data struct in
+  the header, so 208 generated wrappers that could only say the C function's name now say what the
+  call does, and the option fields carry the header's own words.
+
+### Changed
+
+- **A capacity is the array's length, so it leaves the signature.** `CurveEditor`, `GradientEditor`,
+  `KvEditor`, `QueryBuilder` and `EventTrack` no longer take a `capacity`: the wrapper passes the
+  span's length. Supplying both let them disagree, and a capacity larger than the span was a
+  buffer overrun the type system did not catch.
+- **A count beside a record array is now the array's length.** `DotChartOpts.Annotations` and every
+  other option struct with a record array derive their count, as string and float arrays already
+  did; the field is no longer public, so the two cannot drift apart.
+- **An in-place primitive array is copied back every frame**, not only on the frames the widget
+  reports a change: native sorts and clamps the array it is given before it draws, and a wrapper
+  that kept the caller's unsorted copy would disagree with the index it reports. Converting a
+  record still only happens on a change, because that is the conversion that allocates.
+
 ## [0.3.3] — 2026-11-12
 
 ### Added

@@ -14,13 +14,13 @@ public static unsafe class KeyValueEditorUiExtensions
     extension(Ui ui)
     {
         /// <summary>cui_kv_editor_ex</summary>
-        public bool KvEditor(UiText id, Span<KeyValue> pairs, ref int count, int capacity, KvEditorOpts o = default)
+        public bool KvEditor(UiText id, Span<KeyValue> pairs, ref int count, KvEditorOpts o = default)
         {
             var __pairs = Utf8.AllocFrame<NativeKvPair>(pairs.Length);
             for (int i = 0; i < pairs.Length; i++) __pairs[i] = pairs[i].ToNative();
             int __pairsCount = count;
             var __opts = o.ToNative();
-            var __result = Native.KvEditor(ui.Handle, Utf8.Get(id), (nint)__pairs, ref __pairsCount, capacity, in __opts);
+            var __result = Native.KvEditor(ui.Handle, Utf8.Get(id), (nint)__pairs, ref __pairsCount, (int)(pairs.Length), in __opts);
             if (__result != 0)
             {
                 for (int i = 0; i < Math.Min(__pairsCount, pairs.Length); i++) pairs[i] = KeyValue.FromNative(__pairs[i]);

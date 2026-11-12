@@ -14,7 +14,7 @@ namespace CuiSharp.Gallery;
 
 internal sealed partial class GalleryApp : IDisposable
 {
-    public const int PageCount = 28;
+    public const int PageCount = 29;
 
     /// <summary>The first page ported from <c>examples/gallery_more.c</c>; from here on every
     /// page draws inside its own id scope, as the C gallery's second half does.</summary>
@@ -31,7 +31,7 @@ internal sealed partial class GalleryApp : IDisposable
         "Developer tools", "More developer tools",
         "Actions", "Smart inputs", "Pickers", "Capture", "Disclosure", "Reader",
         "Data grid", "Code", "Social and media", "Planning", "More charts",
-        "Motion", "AI", "Audio", "Files",
+        "Motion", "AI", "Audio", "Files", "Instruments",
     };
 
     internal static readonly string[] PageIcons =
@@ -42,6 +42,7 @@ internal sealed partial class GalleryApp : IDisposable
         Icons.Command, Icons.SquarePen, Icons.Calendar, Icons.Upload, Icons.Layers,
         Icons.FileText, Icons.Grid3x3, Icons.Code, Icons.MessageSquare, Icons.ListChecks,
         Icons.ChartPie, Icons.Activity, Icons.MessageSquare, Icons.AudioLines, Icons.Folder,
+        Icons.Activity,
     };
 
     private static readonly string[] AccentNames =

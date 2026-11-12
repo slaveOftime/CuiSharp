@@ -1026,7 +1026,25 @@ public unsafe struct NativeSeries
     public NativeColor Color;
 }
 
-/// <summary>cui_chart_opts, 56 bytes.</summary>
+/// <summary>cui_chart_annotation, 48 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeChartAnnotation
+{
+    /// <summary>cui_annotation_kind (offset 0)</summary>
+    public AnnotationKind Kind;
+    /// <summary>double (offset 8)</summary>
+    public double X;
+    /// <summary>double (offset 16)</summary>
+    public double Y;
+    /// <summary>const char * (offset 24)</summary>
+    public nint Label;
+    /// <summary>const char * (offset 32)</summary>
+    public nint Detail;
+    /// <summary>_Bool (offset 40)</summary>
+    public byte Accent;
+}
+
+/// <summary>cui_chart_opts, 72 bytes.</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeChartOpts
 {
@@ -1056,6 +1074,10 @@ public unsafe struct NativeChartOpts
     public float Min;
     /// <summary>float (offset 52)</summary>
     public float Max;
+    /// <summary>const cui_chart_annotation * (offset 56)</summary>
+    public nint Annotations;
+    /// <summary>int (offset 64)</summary>
+    public int AnnotationCount;
 }
 
 /// <summary>cui_image_opts, 28 bytes.</summary>
@@ -5028,6 +5050,160 @@ public unsafe struct NativeApiExplorerResult
     public int TryIt;
 }
 
+/// <summary>cui_dot_series, 24 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeDotSeries
+{
+    /// <summary>const float * (offset 0)</summary>
+    public nint Values;
+    /// <summary>const char * (offset 8)</summary>
+    public nint Name;
+    /// <summary>_Bool (offset 16)</summary>
+    public byte Accent;
+}
+
+/// <summary>cui_dot_chart_opts, 104 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeDotChartOpts
+{
+    /// <summary>int (offset 0)</summary>
+    public int Sentinel;
+    /// <summary>cui_size (offset 4)</summary>
+    public NativeSize Width;
+    /// <summary>float (offset 12)</summary>
+    public float Height;
+    /// <summary>double (offset 16)</summary>
+    public double XMin;
+    /// <summary>double (offset 24)</summary>
+    public double XMax;
+    /// <summary>cui_axis_units (offset 32)</summary>
+    public AxisUnits XUnits;
+    /// <summary>const char * (offset 40)</summary>
+    public nint XFormat;
+    /// <summary>double (offset 48)</summary>
+    public double XStep;
+    /// <summary>float (offset 56)</summary>
+    public float Min;
+    /// <summary>float (offset 60)</summary>
+    public float Max;
+    /// <summary>const char * (offset 64)</summary>
+    public nint Format;
+    /// <summary>const char * (offset 72)</summary>
+    public nint Unit;
+    /// <summary>float (offset 80)</summary>
+    public float Pitch;
+    /// <summary>_Bool (offset 84)</summary>
+    public byte NoGrid;
+    /// <summary>_Bool (offset 85)</summary>
+    public byte NoAxis;
+    /// <summary>_Bool (offset 86)</summary>
+    public byte NoReadout;
+    /// <summary>const cui_chart_annotation * (offset 88)</summary>
+    public nint Annotations;
+    /// <summary>int (offset 96)</summary>
+    public int AnnotationCount;
+}
+
+/// <summary>cui_dot_chart_result, 24 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeDotChartResult
+{
+    /// <summary>int (offset 0)</summary>
+    public int Hovered;
+    /// <summary>double (offset 8)</summary>
+    public double X;
+    /// <summary>float (offset 16)</summary>
+    public float Value;
+    /// <summary>_Bool (offset 20)</summary>
+    public byte Clicked;
+}
+
+/// <summary>cui_event_track_opts, 64 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeEventTrackOpts
+{
+    /// <summary>int (offset 0)</summary>
+    public int Sentinel;
+    /// <summary>cui_size (offset 4)</summary>
+    public NativeSize Width;
+    /// <summary>double (offset 16)</summary>
+    public double Step;
+    /// <summary>cui_axis_units (offset 24)</summary>
+    public AxisUnits Units;
+    /// <summary>const char * (offset 32)</summary>
+    public nint Format;
+    /// <summary>double (offset 40)</summary>
+    public double LabelStep;
+    /// <summary>int * (offset 48)</summary>
+    public nint Selected;
+    /// <summary>_Bool (offset 56)</summary>
+    public byte NoAdd;
+    /// <summary>_Bool (offset 57)</summary>
+    public byte NoRemove;
+    /// <summary>_Bool (offset 58)</summary>
+    public byte NoAxis;
+}
+
+/// <summary>cui_event_track_result, 20 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeEventTrackResult
+{
+    /// <summary>_Bool (offset 0)</summary>
+    public byte Changed;
+    /// <summary>int (offset 4)</summary>
+    public int Added;
+    /// <summary>int (offset 8)</summary>
+    public int Removed;
+    /// <summary>int (offset 12)</summary>
+    public int Selected;
+    /// <summary>_Bool (offset 16)</summary>
+    public byte Dragging;
+}
+
+/// <summary>cui_readout_opts, 48 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeReadoutOpts
+{
+    /// <summary>int (offset 0)</summary>
+    public int Sentinel;
+    /// <summary>const char * (offset 8)</summary>
+    public nint Unit;
+    /// <summary>const char * (offset 16)</summary>
+    public nint Detail;
+    /// <summary>cui_control_size (offset 24)</summary>
+    public ControlSize Size;
+    /// <summary>cui_tone (offset 28)</summary>
+    public Tone Tone;
+    /// <summary>_Bool (offset 32)</summary>
+    public byte Accent;
+    /// <summary>cui_text_align (offset 36)</summary>
+    public TextAlign Align;
+    /// <summary>cui_size (offset 40)</summary>
+    public NativeSize Width;
+}
+
+/// <summary>cui_dot_display_opts, 28 bytes.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeDotDisplayOpts
+{
+    /// <summary>int (offset 0)</summary>
+    public int Sentinel;
+    /// <summary>float (offset 4)</summary>
+    public float Pitch;
+    /// <summary>cui_color (offset 8)</summary>
+    public NativeColor Color;
+    /// <summary>_Bool (offset 12)</summary>
+    public byte Accent;
+    /// <summary>_Bool (offset 13)</summary>
+    public byte NoDim;
+    /// <summary>_Bool (offset 14)</summary>
+    public byte Marquee;
+    /// <summary>cui_text_align (offset 16)</summary>
+    public TextAlign Align;
+    /// <summary>cui_size (offset 20)</summary>
+    public NativeSize Width;
+}
+
 /// <summary>cui_corners, 16 bytes.</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeCorners
@@ -5136,7 +5312,7 @@ public unsafe struct NativeDrawData
     public nuint FontAtlas;
 }
 
-/// <summary>cui_app_desc, 48 bytes.</summary>
+/// <summary>cui_app_desc, 56 bytes.</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeAppDesc
 {
@@ -5166,6 +5342,8 @@ public unsafe struct NativeAppDesc
     public Accent Accent;
     /// <summary>_Bool (offset 40)</summary>
     public byte FollowSystemTheme;
+    /// <summary>const char * (offset 48)</summary>
+    public nint AppId;
 }
 
 /// <summary>cui_file_dialog_opts, 40 bytes.</summary>

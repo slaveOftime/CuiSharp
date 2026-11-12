@@ -55,6 +55,15 @@ Value types for the widgets that take an array of items.
 - `Close`: float
 - `Volume`: float
 
+## `ChartAnnotation`
+
+- `Kind`: AnnotationKind
+- `X`: double
+- `Y`: double
+- `Label`: string?
+- `Detail`: string?
+- `Accent`: bool
+
 ## `CheckStep`
 
 - `Title`: string?
@@ -181,6 +190,21 @@ Value types for the widgets that take an array of items.
 - `Close`: int
 - `MoveFrom`: int
 - `MoveTo`: int
+
+## `DotChartResult`
+
+- `Hovered`: int
+- `X`: double
+- `Value`: float
+- `Clicked`: bool
+
+## `EventTrackResult`
+
+- `Changed`: bool
+- `Added`: int
+- `Removed`: int
+- `Selected`: int
+- `Dragging`: bool
 
 ## `FeatureFlag`
 

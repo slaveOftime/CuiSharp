@@ -344,6 +344,13 @@ sealed record OptionArrayCheck(string AtLeast, string Why);
 sealed record InOutArrayOverride(string Count, string Why, string? ChangedWhen = null);
 
 
+/// <summary>
+/// An `int capacity` the widget writes up to. The array's length is that number, so supplying
+/// both lets them disagree and the widget writes past the span the caller passed. The wrapper
+/// passes the length and the parameter leaves the signature.
+/// </summary>
+sealed record CapacityOverride(string Array, string Why);
+
 /// <summary>Where an array parameter's length comes from, and what to cast it to.</summary>
 sealed record ArrayLengthOverride(string Length, string Why, string? Cast = null, bool Emit = true);
 
@@ -489,6 +496,9 @@ sealed class Overrides
 
     /// <summary>Record arrays the widget edits in place.</summary>
     public Dictionary<string, InOutArrayOverride> InOutArrays { get; set; } = new();
+
+    /// <summary>A `capacity` parameter that is the array's own length, and so leaves the signature.</summary>
+    public Dictionary<string, CapacityOverride> CapacityParams { get; set; } = new();
 
     /// <summary>Option fields that never cross the boundary: callbacks and their user pointers.</summary>
     public Dictionary<string, ReasonOverride> HiddenOptionFields { get; set; } = new();
@@ -1068,7 +1078,11 @@ public static CXType Strip(CXType type)
             or CXTypeKind.CXType_Int or CXTypeKind.CXType_UInt;
         bool plural = name.EndsWith('s') && !name.EndsWith("opts", StringComparison.Ordinal)
             && !(scalar && !isConst);
-        if (plural || overrides.ArrayParams.ContainsKey(name + "@" + CurrentFunction)) return "nint";
+        // An override is a decision, not a guess: `double *times` is not const, ends in an s
+        // and is still the array the widget edits in place.
+        bool namedArray = overrides.ArrayParams.ContainsKey(name + "@" + CurrentFunction)
+            || overrides.InOutArrays.ContainsKey(CurrentFunction + "." + name);
+        if (plural || namedArray) return "nint";
 
         if (structNames.TryGetValue(TagName(inner) ?? "", out string? structName))
             return isConst ? $"in {structName}" : $"ref {structName}";
@@ -1394,6 +1408,7 @@ sealed class Idiomatic
         "Network waterfall", "Trace viewer", "Regular expressions and the regex tester",
         "Test explorer", "Stack trace", "HTTP request bar", "Uptime bars", "Time histogram",
         "Coverage", "Blame", "Feature flags", "API explorer",
+        "Instruments: dot-matrix chart, event track, readout, dot-matrix display",
     ];
 
     public Idiomatic(Api api, Overrides overrides)
@@ -1710,7 +1725,9 @@ sealed class Idiomatic
         string name = _overrides.OptionNames.TryGetValue(str.CName, out var rename)
             ? rename.Name : Names.Pascal(str.CName[4..]);
         var fields = new List<OptionField>();
-        var arrays = str.Fields.Where(f => IsStringArray(f.Type) || IsFloatArray(f.Type)).ToArray();
+        // An options struct may hold any array whose length native reads separately: strings,
+        // floats, or records (chart annotations). All three derive the count the same way.
+        var arrays = str.Fields.Where(f => IsArrayField(f.Type)).ToArray();
         foreach (var f in str.Fields)
         {
             string key = str.CName + "." + f.CName;
@@ -1767,7 +1784,8 @@ sealed class Idiomatic
             {
                 // Icon arrays are checked against the widget's item count by the wrapper.
             }
-            else if ((IsStringArray(f.Type) || IsFloatArray(f.Type)) && !str.Fields.Any(c => CountsFor(str.CName, f.CName, c.CName))
+            else if (IsArrayField(f.Type)
+                && !str.Fields.Any(c => CountsFor(str.CName, f.CName, c.CName))
                 && !_overrides.OptionArrayChecks.ContainsKey(key))
             {
                 // No count field: either the widget derives the length (with a guard the
@@ -1794,10 +1812,12 @@ sealed class Idiomatic
         if (f.Type.Kind == "Pointer" && f.Type.Element?.IsConst == true
             && _records.TryGetValue(Trim(f.Type.Element.Spelling), out var element))
             return ($"{element.Name}[]?", $"{element.Name}.ToFrameArray({fieldName})");
-        if (IsStringArray(f.Type) || IsFloatArray(f.Type))
+        if (IsStringArray(f.Type) || IsFloatArray(f.Type) || IsDoubleArray(f.Type))
             return IsStringArray(f.Type)
                 ? ("string[]?", $"UiMarshal.Strings({fieldName})")
-                : ("float[]?", $"UiMarshal.Values<float>({fieldName})");
+                : IsDoubleArray(f.Type)
+                    ? ("double[]?", $"UiMarshal.Values<double>({fieldName})")
+                    : ("float[]?", $"UiMarshal.Values<float>({fieldName})");
         if (f.Type.Kind is "Pointer" or "ConstantArray"
             || f.CsType.StartsWith("Native", StringComparison.Ordinal) && type == f.CsType)
             throw new NotSupportedException($"{f.CName}: {f.CType} needs explicit ownership/length semantics");
@@ -1946,10 +1966,38 @@ sealed class Idiomatic
     private static bool IsString(CType t) => t.Kind == "Pointer" && t.Element is { Kind: "Char_S" or "Char_U", IsConst: true };
     private static bool IsStringArray(CType t) => t.Kind == "Pointer" && t.Element is not null && IsString(t.Element);
     private static bool IsFloatArray(CType t) => t.Kind == "Pointer" && t.Element is { Kind: "Float", IsConst: true };
+
+    // `double` arrived with CUI 1.4 (a time axis is in hours, not floats), and an array of
+    // it is read the same way: the count says how many, and the pointer says where.
+    private static bool IsDoubleArray(CType t) => t.Kind == "Pointer" && t.Element is { Kind: "Double" };
     private static bool IsIntArray(CType t) => t.Kind == "Pointer" && t.Element is { Kind: "Int", IsConst: true };
 
+    /// <summary>An option field the wrapper turns into an array: strings, floats, doubles, or records.</summary>
+    private bool IsArrayField(CType t) =>
+        IsStringArray(t) || IsFloatArray(t) || IsDoubleArray(t) || IsRecordArray(t);
+
+    /// <summary>An array of records the wrapper converts into the frame arena, like `cui_chart_annotation`.</summary>
+    private bool IsRecordArray(CType t) =>
+        t.Kind == "Pointer" && t.Element?.IsConst == true && _records.ContainsKey(Trim(t.Element.Spelling));
+
+    /// <summary>
+    /// The C# type that stands for a primitive C array element in a span. Only the types an
+    /// in-place array is made of are listed: a struct that is not a record has no conversion,
+    /// and reaching for one should stop the run, not pick a type.
+    /// </summary>
+    private static string PrimitiveElement(CType element, string function, string param) => element.Kind switch
+    {
+        "Double" => "double",
+        "Float" => "float",
+        "Int" => "int",
+        "Bool" => "byte",
+        _ => throw new NotSupportedException(
+            $"{function}: {param} is an in-place array of {element.Spelling}, which has no span type yet"),
+    };
+
     private bool IsArrayParam(FunctionModel function, int index, ParamModel param) =>
-        IsStringArray(param.Type) || IsFloatArray(param.Type) || IsIntArray(param.Type) || IsByteArray(param.Type)
+        IsStringArray(param.Type) || IsFloatArray(param.Type) || IsDoubleArray(param.Type)
+            || IsIntArray(param.Type) || IsByteArray(param.Type)
             || IsVoidBytes(param.Type) || RecordElement(param.Type) is not null
             ? IsAdjacentCount(function, index) || _overrides.ArrayLengths.ContainsKey(function.CName + "." + param.CName)
             : false;
@@ -2193,6 +2241,14 @@ sealed class Idiomatic
                 continue;
             }
 
+            // A capacity is the array's own length: letting the caller pass both makes them
+            // disagree, and the widget writes up to the number it was told.
+            if (_overrides.CapacityParams.TryGetValue(function.CName + "." + p.CName, out var capacityOf))
+            {
+                arguments.Add($"({p.CsType})({capacityOf.Array}.Length)");
+                continue;
+            }
+
             string name = p.CsName;
             string type = FriendlyValue(p.Type, p.CsType);
             string mode = "";
@@ -2336,12 +2392,15 @@ sealed class Idiomatic
                 {
                     bool bytes = IsByteArray(p.Type) || IsVoidBytes(p.Type);
                     bool ints = IsIntArray(p.Type);
+                    bool doubles = IsDoubleArray(p.Type);
                     type = strings ? "ReadOnlySpan<string>" : bytes ? "ReadOnlySpan<byte>"
-                        : ints ? "ReadOnlySpan<int>" : "ReadOnlySpan<float>";
+                        : ints ? "ReadOnlySpan<int>"
+                        : doubles ? "ReadOnlySpan<double>" : "ReadOnlySpan<float>";
                     if (strings) stringArrays.Add(name);
                     arguments.Add(strings ? $"UiMarshal.Strings({name})"
                         : bytes ? $"UiMarshal.Values<byte>({name})"
                         : ints ? $"UiMarshal.Values<int>({name})"
+                        : doubles ? $"UiMarshal.Values<double>({name})"
                         : $"UiMarshal.Values<float>({name})");
                 }
                 if (adjacentCount)
@@ -2385,15 +2444,20 @@ sealed class Idiomatic
             else if (_overrides.InOutArrays.TryGetValue(function.CName + "." + p.CName, out var inOut))
             {
                 // The widget edits the array in place: copy in, call, then copy the first
-                // count records back. A count CUI takes as a pointer comes back too, and the
-                // caller sees the new length; a count it takes by value cannot change.
-                var element = _records[Trim(p.Type.Element!.Spelling)];
+                // count entries back. Who owns the array decides how: a record array is
+                // converted field by field and written back through `FromNative`, while a
+                // primitive one (`double *times`) is a span of the C type already.
+                var element = _records.TryGetValue(Trim(p.Type.Element!.Spelling), out var record)
+                    ? record : null;
+                string csElement = element?.Native.CsName ?? PrimitiveElement(p.Type.Element!, function.CName, p.CName);
                 var countParam = function.Params.Single(q => q.CName == inOut.Count);
                 bool countIsRef = countParam.Type.Kind == "Pointer";
                 string block = "__" + name;
-                type = $"Span<{element.Name}>";
-                prepare.Add($"var {block} = Utf8.AllocFrame<{element.Native.CsName}>({name}.Length);");
-                prepare.Add($"for (int i = 0; i < {name}.Length; i++) {block}[i] = {name}[i].ToNative();");
+                type = $"Span<{element?.Name ?? FriendlyValue(p.Type.Element!, p.Type.Element!.Spelling)}>";
+                prepare.Add($"var {block} = Utf8.AllocFrame<{csElement}>({name}.Length);");
+                prepare.Add(element is null
+                    ? $"{name}.CopyTo(new Span<{csElement}>({block}, {name}.Length));"
+                    : $"for (int i = 0; i < {name}.Length; i++) {block}[i] = {name}[i].ToNative();");
                 if (countIsRef) prepare.Add($"int __{name}Count = {countParam.CsName};");
                 arguments.Add($"(nint){block}");
                 // A pointer count is consumed here (it is the address to write the new length
@@ -2407,18 +2471,30 @@ sealed class Idiomatic
                     arguments.Add($"({countParam.CsType})({name}.Length)");
                     i++;
                 }
-                // Copying back is not free: converting a record allocates the strings and arrays
-                // it holds, so it happens on the frame the widget says something changed.
-                bool gated = inOut.ChangedWhen is not null;
+                // Copying back is not free when the element is a record: converting one allocates
+                // the strings and arrays it holds, so that happens only on the frame the widget
+                // says something changed. A primitive span costs a memcpy, and it has to come back
+                // every frame: native sorts and clamps the array it is given, and a wrapper that
+                // kept the caller's unsorted copy would disagree with the index it reports.
+                bool gated = inOut.ChangedWhen is not null && element is not null;
                 if (gated)
                 {
                     writeBack.Add($"if ({inOut.ChangedWhen})");
                     writeBack.Add("{");
                 }
                 string indent = gated ? "    " : "";
-                writeBack.Add(indent + (countIsRef
-                    ? $"for (int i = 0; i < Math.Min(__{name}Count, {name}.Length); i++) {name}[i] = {element.Name}.FromNative({block}[i]);"
-                    : $"for (int i = 0; i < {name}.Length; i++) {name}[i] = {element.Name}.FromNative({block}[i]);"));
+                if (element is null)
+                {
+                    writeBack.Add(indent + (countIsRef
+                        ? $"new Span<{csElement}>({block}, Math.Min(__{name}Count, {name}.Length)).CopyTo({name});"
+                        : $"new Span<{csElement}>({block}, {name}.Length).CopyTo({name});"));
+                }
+                else
+                {
+                    writeBack.Add(indent + (countIsRef
+                        ? $"for (int i = 0; i < Math.Min(__{name}Count, {name}.Length); i++) {name}[i] = {element.Name}.FromNative({block}[i]);"
+                        : $"for (int i = 0; i < {name}.Length; i++) {name}[i] = {element.Name}.FromNative({block}[i]);"));
+                }
                 if (countIsRef)
                 {
                     consumedArgs.Add(countParam.CName);

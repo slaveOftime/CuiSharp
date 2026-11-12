@@ -1784,6 +1784,22 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_api_explorer_ex")]
     public static partial NativeApiExplorerResult ApiExplorer(nint ui, nint id, nint endpoints, int count, in NativeApiExplorerOpts opts);
 
+    /// <summary>cui_dot_chart_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_dot_chart_ex")]
+    public static partial NativeDotChartResult DotChart(nint ui, nint id, nint series, int seriesCount, int count, in NativeDotChartOpts opts);
+
+    /// <summary>cui_event_track_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_event_track_ex")]
+    public static partial NativeEventTrackResult EventTrack(nint ui, nint id, nint times, ref int count, int capacity, double min, double max, in NativeEventTrackOpts opts);
+
+    /// <summary>cui_readout_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_readout_ex")]
+    public static partial void Readout(nint ui, nint label, nint value, in NativeReadoutOpts opts);
+
+    /// <summary>cui_dot_display_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_dot_display_ex")]
+    public static partial void DotDisplay(nint ui, nint text, in NativeDotDisplayOpts opts);
+
     /// <summary>cui_draw_rect</summary>
     [LibraryImport("cui", EntryPoint = "cui_draw_rect")]
     public static partial void DrawRect(nint ui, NativeRect r, NativeCorners radius, NativeColor fill);

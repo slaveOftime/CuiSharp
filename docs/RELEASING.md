@@ -46,7 +46,7 @@ what `release.yml` and `ci.yml` pin; `build-native.sh` fails if the produced `li
 ## 3. Regenerate the face of the release
 
 ```sh
-pwsh tools/snapshots.ps1                                          # light, twenty-eight pages
+pwsh tools/snapshots.ps1                                          # light, twenty-nine pages
 pwsh tools/snapshots.ps1 -Theme dark -Suffix -dark -Pages overview,charts,studio,data
 ```
 

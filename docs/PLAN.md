@@ -20,9 +20,9 @@ in [ARCHITECTURE.md](ARCHITECTURE.md). Every item here passes the same gates as 
   painting a sample and comparing pixels, because a missing glyph still reports a `.notdef` advance.
 - **A window icon** on all three platforms, and `_NET_WM_ICON` on X11. The handle is now reachable
   (`CuiWindow.NativeWindow`), so an app can P/Invoke its own on Windows today.
-- **Documentation on the declaration.** 208 of the 278 generated wrappers carry nothing but the C
-  name, because the header has no comment the generator can read, so `ui.TableRow` says
-  `cui_table_row_ex` and nothing more.
+- **Documentation on the declaration.** 206 wrapped functions carry nothing but the C name, because
+  the header still has no comment above the function itself (CUI 1.4 documented every struct
+  *field*), so `ui.TableRow` says `cui_table_row_ex` and nothing more.
 
 ## 3. Tracked gaps, not planned
 

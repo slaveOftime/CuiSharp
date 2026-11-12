@@ -28,7 +28,7 @@ Connected buttons. Put buttons between begin and end.
 public bool CopyButton(UiText id, UiText text)
 ```
 
-Icon button that copies text to the clipboard and confirms with a check.
+Icon button that copies text to the clipboard and confirms with a check. Keyboard focus stays on the button when the check appears or disappears.
 
 ## `HoldButton`
 
