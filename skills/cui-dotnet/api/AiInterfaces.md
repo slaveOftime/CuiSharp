@@ -20,7 +20,7 @@ protected override void Draw(Ui ui)
 public int AgentPlan(UiText id, ReadOnlySpan<PlanStep> steps, AgentPlanOpts o = default)
 ```
 
-cui_agent_plan_ex
+Agent plan: steps with their status on a connected rail, and progress.
 
 ## `AgentStatus`
 
@@ -60,7 +60,7 @@ Context meter: a small ring of how full the context is; hover for a breakdown. I
 public bool ModelPicker(UiText id, ReadOnlySpan<Model> models, ref int selected, ModelPickerOpts o = default)
 ```
 
-cui_model_picker_ex
+Model picker: the current model on a button; a list with details opens.
 
 ## `PromptSuggestions`
 
@@ -68,7 +68,7 @@ cui_model_picker_ex
 public int PromptSuggestions(UiText id, ReadOnlySpan<PromptSuggestion> items, PromptSuggestionsOpts o = default)
 ```
 
-cui_prompt_suggestions_ex
+Prompt suggestions: cards to start a conversation with.
 
 ## `Reasoning`
 

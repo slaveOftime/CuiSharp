@@ -28,7 +28,7 @@ Announcement banner across the top of a view. Collapses smoothly when dismissed 
 public int Checklist(UiText id, ReadOnlySpan<CheckStep> steps, ChecklistOpts o = default)
 ```
 
-cui_checklist_ex
+Onboarding checklist: a card with progress and steps. The first open step shows its description and action. Clicking a step's circle toggles done. Returns the index whose action was clicked, or -1.
 
 ## `Countdown`
 
@@ -36,4 +36,4 @@ cui_checklist_ex
 public void Countdown(UiText id, double secondsLeft, CountdownOpts o = default)
 ```
 
-* left to right in any interface: see cui__keep_ltr
+Countdown: days, hours, minutes and seconds as tiles whose digits roll.

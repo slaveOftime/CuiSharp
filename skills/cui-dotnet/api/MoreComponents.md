@@ -60,7 +60,7 @@ Circular progress with the value in the middle.
 public bool RadioCards(UiText id, ReadOnlySpan<Choice> choices, ref int index, RadioCardsOpts o = default)
 ```
 
-cui_radio_cards_ex
+Radio cards: larger selectable cards for choices that need a description (plans, templates).
 
 ## `TimelineItem`
 
@@ -68,4 +68,4 @@ cui_radio_cards_ex
 public void TimelineItem(UiText title, TimelineOpts o = default)
 ```
 
-Activity timeline item.
+cui_timeline_item_ex

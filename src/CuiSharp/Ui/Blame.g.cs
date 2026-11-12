@@ -13,7 +13,7 @@ public static unsafe class BlameUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_blame_ex</summary>
+        /// <summary>Source with who last changed each line: lines from one commit share one gutter entry with its author, age and hash, and a bar at the edge shades newer changes stronger. Hover a gutter entry for the commit&apos;s summary and to mark its lines; click it to get the commit. Only the lines in view are built. On a phone the gutter keeps only the shade and initials.</summary>
         public BlameResult Blame(UiText id, ReadOnlySpan<string> lines, ReadOnlySpan<int> lineCommit, ReadOnlySpan<BlameCommit> commits, BlameOpts o = default)
         {
             if (lines.Length < lineCommit.Length) throw new ArgumentException("lines needs at least lineCommit.Length entries.", nameof(lines));

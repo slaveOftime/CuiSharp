@@ -69,7 +69,7 @@ public static unsafe class MoreChartsUiExtensions
             return __result;
         }
 
-        /// <summary>cui_sankey_ex</summary>
+        /// <summary>Sankey: flows between nodes; columns follow the links from the sources.</summary>
         public int Sankey(UiText id, ReadOnlySpan<string> nodes, ReadOnlySpan<SankeyLink> links, SankeyOpts o = default)
         {
             var __links = Utf8.AllocFrame<NativeSankeyLink>(links.Length);
@@ -124,7 +124,7 @@ public static unsafe class MoreChartsUiExtensions
             return __result;
         }
 
-        /// <summary>cui_scatter_chart_ex</summary>
+        /// <summary>Scatter (or bubble) chart: points per series, optional sizes.</summary>
         public int ScatterChart(UiText id, ReadOnlySpan<ScatterSeries> series, ScatterOpts o = default)
         {
             var __series = Utf8.AllocFrame<NativeScatterSeries>(series.Length);

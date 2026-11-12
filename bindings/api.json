@@ -38354,7 +38354,7 @@
         "Kind": "Void"
       },
       "Module": "Code",
-      "Doc": "* left to right in any interface: see cui__keep_ltr"
+      "Doc": ""
     },
     {
       "CName": "cui_json_view_ex",
@@ -38422,7 +38422,7 @@
         "Kind": "Bool"
       },
       "Module": "Code",
-      "Doc": "* left to right in any interface: see cui__keep_ltr"
+      "Doc": ""
     },
     {
       "CName": "cui_markdown_ex",
@@ -38606,7 +38606,7 @@
         "Kind": "Record"
       },
       "Module": "Code editor",
-      "Doc": "* left to right in any interface: see cui__keep_ltr"
+      "Doc": ""
     },
     {
       "CName": "cui_code_editor_goto",
@@ -38858,7 +38858,7 @@
         "Kind": "Record"
       },
       "Module": "Diff viewer",
-      "Doc": "* left to right in any interface: see cui__keep_ltr"
+      "Doc": ""
     },
     {
       "CName": "cui_diff_view_rows",
@@ -39901,7 +39901,7 @@
         "Kind": "Void"
       },
       "Module": "Media",
-      "Doc": "* left to right in any interface: see cui__keep_ltr"
+      "Doc": ""
     },
     {
       "CName": "cui_ticker_ex",
@@ -43214,7 +43214,7 @@
         "Kind": "Int"
       },
       "Module": "Planning",
-      "Doc": "* left to right in any interface: see cui__keep_ltr"
+      "Doc": ""
     },
     {
       "CName": "cui_month_calendar_ex",
@@ -43398,7 +43398,7 @@
         "Kind": "Int"
       },
       "Module": "Planning",
-      "Doc": "* left to right in any interface: see cui__keep_ltr"
+      "Doc": ""
     },
     {
       "CName": "cui_hover_card_begin",
@@ -43926,7 +43926,7 @@
         "Kind": "Void"
       },
       "Module": "More feedback",
-      "Doc": "* left to right in any interface: see cui__keep_ltr"
+      "Doc": ""
     },
     {
       "CName": "cui_checklist_ex",
@@ -45622,7 +45622,7 @@
         "Kind": "Bool"
       },
       "Module": "More inputs",
-      "Doc": "* left to right in any interface: see cui__keep_ltr"
+      "Doc": ""
     },
     {
       "CName": "cui_shortcut_label",
@@ -48457,7 +48457,7 @@
         "Kind": "Record"
       },
       "Module": "Terminal",
-      "Doc": "* left to right in any interface: see cui__keep_ltr"
+      "Doc": ""
     },
     {
       "CName": "cui_emoji_font_load_file",

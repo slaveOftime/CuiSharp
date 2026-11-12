@@ -13,7 +13,7 @@ public static unsafe class CodeEditorUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>* left to right in any interface: see cui__keep_ltr</summary>
+        /// <summary>cui_code_editor_ex</summary>
         public CodeEditorResult CodeEditor(UiText id, ref string buf, int cap, CodeEditorOpts o = default)
         {
             var __bufSlot = ui.RentText(Native.MakeId(ui.Handle, Utf8.Get(id)) ^ 0x5d0e8dcbu, ref buf, (int)cap);

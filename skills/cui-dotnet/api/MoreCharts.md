@@ -84,7 +84,7 @@ cui_radial_gauge_ex
 public int Sankey(UiText id, ReadOnlySpan<string> nodes, ReadOnlySpan<SankeyLink> links, SankeyOpts o = default)
 ```
 
-cui_sankey_ex
+Sankey: flows between nodes; columns follow the links from the sources.
 
 ## `ScatterChart`
 
@@ -92,7 +92,7 @@ cui_sankey_ex
 public int ScatterChart(UiText id, ReadOnlySpan<ScatterSeries> series, ScatterOpts o = default)
 ```
 
-cui_scatter_chart_ex
+Scatter (or bubble) chart: points per series, optional sizes.
 
 ## `SplitBar`
 

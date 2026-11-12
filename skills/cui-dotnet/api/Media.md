@@ -52,7 +52,7 @@ cui_carousel_slide_begin
 public void Counter(UiText id, double value, CounterOpts o = default)
 ```
 
-* left to right in any interface: see cui__keep_ltr
+Odometer: a number whose digits roll to their new values.
 
 ## `ImageCompare`
 
@@ -68,4 +68,4 @@ Before and after: drag the divider to compare two images. *pos is 0..1.
 public void Ticker(UiText id, ReadOnlySpan<TickerItem> items, TickerOpts o = default)
 ```
 
-cui_ticker_ex
+Ticker: items that scroll by continuously, pausing on hover.

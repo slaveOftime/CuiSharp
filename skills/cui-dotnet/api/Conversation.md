@@ -44,7 +44,7 @@ cui_comment_ex
 public void Presence(UiText id, ReadOnlySpan<PresenceUser> users, int maxVisible, float size)
 ```
 
-cui_presence
+Presence: who is here now. Overlapping avatars with a colored ring each, that spread out on hover and name themselves.
 
 ## `TypingIndicator`
 

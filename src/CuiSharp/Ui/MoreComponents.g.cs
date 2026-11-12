@@ -13,7 +13,7 @@ public static unsafe class MoreComponentsUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_radio_cards_ex</summary>
+        /// <summary>Radio cards: larger selectable cards for choices that need a description (plans, templates).</summary>
         public bool RadioCards(UiText id, ReadOnlySpan<Choice> choices, ref int index, RadioCardsOpts o = default)
         {
             var __choices = Utf8.AllocFrame<NativeChoice>(choices.Length);
@@ -56,7 +56,7 @@ public static unsafe class MoreComponentsUiExtensions
             return __result;
         }
 
-        /// <summary>Activity timeline item.</summary>
+        /// <summary>cui_timeline_item_ex</summary>
         public void TimelineItem(UiText title, TimelineOpts o = default)
         {
             var __opts = o.ToNative();

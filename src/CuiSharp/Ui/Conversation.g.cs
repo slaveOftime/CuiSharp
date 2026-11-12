@@ -58,7 +58,7 @@ public static unsafe class ConversationUiExtensions
             return (CommentEvents)__result;
         }
 
-        /// <summary>cui_presence</summary>
+        /// <summary>Presence: who is here now. Overlapping avatars with a colored ring each, that spread out on hover and name themselves.</summary>
         public void Presence(UiText id, ReadOnlySpan<PresenceUser> users, int maxVisible, float size)
         {
             var __users = Utf8.AllocFrame<NativePresenceUser>(users.Length);

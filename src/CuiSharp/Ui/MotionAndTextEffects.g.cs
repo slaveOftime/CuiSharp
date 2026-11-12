@@ -100,7 +100,7 @@ public static unsafe class MotionAndTextEffectsUiExtensions
             Native.DockSeparator(ui.Handle);
         }
 
-        /// <summary>cui_tab_bar_ex</summary>
+        /// <summary>Bottom tab bar for compact layouts, with a pill that glides to the selection.</summary>
         public bool TabBar(UiText id, ReadOnlySpan<TabBarItem> items, ref int selected, TabBarOpts o = default)
         {
             var __items = Utf8.AllocFrame<NativeTabBarItem>(items.Length);
@@ -131,7 +131,7 @@ public static unsafe class MotionAndTextEffectsUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_now_playing_ex</summary>
+        /// <summary>Now playing card: artwork, title, artist, a scrubber and transport buttons.</summary>
         public PlayerEvents NowPlaying(UiText id, ref NowPlayingState np, NowPlayingOpts o = default)
         {
             var __np = np.ToNative();

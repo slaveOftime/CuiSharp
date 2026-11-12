@@ -6124,7 +6124,7 @@ struct CuiSharp.Ui
   Color TokenColor(Token)
   DisabledScope Disabled(Boolean)
   DisabledScope Disabled(Boolean, DrawFn)
-  DotChartResult DotChart(UiText, DotSeries[], Int32, DotChartOpts)
+  DotChartResult DotChart(UiText, ReadOnlySpan<DotSeries>, Int32, DotChartOpts)
   IdScope Id(Int32)
   IdScope Id(UiText)
   InputResult Input(UiText, ref String, InputOpts)

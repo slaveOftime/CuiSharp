@@ -20,7 +20,7 @@ protected override void Draw(Ui ui)
 public DocTabsResult DocTabs(UiText id, ReadOnlySpan<DocTab> tabs, ref int selected, DocTabsOpts o = default)
 ```
 
-cui_doc_tabs_ex
+Document tabs: editor style tabs. Clicking selects (*selected is updated), the x or a middle click asks to close, dragging reorders, and the strip scrolls sideways when the tabs do not fit. A dirty tab shows a dot that turns into the close button under the pointer. The selected tab is filled with the surface color so it joins the content below; the strip itself has no fill, like the other bars. Tabs keep their state by title, so give two tabs with the same name a key: "main.c##src". The component never removes or moves your tabs itself: it reports a close or a move in the result and you apply it (selection already follows a move). With keyboard focus on the strip, Left and Right select, Home and End jump, Shift+Left/Right move the tab and Delete closes it. With `shortcuts` set it also answers Ctrl+Tab, Ctrl+Shift+Tab, Ctrl+PageUp/Down and Ctrl+W (Cmd+W on macOS) from anywhere in the window.
 
 ## `MenuBar`
 

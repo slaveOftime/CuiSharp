@@ -52,7 +52,7 @@ Hover card: rich content that appears when the pointer rests on the previous com
 public int Toc(UiText scrollId, ReadOnlySpan<TocItem> items)
 ```
 
-cui_toc
+Table of contents for a scroll area: highlights the section in view on a progress rail, and scrolls to a section when clicked. Put cui_toc_anchor(ui, "anchor") at each heading inside the scroll area, and call cui_toc in the same scope as the scroll area. Returns the active index.
 
 ## `TocAnchor`
 

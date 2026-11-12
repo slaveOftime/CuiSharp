@@ -13,7 +13,7 @@ public static unsafe class NetworkWaterfallUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_waterfall_ex</summary>
+        /// <summary>HTTP requests as a table with a timing bar each: queued, DNS, connect, TLS, waiting for the first byte and downloading, on one time scale with the page&apos;s DOMContentLoaded and load lines. Hover a bar for the breakdown. Narrow panels drop the type and size columns. Only the rows in view are built. Up and Down move the selection.</summary>
         public WaterfallResult Waterfall(UiText id, ReadOnlySpan<NetRequest> requests, ref int selected, WaterfallOpts o = default)
         {
             var __requests = Utf8.AllocFrame<NativeNetRequest>(requests.Length);

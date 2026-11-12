@@ -20,11 +20,14 @@ in [ARCHITECTURE.md](ARCHITECTURE.md). Every item here passes the same gates as 
   painting a sample and comparing pixels, because a missing glyph still reports a `.notdef` advance.
 - **A window icon** on all three platforms, and `_NET_WM_ICON` on X11. The handle is now reachable
   (`CuiWindow.NativeWindow`), so an app can P/Invoke its own on Windows today.
-- **Documentation on the declaration.** 118 wrapped functions still say nothing but the C name.
+- **Documentation on the declaration.** 94 wrapped functions still say nothing but the C name.
   Everything CUI writes now reaches the wrapper (above the declaration, beside it, above the
-  definition, the component's description above its options struct, and every field and constant
+  definition, the component's paragraph wherever upstream attached it, and every field and constant
   comment), so what is left is what upstream has not written: `ui.Button`, `ui.Text`, `ui.Card` and
-  their neighbours get a sentence only when CUI documents the function itself.
+  their neighbours get a sentence only when CUI documents the function itself. A few components are
+  documented in a block that no declaration follows — `cui_code_editor_ex`'s paragraph sits between
+  the previous struct's comment and `cui_text_mark`'s own one-liner — and libclang attaches it to
+  neither, so it is unreachable without reading sections rather than declarations.
 
 ## 3. Tracked gaps, not planned
 

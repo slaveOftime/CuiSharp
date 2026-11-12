@@ -40,7 +40,7 @@ public static unsafe class MoreActionsUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_reactions</summary>
+        /// <summary>Reactions: icon pills with counts. Clicking toggles `active` and adjusts the count. Returns the index that changed, or -1.</summary>
         public int Reactions(UiText id, Span<Reaction> items)
         {
             var __items = Utf8.AllocFrame<NativeReaction>(items.Length);
@@ -54,7 +54,7 @@ public static unsafe class MoreActionsUiExtensions
             return __result;
         }
 
-        /// <summary>cui_speed_dial_ex</summary>
+        /// <summary>Speed dial: a round floating action button that fans out related actions. Returns the chosen action index, or -1.</summary>
         public int SpeedDial(UiText id, ReadOnlySpan<SpeedAction> actions, SpeedDialOpts o = default)
         {
             var __actions = Utf8.AllocFrame<NativeSpeedAction>(actions.Length);
@@ -95,7 +95,7 @@ public static unsafe class MoreActionsUiExtensions
             if (scope) body(ui);
         }
 
-        /// <summary>cui_swipe_item_begin The end call reports which swipe action was taken, or -1, so the body overload returns it.</summary>
+        /// <summary>Swipe actions: drag a row sideways (or swipe on a trackpad) to reveal actions behind it. A long swipe triggers the first action. The row content goes between begin and end; end returns the chosen action: 0..left_count-1 for left actions, 100 + i for right actions, or -1. The end call reports which swipe action was taken, or -1, so the body overload returns it.</summary>
         public int SwipeItem(UiText id, ReadOnlySpan<SwipeAction> left, ReadOnlySpan<SwipeAction> right, DrawFn body)
         {
             ArgumentNullException.ThrowIfNull(body);

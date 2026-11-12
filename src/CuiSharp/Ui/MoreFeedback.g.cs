@@ -24,7 +24,7 @@ public static unsafe class MoreFeedbackUiExtensions
             return __result != 0;
         }
 
-        /// <summary>* left to right in any interface: see cui__keep_ltr</summary>
+        /// <summary>Countdown: days, hours, minutes and seconds as tiles whose digits roll.</summary>
         public void Countdown(UiText id, double secondsLeft, CountdownOpts o = default)
         {
             var __opts = o.ToNative();
@@ -32,7 +32,7 @@ public static unsafe class MoreFeedbackUiExtensions
             WidgetRecorder.Note(ui.Handle, "Countdown", id);
         }
 
-        /// <summary>cui_checklist_ex</summary>
+        /// <summary>Onboarding checklist: a card with progress and steps. The first open step shows its description and action. Clicking a step&apos;s circle toggles done. Returns the index whose action was clicked, or -1.</summary>
         public int Checklist(UiText id, ReadOnlySpan<CheckStep> steps, ChecklistOpts o = default)
         {
             var __steps = Utf8.AllocFrame<NativeCheckStep>(steps.Length);

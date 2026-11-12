@@ -63,7 +63,7 @@ public static unsafe class PlanningUiExtensions
             return new LayoutScope(ui.Handle, &Native.KanbanCardEnd, "KanbanCard", null);
         }
 
-        /// <summary>* left to right in any interface: see cui__keep_ltr</summary>
+        /// <summary>Week calendar: seven day columns on an hour grid. Drag an event to move it (15 minute steps), drag its bottom edge to resize it. Returns the index of a clicked event, or -1.</summary>
         public int WeekCalendar(UiText id, Date weekStart, Span<CalendarEvent> events, WeekOpts o = default)
         {
             var __events = Utf8.AllocFrame<NativeCalEvent>(events.Length);
@@ -78,7 +78,7 @@ public static unsafe class PlanningUiExtensions
             return __result;
         }
 
-        /// <summary>cui_month_calendar_ex</summary>
+        /// <summary>Month calendar: a month grid with events. All-day and multi-day events are bars across the days they cover; timed events are a dot, a time and a title. A day with more than fits says &quot;+N more&quot; and opens a list of them. On a narrow screen the cells show colored dots and the selected day&apos;s events are listed under the grid.</summary>
         public MonthResult MonthCalendar(UiText id, ref Date month, ReadOnlySpan<MonthEvent> events, ref Date selected, MonthOpts o = default)
         {
             var __month = UiMarshal.ToNative(month);
@@ -97,7 +97,7 @@ public static unsafe class PlanningUiExtensions
             return MonthResult.FromNative(__result);
         }
 
-        /// <summary>* left to right in any interface: see cui__keep_ltr</summary>
+        /// <summary>Gantt chart: a task list beside a timeline of bars. Drag a bar to move it, its ends to resize it. Dependencies are drawn as elbow arrows. Returns the index of a clicked task, or -1.</summary>
         public int Gantt(UiText id, Span<GanttTask> tasks, Date origin, int days, GanttOpts o = default)
         {
             var __tasks = Utf8.AllocFrame<NativeGanttTask>(tasks.Length);

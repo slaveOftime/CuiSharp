@@ -20,7 +20,7 @@ protected override void Draw(Ui ui)
 public CodeEditorResult CodeEditor(UiText id, ref string buf, int cap, CodeEditorOpts o = default)
 ```
 
-* left to right in any interface: see cui__keep_ltr
+cui_code_editor_ex
 
 ## `CodeEditorFind`
 

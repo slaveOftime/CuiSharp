@@ -20,4 +20,4 @@ protected override void Draw(Ui ui)
 public BlameResult Blame(UiText id, ReadOnlySpan<string> lines, ReadOnlySpan<int> lineCommit, ReadOnlySpan<BlameCommit> commits, BlameOpts o = default)
 ```
 
-cui_blame_ex
+Source with who last changed each line: lines from one commit share one gutter entry with its author, age and hash, and a bar at the edge shades newer changes stronger. Hover a gutter entry for the commit's summary and to mark its lines; click it to get the commit. Only the lines in view are built. On a phone the gutter keeps only the shade and initials.

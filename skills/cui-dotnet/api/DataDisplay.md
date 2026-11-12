@@ -108,7 +108,7 @@ Begin a row. Returns true when the row is clicked.
 public OpenScope Tree(UiText label, ref bool open, TreeOpts o = default)
 ```
 
-Tree view node.
+cui_tree_begin
 
 ## `TreeClicked`
 

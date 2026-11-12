@@ -20,7 +20,7 @@ protected override void Draw(Ui ui)
 public int Gantt(UiText id, Span<GanttTask> tasks, Date origin, int days, GanttOpts o = default)
 ```
 
-* left to right in any interface: see cui__keep_ltr
+Gantt chart: a task list beside a timeline of bars. Drag a bar to move it, its ends to resize it. Dependencies are drawn as elbow arrows. Returns the index of a clicked task, or -1.
 
 ## `Kanban`
 
@@ -52,7 +52,7 @@ true: "+" clicked
 public MonthResult MonthCalendar(UiText id, ref Date month, ReadOnlySpan<MonthEvent> events, ref Date selected, MonthOpts o = default)
 ```
 
-cui_month_calendar_ex
+Month calendar: a month grid with events. All-day and multi-day events are bars across the days they cover; timed events are a dot, a time and a title. A day with more than fits says "+N more" and opens a list of them. On a narrow screen the cells show colored dots and the selected day's events are listed under the grid.
 
 ## `WeekCalendar`
 
@@ -60,4 +60,4 @@ cui_month_calendar_ex
 public int WeekCalendar(UiText id, Date weekStart, Span<CalendarEvent> events, WeekOpts o = default)
 ```
 
-* left to right in any interface: see cui__keep_ltr
+Week calendar: seven day columns on an hour grid. Drag an event to move it (15 minute steps), drag its bottom edge to resize it. Returns the index of a clicked event, or -1.

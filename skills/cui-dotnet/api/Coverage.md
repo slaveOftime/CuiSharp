@@ -20,4 +20,4 @@ protected override void Draw(Ui ui)
 public CoverageResult Coverage(UiText id, ReadOnlySpan<CoverageFile> files, CoverageOpts o = default)
 ```
 
-cui_coverage_ex
+Test coverage by folder and file: the files' paths make the tree, each folder sums up what it holds, and folders fold. Line coverage shows as a bar colored by thresholds, with branches and functions beside it. Click a column's title to sort. Enter or a double-click activates a file. Narrow panels show lines only.

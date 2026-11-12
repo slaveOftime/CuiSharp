@@ -13,7 +13,7 @@ public static unsafe class KeymapUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_keymap_ex</summary>
+        /// <summary>A keyboard with your shortcuts on it: each bound key shows its action and the color of its category, for the modifiers chosen above it. Keys bound twice are marked as conflicts. Hover a key for every binding on it; click it to get the key (to rebind it). The keyboard keeps its own layout in a right-to-left interface and scales to the width it gets.</summary>
         public KeymapResult Keymap(UiText id, ReadOnlySpan<KeymapBinding> bindings, ref Mods mods, KeymapOpts o = default)
         {
             var __bindings = Utf8.AllocFrame<NativeKeymapBinding>(bindings.Length);

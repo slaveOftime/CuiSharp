@@ -37,7 +37,7 @@ public static unsafe class AiInterfacesUiExtensions
             WidgetRecorder.Note(ui.Handle, "ToolCall", id);
         }
 
-        /// <summary>cui_agent_plan_ex</summary>
+        /// <summary>Agent plan: steps with their status on a connected rail, and progress.</summary>
         public int AgentPlan(UiText id, ReadOnlySpan<PlanStep> steps, AgentPlanOpts o = default)
         {
             var __steps = Utf8.AllocFrame<NativePlanStep>(steps.Length);
@@ -93,7 +93,7 @@ public static unsafe class AiInterfacesUiExtensions
             return (ResponseEvents)__result;
         }
 
-        /// <summary>cui_prompt_suggestions_ex</summary>
+        /// <summary>Prompt suggestions: cards to start a conversation with.</summary>
         public int PromptSuggestions(UiText id, ReadOnlySpan<PromptSuggestion> items, PromptSuggestionsOpts o = default)
         {
             var __items = Utf8.AllocFrame<NativePromptSuggestion>(items.Length);
@@ -104,7 +104,7 @@ public static unsafe class AiInterfacesUiExtensions
             return __result;
         }
 
-        /// <summary>cui_model_picker_ex</summary>
+        /// <summary>Model picker: the current model on a button; a list with details opens.</summary>
         public bool ModelPicker(UiText id, ReadOnlySpan<Model> models, ref int selected, ModelPickerOpts o = default)
         {
             var __models = Utf8.AllocFrame<NativeModel>(models.Length);

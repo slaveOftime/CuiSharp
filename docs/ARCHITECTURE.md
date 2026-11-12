@@ -111,14 +111,19 @@ Adding a wrapper to the hand-written layer instead of the generator is allowed, 
 recorded in `bindings/overrides.json` as `MANUAL` with the member and the file, because
 `coverage.txt` claims that nothing wraps it otherwise.
 
-**A wrapper's summary is upstream's own sentence, wherever upstream wrote it.** Four places, in
+**A wrapper's summary is upstream's own sentence, wherever upstream wrote it.** Five places, in
 order: the comment above the declaration, the one beside it (`CUI_API void cui_gap(...);  /* a gap */`,
 which libclang does not attach to the declaration), the comment above the definition in the C source,
-and — for a widget whose function has none — the paragraph above its options struct, because that is
-the component's description. Constant and field comments become enum-member and field summaries the
-same way. A section title bar (`---- Terminal ----`) is not documentation: libclang attaches it to the
-declaration beneath it, so the ruler is stripped rather than shown, and the prose that follows it is
-kept. What stays uncommented is counted in `docs/PLAN.md` rather than filled in by hand.
+the paragraph above the options struct, and — because upstream attaches a block to the declaration
+under it, and the component's paragraph often sits above an *item record* (`cui_blame_commit`) or an
+*enum* (`cui_task_status`) instead — that declaration's paragraph, when this widget is the only
+function that takes it. `cui_viz_item` opens the Treemap section and Funnel, Waffle and Bar list take
+the same record, so its paragraph describes the record and is not used as their summary. Constant and
+field comments become enum-member and field summaries the same way. Two things are not
+documentation and are dropped: a section title bar (`---- Terminal ----`), which libclang attaches to
+the declaration beneath it, and a note written to CUI's next reader (`left to right in any
+interface: see cui__keep_ltr`), which would otherwise stand in for the description the header has.
+What stays uncommented is counted in `docs/PLAN.md` rather than filled in by hand.
 
 Record array counts derive only through explicit `recordFieldCounts` overrides identifying
 input-only metadata (`QueryField.Choices`, `ApiEndpoint.Params`, `UptimeService.Days`,

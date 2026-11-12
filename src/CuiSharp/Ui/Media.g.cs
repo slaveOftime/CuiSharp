@@ -71,7 +71,7 @@ public static unsafe class MediaUiExtensions
             return new LayoutScope(ui.Handle, &Native.CardStackItemEnd, "CardStackItem", null);
         }
 
-        /// <summary>* left to right in any interface: see cui__keep_ltr</summary>
+        /// <summary>Odometer: a number whose digits roll to their new values.</summary>
         public void Counter(UiText id, double value, CounterOpts o = default)
         {
             var __opts = o.ToNative();
@@ -79,7 +79,7 @@ public static unsafe class MediaUiExtensions
             WidgetRecorder.Note(ui.Handle, "Counter", id);
         }
 
-        /// <summary>cui_ticker_ex</summary>
+        /// <summary>Ticker: items that scroll by continuously, pausing on hover.</summary>
         public void Ticker(UiText id, ReadOnlySpan<TickerItem> items, TickerOpts o = default)
         {
             var __items = Utf8.AllocFrame<NativeTickerItem>(items.Length);

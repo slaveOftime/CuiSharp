@@ -38,15 +38,17 @@ public unsafe ref partial struct Ui
     /// <param name="series">The series to stack, each in its own band.</param>
     /// <param name="count">Samples per series, spread evenly from <see cref="DotChartOpts.XMin"/> to <see cref="DotChartOpts.XMax"/>.</param>
     /// <param name="o">Axis, readout and annotation options.</param>
-    public DotChartResult DotChart(UiText id, DotSeries[] series, int count, DotChartOpts o = default)
+    public DotChartResult DotChart(UiText id, scoped ReadOnlySpan<DotSeries> series, int count, DotChartOpts o = default)
     {
         // Native reads `count` values from every series, so each one is copied into a block of
         // exactly that length: a short series is padded with zero rather than read past its end.
+        // The clamped length is the one native is told about too, so the block it may read and the
+        // number it was given can never disagree.
         int samples = Math.Max(1, count);
         var native = (NativeDotSeries*)Arena(Math.Max(1, series.Length) * sizeof(NativeDotSeries));
         for (int i = 0; i < series.Length; i++)
         {
-            var s = series[i];
+            DotSeries s = series[i];
             float* block = Utf8.AllocFrame<float>(samples);
             var values = new Span<float>(block, samples);
             values.Clear();
@@ -62,7 +64,7 @@ public unsafe ref partial struct Ui
         }
 
         var opts = o.ToNative();
-        var result = Native.DotChart(Handle, Utf8.Get(id), (nint)native, series.Length, count, in opts);
+        var result = Native.DotChart(Handle, Utf8.Get(id), (nint)native, series.Length, samples, in opts);
         WidgetRecorder.Note(Handle, "DotChart", id);
         return DotChartResult.FromNative(result);
     }

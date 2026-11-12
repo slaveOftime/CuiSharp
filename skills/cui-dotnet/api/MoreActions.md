@@ -28,7 +28,7 @@ Two step destructive button: the first click morphs it into a confirm state with
 public int Reactions(UiText id, Span<Reaction> items)
 ```
 
-cui_reactions
+Reactions: icon pills with counts. Clicking toggles `active` and adjusts the count. Returns the index that changed, or -1.
 
 ## `SpeedDial`
 
@@ -36,7 +36,7 @@ cui_reactions
 public int SpeedDial(UiText id, ReadOnlySpan<SpeedAction> actions, SpeedDialOpts o = default)
 ```
 
-cui_speed_dial_ex
+Speed dial: a round floating action button that fans out related actions. Returns the chosen action index, or -1.
 
 ## `SplitButton`
 
@@ -60,7 +60,7 @@ cui_status_button_ex
 public int SwipeItem(UiText id, ReadOnlySpan<SwipeAction> left, ReadOnlySpan<SwipeAction> right)
 ```
 
-cui_swipe_item_begin
+Swipe actions: drag a row sideways (or swipe on a trackpad) to reveal actions behind it. A long swipe triggers the first action. The row content goes between begin and end; end returns the chosen action: 0..left_count-1 for left actions, 100 + i for right actions, or -1.
 
 ## `ThemeSwitcher`
 

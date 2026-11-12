@@ -1078,7 +1078,7 @@ public partial struct CropperOpts
     };
 }
 
-/// <summary>cui_radio_cards_opts. All fields are optional; zero selects the native default.</summary>
+/// <summary>Radio cards: larger selectable cards for choices that need a description (plans, templates). All fields are optional; zero selects the native default.</summary>
 public partial struct RadioCardsOpts
 {
     /// <summary>cards per row; 0 puts up to 3 choices in one row and more in 2 columns</summary>
@@ -1257,7 +1257,7 @@ public partial struct StatusButtonOpts
     };
 }
 
-/// <summary>cui_speed_dial_opts. All fields are optional; zero selects the native default.</summary>
+/// <summary>Speed dial: a round floating action button that fans out related actions. Returns the chosen action index, or -1. All fields are optional; zero selects the native default.</summary>
 public partial struct SpeedDialOpts
 {
     /// <summary>const char * icon</summary>
@@ -1788,7 +1788,7 @@ public partial struct CounterOpts
     };
 }
 
-/// <summary>cui_ticker_opts. All fields are optional; zero selects the native default.</summary>
+/// <summary>Ticker: items that scroll by continuously, pausing on hover. All fields are optional; zero selects the native default.</summary>
 public partial struct TickerOpts
 {
     /// <summary>points per second, default 40</summary>
@@ -1923,7 +1923,7 @@ public partial struct FunnelOpts
     };
 }
 
-/// <summary>cui_sankey_opts. All fields are optional; zero selects the native default.</summary>
+/// <summary>Sankey: flows between nodes; columns follow the links from the sources. All fields are optional; zero selects the native default.</summary>
 public partial struct SankeyOpts
 {
     /// <summary>cui_size width</summary>
@@ -2039,7 +2039,7 @@ public partial struct RingsOpts
     };
 }
 
-/// <summary>cui_scatter_opts. All fields are optional; zero selects the native default.</summary>
+/// <summary>Scatter (or bubble) chart: points per series, optional sizes. All fields are optional; zero selects the native default.</summary>
 public partial struct ScatterOpts
 {
     /// <summary>cui_size width</summary>
@@ -2293,7 +2293,7 @@ public partial struct DockItemOpts
     };
 }
 
-/// <summary>cui_tab_bar_opts. All fields are optional; zero selects the native default.</summary>
+/// <summary>Bottom tab bar for compact layouts, with a pill that glides to the selection. All fields are optional; zero selects the native default.</summary>
 public partial struct TabBarOpts
 {
     /// <summary>cui_size width</summary>
@@ -2359,7 +2359,7 @@ public partial struct WaveformOpts
     };
 }
 
-/// <summary>cui_now_playing_opts. All fields are optional; zero selects the native default.</summary>
+/// <summary>Now playing card: artwork, title, artist, a scrubber and transport buttons. All fields are optional; zero selects the native default.</summary>
 public partial struct NowPlayingOpts
 {
     /// <summary>cui_size width</summary>
@@ -2422,7 +2422,7 @@ public partial struct ToolCallOpts
     };
 }
 
-/// <summary>cui_agent_plan_opts. All fields are optional; zero selects the native default.</summary>
+/// <summary>Agent plan: steps with their status on a connected rail, and progress. All fields are optional; zero selects the native default.</summary>
 public partial struct AgentPlanOpts
 {
     /// <summary>heading of the plan, default &quot;Plan&quot;</summary>
@@ -2491,7 +2491,7 @@ public partial struct ResponseActionsOpts
     };
 }
 
-/// <summary>cui_prompt_suggestions_opts. All fields are optional; zero selects the native default.</summary>
+/// <summary>Prompt suggestions: cards to start a conversation with. All fields are optional; zero selects the native default.</summary>
 public partial struct PromptSuggestionsOpts
 {
     /// <summary>cards per row, default 2</summary>
@@ -2504,7 +2504,7 @@ public partial struct PromptSuggestionsOpts
     };
 }
 
-/// <summary>cui_model_picker_opts. All fields are optional; zero selects the native default.</summary>
+/// <summary>Model picker: the current model on a button; a list with details opens. All fields are optional; zero selects the native default.</summary>
 public partial struct ModelPickerOpts
 {
     /// <summary>no border or fill on the button until hovered, for use inside another control</summary>
@@ -2587,7 +2587,7 @@ public partial struct KanbanColumnOpts
     };
 }
 
-/// <summary>cui_week_opts. All fields are optional; zero selects the native default.</summary>
+/// <summary>Week calendar: seven day columns on an hour grid. Drag an event to move it (15 minute steps), drag its bottom edge to resize it. Returns the index of a clicked event, or -1. All fields are optional; zero selects the native default.</summary>
 public partial struct WeekOpts
 {
     /// <summary>first hour shown, default 7; set together with `end_hour`</summary>
@@ -2612,7 +2612,7 @@ public partial struct WeekOpts
     };
 }
 
-/// <summary>cui_month_opts. All fields are optional; zero selects the native default.</summary>
+/// <summary>Month calendar: a month grid with events. All-day and multi-day events are bars across the days they cover; timed events are a dot, a time and a title. A day with more than fits says &quot;+N more&quot; and opens a list of them. On a narrow screen the cells show colored dots and the selected day&apos;s events are listed under the grid. All fields are optional; zero selects the native default.</summary>
 public partial struct MonthOpts
 {
     /// <summary>0 Monday (default) .. 6 Sunday</summary>
@@ -2641,7 +2641,7 @@ public partial struct MonthOpts
     };
 }
 
-/// <summary>cui_gantt_opts. All fields are optional; zero selects the native default.</summary>
+/// <summary>Gantt chart: a task list beside a timeline of bars. Drag a bar to move it, its ends to resize it. Dependencies are drawn as elbow arrows. Returns the index of a clicked task, or -1. All fields are optional; zero selects the native default.</summary>
 public partial struct GanttOpts
 {
     /// <summary>points per day, default 30</summary>
@@ -2795,7 +2795,7 @@ public partial struct CountdownOpts
     };
 }
 
-/// <summary>cui_checklist_opts. All fields are optional; zero selects the native default.</summary>
+/// <summary>Onboarding checklist: a card with progress and steps. The first open step shows its description and action. Clicking a step&apos;s circle toggles done. Returns the index whose action was clicked, or -1. All fields are optional; zero selects the native default.</summary>
 public partial struct ChecklistOpts
 {
     /// <summary>heading of the card, default &quot;Get started&quot;</summary>
@@ -3205,7 +3205,7 @@ public partial struct MoneyOpts
     };
 }
 
-/// <summary>cui_shortcut_recorder_opts. All fields are optional; zero selects the native default.</summary>
+/// <summary>Shortcut recorder: click and press a key combination to record it. Backspace clears, Esc cancels. Returns true when the combination changed. cui_shortcut_label formats a combination (&quot;Ctrl Shift K&quot;). All fields are optional; zero selects the native default.</summary>
 public partial struct ShortcutRecorderOpts
 {
     /// <summary>const char * placeholder</summary>
@@ -3221,7 +3221,7 @@ public partial struct ShortcutRecorderOpts
     };
 }
 
-/// <summary>cui_node_editor_opts. All fields are optional; zero selects the native default.</summary>
+/// <summary>Node editor: nodes with input and output pins on a canvas that pans and zooms, joined by curved links. You own the nodes, pins and links; the editor moves the node positions you pass and reports what the user did: All fields are optional; zero selects the native default.</summary>
 public partial struct NodeEditorOpts
 {
     /// <summary>default: fill the width, 440 tall</summary>
@@ -3400,7 +3400,7 @@ public partial struct StatusProgressOpts
     };
 }
 
-/// <summary>cui_doc_tabs_opts. All fields are optional; zero selects the native default.</summary>
+/// <summary>Document tabs: editor style tabs. Clicking selects (*selected is updated), the x or a middle click asks to close, dragging reorders, and the strip scrolls sideways when the tabs do not fit. A dirty tab shows a dot that turns into the close button under the pointer. The selected tab is filled with the surface color so it joins the content below; the strip itself has no fill, like the other bars. Tabs keep their state by title, so give two tabs with the same name a key: &quot;main.c##src&quot;. The component never removes or moves your tabs itself: it reports a close or a move in the result and you apply it (selection already follows a move). With keyboard focus on the strip, Left and Right select, Home and End jump, Shift+Left/Right move the tab and Delete closes it. With `shortcuts` set it also answers Ctrl+Tab, Ctrl+Shift+Tab, Ctrl+PageUp/Down and Ctrl+W (Cmd+W on macOS) from anywhere in the window. All fields are optional; zero selects the native default.</summary>
 public partial struct DocTabsOpts
 {
     /// <summary>Ctrl+Tab, Ctrl+Shift+Tab, Ctrl+PageUp/Down and Ctrl+W (Cmd+W on macOS) work from anywhere in the window</summary>
@@ -3881,7 +3881,7 @@ public partial struct ScheduleOpts
     };
 }
 
-/// <summary>cui_keymap_opts. All fields are optional; zero selects the native default.</summary>
+/// <summary>A keyboard with your shortcuts on it: each bound key shows its action and the color of its category, for the modifiers chosen above it. Keys bound twice are marked as conflicts. Hover a key for every binding on it; click it to get the key (to rebind it). The keyboard keeps its own layout in a right-to-left interface and scales to the width it gets. All fields are optional; zero selects the native default.</summary>
 public partial struct KeymapOpts
 {
     /// <summary>cui_size width</summary>
@@ -3902,7 +3902,7 @@ public partial struct KeymapOpts
     };
 }
 
-/// <summary>cui_commit_graph_opts. All fields are optional; zero selects the native default.</summary>
+/// <summary>Version history: the branch lanes drawn beside each commit, newest first, with its message, branch and tag names, author, date and short hash. Each commit names its parents by row (parents come later in the array), so merges and branches draw as lines between lanes. Only the rows in view are built. Up and Down move the selection; Enter or a double-click activates. All fields are optional; zero selects the native default.</summary>
 public partial struct CommitGraphOpts
 {
     /// <summary>cui_size width</summary>
@@ -3919,7 +3919,7 @@ public partial struct CommitGraphOpts
     };
 }
 
-/// <summary>cui_graph_opts. All fields are optional; zero selects the native default.</summary>
+/// <summary>Nodes and directed edges laid out in layers (each edge points to a later layer, cycles are broken), for build targets, packages, services or call graphs. The layout is computed when the graph changes. Wheel zooms, drag pans, click selects; hovering a node lights up what it depends on and what depends on it. F fits the graph. All fields are optional; zero selects the native default.</summary>
 public partial struct GraphOpts
 {
     /// <summary>cui_size width</summary>
@@ -3939,7 +3939,7 @@ public partial struct GraphOpts
     };
 }
 
-/// <summary>cui_waterfall_opts. All fields are optional; zero selects the native default.</summary>
+/// <summary>HTTP requests as a table with a timing bar each: queued, DNS, connect, TLS, waiting for the first byte and downloading, on one time scale with the page&apos;s DOMContentLoaded and load lines. Hover a bar for the breakdown. Narrow panels drop the type and size columns. Only the rows in view are built. Up and Down move the selection. All fields are optional; zero selects the native default.</summary>
 public partial struct WaterfallOpts
 {
     /// <summary>cui_size width</summary>
@@ -3962,7 +3962,7 @@ public partial struct WaterfallOpts
     };
 }
 
-/// <summary>cui_trace_opts. All fields are optional; zero selects the native default.</summary>
+/// <summary>A tracing timeline: one lane per thread, process or service, each with its nested spans, on one time ruler, with markers (frames, GC pauses, deploys) drawn across every lane. Wheel zooms around the pointer, Shift+wheel or a drag pans, click selects a span, Shift+drag measures a time range. A lane&apos;s name folds it. Keys: Left and Right step through the selected span&apos;s lane, + and - zoom, F fits, Esc clears. Spans must be sorted by track, depth and start (cui_trace_sort), with no overlap within a depth of a track. Like the flame graph, only what is in view is visited. All fields are optional; zero selects the native default.</summary>
 public partial struct TraceOpts
 {
     /// <summary>cui_size width</summary>
@@ -4002,7 +4002,7 @@ public partial struct RegexTesterOpts
     };
 }
 
-/// <summary>cui_test_explorer_opts. All fields are optional; zero selects the native default.</summary>
+/// <summary>Test results as a tree: suites fold, each test shows its status and time, and a failure shows its message under it. A suite&apos;s status sums up its tests. The toolbar runs everything, counts results and filters by status and by name. Hover a row for its run button. Only the rows in view are built. Up and Down move, Left and Right fold, Enter activates. Items are in tree order with their depth; the statuses are the pipeline&apos;s. All fields are optional; zero selects the native default.</summary>
 public partial struct TestExplorerOpts
 {
     /// <summary>default 320</summary>
@@ -4018,7 +4018,7 @@ public partial struct TestExplorerOpts
     };
 }
 
-/// <summary>cui_stack_trace_opts. All fields are optional; zero selects the native default.</summary>
+/// <summary>An exception and its call stack: the error&apos;s type and message, then each frame&apos;s function and position. Runs of library frames fold into one row. A frame with source opens to show the lines around it, the failing line marked; the first frame of your own code starts open. A button copies the whole trace as text. All fields are optional; zero selects the native default.</summary>
 public partial struct StackTraceOpts
 {
     /// <summary>cui_size width</summary>
@@ -4059,7 +4059,7 @@ public partial struct RequestBarOpts
     };
 }
 
-/// <summary>cui_uptime_opts. All fields are optional; zero selects the native default.</summary>
+/// <summary>A status page: each service with its current state, its uptime over the period, and one bar per day colored by availability (gray without data). Hover a bar for its day and uptime. On a narrow panel only the most recent days that fit are shown. All fields are optional; zero selects the native default.</summary>
 public partial struct UptimeOpts
 {
     /// <summary>the date of the last value, for the tooltips</summary>
@@ -4075,7 +4075,7 @@ public partial struct UptimeOpts
     };
 }
 
-/// <summary>cui_time_histogram_opts. All fields are optional; zero selects the native default.</summary>
+/// <summary>Event counts over time, stacked by series (log levels, status classes), as above a log search. Drag across it to select a time range, click to clear. Hover a bar for its time and counts. Times are Unix seconds. All fields are optional; zero selects the native default.</summary>
 public partial struct TimeHistogramOpts
 {
     /// <summary>cui_size width</summary>
@@ -4094,7 +4094,7 @@ public partial struct TimeHistogramOpts
     };
 }
 
-/// <summary>cui_coverage_opts. All fields are optional; zero selects the native default.</summary>
+/// <summary>Test coverage by folder and file: the files&apos; paths make the tree, each folder sums up what it holds, and folders fold. Line coverage shows as a bar colored by thresholds, with branches and functions beside it. Click a column&apos;s title to sort. Enter or a double-click activates a file. Narrow panels show lines only. All fields are optional; zero selects the native default.</summary>
 public partial struct CoverageOpts
 {
     /// <summary>percent; default 50 and 80</summary>
@@ -4116,7 +4116,7 @@ public partial struct CoverageOpts
     };
 }
 
-/// <summary>cui_blame_opts. All fields are optional; zero selects the native default.</summary>
+/// <summary>Source with who last changed each line: lines from one commit share one gutter entry with its author, age and hash, and a bar at the edge shades newer changes stronger. Hover a gutter entry for the commit&apos;s summary and to mark its lines; click it to get the commit. Only the lines in view are built. On a phone the gutter keeps only the shade and initials. All fields are optional; zero selects the native default.</summary>
 public partial struct BlameOpts
 {
     /// <summary>cui_size width</summary>

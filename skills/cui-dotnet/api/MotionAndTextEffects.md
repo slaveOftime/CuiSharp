@@ -68,7 +68,7 @@ cui_loader_ex
 public PlayerEvents NowPlaying(UiText id, ref NowPlayingState np, NowPlayingOpts o = default)
 ```
 
-cui_now_playing_ex
+Now playing card: artwork, title, artist, a scrubber and transport buttons.
 
 ## `NumberRoll`
 
@@ -100,7 +100,7 @@ Spotlight card: a soft light follows the pointer across the card and lights the 
 public bool TabBar(UiText id, ReadOnlySpan<TabBarItem> items, ref int selected, TabBarOpts o = default)
 ```
 
-cui_tab_bar_ex
+Bottom tab bar for compact layouts, with a pill that glides to the selection.
 
 ## `TextReveal`
 

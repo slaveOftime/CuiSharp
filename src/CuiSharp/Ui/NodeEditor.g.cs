@@ -13,7 +13,7 @@ public static unsafe class NodeEditorUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_node_editor_begin_ex</summary>
+        /// <summary>Node editor: nodes with input and output pins on a canvas that pans and zooms, joined by curved links. You own the nodes, pins and links; the editor moves the node positions you pass and reports what the user did:</summary>
         public OpenScope NodeEditor(UiText id, ref NodeView view, NodeEditorOpts o = default)
         {
             var __view = view.ToNative();

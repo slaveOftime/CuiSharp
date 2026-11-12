@@ -207,16 +207,30 @@ sealed class ImplementationDocs
 
             // A declaration may wrap; the comment follows the `;` wherever that lands.
             var text = new StringBuilder(line);
-            for (int j = i; j < Math.Min(lines.Length, i + 6) && !text.ToString().Contains(';', StringComparison.Ordinal); j++)
+            for (int j = i + 1; j < Math.Min(lines.Length, i + 6) && !text.ToString().Contains(';', StringComparison.Ordinal); j++)
                 text.Append(' ').Append(lines[j]);
             if (!text.ToString().Contains(';', StringComparison.Ordinal)) continue;
 
             Match name = Regex.Match(text.ToString(), @"\b(cui_[a-z0-9_]+)\s*\(");
             Match comment = Regex.Match(text.ToString(), @";\s*/\*(?<c>.*?)\*/\s*$");
             if (!name.Success || !comment.Success) continue;
-            if (_beside.ContainsKey(name.Groups[1].Value)) continue;
-            _beside[name.Groups[1].Value] = comment.Groups["c"].Value.Trim();
+            string? prose = PublicNote(comment.Groups["c"].Value);
+            if (prose is null || _beside.ContainsKey(name.Groups[1].Value)) continue;
+            _beside[name.Groups[1].Value] = prose;
         }
+    }
+
+    /// <summary>
+    /// A comment as a sentence about the API, or null when it is written for us and not for a
+    /// caller. CUI's sources carry notes to their next reader — `left to right in any interface:
+    /// see cui__keep_ltr`, `keep the id stable so focus survives` — and a summary that says that
+    /// tells an app developer nothing they can act on, while hiding the description the header
+    /// would have supplied instead.
+    /// </summary>
+    private static string? PublicNote(string raw)
+    {
+        string text = Regex.Replace(raw.Replace("/*", " ").Replace("*/", " "), @"\s+", " ").Trim().TrimStart('*').Trim();
+        return text.Contains("cui__", StringComparison.Ordinal) ? null : text.Length == 0 ? null : text;
     }
 
     private void Read(string[] lines)
@@ -279,7 +293,7 @@ sealed class ImplementationDocs
 
             if (line.StartsWith('*') || line.StartsWith("/*", StringComparison.Ordinal) || line.StartsWith("//", StringComparison.Ordinal))
             {
-                collected.Add(line.TrimStart('*').TrimStart('/').Replace("*/", "", StringComparison.Ordinal).Trim());
+                collected.Add(CommentText(line));
                 i--;
                 continue;
             }
@@ -292,7 +306,24 @@ sealed class ImplementationDocs
         if (collected.Exists(IsRule)) return "";
 
         collected.Reverse();
-        return string.Join(" ", collected.Where(l => l.Length > 0)).Trim();
+        string text = string.Join(" ", collected.Where(l => l.Length > 0)).Trim();
+        return PublicNote(text) ?? "";
+    }
+
+    /// <summary>
+    /// One comment line without its delimiters. The order matters: <c>/* x */</c> starts with a
+    /// slash, so trimming stars before slashes leaves the star of the opener inside the text.
+    /// </summary>
+    private static string CommentText(string line)
+    {
+        string text = line.Trim();
+        if (text.StartsWith("/*", StringComparison.Ordinal) || text.StartsWith("//", StringComparison.Ordinal))
+            text = text[2..];
+        else if (text.StartsWith('*'))
+            text = text[1..];
+
+        int close = text.IndexOf("*/", StringComparison.Ordinal);
+        return (close >= 0 ? text[..close] : text).Trim();
     }
 }
 
@@ -1470,6 +1501,16 @@ sealed class Idiomatic
     private readonly Dictionary<string, string> _recordByCs = new(StringComparer.Ordinal);
     private readonly HashSet<string> _covered = new(StringComparer.Ordinal);
 
+    // How widely a declaration's paragraph is used, which is what decides whether it describes the
+    // component or the declaration: a record one function takes is the component's, a record six
+    // functions take describes itself (`cui_viz_item`).
+    private readonly Dictionary<string, int> _paramUsers = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, int> _fieldUsers = new(StringComparer.Ordinal);
+
+    // The sentence an options struct took from the component around it, for the page that
+    // documents the struct: `BlameOpts` should not say `cui_blame_opts` once the widget knows.
+    private readonly Dictionary<string, string> _optionDocFallback = new(StringComparer.Ordinal);
+
     // Staged migration. Expanding this list must pass native behavior and
     // lifetime tests before another section's manual wrappers are removed.
     private static readonly string[] WidgetModules =
@@ -1495,6 +1536,7 @@ sealed class Idiomatic
         _api = api;
         _overrides = overrides;
         ValidateOverrides();
+        CountDeclarationUsers();
         // A record may contain another record (a hex result holds a selection), so plan
         // in passes until nothing new resolves, then report whatever is left.
         var pendingRecords = overrides.RecordNames.ToList();
@@ -1559,6 +1601,34 @@ sealed class Idiomatic
                 if (widget.End is not null) _covered.Add(widget.End.CName);
             }
             catch (NotSupportedException e) { _pendingWidgets.Add(f.CName, e.Message); }
+        }
+    }
+
+    /// <summary>
+    /// How many functions take each C record as a parameter, and how many structs hold a field of
+    /// each C type. Both counts answer the same question later: is the paragraph attached to this
+    /// declaration about the component, or about the declaration itself?
+    /// </summary>
+    private void CountDeclarationUsers()
+    {
+        foreach (FunctionModel function in _api.Functions)
+        {
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            foreach (ParamModel parameter in function.Params)
+            {
+                if (Pointee(parameter) is not { } spelling || !seen.Add(spelling)) continue;
+                _paramUsers[spelling] = _paramUsers.GetValueOrDefault(spelling) + 1;
+            }
+        }
+
+        foreach (StructModel str in _api.Structs)
+        {
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            foreach (FieldModel field in str.Fields)
+            {
+                if (!seen.Add(field.CType)) continue;
+                _fieldUsers[field.CType] = _fieldUsers.GetValueOrDefault(field.CType) + 1;
+            }
         }
     }
 
@@ -1660,6 +1730,23 @@ sealed class Idiomatic
             RequireReason(key, value.Why);
             if (!_api.Functions.Any(f => f.CName + "." + f.Params.FirstOrDefault(p => f.CName + "." + p.CName == key)?.CName == key))
                 throw new InvalidOperationException($"Unknown parameter: {key}");
+        }
+        foreach (var (key, value) in _overrides.CapacityParams)
+        {
+            RequireReason(key, value.Why);
+            int dot = key.IndexOf('.');
+            FunctionModel? function = dot < 0 ? null : _api.Functions.SingleOrDefault(f => f.CName == key[..dot]);
+            ParamModel? capacity = function?.Params.SingleOrDefault(p => p.CName == key[(dot + 1)..]);
+            if (function is null || capacity is null) throw new InvalidOperationException($"Unknown parameter: {key}");
+
+            // The pointer being described has to be in the same signature, and the length it derives
+            // from has to be somewhere in the call: a typo in the array name would otherwise pass a
+            // length meant for nothing and leave the pointer under-described at run time.
+            ParamModel? derived = function.Params.SingleOrDefault(p => p.CName == value.Array);
+            if (derived is null)
+                throw new InvalidOperationException($"Capacity override names an array the signature does not take: {key} -> {value.Array}");
+            if (capacity.Type.Kind != "Int" || derived.Type.Kind != "Pointer")
+                throw new InvalidOperationException($"Capacity override needs an int count beside a pointer: {key} -> {value.Array}");
         }
         foreach (var (key, value) in _overrides.OptionArrayChecks)
         {
@@ -2071,7 +2158,7 @@ sealed class Idiomatic
         "Double" => "double",
         "Float" => "float",
         "Int" => "int",
-        "Bool" => "byte",
+        "Bool" => "bool",
         _ => throw new NotSupportedException(
             $"{function}: {param} is an in-place array of {element.Spelling}, which has no span type yet"),
     };
@@ -2140,8 +2227,11 @@ sealed class Idiomatic
         foreach (var option in _options.Values)
         {
             // The paragraph above an options struct says what the component is for, which is worth
-            // more than the sentence that the fields are optional.
-            string componentDoc = Names.OneLine(option.Native.Doc);
+            // more than the sentence that the fields are optional. When it wrote none there, the
+            // widget that reads this struct found the description elsewhere and left it here.
+            string componentDoc = Names.OneLine(option.Native.Doc.Length > 0
+                ? option.Native.Doc
+                : _optionDocFallback.GetValueOrDefault(option.Native.CName, ""));
             const string Optional = "All fields are optional; zero selects the native default.";
             Summary(sb, componentDoc.Length == 0 ? option.Native.CName + ". " + Optional
                 : componentDoc.Contains(Optional, StringComparison.Ordinal) ? componentDoc
@@ -2540,7 +2630,9 @@ sealed class Idiomatic
                 var countParam = function.Params.Single(q => q.CName == inOut.Count);
                 bool countIsRef = countParam.Type.Kind == "Pointer";
                 string block = "__" + name;
-                type = $"Span<{element?.Name ?? FriendlyValue(p.Type.Element!, p.Type.Element!.Spelling)}>";
+                // One spelling for the element: the span the caller passes and the frame block it is
+                // copied through are the same type by construction, never by two lookups agreeing.
+                type = $"Span<{element?.Name ?? csElement}>";
                 prepare.Add($"var {block} = Utf8.AllocFrame<{csElement}>({name}.Length);");
                 prepare.Add(element is null
                     ? $"{name}.CopyTo(new Span<{csElement}>({block}, {name}.Length));"
@@ -2686,27 +2778,94 @@ sealed class Idiomatic
         }
         // A component's description is written above its options struct, not above the function:
         // when the declaration says nothing, that sentence is what a reader wants beside the call.
-        // The exception is a struct whose comment describes the struct (`Options for every
-        // container.`), which says nothing about this call.
-        string doc = function.Doc;
-        if (doc.Length == 0)
-        {
-            foreach (var parameter in function.Params)
-            {
-                string? spelling = parameter.Type.Element?.Spelling.Replace("const ", "", StringComparison.Ordinal).Trim();
-                if (spelling is null || !_options.TryGetValue(spelling, out var described)) continue;
-                string candidate = Names.OneLine(described.Native.Doc);
-                if (candidate.Length > 0 && !candidate.StartsWith("Options", StringComparison.OrdinalIgnoreCase))
-                {
-                    doc = candidate;
-                    break;
-                }
-            }
-        }
+        string doc = ComponentDoc(function);
 
         return new(function with { Doc = doc }, Names.Pascal(stem), returns, [.. parameters], [.. prepare], [.. arguments], [.. writeBack], end, clicked,
             [.. injectedParams], returnStatement);
     }
+
+    /// <summary>
+    /// The sentence a widget's call site shows. A function with a comment of its own is done. When it
+    /// has none, upstream's description of the component went somewhere else: libclang attaches a
+    /// comment to the declaration under it, and CUI writes the component's paragraph above the first
+    /// thing its section declares — an item record (`cui_blame_commit`), an enum
+    /// (`cui_task_status`) — which sits above the options struct.
+    /// <para>
+    /// That paragraph is the component's only when the declaration belongs to this widget alone:
+    /// `cui_viz_item` opens Treemap but Funnel, Waffle and Bar list take the same record, so its
+    /// sentence is about the record and not about every widget that reads it. Hence the count:
+    /// one reader means it is the component, several mean it is the record.
+    /// </para>
+    /// </summary>
+    private string ComponentDoc(FunctionModel function)
+    {
+        if (function.Doc.Length > 0) return function.Doc;
+
+        // The options struct first: its comment is the component's when it has one that is not
+        // about the struct itself (`Options for every container.`).
+        foreach (ParamModel parameter in function.Params)
+        {
+            if (Pointee(parameter) is not { } spelling || !_options.TryGetValue(spelling, out var described)) continue;
+            if (IsComponentDescription(described.Native.Doc)) return Adopt(spelling, described.Native.Doc);
+        }
+
+        // Then the record the widget is handed: its paragraph is the component's when this is the
+        // only function that takes it.
+        foreach (ParamModel parameter in function.Params)
+        {
+            if (Pointee(parameter) is not { } spelling || !_records.TryGetValue(spelling, out var record)) continue;
+            if (_paramUsers.GetValueOrDefault(spelling) != 1 || !IsComponentDescription(record.Native.Doc)) continue;
+
+            // The record keeps its own sentence; the options struct the widget reads takes it too,
+            // so `BlameOpts` is documented as the component it configures.
+            foreach (ParamModel other in function.Params)
+            {
+                if (Pointee(other) is { } opts && _options.ContainsKey(opts)) Adopt(opts, record.Native.Doc);
+            }
+
+            return Names.OneLine(record.Native.Doc);
+        }
+
+        // Then an enum the widget's options name: CUI opens a section with it when the component is
+        // built around a closed set of states, and the paragraph describing the component follows.
+        foreach (ParamModel parameter in function.Params)
+        {
+            if (Pointee(parameter) is not { } spelling || !_options.TryGetValue(spelling, out var described)) continue;
+            foreach (OptionField field in described.Fields)
+            {
+                EnumModel? named = _api.Enums.FirstOrDefault(e => e.CName == field.Native.CType);
+                if (named is null || _fieldUsers.GetValueOrDefault(named.CName) != 1) continue;
+                if (!IsComponentDescription(named.Doc)) continue;
+                return Adopt(spelling, named.Doc);
+            }
+        }
+
+        return "";
+    }
+
+    /// <summary>Records the sentence an options struct was given from the component around it.</summary>
+    private string Adopt(string option, string doc)
+    {
+        _optionDocFallback.TryAdd(option, doc);
+        return Names.OneLine(doc);
+    }
+
+    /// <summary>
+    /// A paragraph that describes a component, rather than naming the declaration it sits on. The
+    /// section titles that reach a struct — `Table`, `Charts`, `managed by cui_terminal_*` — are not
+    /// sentences, and a tooltip that shows one is worse than the C name it replaced.
+    /// </summary>
+    private static bool IsComponentDescription(string doc)
+    {
+        string text = Names.OneLine(doc);
+        return text.Length >= 40
+            && (text.Contains('.', StringComparison.Ordinal) || text.Contains(':', StringComparison.Ordinal))
+            && !text.StartsWith("Options", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>The C name of the thing a pointer parameter points at.</summary>
+    private static string? Pointee(ParamModel parameter) =>
+        parameter.Type.Element?.Spelling.Replace("const ", "", StringComparison.Ordinal).Replace("*", "").Trim();
 
     /// <summary>
     /// The line that makes a widget findable by a test: its kind and the text that names it.
@@ -3274,6 +3433,13 @@ static class BindgenChecks
             && !first.Records().Contains("public int DayCount;", StringComparison.Ordinal)
             && !first.Records().Contains("public int SourceCount;", StringComparison.Ordinal)
             && !first.Records().Contains("public int OptionCount;", StringComparison.Ordinal));
+        // A capacity is the array's length, so the caller cannot pass a second number that disagrees
+        // with the span, and the parameter leaves the signature entirely.
+        string editors = string.Concat(first.Widgets().Values);
+        Check("a capacity is derived, never passed",
+            editors.Contains("(int)(keys.Length), in __opts", StringComparison.Ordinal)
+            && !editors.Contains("CurveResult CurveEditor(UiText id, Span<CurveKey> keys, int count", StringComparison.Ordinal)
+            && editors.Contains("Span<double> times", StringComparison.Ordinal));
         Check("C typedef, qualifiers and comments survive the IR", box.Fields.Any(f => f.Doc.Contains("identity", StringComparison.Ordinal))
             && api.Structs.Single(s => s.CName == "cui_text_opts").Fields.Single(f => f.CName == "font").CsType == "Font"
             && api.Functions.Single(f => f.CName == "cui_box_begin").Params.Single(p => p.CName == "opts").Type.Element!.IsConst);

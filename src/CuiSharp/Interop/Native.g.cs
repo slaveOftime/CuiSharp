@@ -908,11 +908,11 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_file_picker_ex")]
     public static partial byte FilePicker(nint ui, nint id, nint open, nint @out, nuint outCap, in NativeFilePickerOpts opts);
 
-    /// <summary>* left to right in any interface: see cui__keep_ltr</summary>
+    /// <summary>cui_code_block_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_code_block_ex")]
     public static partial void CodeBlock(nint ui, nint id, nint code, in NativeCodeOpts opts);
 
-    /// <summary>* left to right in any interface: see cui__keep_ltr</summary>
+    /// <summary>cui_json_view_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_json_view_ex")]
     public static partial byte JsonView(nint ui, nint id, nint json, in NativeJsonOpts opts);
 
@@ -924,7 +924,7 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_markdown_apply_task")]
     public static partial byte MarkdownApplyTask(nint text, in NativeMarkdownResult result);
 
-    /// <summary>* left to right in any interface: see cui__keep_ltr</summary>
+    /// <summary>cui_code_editor_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_code_editor_ex")]
     public static partial NativeCodeEditorResult CodeEditor(nint ui, nint id, nint buf, nuint cap, in NativeCodeEditorOpts opts);
 
@@ -940,7 +940,7 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_code_editor_find")]
     public static partial void CodeEditorFind(nint ui, nint id, nint query);
 
-    /// <summary>* left to right in any interface: see cui__keep_ltr</summary>
+    /// <summary>cui_diff_view_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_diff_view_ex")]
     public static partial NativeDiffResult DiffView(nint ui, nint id, nint oldText, nint newText, in NativeDiffOpts opts);
 
@@ -1012,7 +1012,7 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_card_stack_end")]
     public static partial int CardStackEnd(nint ui);
 
-    /// <summary>* left to right in any interface: see cui__keep_ltr</summary>
+    /// <summary>cui_counter_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_counter_ex")]
     public static partial void Counter(nint ui, nint id, double value, in NativeCounterOpts opts);
 
@@ -1216,7 +1216,7 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_kanban_end")]
     public static partial byte KanbanEnd(nint ui, ref NativeKanbanMove move);
 
-    /// <summary>* left to right in any interface: see cui__keep_ltr</summary>
+    /// <summary>cui_week_calendar_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_week_calendar_ex")]
     public static partial int WeekCalendar(nint ui, nint id, NativeDate weekStart, nint events, int count, in NativeWeekOpts opts);
 
@@ -1224,7 +1224,7 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_month_calendar_ex")]
     public static partial NativeMonthResult MonthCalendar(nint ui, nint id, ref NativeDate month, nint events, int count, in NativeMonthOpts opts);
 
-    /// <summary>* left to right in any interface: see cui__keep_ltr</summary>
+    /// <summary>cui_gantt_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_gantt_ex")]
     public static partial int Gantt(nint ui, nint id, nint tasks, int count, NativeDate origin, int days, in NativeGanttOpts opts);
 
@@ -1264,7 +1264,7 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_banner_ex")]
     public static partial byte Banner(nint ui, nint text, nint open, in NativeBannerOpts opts);
 
-    /// <summary>* left to right in any interface: see cui__keep_ltr</summary>
+    /// <summary>cui_countdown_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_countdown_ex")]
     public static partial void Countdown(nint ui, nint id, double secondsLeft, in NativeCountdownOpts opts);
 
@@ -1360,7 +1360,7 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_money_input_ex")]
     public static partial byte MoneyInput(nint ui, nint id, ref double value, in NativeMoneyOpts opts);
 
-    /// <summary>* left to right in any interface: see cui__keep_ltr</summary>
+    /// <summary>cui_shortcut_recorder_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_shortcut_recorder_ex")]
     public static partial byte ShortcutRecorder(nint ui, nint id, ref NativeKeyCombo combo, in NativeShortcutRecorderOpts opts);
 
@@ -1584,7 +1584,7 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_terminal_clear")]
     public static partial void TerminalClear(ref NativeTerminalBuffer t);
 
-    /// <summary>* left to right in any interface: see cui__keep_ltr</summary>
+    /// <summary>cui_terminal_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_terminal_ex")]
     public static partial NativeTerminalResult Terminal(nint ui, nint id, ref NativeTerminalBuffer t, in NativeTerminalOpts opts);
 

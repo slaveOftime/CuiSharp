@@ -13,7 +13,7 @@ public static unsafe class TestExplorerUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_test_explorer_ex</summary>
+        /// <summary>Test results as a tree: suites fold, each test shows its status and time, and a failure shows its message under it. A suite&apos;s status sums up its tests. The toolbar runs everything, counts results and filters by status and by name. Hover a row for its run button. Only the rows in view are built. Up and Down move, Left and Right fold, Enter activates. Items are in tree order with their depth; the statuses are the pipeline&apos;s.</summary>
         public TestExplorerResult TestExplorer(UiText id, ReadOnlySpan<TestItem> items, TestExplorerOpts o = default)
         {
             var __items = Utf8.AllocFrame<NativeTestItem>(items.Length);

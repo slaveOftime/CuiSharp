@@ -10,8 +10,6 @@ internal sealed partial class GalleryApp
     // One value every quarter hour, 06:00 to 06:00, as the C example has it. Built once:
     // a series array rebuilt per frame is the page's own allocation.
     private static readonly float[] Caffeine = BuildCaffeine();
-    private static readonly DotSeries[] CaffeineSeries = [new(Caffeine, "Caffeine", accent: true)];
-
     // The track edits this in place, so it is a field: a new array per frame would throw
     // away every drag. Five cups, in the order they were poured.
     private readonly double[] _cups = [6.5, 8, 11, 12.25, 15.5, 0, 0, 0];
@@ -51,7 +49,9 @@ internal sealed partial class GalleryApp
             "the pointer or the arrow keys read the value under them.");
         using (ui.Card(new Card()))
         {
-            var result = ui.DotChart("caffeine", CaffeineSeries, Caffeine.Length, new DotChartOpts
+            // The series go in inline: the wrapper only reads them, so a span built on the stack
+            // costs nothing and the frame allocates nothing here.
+            var result = ui.DotChart("caffeine", [new(Caffeine, "Caffeine", accent: true)], Caffeine.Length, new DotChartOpts
             {
                 Height = 168,
                 XMin = 6,

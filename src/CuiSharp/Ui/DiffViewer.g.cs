@@ -13,7 +13,7 @@ public static unsafe class DiffViewerUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>* left to right in any interface: see cui__keep_ltr</summary>
+        /// <summary>cui_diff_view_ex</summary>
         public DiffResult DiffView(UiText id, UiText oldText, UiText newText, ref int current, DiffOpts o = default)
         {
             int __current = (int)(current);

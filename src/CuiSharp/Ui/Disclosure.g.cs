@@ -65,7 +65,7 @@ public static unsafe class DisclosureUiExtensions
             if (scope) body(ui);
         }
 
-        /// <summary>cui_toc</summary>
+        /// <summary>Table of contents for a scroll area: highlights the section in view on a progress rail, and scrolls to a section when clicked. Put cui_toc_anchor(ui, &quot;anchor&quot;) at each heading inside the scroll area, and call cui_toc in the same scope as the scroll area. Returns the active index.</summary>
         public int Toc(UiText scrollId, ReadOnlySpan<TocItem> items)
         {
             var __items = Utf8.AllocFrame<NativeTocItem>(items.Length);

@@ -1,3 +1,4 @@
+using System.Text;
 using System.Xml.Linq;
 
 namespace CuiSharp.Tests;
@@ -21,8 +22,43 @@ public class ShippedDocTests
             .Where(m => m.Element("summary") is not null)
             .ToDictionary(
                 m => m.Attribute("name")!.Value,
-                m => m.Element("summary")!.Value.Trim(),
+                m => Render(m.Element("summary")!),
                 StringComparer.Ordinal);
+    }
+
+    /// <summary>
+    /// A summary's text with its inline markup intact. <c>XElement.Value</c> would read as the
+    /// documentation were plain text: it drops the element nodes, so `Draws &lt;paramref name="x"/&gt;`
+    /// comes back as `Draws ,` and an assertion on it would be measuring the reader, not the docs.
+    /// </summary>
+    private static string Render(XElement summary)
+    {
+        var text = new StringBuilder();
+        foreach (XNode node in summary.Nodes())
+        {
+            switch (node)
+            {
+                case XText literal:
+                    text.Append(literal.Value);
+                    break;
+                case XElement { Name.LocalName: "paramref" or "typeparamref" } reference:
+                    text.Append(reference.Attribute("name")?.Value);
+                    break;
+                case XElement { Name.LocalName: "see" } reference:
+                    // `see cref` names the member as `M:Type.Member(params)`: the last segment of the
+                    // name, without the parameter list, is what a reader would have seen inline.
+                    string named = reference.Attribute("cref")?.Value ?? reference.Value;
+                    int parameters = named.IndexOf('(', StringComparison.Ordinal);
+                    if (parameters >= 0) named = named[..parameters];
+                    text.Append(named[(named.LastIndexOf('.') + 1)..]);
+                    break;
+                default:
+                    text.Append(node.ToString(SaveOptions.DisableFormatting));
+                    break;
+            }
+        }
+
+        return text.ToString().Trim();
     }
 
     /// <summary>Every summary that exists, for the rules below that hold for all of them.</summary>
@@ -74,6 +110,35 @@ public class ShippedDocTests
             entry.Key.Contains("UiExtensions", StringComparison.Ordinal)
             && entry.Key.Contains("DotDisplay", StringComparison.Ordinal)
             && entry.Value.StartsWith("Dot-matrix display:", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ADescriptionAttachedToTheItemRecordStillReachesTheWidget()
+    {
+        // CUI writes Blame's paragraph above `cui_blame_commit`, the item record, because that is the
+        // first declaration after the section title — libclang attaches it there and `cui_blame_opts`
+        // is left bare. The widget is the reader's entry point, so it takes the sentence.
+        Assert.StartsWith("Source with who last changed each line:",
+            Summaries.Value["T:CuiSharp.BlameOpts"], StringComparison.Ordinal);
+        Assert.Contains(Summaries.Value, entry =>
+            entry.Key.Contains("UiExtensions.<G>", StringComparison.Ordinal)
+            && entry.Key.Contains(".Blame(", StringComparison.Ordinal)
+            && entry.Value.StartsWith("Source with who last changed each line:", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void NoSummaryIsAnInternalNote()
+    {
+        // `left to right in any interface: see cui__keep_ltr` is written above fifteen thin wrappers
+        // in CUI's sources, and it reached the wrappers as their summary: a sentence about the
+        // implementation, in place of the description the header does have. The note also arrived
+        // with its opening delimiter attached — `* left to right …` — which is the bug that let it
+        // through in the first place.
+        string[] notes = [.. Summaries.Value
+            .Where(e => e.Value.StartsWith('*') || e.Value.Contains("cui__keep_ltr", StringComparison.Ordinal))
+            .Select(e => $"{e.Key} = {e.Value}")];
+
+        Assert.True(notes.Length == 0, "a summary is an internal note: " + string.Join(" | ", notes.Take(3)));
     }
 
     [Fact]

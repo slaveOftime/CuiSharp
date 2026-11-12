@@ -30,7 +30,7 @@ public static unsafe class DataDisplayUiExtensions
             if (scope) body(ui);
         }
 
-        /// <summary>Tree view node.</summary>
+        /// <summary>cui_tree_begin</summary>
         public OpenScope Tree(UiText label, ref bool open, TreeOpts o = default)
         {
             byte __open = (byte)(open ? 1 : 0);

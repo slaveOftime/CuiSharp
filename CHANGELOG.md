@@ -17,10 +17,13 @@ had to express.
   writes in — above the declaration, beside it, above the definition in the C source, and the
   component's description above its options struct — and the result is in the package's IntelliSense
   file, not just in the source: 1 200 option and struct fields that said `const char * unit` now say
-  what the field means, 91 wrapped functions gained a sentence (206 down to 118 that have none),
+  what the field means, 112 wrapped functions gained a sentence (206 down to 94 that have none),
   every constant that CUI comments on says what it is for (`AxisUnits.Hours`: *hours shown as a time
-  of day*), and options structs open with the component's description instead of `cui_split_opts`.
-  A section title bar is recognised and dropped rather than shown as if it were prose.
+  of day*), and options structs open with the component's description instead of `cui_split_opts`
+  (`BlameOpts` now says what Blame is). A section title bar is recognised and dropped rather than
+  shown as if it were prose, and CUI's notes to its own next reader — `left to right in any
+  interface: see cui__keep_ltr`, written above fifteen thin wrappers — are recognised as such and
+  never used as a summary; those wrappers take the description from the header instead.
 - **The instruments**: a group of components that read like a panel rather than a page.
   `DotChart(id, series, count, opts)` draws values as a grid of dots with the pointer or the arrow
   keys reading the value under them, and takes `ChartAnnotation`s drawn over it as lines,
@@ -31,6 +34,9 @@ had to express.
   shrinks to fit or scrolls. The gallery's *Instruments* page shows all four on one screen.
 - **`CuiAppDesc.AppId`** names the app to a Linux desktop: the window's `WM_CLASS`, and the Wayland
   app ID, so the dock, the taskbar and `Alt+Tab` show the app's own name and icon instead of `CUI`.
+- **`Ui.DotChart` takes `ReadOnlySpan<DotSeries>`**, the way every other chart takes its series, so a
+  call site can stack the series inline (`[new(values, "Caffeine", accent: true)]`) and allocate
+  nothing per frame. The signature change is the one public-surface edit in this release.
 - **Generated documentation.** CUI 1.4 documents every field of every options and data struct in
   the header, so 208 generated wrappers that could only say the C function's name now say what the
   call does, and the option fields carry the header's own words.

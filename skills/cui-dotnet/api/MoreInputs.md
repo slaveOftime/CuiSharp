@@ -52,4 +52,4 @@ cui_shortcut_label
 public bool ShortcutRecorder(UiText id, ref KeyCombo combo, ShortcutRecorderOpts o = default)
 ```
 
-* left to right in any interface: see cui__keep_ltr
+Shortcut recorder: click and press a key combination to record it. Backspace clears, Esc cancels. Returns true when the combination changed. cui_shortcut_label formats a combination ("Ctrl Shift K").

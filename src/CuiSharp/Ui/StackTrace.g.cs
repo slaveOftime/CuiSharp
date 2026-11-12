@@ -13,7 +13,7 @@ public static unsafe class StackTraceUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_stack_trace_ex</summary>
+        /// <summary>An exception and its call stack: the error&apos;s type and message, then each frame&apos;s function and position. Runs of library frames fold into one row. A frame with source opens to show the lines around it, the failing line marked; the first frame of your own code starts open. A button copies the whole trace as text.</summary>
         public StackTraceResult StackTrace(UiText id, ReadOnlySpan<StackFrame> frames, StackTraceOpts o = default)
         {
             var __frames = Utf8.AllocFrame<NativeStackFrame>(frames.Length);
