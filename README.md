@@ -361,11 +361,11 @@ What changed, per version: [CHANGELOG.md](CHANGELOG.md).
 
 ## Status
 
-Pre-1.0: the API may still change. The binding covers all 492 CUI 1.3 functions: 166 option
-structs, 100 records, 278 generated wrappers, 169 deliberate hand-written ones, 4 excluded with a
-written reason, 0 pending — see [bindings/coverage.txt](bindings/coverage.txt). The gallery ports the
-nine core pages, four pages of this binding's own, and CUI 1.3's two developer-tools pages; the other
-fifteen extended upstream pages are not yet.
+Pre-1.0: the API may still change. The binding covers all 496 CUI 1.4 functions: 170 option
+structs, 104 records, 277 generated wrappers, 175 deliberate hand-written ones, 4 excluded with a
+written reason, 4 variadic skipped, 0 pending — see [bindings/coverage.txt](bindings/coverage.txt).
+The gallery's 29 pages walk the components section by section, light and dark; what is still missing
+is the page shape that needs a device — a capture pipeline, an audio stream.
 
 ## License
 

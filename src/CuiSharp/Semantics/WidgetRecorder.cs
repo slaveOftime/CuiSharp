@@ -517,7 +517,7 @@ internal sealed class FrameRecorder
 /// <para>
 /// Entries were read out of the pinned <c>native/CUI</c> sources: an entry that drifts upstream
 /// shows up as a missing or wrong rect in <c>LayoutInspectionTests</c>, never as a silent lie.
-/// Growing these tables is a native-evidence task (the <c>sync-cui</c> runbook re-reads them on
+/// Growing these tables is a native-evidence task (the <c>cui-sync</c> runbook re-reads them on
 /// a submodule bump); dropping an entry when evidence is doubted is always the honest default.
 /// </para>
 /// </remarks>

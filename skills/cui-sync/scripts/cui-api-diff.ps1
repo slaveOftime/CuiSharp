@@ -9,13 +9,13 @@
     section for the target, which already says in prose which components are new.
 
 .EXAMPLE
-    pwsh skills/sync-cui/scripts/cui-api-diff.ps1                  # pinned commit -> newest tag
+    pwsh skills/cui-sync/scripts/cui-api-diff.ps1                  # pinned commit -> newest tag
 
 .EXAMPLE
-    pwsh skills/sync-cui/scripts/cui-api-diff.ps1 -From 3d60199 -To v1.3.1 -Notes
+    pwsh skills/cui-sync/scripts/cui-api-diff.ps1 -From 3d60199 -To v1.3.1 -Notes
 
 .EXAMPLE
-    pwsh skills/sync-cui/scripts/cui-api-diff.ps1 -To e8688b8       # a commit instead of a tag
+    pwsh skills/cui-sync/scripts/cui-api-diff.ps1 -To e8688b8       # a commit instead of a tag
 #>
 [CmdletBinding()]
 param(

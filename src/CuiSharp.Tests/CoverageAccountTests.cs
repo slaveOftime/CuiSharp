@@ -16,7 +16,7 @@ public class CoverageAccountTests
             .ToArray();
 
         Assert.True(pending.Length == 0,
-            "bindings/coverage.txt has unfinished entries; the sync rules in skills/sync-cui/SKILL.md say how to decide them:" +
+            "bindings/coverage.txt has unfinished entries; the sync rules in skills/cui-sync/SKILL.md say how to decide them:" +
             Environment.NewLine + string.Join(Environment.NewLine, pending));
     }
 
