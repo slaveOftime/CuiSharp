@@ -150,6 +150,7 @@ public sealed unsafe class CuiApp : IDisposable
         app.Window.FileDialog = options.FileDialog;
         LiveResize.Install(handle == 0 ? 0 : app.NativeWindow, options.NoVsync);
         WindowIcon.Install(app.NativeWindow);
+        HotReloadWake.Attach(app.NativeWindow);
         options.WindowCreated?.Invoke(app.Window);
         return app;
     }
@@ -306,6 +307,9 @@ public sealed unsafe class CuiApp : IDisposable
         finally
         {
             if (Features.Live) state.Live?.Dispose();
+
+            // The window is gone now (cui_app_run destroyed it), so a reload must stop posting to it.
+            HotReloadWake.Detach(state.WindowHandle);
             LiveResize.Uninstall(state.WindowHandle);
             state.Window?.Release();
             handle.Free();
@@ -341,6 +345,7 @@ public sealed unsafe class CuiApp : IDisposable
             Window = new CuiWindow(app) { FileDialog = Options.FileDialog };
             LiveResize.Install(WindowHandle, Options.NoVsync);
             WindowIcon.Install(WindowHandle);
+            HotReloadWake.Attach(WindowHandle);
             Options.WindowCreated?.Invoke(Window);
             if (Features.Live) Live?.Bind(app, ui, WindowHandle);
         }
@@ -373,6 +378,10 @@ public sealed unsafe class CuiApp : IDisposable
             // reset on the next callback, so its copies are taken now, before that happens.
             if (Features.Live) state.Live?.SealFrame();
         }
+
+        // A frame just happened. A reload wakes the loop itself (HotReloadWake.UpdateApplication),
+        // so this only matters on a platform that cannot be woken and has to poll instead.
+        HotReloadWake.ForFrame(ui);
     }
 
     private static NativeAppDesc Describe(CuiAppOptions options) => new()
@@ -396,6 +405,7 @@ public sealed unsafe class CuiApp : IDisposable
     public void Dispose()
     {
         if (_handle == 0) return;
+        HotReloadWake.Detach(NativeWindow);
         Native.AppDestroy(_handle);
         _handle = 0;
         _frame.Reset();

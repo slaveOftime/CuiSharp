@@ -47,5 +47,8 @@ in [ARCHITECTURE.md](ARCHITECTURE.md). Every item here passes the same gates as 
 - **Cross-platform live-window control.** Windows live attach is opt-in and uses the pinned
   backend's between-frame message pump, thread/context-owned callback guards and destruction
   hooks. Other backends still need an upstream post-at-frame-boundary/wake and destroy-lifecycle
-  API; do not substitute a background render loop or silently start a headless app.
+  API; do not substitute a background render loop or silently start a headless app. The same wake
+  is what a hot reload needs off Windows: `Hosting/HotReloadWake` posts a message to the window on
+  the pinned backend and falls back to a 500 ms idle cap under `dotnet watch` everywhere else, so a
+  backend that can be woken from another thread retires that fallback.
 - **macOS signing and notarization** for a distributed `.app`.

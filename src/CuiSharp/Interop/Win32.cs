@@ -11,6 +11,9 @@ internal static unsafe partial class Win32
     internal const int SwMinimize = 6;
     internal const int SwRestore = 9;
 
+    /// <summary>Posts nothing and does nothing: the wake a waiting loop needs, with no effect of its own.</summary>
+    internal const uint WmNull = 0x0000;
+
     internal const uint WmDestroy = 0x0002;
     internal const uint WmSize = 0x0005;
     internal const uint WmTimer = 0x0113;
