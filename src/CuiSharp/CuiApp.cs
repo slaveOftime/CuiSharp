@@ -149,6 +149,7 @@ public sealed unsafe class CuiApp : IDisposable
         var app = new CuiApp(handle, options);
         app.Window.FileDialog = options.FileDialog;
         LiveResize.Install(handle == 0 ? 0 : app.NativeWindow, options.NoVsync);
+        WindowIcon.Install(app.NativeWindow);
         options.WindowCreated?.Invoke(app.Window);
         return app;
     }
@@ -339,6 +340,7 @@ public sealed unsafe class CuiApp : IDisposable
             WindowHandle = Native.AppNativeWindow(app);
             Window = new CuiWindow(app) { FileDialog = Options.FileDialog };
             LiveResize.Install(WindowHandle, Options.NoVsync);
+            WindowIcon.Install(WindowHandle);
             Options.WindowCreated?.Invoke(Window);
             if (Features.Live) Live?.Bind(app, ui, WindowHandle);
         }

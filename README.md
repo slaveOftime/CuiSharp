@@ -31,9 +31,10 @@ dotnet run demo1.cs                        # a JIT build of one file: a second o
 dotnet publish demo1.cs -c Release -o .    # one native binary beside it, no .NET to install
 ```
 
-`-n demo1` creates only `demo1.cs` in the current directory, without a new folder. Add `-o <folder>`
+`-n demo1` creates `demo1.cs` and a demo icon `demo1.ico` in the current directory, without a new
+folder; replace the .ico with your own to change the exe and window icon. Add `-o <folder>`
 only when you want a separate output directory. The generated file carries the properties that make
-that publish one file of about 1.1 MB, and says so at the top. It starts with
+that publish one file of about 1.2 MB, and says so at the top. It starts with
 `#:package CuiSharp@*`, resolving the latest stable package; use `--CuiSharpVersion 0.3.1` when
 generating to pin a version. Its counter and theme switch use the same frame API as a full app;
 `CUISHARP_HEADLESS=1` runs it without a window for automation.
