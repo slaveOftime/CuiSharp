@@ -7,6 +7,7 @@
     <RootNamespace>CuiSharp.Gallery</RootNamespace>
     <!-- The manifest only means something on Windows. -->
     <ApplicationManifest Condition="$([MSBuild]::IsOSPlatform('Windows'))">app.manifest</ApplicationManifest>
+    <ApplicationIcon>CuiSharp.Gallery.ico</ApplicationIcon>
 
     <!--
       Debug is a console app so `dotnet watch` can show its status, the app's
