@@ -5,15 +5,13 @@ using CuiSharp.Hosting;
 namespace CuiSharp.App.Pages;
 
 /// <summary>
-/// The smallest page: state as fields, one mutation, and a <see cref="Draw"/> that rebuilds the
-/// screen every frame. No view model, no binding, no notifications.
+/// Todo screen: state in fields, async save via <see cref="Mutation"/>, and a <see cref="Draw"/>
+/// pass that rebuilds the view every frame.
 /// </summary>
 public sealed class TodoPage(TodoService todos) : Component
 {
     private static readonly string[] Filters = ["All", "Open", "Done"];
 
-    // Created once, at construction. Error and IsRunning are current on read, so Draw never
-    // polls and never awaits.
     private readonly Mutation _save = new(todos.SaveAsync);
 
     private string _draft = string.Empty;
@@ -23,9 +21,6 @@ public sealed class TodoPage(TodoService todos) : Component
 
     protected override void Draw(Ui ui)
     {
-        // Centred, and no wider than a column of text wants to be: a small app should look
-        // deliberate on a large screen instead of pinned to one corner. The card fills the
-        // height so the list is the only thing that scrolls.
         using (ui.Row(new() { Width = Size.Fill, Height = Size.Fill, Justify = Justify.Center }))
         using (ui.Column(new() { Width = Size.Fill, MaxWidth = 640, Height = Size.Fill, Gap = 14 }))
         using (ui.Card(new() { Gap = 12, Height = Size.Fill }))
@@ -45,10 +40,14 @@ public sealed class TodoPage(TodoService todos) : Component
         {
             ui.Heading("Todos", 2);
 
-            // Interpolated text goes straight into the frame arena, so a live count costs
-            // nothing: no cached string, no notification that it changed.
-            if (todos.OpenCount is 0) ui.Badge("All clear", new() { Tone = Tone.Success });
-            else ui.Badge($"{todos.OpenCount} open", new() { Tone = Tone.Accent });
+            if (todos.OpenCount is 0)
+            {
+                ui.Badge("All clear", new() { Tone = Tone.Success });
+            }
+            else
+            {
+                ui.Badge($"{todos.OpenCount} open", new() { Tone = Tone.Accent });
+            }
 
             ui.Spacer();
             ui.Segmented("filter", Filters, ref _filter, new() { Size = ControlSize.Sm });
@@ -59,43 +58,50 @@ public sealed class TodoPage(TodoService todos) : Component
     {
         using (ui.Row(new() { Gap = 8 }))
         {
-            // Editable text is an ordinary string passed by ref: CUI edits the buffer and hands
-            // the new value back on the frames it changed.
-            InputResult result = ui.Input("draft", ref _draft, new() { Placeholder = "What needs doing?" });
-
+            var result = ui.Input("draft", ref _draft, new() { Placeholder = "What needs doing?" });
             var add = ui.Button("Add", new() { Variant = ButtonVariant.Primary, Icon = Icons.Plus });
-            if (add || result.Submitted) Add();
+
+            if (add || result.Submitted)
+            {
+                Add();
+            }
         }
     }
 
     private void Items(Ui ui)
     {
-        // Reading Items.Count each time is deliberate: a button in the loop can add or remove an
-        // item, and the list stays correct while it is iterated.
-        int shown = 0;
-        IReadOnlyList<TodoItem> items = todos.Items;
+        var shown = 0;
+        var items = todos.Items;
 
-        // The list is the only part that scrolls when it grows, so the composer and the actions
-        // stay where they were.
         using (ui.Scroll(new() { Id = "items", Height = Size.Fill, Gap = 4, Pad = 2 }))
         {
+            // Indexed rather than foreach: enumerating IReadOnlyList<T> boxes its enumerator every frame.
             for (var i = 0; i < items.Count; i++)
             {
-                TodoItem item = items[i];
-                if (_filter == 1 && item.Done) continue;
-                if (_filter == 2 && !item.Done) continue;
+                var item = items[i];
+                if (IsHidden(item))
+                {
+                    continue;
+                }
 
                 shown++;
 
-                // Each row owns an id scope: two items with the same title keep separate state,
-                // because the widget id is the item's, not the title's.
+                // Key each row by item.Id so duplicate titles never collide in CUI's widget state.
                 using (ui.Id(item.Id))
                 using (ui.Row(new() { Gap = 10, Align = Align.Center, PadY = 5 }))
                 {
-                    bool done = item.Done;
-                    if (ui.Checkbox(item.Title, ref done)) todos.Toggle(item.Id);
+                    var done = item.Done;
+                    if (ui.Checkbox(item.Title, ref done))
+                    {
+                        todos.Toggle(item.Id);
+                    }
+
                     ui.Spacer();
-                    if (item.Done) ui.Badge("Done", new() { Tone = Tone.Success, Size = ControlSize.Sm });
+
+                    if (item.Done)
+                    {
+                        ui.Badge("Done", new() { Tone = Tone.Success, Size = ControlSize.Sm });
+                    }
                 }
             }
 
@@ -121,12 +127,14 @@ public sealed class TodoPage(TodoService todos) : Component
     {
         using (ui.Row(new() { Gap = 8, Justify = Justify.End, Align = Align.Center }))
         {
-            // One button that reflects the operation it owns: it runs, it says it is running,
-            // it reports the failure and offers the retry.
             if (_save.Error is { } error)
             {
                 ui.Badge(error.Message, new() { Tone = Tone.Danger });
-                if (ui.Button("Retry save", new() { Variant = ButtonVariant.Danger })) _save.Run();
+
+                if (ui.Button("Retry save", new() { Variant = ButtonVariant.Danger }))
+                {
+                    _save.Run();
+                }
             }
             else if (_save.IsRunning)
             {
@@ -137,11 +145,8 @@ public sealed class TodoPage(TodoService todos) : Component
                 _save.Run();
             }
 
-            if (ui.Button("Clear completed", new()
-            {
-                Variant = ButtonVariant.Ghost,
-                Disabled = todos.DoneCount is 0,
-            }))
+            var clear = new ButtonOpts { Variant = ButtonVariant.Ghost, Disabled = todos.DoneCount is 0 };
+            if (ui.Button("Clear completed", clear))
             {
                 todos.ClearCompleted();
             }
@@ -150,8 +155,20 @@ public sealed class TodoPage(TodoService todos) : Component
 
     private void Add()
     {
-        if (todos.Add(_draft) is null) return;
+        if (todos.Add(_draft) is null)
+        {
+            return;
+        }
+
         _draft = string.Empty;
-        _filter = 0;   // a new item is open, so a filter that would hide it is not helpful
+        _filter = 0;
     }
+
+    /// <summary>Whether the current filter hides <paramref name="item"/>.</summary>
+    private bool IsHidden(TodoItem item) => _filter switch
+    {
+        1 => item.Done,
+        2 => !item.Done,
+        _ => false,
+    };
 }

@@ -1,28 +1,26 @@
-#:package CuiSharp@__CUISHARP_VERSION__
+#:package CuiSharp@*
 
-// This file and its .ico are the whole app: no project, no solution, nothing to set up.
-//
-// Start it
+// One file, one native window. Needs the .NET 10 SDK.
 //   dotnet run MiniApp.cs
-//   A JIT build of this one file, so the window is up in a second or two, and in a quarter of a
-//   second once it has been built. Nothing is compiled ahead of time, and there is no project or
-//   solution to keep in step.
-//
-// Ship it
 //   dotnet publish MiniApp.cs -c Release -o .
-//   One native executable, MiniApp.exe, beside this file — about 1.2 MB, just the exe beside
-//   the source, and no .NET runtime on the machine that runs it. Without -o it lands in
-//   artifacts/MiniApp/ instead, which keeps the source folder clean.
-//   A publish also trims the binary, and that includes the channel `dotnet cui` drives an app
-//   with: add -p:CuiSharpHeadless=true if a tool should inspect the published exe.
 //
-// The properties below: OutputType=WinExe makes the exe a GUI-subsystem binary, so the
-// published app opens its window without a console behind it; ApplicationIcon embeds the .ico
-// beside this file, so replacing MiniApp.ico with your own and rebuilding changes the exe and
-// window icon. The rest make that binary small: no ICU tables (this app formats the invariant
-// way), size rather than speed in the generated code, and no debug symbols — that last pair is
-// the difference between one file and an exe next to a six-megabyte .pdb.
-// 'dotnet new cui-app' sets the same ones in its project file, for the same reasons.
+// The publish leaves one ~1.2 MB exe that needs no .NET runtime on the target machine, and it
+// compiles the two driving channels out to keep it that size: add -p:CuiSharpHeadless=true and
+// -p:CuiSharpLive=true when a tool has to drive that exe.
+//
+// Install `dotnet cui` once (dotnet tool install -g CuiSharp.Tools), then drive this app with no
+// window of your own — the tool builds it, runs it headless and prints the frame:
+//   dotnet cui tree -p MiniApp.cs
+//   dotnet cui click Increment -p MiniApp.cs
+//   dotnet cui session -p MiniApp.cs < steps.txt
+//   dotnet cui docs
+//
+// One command is one process, starting at frame 1; a session keeps its lines in one process, so
+// state carries from one to the next. `-a` drives the window you are watching instead, left open —
+// `dotnet cui quit -a` closes it — which is what LiveAttach below allows. Headless needs no code:
+// `CUISHARP_HEADLESS=1 dotnet run MiniApp.cs`, or `-- --headless`.
+//
+// Replace MiniApp.ico to change the executable and the window icon.
 #:property PublishAot=true
 #:property OutputType=WinExe
 #:property ApplicationIcon=MiniApp.ico
@@ -33,14 +31,34 @@
 
 using CuiSharp;
 
-int clicks = 0;
-return CuiApp.Run(new CuiAppOptions { Title = "MiniApp", Width = 480, Height = 320 }, ui =>
+var options = new CuiAppOptions
+{
+    Title = "MiniApp",
+    Width = 480,
+    Height = 320,
+    // Lets `dotnet cui … -a` drive this window while you look at it. Windows-only for now, so a
+    // build that runs elsewhere asks for nothing.
+    LiveAttach = OperatingSystem.IsWindows(),
+};
+
+var clicks = 0;
+
+return CuiApp.Run(options, ui =>
 {
     using (ui.Column(new Box { Pad = 24, Gap = 12 }))
     {
         ui.Heading("MiniApp", 1);
-        if (ui.Button("Increment", new ButtonOpts { Variant = ButtonVariant.Primary })) clicks++;
+
+        if (ui.Button("Increment", new ButtonOpts { Variant = ButtonVariant.Primary }))
+        {
+            clicks++;
+        }
+
         ui.Text($"Clicked {clicks} times");
-        if (ui.Button("Toggle theme")) ui.ToggleTheme();
+
+        if (ui.Button("Toggle theme"))
+        {
+            ui.ToggleTheme();
+        }
     }
 });

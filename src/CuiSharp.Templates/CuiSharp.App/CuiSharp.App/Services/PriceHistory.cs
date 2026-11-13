@@ -1,13 +1,7 @@
 namespace CuiSharp.App.Services;
 
 /// <summary>
-/// The last N prices per symbol, in one fixed-size ring each.
-/// <para>
-/// This is the part of a live dashboard that is actually worth unit testing: it
-/// wraps around, it never grows, and it answers the three questions a view asks
-/// (how many samples, what changed since the oldest one, give me the newest window)
-/// in constant time. It knows nothing about CuiSharp, so a test drives it directly.
-/// </para>
+/// Preallocated per-symbol ring buffers holding the latest <see cref="Capacity"/> samples.
 /// </summary>
 public sealed class PriceHistory
 {
@@ -18,14 +12,18 @@ public sealed class PriceHistory
     /// <summary>Creates one ring of <paramref name="capacity"/> samples per symbol.</summary>
     public PriceHistory(int symbols, int capacity)
     {
-        if (symbols <= 0) throw new ArgumentOutOfRangeException(nameof(symbols));
-        if (capacity <= 0) throw new ArgumentOutOfRangeException(nameof(capacity));
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(symbols);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(capacity);
 
         Capacity = capacity;
         _rings = new float[symbols][];
         _head = new int[symbols];
         _count = new int[symbols];
-        for (var s = 0; s < symbols; s++) _rings[s] = new float[capacity];
+
+        for (var s = 0; s < symbols; s++)
+        {
+            _rings[s] = new float[capacity];
+        }
     }
 
     /// <summary>Samples per symbol. Memory is fixed at construction.</summary>
@@ -42,7 +40,12 @@ public sealed class PriceHistory
     {
         _rings[symbol][_head[symbol]] = price;
         _head[symbol] = (_head[symbol] + 1) % Capacity;
-        if (_count[symbol] < Capacity) _count[symbol]++;
+
+        if (_count[symbol] < Capacity)
+        {
+            _count[symbol]++;
+        }
+
         Ticks++;
     }
 
@@ -54,8 +57,9 @@ public sealed class PriceHistory
     {
         for (var s = 0; s < _rings.Length; s++)
         {
-            float[] source = history[s];
-            int take = Math.Min(source.Length, Capacity);
+            var source = history[s];
+            var take = Math.Min(source.Length, Capacity);
+
             Array.Copy(source, source.Length - take, _rings[s], 0, take);
             _head[s] = take % Capacity;
             _count[s] = take;
@@ -74,12 +78,15 @@ public sealed class PriceHistory
     /// </summary>
     public float Change(int symbol)
     {
-        int count = _count[symbol];
-        if (count < 2) return 0;
+        var count = _count[symbol];
+        if (count < 2)
+        {
+            return 0;
+        }
 
-        int oldest = (_head[symbol] - count + Capacity) % Capacity;
-        float start = _rings[symbol][oldest];
-        return start <= 0 ? 0 : Last(symbol) / start - 1;
+        var oldest = (_head[symbol] - count + Capacity) % Capacity;
+        var start = _rings[symbol][oldest];
+        return start <= 0 ? 0 : (Last(symbol) / start) - 1;
     }
 
     /// <summary>
@@ -89,15 +96,24 @@ public sealed class PriceHistory
     /// </summary>
     public int CopyTail(int symbol, Span<float> destination)
     {
-        int n = Math.Min(_count[symbol], destination.Length);
-        if (n == 0) return 0;
+        var written = Math.Min(_count[symbol], destination.Length);
+        if (written is 0)
+        {
+            return 0;
+        }
 
-        float[] ring = _rings[symbol];
-        int start = (_head[symbol] - n + Capacity) % Capacity;
-        int first = Math.Min(n, Capacity - start);
+        var ring = _rings[symbol];
+        var start = (_head[symbol] - written + Capacity) % Capacity;
+        var first = Math.Min(written, Capacity - start);
+
         ring.AsSpan(start, first).CopyTo(destination);
-        if (n > first) ring.AsSpan(0, n - first).CopyTo(destination[first..]);
-        return n;
+
+        if (written > first)
+        {
+            ring.AsSpan(0, written - first).CopyTo(destination[first..]);
+        }
+
+        return written;
     }
 
     private static int Tail(int head, int capacity) => (head - 1 + capacity) % capacity;

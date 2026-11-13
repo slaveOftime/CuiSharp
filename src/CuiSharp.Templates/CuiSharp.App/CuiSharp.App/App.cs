@@ -7,13 +7,13 @@ using CuiSharp.Hosting;
 namespace CuiSharp.App;
 
 /// <summary>
-/// The window: a title, a page switch, the visible page, and the app's own numbers.
-/// <para>
-/// The shell owns navigation and nothing else. Each page is a component holding its own state,
-/// so a screen is a class, a registration in <c>Program.cs</c>, and one more entry in this
-/// constructor — no plumbing in between.
-/// </para>
+/// Application shell: top-level page tabs, theme switch, active page, and frame stats footer.
 /// </summary>
+/// <remarks>
+/// The three region containers are named — <c>header</c>, <c>page</c>, <c>footer</c> — so a frame
+/// reads as three regions: <c>dotnet cui tree</c> nests each control under the one it belongs to,
+/// and the layout state behind each region has an id that survives a resize.
+/// </remarks>
 public sealed class App(TodoPage todos, MarketsPage markets) : Component
 {
     private static readonly string[] Modes = ["Light", "Dark"];
@@ -25,15 +25,21 @@ public sealed class App(TodoPage todos, MarketsPage markets) : Component
 
     protected override void Draw(Ui ui)
     {
-        // Shortcuts are asked for, not handled: no key state, no handlers, no registration.
-        if (ui.Shortcut(Mods.Ctrl, Key.Tab)) _index = (_index + 1) % _pages.Length;
-        if (ui.Shortcut(Mods.Ctrl, Key.J)) ui.ToggleTheme();
+        if (!ui.WantsKeyboard && ui.Shortcut(Mods.Ctrl, Key.Tab))
+        {
+            _index = (_index + 1) % _pages.Length;
+        }
+
+        if (!ui.WantsKeyboard && ui.Shortcut(Mods.Ctrl, Key.J))
+        {
+            ui.ToggleTheme();
+        }
 
         using (ui.Column(new() { Width = Size.Fill, Height = Size.Fill, Pad = 20, Gap = 14 }))
         {
             Header(ui);
 
-            using (ui.Column(new() { Width = Size.Fill, Height = Size.Fill, Gap = 10 }))
+            using (ui.Column(new() { Id = "page", Width = Size.Fill, Height = Size.Fill, Gap = 10 }))
             {
                 ui.Component(_pages[_index]);
             }
@@ -44,7 +50,7 @@ public sealed class App(TodoPage todos, MarketsPage markets) : Component
 
     private void Header(Ui ui)
     {
-        using (ui.Row(new() { Gap = 12, Align = Align.Center }))
+        using (ui.Row(new() { Id = "header", Gap = 12, Align = Align.Center }))
         {
             ui.Heading("CuiSharp starter", 3);
             ui.Spacer();
@@ -56,13 +62,9 @@ public sealed class App(TodoPage todos, MarketsPage markets) : Component
         ui.Separator();
     }
 
-    /// <summary>
-    /// The whole theme switch. CUI holds the current theme, so the frame reads it for the selected
-    /// segment and assigns it back when the segment changes; the switch itself is animated.
-    /// </summary>
     private static void ThemeSwitch(Ui ui)
     {
-        int mode = ui.Theme == Theme.Dark ? 1 : 0;
+        var mode = ui.Theme == Theme.Dark ? 1 : 0;
         if (ui.Segmented("theme", Modes, ref mode, new() { Icons = ModeIcons, Size = ControlSize.Sm }))
         {
             ui.Theme = mode == 1 ? Theme.Dark : Theme.Light;
@@ -71,18 +73,19 @@ public sealed class App(TodoPage todos, MarketsPage markets) : Component
 
     private static void Footer(Ui ui)
     {
-        // The host fills FrameStats in around every frame, so the app shows its own numbers
-        // without owning a clock. `alloc` is the one to watch: it reads 0 B per frame, and a
-        // number there is something in Draw that allocates.
-        // For the same numbers in a file (a WinExe has no console), run with CUI_TRACE=trace.txt.
-        using (ui.Row(new() { Gap = 12, Align = Align.Center }))
+        // FrameStats is updated around every Draw call; CUI_TRACE=trace.txt logs the same numbers.
+        using (ui.Row(new() { Id = "footer", Gap = 12, Align = Align.Center }))
         {
-            // A window sleeps while nothing changes, so a frame rate only means something while
-            // something is asking for frames. Two branches, not one conditional: a conditional
-            // with a string in one arm makes the other arm a string too, and formatting a string
-            // per frame is the allocation this footer exists to catch.
-            if (FrameStats.IsLive) ui.Badge($"{FrameStats.Fps:0} fps", Status(accent: true));
-            else ui.Badge("idle", Status(accent: false));
+            // Two branches rather than a ternary string: a ternary evaluates to a managed string
+            // before UiText sees it, which would allocate on every live frame.
+            if (FrameStats.IsLive)
+            {
+                ui.Badge($"{FrameStats.Fps:0} fps", Status(accent: true));
+            }
+            else
+            {
+                ui.Badge("idle", Status(accent: false));
+            }
 
             ui.Secondary($"draw {FrameStats.DrawMs:0.00} ms");
             ui.Secondary($"frame {FrameStats.FrameMs:0.0} ms");

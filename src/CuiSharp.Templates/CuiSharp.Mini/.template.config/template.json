@@ -17,7 +17,6 @@
       "type": "parameter",
       "datatype": "text",
       "defaultValue": "*",
-      "replaces": "__CUISHARP_VERSION__",
       "description": "The CuiSharp package version. Defaults to the latest stable version."
     }
   }

@@ -1,28 +1,36 @@
 {
   "$schema": "http://json.schemastore.org/template",
   "author": "yappologistic",
-  "classifications": [
-    "CuiSharp",
-    "Desktop",
-    "UI"
-  ],
+  "classifications": [ "CuiSharp", "Desktop", "UI" ],
   "identity": "CuiSharp.App",
   "name": "CuiSharp desktop app",
   "shortName": "cui-app",
-  "description": "A native desktop app in plain C# with CUI: no XAML, no WPF, no Avalonia. Immediate-mode components with dependency injection, a live-data page that draws with zero allocation, a service layer testable without a window, and a test project to copy the pattern from.",
+  "sourceName": "CuiSharp.App",
+  "preferNameDirectory": true,
   "tags": {
     "language": "C#",
     "type": "solution"
   },
-  "sourceName": "CuiSharp.App",
-  "preferNameDirectory": true,
+  "sources": [
+    {
+      "modifiers": [
+        {
+          "exclude": [
+            "**/[Bb]in/**",
+            "**/[Oo]bj/**"
+          ]
+        }
+      ]
+    }
+  ],
   "symbols": {
     "CuiSharpVersion": {
       "type": "parameter",
       "datatype": "text",
-      "defaultValue": "0.4.1",
       "replaces": "__CUISHARP_VERSION__",
+      "defaultValue": "0.4.1",
       "description": "The CuiSharp package version the generated solution references. Defaults to the version this template shipped with."
     }
-  }
+  },
+  "description": "A native desktop app in plain C# with CUI: no XAML, no WPF, no Avalonia. Immediate-mode components with dependency injection, a live-data page that draws with zero allocation, a service layer testable without a window, and a test project to copy the pattern from."
 }

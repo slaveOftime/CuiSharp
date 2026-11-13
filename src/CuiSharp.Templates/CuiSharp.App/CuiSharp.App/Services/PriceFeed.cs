@@ -7,20 +7,11 @@ public sealed record Symbol(string Ticker, string Name, float Start);
 public sealed record MarketSnapshot(float[][] History, float[] Last);
 
 /// <summary>
-/// A stand-in for a websocket plus a REST history call. Its shape is what matters:
-/// <list type="bullet">
-/// <item><see cref="LoadAsync"/> returns a <see cref="Task"/>. Replacing its delay
-/// with an <c>HttpClient</c> call changes nothing else.</item>
-/// <item><see cref="Next"/> is the tick generator. A real feed would push into a
-/// queue from a socket thread instead, and the page would drain it the same way.</item>
-/// </list>
-/// Nothing here touches CuiSharp, and nothing allocates per tick.
+/// Simulated REST history loader and zero-allocation random-walk tick source.
 /// </summary>
 public sealed class PriceFeed
 {
-    /// <summary>Fixed seed, so a run can be compared with the previous one.</summary>
     private const int Seed = 20261108;
-
     private const float Volatility = 0.0016f;
 
     private static readonly Symbol[] Defaults =
@@ -40,35 +31,38 @@ public sealed class PriceFeed
 
     public PriceFeed()
     {
-        for (var i = 0; i < Defaults.Length; i++) _price[i] = Defaults[i].Start;
+        for (var i = 0; i < Defaults.Length; i++)
+        {
+            _price[i] = Defaults[i].Start;
+        }
     }
 
     /// <summary>The symbols this feed quotes.</summary>
     public static IReadOnlyList<Symbol> Symbols => Defaults;
 
     /// <summary>
-    /// Pretends to fetch a price history. The work runs on the pool and touches no
-    /// shared state; <see cref="Resume"/> applies the last prices on the thread that
-    /// owns the feed.
+    /// Generates historical series on the thread pool without touching UI-thread state.
     /// </summary>
     public async Task<MarketSnapshot> LoadAsync(int pointsPerSymbol, CancellationToken cancellationToken = default)
     {
-        await Task.Delay(600, cancellationToken).ConfigureAwait(false);   // the "network"
+        await Task.Delay(600, cancellationToken).ConfigureAwait(false);
 
-        // A local generator: the shared one belongs to the UI thread, and two
-        // threads stepping the same Random is a data race, not a detail.
+        // A local generator: stepping the shared one from the pool would race the UI thread.
         var random = new Random(Seed);
         var history = new float[Defaults.Length][];
         var last = new float[Defaults.Length];
+
         for (var s = 0; s < Defaults.Length; s++)
         {
             var series = new float[pointsPerSymbol];
             var price = Defaults[s].Start;
+
             for (var i = 0; i < series.Length; i++)
             {
                 price = Step(price, random);
                 series[i] = price;
             }
+
             history[s] = series;
             last[s] = price;
         }
@@ -76,20 +70,18 @@ public sealed class PriceFeed
         return new MarketSnapshot(history, last);
     }
 
-    /// <summary>
-    /// Continues from the prices a history ended at, so the first live tick does not
-    /// jump back to the symbol's opening price.
-    /// </summary>
+    /// <summary>Continues the walk from the prices a loaded history ended at.</summary>
     public void Resume(ReadOnlySpan<float> last)
     {
-        for (var i = 0; i < _price.Length && i < last.Length; i++) _price[i] = last[i];
+        for (var i = 0; i < _price.Length && i < last.Length; i++)
+        {
+            _price[i] = last[i];
+        }
     }
 
-    /// <summary>The next tick for one symbol: a small random walk.</summary>
+    /// <summary>Advances and returns the next price for <paramref name="symbol"/>.</summary>
     public float Next(int symbol) => _price[symbol] = Step(_price[symbol], _random);
 
-    // One step of the walk, multiplicative so a price can never cross zero. Cheap on
-    // purpose: it runs 50 times a second per symbol, and a real feed can run faster.
     private static float Step(float price, Random random)
     {
         var next = price * (1 + ((float)random.NextDouble() - 0.5f) * 2 * Volatility);

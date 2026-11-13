@@ -4,12 +4,7 @@ namespace CuiSharp.App.Services;
 public sealed record TodoItem(int Id, string Title, bool Done);
 
 /// <summary>
-/// Business logic. It has no reference to CuiSharp, so it runs, and is tested,
-/// without a window.
-/// <para>
-/// The rules are the interesting part of an app; the drawing is not. Keeping them
-/// here means <c>dotnet test</c> covers them in milliseconds.
-/// </para>
+/// Domain rules for the todo list, independent of CuiSharp so tests run without a window.
 /// </summary>
 public sealed class TodoService
 {
@@ -23,13 +18,10 @@ public sealed class TodoService
         Add("Ship release 0.1");
     }
 
-    /// <summary>
-    /// Every item, oldest first. A read-only view of the list, so iterating it in
-    /// <c>Draw</c> allocates nothing and stays correct if the list is edited.
-    /// </summary>
+    /// <summary>Every item, oldest first.</summary>
     public IReadOnlyList<TodoItem> Items => _items;
 
-    /// <summary>How many items are done. <see cref="Items"/>.Count minus <see cref="OpenCount"/>.</summary>
+    /// <summary>How many items are done.</summary>
     public int DoneCount => _items.Count - OpenCount;
 
     /// <summary>How many items are still open.</summary>
@@ -40,8 +32,12 @@ public sealed class TodoService
             var open = 0;
             for (var i = 0; i < _items.Count; i++)
             {
-                if (!_items[i].Done) open++;
+                if (!_items[i].Done)
+                {
+                    open++;
+                }
             }
+
             return open;
         }
     }
@@ -50,7 +46,10 @@ public sealed class TodoService
     public TodoItem? Add(string title)
     {
         var trimmed = title?.Trim();
-        if (string.IsNullOrEmpty(trimmed)) return null;
+        if (string.IsNullOrEmpty(trimmed))
+        {
+            return null;
+        }
 
         var item = new TodoItem(_nextId++, trimmed, Done: false);
         _items.Add(item);
@@ -62,32 +61,34 @@ public sealed class TodoService
     {
         for (var i = 0; i < _items.Count; i++)
         {
-            if (_items[i].Id != id) continue;
+            if (_items[i].Id != id)
+            {
+                continue;
+            }
 
             var updated = _items[i] with { Done = !_items[i].Done };
             _items[i] = updated;
             return updated.Done;
         }
+
         return null;
     }
 
-    /// <summary>Removes every completed item and returns how many went.</summary>
-    public int ClearCompleted() => _items.RemoveAll(i => i.Done);
+    /// <summary>Removes every completed item and returns how many were removed.</summary>
+    public int ClearCompleted() => _items.RemoveAll(item => item.Done);
 
     /// <summary>
-    /// A typical asynchronous business call — a POST to a server. Replace the delay
-    /// with a real <c>HttpClient</c> call and nothing else changes.
+    /// Asynchronous save operation. Captures a snapshot before awaiting so pool continuation code
+    /// never reads mutable UI-thread state.
     /// </summary>
-    /// <remarks>
-    /// The snapshot is taken <em>before</em> the first <c>await</c>, which means it
-    /// runs on the caller's thread while the UI is not drawing. Everything after the
-    /// <c>await</c> runs on a pool thread and must not touch this class's state.
-    /// Copy first, then await: that is the rule for any service an async call reads.
-    /// </remarks>
     public async Task SaveAsync(CancellationToken cancellationToken = default)
     {
-        TodoItem[] snapshot = [.. _items];
+        var snapshot = _items.ToArray();
         await Task.Delay(700, cancellationToken).ConfigureAwait(false);
-        if (snapshot.Length is 0) throw new InvalidOperationException("Nothing to save.");
+
+        if (snapshot.Length is 0)
+        {
+            throw new InvalidOperationException("Nothing to save.");
+        }
     }
 }

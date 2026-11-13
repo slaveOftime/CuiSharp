@@ -1,21 +1,8 @@
 namespace CuiSharp.App.Services;
 
 /// <summary>
-/// A live market feed: the symbol walk from <see cref="PriceFeed"/> plus the clock
-/// that decides how many ticks each frame is owed, over fixed-size rings.
-/// <para>
-/// This is simulation logic, not drawing, so it lives here and is tested with a fake
-/// clock. The rules that keep a long run healthy:
-/// </para>
-/// <list type="bullet">
-/// <item><b>Fixed memory.</b> The rings are allocated once, at construction, so a
-/// feed that runs for a day uses the same bytes as one that just started.</item>
-/// <item><b>Ticks follow the clock, not the frame count.</b> A 50 Hz feed produces
-/// 50 ticks a second at 60 or 600 fps.</item>
-/// <item><b>A stall is counted, not replayed.</b> Ticks the loop could not absorb
-/// are added to <see cref="Skipped"/> and dropped, because pushing six minutes of
-/// ticks in one frame would stall the window longer than the sleep it recovers from.</item>
-/// </list>
+/// Clock-driven 50 Hz market feed over fixed-size <see cref="PriceHistory"/> rings.
+/// Caps per-frame work and counts stalls in <see cref="Skipped"/> rather than replaying them.
 /// </summary>
 public sealed class MarketFeed(PriceFeed source, TimeProvider? clock = null)
 {
@@ -29,6 +16,7 @@ public sealed class MarketFeed(PriceFeed source, TimeProvider? clock = null)
 
     private readonly PriceFeed _source = source;
     private readonly TimeProvider _clock = clock ?? TimeProvider.System;
+
     private long _stamp = -1;   // -1 until the first frame: a clock may legitimately read 0
     private double _debt;
     private double _rate;
@@ -71,30 +59,37 @@ public sealed class MarketFeed(PriceFeed source, TimeProvider? clock = null)
     /// <summary>Generates every tick the clock owes since the previous frame.</summary>
     public void Advance()
     {
-        long now = _clock.GetTimestamp();
+        var now = _clock.GetTimestamp();
         if (_stamp < 0)
         {
             _stamp = now;
             return;
         }
 
-        double dt = _clock.GetElapsedTime(_stamp, now).TotalMilliseconds;
+        var ms = _clock.GetElapsedTime(_stamp, now).TotalMilliseconds;
         _stamp = now;
-        if (dt <= 0) return;
 
-        IntervalMs = dt;
-        if (!Live) return;
+        if (ms <= 0)
+        {
+            return;
+        }
 
-        if (dt > MaxFrameMs)
+        IntervalMs = ms;
+        if (!Live)
+        {
+            return;
+        }
+
+        if (ms > MaxFrameMs)
         {
             // The loop slept (hidden window, another tab, a busy machine). Count what
             // did not happen and resume at frame cadence instead of replaying it.
-            Skipped += (long)(dt * TicksPerSecond / 1000.0);
-            dt = AssumedFrameMs;
+            Skipped += (long)(ms * TicksPerSecond / 1000.0);
+            ms = AssumedFrameMs;
             _debt = 0;
         }
 
-        _debt += dt * TicksPerSecond / 1000.0;
+        _debt += ms * TicksPerSecond / 1000.0;
         var due = (int)_debt;
         _debt -= due;
 
@@ -107,13 +102,17 @@ public sealed class MarketFeed(PriceFeed source, TimeProvider? clock = null)
             _debt = 0;
         }
 
-        for (var n = 0; n < due; n++)
+        for (var tick = 0; tick < due; tick++)
         {
-            for (var s = 0; s < History.SymbolCount; s++) History.Push(s, _source.Next(s));
+            for (var symbol = 0; symbol < History.SymbolCount; symbol++)
+            {
+                History.Push(symbol, _source.Next(symbol));
+            }
+
             Ticks++;
         }
 
-        double instant = due * 1000.0 / dt;
-        _rate = _rate is 0 ? instant : _rate * 0.9 + instant * 0.1;
+        var instant = due * 1000.0 / ms;
+        _rate = _rate is 0 ? instant : (_rate * 0.9) + (instant * 0.1);
     }
 }
