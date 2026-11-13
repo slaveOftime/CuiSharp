@@ -4,7 +4,8 @@ on:
   pull_request:
     # The Pages tree is built by a separate pipeline from the solution; a browser regression
     # should be caught before merge. These runs are build checks only: the deploy job below
-    # is gated to tag refs, because Pages is published when a release goes out.
+    # is gated to tag refs, and only a release call reaches it, because Pages is published
+    # when a release goes out and not before the packages are on nuget.org.
     paths:
       - 'samples/CuiSharp.Gallery.Browser/**'
       - 'src/CuiSharp/**'
@@ -13,10 +14,10 @@ on:
       - 'tools/test-browser-smoke.py'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
-  # Called by release.yml after a release is published — the only path that deploys Pages.
+  # Called by release.yml after a release is published — the only path that deploys Pages. A tag
+  # push used to trigger this too, and the two runs shared the concurrency group below, so whichever
+  # started second cancelled the other: v0.4.2's tag run was cancelled by its release run.
   workflow_call:
-  push:
-    tags: ['v*.*.*']
 
 permissions:
   contents: read
