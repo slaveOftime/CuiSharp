@@ -3148,7 +3148,7 @@ sealed class Idiomatic
         sb.AppendLine("- Long work goes through `Mutation`: create it once, call `Run()` from a button, read `IsRunning` and `Error`.");
         sb.AppendLine("- A page that changes on its own needs `WantsFrames => true`, or the window sleeps.");
         sb.AppendLine("- Per-frame code allocates nothing: no LINQ, no `new`, no string concatenation. Interpolate into a widget instead.");
-        sb.AppendLine("- Find a control in a frame by a query: a label (`Save`), a kind and a label (`Button \"Save\"`), or a path (`Card \"editor\" > Save`).");
+        sb.AppendLine("- Find a control in a frame by a query: a label (`Save`), a kind and a label (`Button \"Save\"`), or a path through its containers (`editor > Save`; only the last step may name a kind).");
         sb.AppendLine();
         sb.AppendLine("## Entry points");
         sb.AppendLine();

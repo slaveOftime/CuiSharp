@@ -90,6 +90,10 @@ public sealed class SemanticNode
     /// The nesting that leads here, e.g. <c>Card "editor" &gt; Button "Save"</c>: the shortest
     /// description of where a control is.
     /// </summary>
+    /// <remarks>
+    /// Written to be read, so a container carries its kind. A query drops the kinds from the
+    /// containers and keeps them only on the last step: <c>editor &gt; Button "Save"</c>.
+    /// </remarks>
     public string Path =>
         Parent is null ? Kind : Parent.Kind == "Frame" ? Label : Parent.Path + " > " + Label;
 
@@ -107,7 +111,8 @@ public sealed class SemanticNode
 
     /// <summary>
     /// Finds this node or anything below it by a query: a label (<c>Save</c>), a kind and a label
-    /// (<c>Button "Save"</c>), or a path (<c>Card "editor" &gt; Button "Save"</c>).
+    /// (<c>Button "Save"</c>), or a path (<c>editor &gt; Button "Save"</c>: a container is named by
+    /// its id or label, and only the last step may name a kind).
     /// </summary>
     /// <remarks>
     /// An exact label beats a partial one and a control that can be acted on beats static text,

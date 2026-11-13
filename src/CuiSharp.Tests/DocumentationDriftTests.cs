@@ -97,25 +97,46 @@ public class DocumentationDriftTests
         return count;
     }
 
-    /// <summary>Words the way a shell hands them over: a double-quoted word stays one word.</summary>
+    /// <summary>
+    /// Words the way a shell hands them over: a quoted word stays one word, in single quotes or
+    /// double. A query that must name a kind carries its own double quotes, so the single form is the
+    /// one a reader can embed: <c>dotnet cui click 'Tab "Markets"'</c>.
+    /// </summary>
     private static string[] Split(string text)
     {
         var words = new List<string>();
         var current = new System.Text.StringBuilder();
-        bool quoted = false;
+        char quote = '\0';
 
         foreach (char c in text)
         {
-            if (c == '"')
+            if (quote != '\0')
             {
-                quoted = !quoted;
-                current.Append(c);
+                if (c == quote)
+                {
+                    quote = '\0';
+                }
+                else
+                {
+                    current.Append(c);
+                }
+
                 continue;
             }
 
-            if (!quoted && char.IsWhiteSpace(c))
+            if (c is '"' or '\'')
             {
-                if (current.Length > 0) words.Add(current.ToString());
+                quote = c;
+                continue;
+            }
+
+            if (char.IsWhiteSpace(c))
+            {
+                if (current.Length > 0)
+                {
+                    words.Add(current.ToString());
+                }
+
                 current.Clear();
                 continue;
             }
@@ -123,8 +144,35 @@ public class DocumentationDriftTests
             current.Append(c);
         }
 
-        if (current.Length > 0) words.Add(current.ToString());
-        return [.. words.Select(word => word.Trim('"')).Where(word => word.Length > 0)];
+        if (quote != '\0')
+        {
+            throw new FormatException("Unclosed quote in documented command line.");
+        }
+
+        if (current.Length > 0)
+        {
+            words.Add(current.ToString());
+        }
+
+        return [.. words];
+    }
+
+    [Theory]
+    [InlineData("click 'Tab \"Markets\"'", "Tab \"Markets\"")]
+    [InlineData("click \"editor > Save\"", "editor > Save")]
+    [InlineData("click 'Save user\"s changes'", "Save user\"s changes")]
+    [InlineData("click \"Save user's changes\"", "Save user's changes")]
+    public void ShellQuotingPreservesTheQueryPassedToTheTool(string command, string query)
+    {
+        Assert.Equal(new[] { "click", query }, Split(command));
+    }
+
+    [Theory]
+    [InlineData("click 'Save")]
+    [InlineData("click \"Save")]
+    public void AnUnclosedShellQuoteDoesNotPassTheDocumentationGate(string command)
+    {
+        Assert.Throws<FormatException>(() => Split(command));
     }
 
     private static string Find(string relative)

@@ -427,7 +427,8 @@ public class HeadlessApp : IDisposable
 
     /// <summary>
     /// Finds a control by a query: a label (<c>Save</c>), a kind and a label
-    /// (<c>Button "Save"</c>), or a path (<c>Card "editor" &gt; Button "Save"</c>).
+    /// (<c>Button "Save"</c>), or a path (<c>editor &gt; Button "Save"</c>: containers are bare, only
+    /// the last step names a kind).
     /// </summary>
     /// <remarks>
     /// An exact label beats a partial one, and a control beats a heading that happens to repeat

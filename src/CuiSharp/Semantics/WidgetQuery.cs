@@ -2,7 +2,8 @@ namespace CuiSharp;
 
 /// <summary>
 /// What a search for a control can say: a label, a kind and a label (<c>Button "Save"</c>), or a
-/// path through the tree (<c>Card "editor" &gt; Button "Save"</c>).
+/// path through the tree (<c>editor &gt; Button "Save"</c>: the containers are bare, and only the
+/// last step names a kind).
 /// </summary>
 /// <remarks>
 /// <para>

@@ -540,7 +540,7 @@ Assert.True(app.PaintedAnything());
 - `Find`/`FindButton`/`FindInput`/`TryFind` search the last frame by a query; `app.Tree.Find(...)` and
   `app.Print()` show the nesting.
 - A query is a label (`Save`), a kind and a label (`Button "Save"`), or a path
-  (`Card "editor" > Save`). It ranks: the label *is* the query, then starts with it, then contains
+  (`editor > Save`, the containers by the id or label the tree prints). It ranks: the label *is* the query, then starts with it, then contains
   it — and a control beats a heading that repeats the text.
 - `MoveTo`, `Press`, `Release`, `Type`, `Key`, `Focus`, `Frame(n)` are the whole input surface; each
   draws the frames the input needs.
@@ -588,7 +588,7 @@ dotnet cui find Save                # one control: kind, label, rectangle
 dotnet cui find id:draft            # or by the id the app gave it, in any language
 dotnet cui click Save               # click it, print the frame that reacted
 dotnet cui click "Button Save type"  # be specific when a label is ambiguous
-dotnet cui click "editor > Save"     # or the path to the control
+dotnet cui click "editor > Save"     # or the path to the control, containers bare
 dotnet cui type Milk                # type into the focused control
 dotnet cui key Tab                  # a key by name
 dotnet cui png frame.png            # the frame as a PNG, to look at
