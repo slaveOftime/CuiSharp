@@ -4,6 +4,62 @@ Every user-visible change, newest first. Pre-1.0 the minor number carries new su
 carries fixes. The section for a tag is what the GitHub release publishes, so the two cannot say
 different things.
 
+## [0.4.2] — 2026-11-13
+
+### Added
+
+- **`dotnet cui -a` drives a window on every backend.** Live attach threw anywhere but Windows, so
+  `-a` has meant "on this one OS" and both templates asked for it under a platform condition. What
+  Windows uniquely offers is a safe point between frames and a way to reach a sleeping message loop,
+  not the ability to drive the window itself: every backend now runs the boundary at the tail of its
+  draw callback — the step that ends the frame, which is what lays it out and gives the recorded
+  widgets their rectangles — before the next `cui_begin_frame` consumes the input it injects. Nothing
+  outside the window thread can wake the other backends, so the frame that just drew asks for the
+  next one while a command is pending and for a 500 ms heartbeat when the queue is empty. That
+  heartbeat is the only idle cost of an attached window, and the reason a command reaching a
+  sleeping one can take half a second. Injecting mid-frame was the other option, and it loses Tab
+  navigation: `cui_begin_frame` reads the key state before the callback runs, so the key arrives
+  after the frame that should have acted on it. Both templates now set `LiveAttach` unconditionally;
+  the file-based one cannot gate it on `DEBUG`, because `dotnet run` builds a file-based app in
+  Release.
+
+### Changed
+
+- **Pixel capture says so when it cannot.** `png -a` still needs `cui_app_screenshot` and the
+  `cui_app*` the app loop keeps private, which only win32's window user data hands back; elsewhere
+  it now answers with that reason instead of faulting inside native code, and the refusal does not
+  poison the next capture. The tree, the rectangles and every input step work on all platforms.
+- **A close request is handled at the frame boundary**, not on the pipe thread touching CUI's
+  current-app pointer and running flag, which the UI thread's teardown could free underneath it.
+- **The starter app names its shell regions `header`, `page` and `footer`.** Unnamed containers bump
+  the recorded depth without recording a node, so on a freshly generated app the page content nested
+  under the header's theme `Segmented` in `dotnet cui tree`, and a path query could not reach a
+  region by name.
+- **The two documents a generated app ships now have one job each.** The README owns the commands and
+  the structure — one command is one process, a session keeps its lines in one app, `-a` needs the
+  window `LiveAttach` opens, and a published exe keeps a channel only if it was published for it.
+  `AGENTS.md` owns how to work: the four edits a new screen really takes, the six immediate-mode
+  rules, and how the allocation gate and the input helpers are used. The repetition is where they had
+  started to disagree — the README named a `TestApp` harness that `dotnet cui api` cannot resolve, and
+  `AGENTS.md` said a new screen was one entry in `App.cs`.
+
+### Fixed
+
+- **The path grammar in the docs is the grammar `WidgetQuery.Parse` accepts.** Every doc comment and
+  generated sample that showed a path wrote `Card "editor" > Button "Save"`, and since only the final
+  step of a path keeps a kind, the example as printed never resolved: a reader copying it was told
+  "No widget". Paths now print `editor > Button "Save"`, containers bare, and `SemanticNode.Path`
+  keeps the readable `Card "editor" > …` while saying that a query drops the container kinds.
+- **`dotnet new` no longer copies `bin/` and `obj/` into the generated app.** Those excludes belong in
+  `sources.modifiers`; a source-side glob is not read for them.
+- **The template's 0 B-per-frame gate can fail.** It measured a raw `CuiSurface.Draw`, so a page that
+  allocated only in the hosted path passed, and an error boundary that draws an alert allocates, so a
+  throwing page could pass by spending 0 B. It now measures `CuiSurface.LastFrame.AllocatedBytes`
+  around `HeadlessApp.Frame()`, takes `prepare:` to drive a page into the state worth measuring and
+  `verify:` to assert it survived the measured frames, and asserts no fault after every frame. The
+  starter tests mirror `Pages/` and `Services/` and share one `TestHarness.cs` instead of five flat
+  files each re-declaring the same fixtures.
+
 ## [0.4.1] — 2026-11-12
 
 ### Fixed

@@ -28,7 +28,7 @@
       "type": "parameter",
       "datatype": "text",
       "replaces": "__CUISHARP_VERSION__",
-      "defaultValue": "0.4.1",
+      "defaultValue": "0.4.2",
       "description": "The CuiSharp package version the generated solution references. Defaults to the version this template shipped with."
     }
   },
