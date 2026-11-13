@@ -1,11 +1,10 @@
 name: GitHub Pages
 
 on:
-  push:
-    branches: [main]
   pull_request:
     # The Pages tree is built by a separate pipeline from the solution; a browser regression
-    # should be caught before merge, and the deploy jobs below are gated to main.
+    # should be caught before merge. These runs are build checks only: the deploy job below
+    # is gated to tag refs, because Pages is published when a release goes out.
     paths:
       - 'samples/CuiSharp.Gallery.Browser/**'
       - 'src/CuiSharp/**'
@@ -14,6 +13,10 @@ on:
       - 'tools/test-browser-smoke.py'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
+  # Called by release.yml after a release is published — the only path that deploys Pages.
+  workflow_call:
+  push:
+    tags: ['v*.*.*']
 
 permissions:
   contents: read
@@ -75,15 +78,15 @@ jobs:
           python tools/test-browser-smoke.py artifacts/pages/wwwroot --renderer 2d
 
       - uses: actions/configure-pages@v5
-        if: github.ref == 'refs/heads/main'
+        if: github.ref_type == 'tag'
 
       - uses: actions/upload-pages-artifact@v4
-        if: github.ref == 'refs/heads/main'
+        if: github.ref_type == 'tag'
         with:
           path: artifacts/pages/wwwroot
 
   deploy:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref_type == 'tag'
     needs: build
     runs-on: ubuntu-latest
     permissions:

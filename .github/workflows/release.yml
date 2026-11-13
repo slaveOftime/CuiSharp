@@ -12,6 +12,7 @@ on:
 permissions:
   contents: write
   id-token: write # NuGet trusted publishing / OIDC
+  pages: write    # the browser gallery is republished to GitHub Pages on release
 
 jobs:
   # Everything below exists to publish these packages, so ask nuget.org whether it will
@@ -355,3 +356,16 @@ jobs:
           files: |
             packages/*.nupkg
             packages/*.snupkg
+
+  # The browser gallery is the project's live demo, so a release republishes it. The
+  # reusable workflow builds the Pages tree and — because the ref is a tag — deploys
+  # it. Pull requests run the same workflow as a build check only.
+  pages:
+    name: Publish the browser gallery to GitHub Pages
+    needs: release
+    if: github.ref_type == 'tag'
+    uses: ./.github/workflows/pages.yml
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
