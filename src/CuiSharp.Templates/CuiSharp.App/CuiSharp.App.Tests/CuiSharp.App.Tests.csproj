@@ -8,8 +8,7 @@
     <IsTestProject>true</IsTestProject>
     <RootNamespace>CuiSharp.App.Tests</RootNamespace>
     <InvariantGlobalization>true</InvariantGlobalization>
-    <!-- No Condition here: dotnet new evaluates a condition on its own CuiSharpVersion
-         symbol and drops the line, which leaves the package reference without a version. -->
+    <!-- Unconditional: dotnet new evaluates a Condition naming a template symbol and drops false lines. -->
     <CuiSharpVersion>__CUISHARP_VERSION__</CuiSharpVersion>
   </PropertyGroup>
 
@@ -22,12 +21,10 @@
     </PackageReference>
   </ItemGroup>
 
-  <!-- The app's package reference brings CuiSharp in too, so this project only adds the app. -->
   <ItemGroup>
     <ProjectReference Include="..\CuiSharp.App\CuiSharp.App.csproj" />
   </ItemGroup>
 
-  <!-- Only needed when CuiSharp is not already coming in with the app project. -->
   <ItemGroup Condition="'$(UseLocalCuiSharp)' != 'true'">
     <PackageReference Include="CuiSharp" Version="$(CuiSharpVersion)" />
   </ItemGroup>

@@ -1,30 +1,28 @@
 using CuiSharp.App.Services;
 
-namespace CuiSharp.App.Tests;
+namespace CuiSharp.App.Tests.Services;
 
 /// <summary>
-/// Tests for the business rules. No window, no dependency injection, no CuiSharp:
-/// this is the fastest and most valuable kind of test in the project, which is why
-/// the rules live in <c>Services/</c> rather than inside a page.
+/// Unit tests for <see cref="TodoService"/> domain rules.
 /// </summary>
 public class TodoServiceTests
 {
     [Fact]
-    public void Add_ignores_a_blank_title()
+    public void AddIgnoresBlankTitles()
     {
         var todos = new TodoService();
 
         Assert.Null(todos.Add("   "));
         Assert.Null(todos.Add(""));
-        Assert.Equal(3, todos.Items.Count);   // the three seeded items are untouched
+        Assert.Equal(3, todos.Items.Count);
     }
 
     [Fact]
-    public void Add_trims_the_title_and_returns_the_new_item()
+    public void AddTrimsTitleAndAppendsOpenItem()
     {
         var todos = new TodoService();
 
-        TodoItem? item = todos.Add("  write tests  ");
+        var item = todos.Add("  write tests  ");
 
         Assert.NotNull(item);
         Assert.Equal("write tests", item.Title);
@@ -33,33 +31,40 @@ public class TodoServiceTests
     }
 
     [Fact]
-    public void Toggle_flips_one_item_and_reports_the_new_state()
+    public void ToggleFlipsItemStateAndReturnsNullWhenUnknown()
     {
         var todos = new TodoService();
-        TodoItem first = todos.Items[0];
+        var first = todos.Items[0];
 
         Assert.True(todos.Toggle(first.Id));
         Assert.True(todos.Items[0].Done);
 
         Assert.False(todos.Toggle(first.Id));
         Assert.False(todos.Items[0].Done);
+
+        Assert.Null(todos.Toggle(9999));
     }
 
     [Fact]
-    public void Items_stays_correct_when_a_row_removes_itself()
+    public void ItemsStaysConsistentWhenModifiedDuringIndexedIteration()
     {
-        // What a "delete" button in the row loop does, and the reason Items is a
-        // read-only list rather than a span: the list the view is iterating may
-        // change while it is iterated.
         var todos = new TodoService();
         var seen = new List<int>();
 
         for (var i = 0; i < todos.Items.Count; i++)
         {
-            TodoItem item = todos.Items[i];
+            var item = todos.Items[i];
             seen.Add(item.Id);
-            if (seen.Count is 1) todos.ClearCompleted();   // removes nothing
-            if (item.Id == todos.Items[0].Id) todos.Toggle(item.Id);
+
+            if (seen.Count is 1)
+            {
+                todos.ClearCompleted();
+            }
+
+            if (item.Id == todos.Items[0].Id)
+            {
+                todos.Toggle(item.Id);
+            }
         }
 
         Assert.Equal(3, seen.Count);
@@ -68,34 +73,33 @@ public class TodoServiceTests
     }
 
     [Fact]
-    public void Toggle_returns_null_for_an_unknown_id()
-    {
-        var todos = new TodoService();
-
-        Assert.Null(todos.Toggle(9999));
-    }
-
-    [Fact]
-    public void OpenCount_follows_the_items()
+    public void OpenAndDoneCountsTrackItemState()
     {
         var todos = new TodoService();
         var before = todos.OpenCount;
 
-        TodoItem? added = todos.Add("count me");
+        var added = todos.Add("count me");
+
         Assert.Equal(before + 1, todos.OpenCount);
+        Assert.Equal(0, todos.DoneCount);
 
         todos.Toggle(added!.Id);
+
         Assert.Equal(before, todos.OpenCount);
+        Assert.Equal(1, todos.DoneCount);
 
         todos.ClearCompleted();
+
         Assert.Equal(before, todos.OpenCount);
+        Assert.Equal(0, todos.DoneCount);
     }
 
     [Fact]
-    public void ClearCompleted_removes_only_the_done_items()
+    public void ClearCompletedRemovesOnlyDoneItems()
     {
         var todos = new TodoService();
         var total = todos.Items.Count;
+
         todos.Toggle(todos.Items[0].Id);
 
         Assert.Equal(1, todos.ClearCompleted());
@@ -104,7 +108,7 @@ public class TodoServiceTests
     }
 
     [Fact]
-    public async Task SaveAsync_completes_and_honours_cancellation()
+    public async Task SaveAsyncCompletesAndHonoursCancellation()
     {
         var todos = new TodoService();
 
@@ -112,6 +116,7 @@ public class TodoServiceTests
 
         using var cancel = new CancellationTokenSource();
         cancel.Cancel();
+
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => todos.SaveAsync(cancel.Token));
     }
 }

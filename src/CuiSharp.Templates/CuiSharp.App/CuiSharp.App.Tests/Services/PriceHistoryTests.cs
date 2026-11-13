@@ -1,22 +1,23 @@
 using CuiSharp.App.Services;
 
-namespace CuiSharp.App.Tests;
+namespace CuiSharp.App.Tests.Services;
 
 /// <summary>
-/// Tests for the ring buffer behind the markets page. It is the part of a live
-/// dashboard that is easy to get subtly wrong — wrap-around, ordering, the change
-/// calculation — and it is testable without a single frame.
+/// Unit tests for <see cref="PriceHistory"/> ring buffer wrap-around, ordering, and deltas.
 /// </summary>
 public class PriceHistoryTests
 {
     private static PriceHistory Create(int capacity = 4) => new(symbols: 1, capacity: capacity);
 
     [Fact]
-    public void Count_stops_at_capacity_while_ticks_keep_coming()
+    public void CountStopsAtCapacityWhileTicksKeepAdvancing()
     {
         var history = Create();
 
-        for (var i = 0; i < 10; i++) history.Push(0, i);
+        for (var i = 0; i < 10; i++)
+        {
+            history.Push(0, i);
+        }
 
         Assert.Equal(4, history.Count(0));
         Assert.Equal(10, history.Ticks);
@@ -24,10 +25,14 @@ public class PriceHistoryTests
     }
 
     [Fact]
-    public void CopyTail_returns_the_newest_samples_oldest_first()
+    public void CopyTailReturnsNewestSamplesOldestFirst()
     {
         var history = Create();
-        for (var i = 0; i < 6; i++) history.Push(0, i);   // 2, 3, 4, 5 survive
+
+        for (var i = 0; i < 6; i++)
+        {
+            history.Push(0, i);
+        }
 
         var window = new float[4];
         var written = history.CopyTail(0, window);
@@ -37,7 +42,7 @@ public class PriceHistoryTests
     }
 
     [Fact]
-    public void CopyTail_fills_only_what_exists()
+    public void CopyTailWritesOnlyAvailableSamples()
     {
         var history = Create();
         history.Push(0, 10);
@@ -51,7 +56,7 @@ public class PriceHistoryTests
     }
 
     [Fact]
-    public void Change_compares_the_newest_sample_with_the_oldest()
+    public void ChangeComparesNewestSampleWithOldestInRing()
     {
         var history = Create(capacity: 2);
         history.Push(0, 100);
@@ -59,30 +64,33 @@ public class PriceHistoryTests
 
         Assert.Equal(0.1f, history.Change(0), precision: 4);
 
-        // With one sample there is nothing to compare, and a fresh ring reports 0
-        // rather than NaN, so a view can draw it without a special case.
         var fresh = Create();
+
         Assert.Equal(0f, fresh.Change(0));
+
         fresh.Push(0, 50);
+
         Assert.Equal(0f, fresh.Change(0));
     }
 
     [Fact]
-    public void Load_keeps_the_newest_samples_of_a_longer_history()
+    public void LoadRetainsNewestTailWhenHistoryExceedsCapacity()
     {
         var history = Create(capacity: 3);
 
         history.Load([[1f, 2f, 3f, 4f, 5f]]);
 
         Assert.Equal(3, history.Count(0));
+
         var window = new float[3];
         history.CopyTail(0, window);
+
         Assert.Equal([3f, 4f, 5f], window);
         Assert.Equal(5f, history.Last(0));
     }
 
     [Fact]
-    public void Rejects_a_capacity_that_cannot_hold_anything()
+    public void ConstructorRejectsNonPositiveSymbolCountOrCapacity()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => new PriceHistory(symbols: 1, capacity: 0));
         Assert.Throws<ArgumentOutOfRangeException>(() => new PriceHistory(symbols: 0, capacity: 1));
