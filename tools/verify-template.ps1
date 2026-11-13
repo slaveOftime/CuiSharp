@@ -43,6 +43,47 @@ $elapsed = [System.Diagnostics.Stopwatch]::StartNew()
 
 function Step([string] $text) { Write-Host "==> $text" -ForegroundColor Cyan }
 
+# Runs a tool and returns its output, strict UTF-8 on both streams: a check about bytes must not
+# first be decoded through this console's code page. Every command the docs hand a reader goes
+# through here, so a documented workflow that stops working fails this gate.
+function Invoke-Tool {
+    param(
+        [string] $Exe,
+        [string[]] $Arguments,
+        [int] $TimeoutSeconds = 180,
+        [hashtable] $Environment = @{}
+    )
+
+    $psi = [System.Diagnostics.ProcessStartInfo]::new($Exe)
+    $psi.UseShellExecute = $false
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError = $true
+    $psi.StandardOutputEncoding = [System.Text.UTF8Encoding]::new($false, $true)
+    $psi.StandardErrorEncoding = [System.Text.UTF8Encoding]::new($false, $true)
+    foreach ($argument in $Arguments) { $psi.ArgumentList.Add($argument) }
+    foreach ($key in $Environment.Keys) { $psi.Environment[$key] = $Environment[$key] }
+
+    $process = [System.Diagnostics.Process]::Start($psi)
+    try {
+        # Drain both streams while it runs; neither pipe may block the child.
+        $stdout = $process.StandardOutput.ReadToEndAsync()
+        $stderr = $process.StandardError.ReadToEndAsync()
+        if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
+            throw "$Exe $($Arguments -join ' ') timed out after $TimeoutSeconds seconds"
+        }
+
+        return @{
+            Out  = $stdout.GetAwaiter().GetResult()
+            Err  = $stderr.GetAwaiter().GetResult()
+            Code = $process.ExitCode
+        }
+    }
+    finally {
+        if (-not $process.HasExited) { $process.Kill($true); $process.WaitForExit() }
+        $process.Dispose()
+    }
+}
+
 # Byte totals of the icon resources of a PE file: RT_ICON (3) pixel data and RT_GROUP_ICON (14)
 # directory. A plain apphost with no ApplicationIcon has no resource directory at all, so both
 # numbers being non-zero can only mean the .ico was embedded. Windows-only caller.
@@ -244,6 +285,20 @@ internal static class AnalyzerProbe
 
     $lines = ($tree -split "`n" | Select-Object -Skip 1 -First 4 | ForEach-Object { $_.Trim() })
     Write-Host ('    ' + ($lines -join ' / ')) -ForegroundColor Green
+
+    # The tree is only half of what the guide promises; a click has to move the app. A tab is the
+    # cheapest state change that shows up in the frame that answers, and the header regions are
+    # named, so a page's controls must nest under one of them rather than under a sibling widget.
+    Step 'clicking the generated app headlessly'
+    $clicked = Invoke-Tool $cui @('click', 'Tab "Markets"', '--project', (Join-Path $app 'TodoApp'), '--no-build', '--frames', '2') 120
+    if ($clicked.Code -ne 0) { throw "dotnet cui click failed: $($clicked.Err)" }
+    if ($clicked.Out -notmatch 'Heading "Markets"') {
+        throw "clicking the Markets tab printed no Markets frame: $($clicked.Out)"
+    }
+    if ($tree -notmatch 'Row "header"' -or $tree -notmatch 'Column "page"') {
+        throw "the generated shell lost its named regions, so the tree cannot say where a control lives: $tree"
+    }
+    Write-Host '    a click changed the frame, and each shell region nests its own controls' -ForegroundColor Green
 
     # The packaged command must be `dotnet-cui`: `dotnet cui <verb>` works by the dotnet CLI
     # running a program named dotnet-cui, so a pack that ships `cui` leaves the documented verb
@@ -547,6 +602,22 @@ public static class CuiMiniWindowProbe
                 if (-not $mini.HasExited) { $mini.Kill($true); $mini.WaitForExit() }
                 throw 'the mini app window carries no icon: WM_GETICON(ICON_BIG) answered with nothing'
             }
+
+            # The live half of the documented workflow, on the window that is on screen right now:
+            # LiveAttach in the template is what makes `-a` find it, and clicking is what proves the
+            # pipe drives this app and not a copy of it. The window title carries a GUID, so the
+            # target is unambiguous even when another live CuiSharp window runs on this machine.
+            $liveTree = Invoke-Tool 'dotnet' @('cui', 'tree', '-a', $miniName) 120 @{ PATH = "$toolPath$([System.IO.Path]::PathSeparator)$env:PATH" }
+            if ($liveTree.Code -ne 0) { throw "dotnet cui tree -a failed on the open window: $($liveTree.Err)" }
+            if ($liveTree.Out -notmatch 'Increment') { throw "dotnet cui tree -a printed no Increment button: $($liveTree.Out)" }
+
+            $liveClick = Invoke-Tool 'dotnet' @('cui', 'click', 'Increment', '-a', $miniName) 120 @{ PATH = "$toolPath$([System.IO.Path]::PathSeparator)$env:PATH" }
+            if ($liveClick.Code -ne 0) { throw "dotnet cui click -a failed on the open window: $($liveClick.Err)" }
+            if ($liveClick.Out -notmatch 'Clicked 1 times') {
+                throw "clicking the open window did not reach its state: $($liveClick.Out)"
+            }
+            Write-Host '    the open window answered dotnet cui tree -a and click -a' -ForegroundColor Green
+
             if (-not [CuiMiniWindowProbe]::PostMessage($window, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero)) {
                 throw 'could not send WM_CLOSE to the mini app window'
             }
