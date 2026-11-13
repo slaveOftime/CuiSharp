@@ -90,8 +90,9 @@ The current `samples/CuiSharp.Gallery.Browser` candidate, published for `net10.0
 The checked-in Pages workflow builds this tree, strips the redundant compression sidecars, and runs
 `tools/test-browser-smoke.py` against the exact deploy tree before upload. The smoke verifies
 non-background canvas pixels and exercises pointer focus, Ctrl+A, and text insertion into the real
-Full name field. The site has not yet been deployed, so its own edge response headers remain
-unverified.
+Full name field. The site is live at <https://slaveoftime.github.io/CuiSharp/>, republished by
+`release.yml` once a release is published, and never by a merge to `main`; the served `index.html`,
+`main.js`, `site.css`, `favicon.ico` and fingerprinted `_framework/*.wasm` all answer 200.
 
 For comparison only, the full-gallery **AOT** publish emitted 3,142,651 bytes of `.gz` assets and
 2,300,270 bytes of `.br` assets. It is not a valid candidate bundle yet: scope disposal crashes at
@@ -180,14 +181,14 @@ report timings; the normal page emits no per-frame logs.
 - End-to-end headless Chrome measurements include `BrowserHost.Frame` and the canvas update. The
   Overview and More charts pages stayed under 5.7 ms p95 after warm-up, with rAF p95 around 16.8 ms.
 - `.github/workflows/pages.yml` builds on Windows with the matching .NET 10 workload, strips
-  sidecars, smoke-tests the deploy tree, uploads the Pages artifact, and deploys on `main`.
+  sidecars, smoke-tests the deploy tree, uploads the Pages artifact, and deploys on a tag ref. The
+  `pages` job in `release.yml` calls it after the packages reach nuget.org, so the site a visitor
+  sees is the version that shipped.
 
 ### Remaining
 
-1. Let the GitHub Actions Pages workflow run on `main`; confirm the repository's Pages source and
-   deploy permissions, then inspect the deployed app under the repository subpath. Verify its real
-   `_framework/*.wasm` response headers and browser console; only an existing CUI Pages asset has
-   been checked for edge compression so far.
+1. Inspect the deployed app's real `_framework/*.wasm` response headers and browser console; only an
+   existing CUI Pages asset has been checked for edge compression so far.
 2. Keep the interpreter as the shipped configuration. AOT is optional: its scope-end function
    pointer still traps. If later profiling justifies AOT's larger payload, generate and test one
    Cdecl `[UnmanagedCallersOnly]` thunk per generated scope end and cover the hand-written callers
