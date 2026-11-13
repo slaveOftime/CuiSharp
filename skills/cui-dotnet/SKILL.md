@@ -603,11 +603,14 @@ behind, so anything that should be checked twice belongs in a test instead.
 - `--frames N` draws N frames before the command; `--app bin/App.exe` inspects a published build;
   `--no-build` reuses the last build; `--` passes the rest to the app.
 - To drive a **live window** while a human watches it (`dotnet watch run -- --live`, `CUISHARP_LIVE=1`,
-  or `CuiAppOptions { LiveAttach = true }` on Windows), run `dotnet cui ps` to list active windows and
+  or `CuiAppOptions { LiveAttach = true }`), run `dotnet cui ps` to list active windows and
   pass `-a <pid|title>` to any command, or a bare `-a` when only one window is open
-  (`dotnet cui tree -a 15036`, `dotnet cui click Save -a`, `dotnet cui png live.png -a`,
-  `dotnet cui quit -a`). Commands travel over
+  (`dotnet cui tree -a 15036`, `dotnet cui click Save -a`, `dotnet cui quit -a`). Commands travel over
   a user-only local named pipe (`cui-live-<pid>-<nonce>`) and leave the window open between calls.
+  Driving works on every platform; `png` does not, because reading a presented frame back needs a
+  handle only the Windows backend exposes, so a live `png` off Windows answers with that reason. Off
+  Windows nothing can wake a sleeping window, so the app wakes itself twice a second and a command
+  that arrives while it is idle can take half a second; Windows wakes immediately.
   Published AOT apps omit the listener by default: publish with `-p:CuiSharpLive=true` to retain it,
   then opt in at runtime with `--live` or `LiveAttach`. Disconnecting abandons pending commands;
   already-consumed input cannot be undone, but injected held input is released before the next
@@ -634,7 +637,7 @@ vocabulary, and the defaults are right for most apps:
 |---|---|---|
 | `CuiSharpSizeProfile` | `true` | `false` keeps telemetry, hot-reload metadata and HTTP tracing |
 | `CuiSharpHeadless` | `false` | `true` keeps the channel a tool drives the published exe with |
-| `CuiSharpLive` | `false` | `true` keeps Windows live attach; the app must still opt in at runtime |
+| `CuiSharpLive` | `false` | `true` keeps live attach; the app must still opt in at runtime |
 | `CuiSharpVerboseErrors` | `false` | `true` keeps framework exception messages and stack traces |
 
 `OptimizationPreference=Size` and `InvariantGlobalization=true` are the app's call, not the

@@ -241,8 +241,8 @@ animating nor reloaded still draws nothing.
 
 A backend that cannot be woken from another thread keeps the cheaper compromise instead: under
 `dotnet watch`, which marks its children with `DOTNET_WATCH=1`, the window caps its own idle sleep at
-500 ms so an edit lands within half a second. That is the only run that polls, and only on those
-platforms — a plain `dotnet run`, a Release binary and a shipped app keep sleep-until-input. The
+500 ms so an edit lands within half a second. Without hot reload or an opted-in live session,
+a plain `dotnet run`, a Release binary and a shipped app keep sleep-until-input. The
 upstream wake API that would retire the fallback is in [PLAN.md](PLAN.md).
 
 ## Native callbacks
@@ -299,7 +299,7 @@ print whatever it likes: its output goes to stderr and the protocol stays clean.
 
 The tool stays a relay: it builds (or reuses a published build), starts the app headless, sends
 one command, prints one answer, and gets out of the way. With `--attach`, the same protocol drives
-an explicitly enabled Windows live window over a user-only local named pipe instead. There is no
+an explicitly enabled live window over a user-only local named pipe instead. There is no
 HTTP/MCP server or separate daemon. `CuiSharp.Testing` remains the fast, repeatable way to drive an
 app from an agent, and `dotnet watch` is how a human edits in place.
 
@@ -318,15 +318,32 @@ A session is a command (`dotnet cui session < commands.txt`), not a flag. As a f
 written beside a verb, and the verb would then be silently dropped; as a command the line says
 which of the two things is happening.
 
-Live work runs on the owning window thread, between completed frames in the pinned Win32 backend's
-message pump. Callback nesting guards are thread/context-owned: an unrelated surface cannot change
-that window's guard. A connection has a bounded asynchronous reader that detects EOF even during
-command execution. Disconnects cancel outstanding work; injected keys/buttons are released and a
-cleanup frame consumes the release before the next client is accepted. Already-consumed actions
-cannot be rolled back. Capture-only waits enforce their wall-clock deadline even if drawing stalls
-and never accept a late success. Teardown closes the active pipe and joins its worker after pending
-UI tasks are failed, without requiring another frame. `CuiSharpLive=false` removes the live channel
-from an ordinary AOT publish; retaining it requires `-p:CuiSharpLive=true` and runtime opt-in.
+Live work runs on the owning window thread, at a safe point between frames, because CUI clears the
+per-frame input it reads when a frame ends: a step injected mid-frame would never be seen. There are
+two such points (`LiveSession.Boundary`), and the platform picks one. On Windows CUI pumps messages
+inside its wait, between presenting a frame and beginning the next, so a message-only window on that
+thread is a boundary per frame and a post wakes an idle loop from any thread. Every other backend
+offers neither, so the draw callback ends the frame itself, keeping the callback guard up through
+layout, paint and state disposal, then runs the boundary. CUI's later `cui_end_frame` is a no-op,
+so input injected at this tail survives until the next `cui_begin_frame`, which processes hover
+and Tab navigation before the next callback draws. The following callback records and ends the
+responding frame before capturing it, with its laid-out rectangles and deferred-paint readiness. Pixel
+capture stays Windows-only: `cui_app_screenshot` needs the `cui_app*` that the app loop keeps
+private, and only Win32's window user data hands it back, so a live session elsewhere describes a
+frame (tree, rectangles, readiness) and cannot photograph it. Nothing outside the window thread can
+wake the other backends, so the frame that just drew asks for the next one (`cui_request_wakeup`)
+while a command still runs, and for a half-second heartbeat when the queue is empty. That heartbeat
+is the only idle cost of an attached window, and the reason a command that reaches a sleeping one
+can take half a second. Close requests also run at the boundary: the pipe thread never touches
+CUI's current-app pointer or the native running flag. Callback nesting guards are thread/context-owned:
+an unrelated surface cannot change that window's guard. A
+connection has a bounded asynchronous reader that detects EOF even during command execution.
+Disconnects cancel outstanding work; injected keys/buttons are released and a cleanup frame consumes
+the release before the next client is accepted. Already-consumed actions cannot be rolled back.
+Capture-only waits enforce their wall-clock deadline even if drawing stalls and never accept a late
+success. Teardown closes the active pipe and joins its worker after pending UI tasks are failed,
+without requiring another frame. `CuiSharpLive=false` removes the live channel from an ordinary AOT
+publish; retaining it requires `-p:CuiSharpLive=true` and runtime opt-in.
 
 An app opts in by running headless (`CUISHARP_HEADLESS=1` or `--headless`). `CuiApp.Run` is the only
 place that decides, and a hosted app reaches it with its host's draw callback, so a tool drives the

@@ -1,10 +1,19 @@
 // Hand-written, not generated. Live attach: a tool on the same machine drives the window a human
-// is looking at, without taking the loop from CUI. The whole design hangs on one fact: on Windows
-// CUI pumps messages inside cui__plat_wait, between presenting a completed frame and beginning the
-// next one (native/CUI/src/platform/cui_app_win32.c). A message-only window on that thread gives
-// managed code a safe point per frame — after cui_end_frame, before cui__app_begin — and every
-// input injection, capture end and boundary screenshot runs there. CUI keeps its frame boundaries;
-// CuiSharp never calls cui_begin_frame or cui_end_frame on this path.
+// is looking at, without taking the loop from CUI. Steps must run outside a frame — CUI clears the
+// per-frame input it reads at the end of one — so the session needs a safe point between frames,
+// and there are two ways to get one (LiveSession.Boundary):
+//
+//  MessagePump    Windows. CUI pumps messages inside cui__plat_wait, between presenting a completed
+//                 frame and beginning the next one (platform/cui_app_win32.c), so a message-only
+//                 window on that thread is a boundary per frame — and posting to it wakes an idle
+//                 loop from any thread.
+//  FrameCallback  every other backend. No managed code runs between frames there and nothing can
+//                 wake the wait, so the draw callback ends the frame, then runs the boundary. Input
+//                 injected there survives until cui_begin_frame processes it (including hover and
+//                 Tab navigation). The next callback records and ends the responding frame before
+//                 capturing it. An idle heartbeat lets queued work reach a sleeping window.
+//
+// CUI still owns the loop and every cui_begin_frame; its later cui_end_frame is idempotent.
 using System.Diagnostics;
 using System.Globalization;
 using System.IO.Pipes;
@@ -24,12 +33,35 @@ namespace CuiSharp.Hosting;
 /// </summary>
 internal sealed class LiveSession : IDisposable
 {
+    /// <summary>Where the session gets its safe point between frames.</summary>
+    internal enum Boundary
+    {
+        /// <summary>Windows: a message-only window pumped inside CUI's wait, woken by a post.</summary>
+        MessagePump,
+
+        /// <summary>Every other backend: after the draw callback ends the frame, pumped by a wakeup.</summary>
+        FrameCallback,
+    }
+
     /// <summary>Active session and generation as one published value, so readers never pair one with the other's stale half.</summary>
     private sealed record Published(long Generation, LiveSession? Session);
 
     private static readonly Lock StaticGate = new();
     private static Published _published = new(0, null);
     [ThreadStatic] private static LiveSession? _threadSession;
+
+    /// <summary>
+    /// The boundary a new session uses, forced so a test can drive the frame-callback boundary on a
+    /// machine where the message pump is the default. Null picks it by platform.
+    /// </summary>
+    [ThreadStatic] internal static Boundary? ForcedBoundary;
+
+    /// <summary>
+    /// Longest an idle window sleeps between frames when the queue is empty, in seconds. The
+    /// frame-callback boundary cannot be woken from another thread, so it wakes itself: this is the
+    /// cost of a command reaching an idle window, and the only CPU an attached but idle app uses.
+    /// </summary>
+    internal const float IdleHeartbeatSeconds = 0.5f;
 
     // Callback guards belong to the window thread, never to a background surface's painter.
     internal static LiveSession? CurrentThread => _threadSession;
@@ -55,6 +87,7 @@ internal sealed class LiveSession : IDisposable
 
     private readonly CuiAppOptions _options;
     private readonly UiFrameState _frameState;
+    private readonly Boundary _boundary;
     private readonly FrameRecorder _recorder = new();
     private readonly Lock _gate = new();
     private readonly Queue<Command> _queue = [];
@@ -83,6 +116,7 @@ internal sealed class LiveSession : IDisposable
     private bool _injectedPress;
     private Key _injectedKey;
     private bool _timerArmed;
+    private volatile bool _closeRequested;
     private volatile bool _closing;
     private bool _disposed;
     private LiveSnapshot? _lastSnapshot;
@@ -107,11 +141,9 @@ internal sealed class LiveSession : IDisposable
 
     internal LiveSession(CuiAppOptions? options = null, UiFrameState? frameState = null)
     {
-        if (!OperatingSystem.IsWindows())
-            throw new PlatformNotSupportedException("Live attach is Windows-only for now.");
-
         _options = options ?? new CuiAppOptions();
         _frameState = frameState ?? new UiFrameState();
+        _boundary = ForcedBoundary ?? (OperatingSystem.IsWindows() ? Boundary.MessagePump : Boundary.FrameCallback);
 
         lock (StaticGate)
         {
@@ -119,10 +151,16 @@ internal sealed class LiveSession : IDisposable
                 throw new InvalidOperationException("A live session is already active in this process.");
         }
 
-        if (!CreateMessageWindow())
+        if (_boundary == Boundary.MessagePump)
         {
-            throw new IOException(
-                $"Live attach was requested and the message window could not be created (Win32 error {Marshal.GetLastPInvokeError()}).");
+            if (!OperatingSystem.IsWindows())
+                throw new PlatformNotSupportedException("The message-pump boundary is Windows-only.");
+
+            if (!CreateMessageWindow())
+            {
+                throw new IOException(
+                    $"Live attach was requested and the message window could not be created (Win32 error {Marshal.GetLastPInvokeError()}).");
+            }
         }
 
         string nonce = Guid.NewGuid().ToString("N")[..12];
@@ -239,8 +277,10 @@ internal sealed class LiveSession : IDisposable
     internal void RequestClose()
     {
         if (_disposed || _closing) return;
-        if (_cuiWindow != 0 && OperatingSystem.IsWindows()) Win32.PostMessage(_cuiWindow, Win32.WmClose, 0, 0);
-        else if (_app != 0) Native.AppQuit(_app);
+        // A pipe reader must not touch CUI's current-app pointer or running flag: both belong to
+        // the UI thread, and teardown can free the app before a background caller reaches it.
+        _closeRequested = true;
+        Kick();
     }
 
     /// <summary>Wakes the window thread to look at the queue.</summary>
@@ -284,7 +324,9 @@ internal sealed class LiveSession : IDisposable
             _queue.Enqueue(command);
         }
 
-        if (Win32.PostMessage(_messageHwnd, WmBoundary, 0, 0) == 0)
+        // The frame-callback boundary has nothing to post to: the command waits for the frame that
+        // FrameDrew keeps asking for (or, when the queue was empty, for the idle heartbeat).
+        if (_boundary == Boundary.MessagePump && Win32.PostMessage(_messageHwnd, WmBoundary, 0, 0) == 0)
         {
             RemoveOrCancel(command);
             throw new IOException("The live session's message window is gone; the app is closing.");
@@ -312,9 +354,9 @@ internal sealed class LiveSession : IDisposable
     }
 
     /// <summary>
-    /// The frame boundary: runs on the window thread inside CUI's wait, after the last frame was
-    /// presented and before the next one begins. At most one step per frame, whatever else the
-    /// same drain delivered.
+    /// Runs on the window thread after cui_end_frame and before the next cui_begin_frame. With the
+    /// message pump this is inside CUI's wait; otherwise it is the draw callback's tail. At most
+    /// one step per frame, whatever else the same drain delivered.
     /// </summary>
     private void OnBoundary()
     {
@@ -338,6 +380,16 @@ internal sealed class LiveSession : IDisposable
             if (!_bound)
             {
                 if (HasWork()) WakeAgainSoon();
+                return;
+            }
+
+            if (_closeRequested)
+            {
+                _closeRequested = false;
+                if (_cuiWindow != 0 && OperatingSystem.IsWindows())
+                    Win32.PostMessage(_cuiWindow, Win32.WmClose, 0, 0);
+                else
+                    Native.AppQuit(_app); // NULL names the current app, on its owning thread.
                 return;
             }
 
@@ -517,17 +569,43 @@ internal sealed class LiveSession : IDisposable
     }
 
     /// <summary>
-    /// Called at the end of the draw callback: the recorded labels are frame memory. The callback
-    /// of the frame being recorded posts the finishing boundary itself, so the finish dispatch
-    /// happens in the wait right after this frame's end.
+    /// Copies recorded labels before their frame arena is reused. With the frame-callback boundary,
+    /// ends the frame before injecting the next step; CUI's own later end is a no-op, so it cannot
+    /// erase that input. The callback guard stays up through layout, paint and state disposal.
     /// </summary>
     internal void SealFrame()
     {
-        if (_callbackDepth > 0) _callbackDepth--;
-        if (!_armed || !_bound) return;
-        _recorder.SealPendingText();
-        if (Native.FrameCount(_ctx) == _armedFrame + 1)
+        try
+        {
+            if (_armed && _bound) _recorder.SealPendingText();
+            if (_boundary == Boundary.FrameCallback && _bound && !_disposed && !_closing && _callbackDepth == 1)
+                Native.EndFrame(_ctx);
+        }
+        finally
+        {
+            if (_callbackDepth > 0) _callbackDepth--;
+        }
+
+        if (_boundary == Boundary.FrameCallback)
+        {
+            OnBoundary();
+            return;
+        }
+
+        if (_armed && _bound && Native.FrameCount(_ctx) == _armedFrame + 1)
             Win32.PostMessage(_messageHwnd, WmBoundary, 0, 0);
+    }
+
+    /// <summary>
+    /// Called at the end of the draw callback: a frame that just drew asks for the next one while a
+    /// command is still running, and for the idle heartbeat when nothing is left to do.
+    /// </summary>
+    internal void FrameDrew()
+    {
+        if (_boundary != Boundary.FrameCallback || !_bound || _disposed || _closing) return;
+        bool pending = HasWork();
+        if (pending) Native.RequestRedraw(_ctx);
+        Native.RequestWakeup(_ctx, pending ? 0f : IdleHeartbeatSeconds);
     }
 
     private void FinishCapture()
@@ -535,7 +613,6 @@ internal sealed class LiveSession : IDisposable
         Command command = _completing!;
         _armed = false;
         _completing = null;
-
         WidgetRecorder.EndFrame(_recorder, previous: null, _ctx);
         command.Discard();
         if (command.CancelRequested)
@@ -563,6 +640,17 @@ internal sealed class LiveSession : IDisposable
 
     private unsafe (byte[] Pixels, int Width, int Height) CapturePixels()
     {
+        if (_app == 0)
+        {
+            // cui_app_screenshot is the only way to read a presented frame back, and it needs the
+            // cui_app* the app loop keeps private: on Windows the window's user data hands it back,
+            // and no other backend does. The tree, the rectangles and every input step still work
+            // there; only the photograph of the frame does not.
+            throw new IOException(
+                "Pixel capture needs the native app, which only the Windows backend lets a live session recover on this " +
+                "platform. Describe the frame with `dotnet cui tree` or `layout`, or run the app headless for a picture.");
+        }
+
         nint data = Native.GetDrawData(_ctx);
         if (data == 0) throw new IOException("No completed frame to capture.");
 
@@ -634,7 +722,7 @@ internal sealed class LiveSession : IDisposable
 
     private bool HasWork()
     {
-        lock (_gate) return _queue.Count > 0 || _active is not null || _completing is not null || _cancelCleanup is not null;
+        lock (_gate) return _closeRequested || _queue.Count > 0 || _active is not null || _completing is not null || _cancelCleanup is not null;
     }
 
     private void WakeAgainSoon()
@@ -1185,7 +1273,9 @@ internal sealed class LiveSession : IDisposable
         internal void Cancel()
         {
             CancelRequested = true;
-            Win32.PostMessage(MessageHwnd, WmBoundary, 0, 0);
+            // Nothing to post with the frame callback: the frame the command is running in asks for
+            // the next one while it is still pending, so the cancellation is seen anyway.
+            if (MessageHwnd != 0) Win32.PostMessage(MessageHwnd, WmBoundary, 0, 0);
         }
 
         internal volatile bool CancelRequested;

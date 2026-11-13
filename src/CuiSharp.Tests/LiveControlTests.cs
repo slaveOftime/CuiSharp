@@ -13,6 +13,10 @@ namespace CuiSharp.Tests;
 /// <c>PostMessage</c>, nested message pumps inside <c>Draw</c> or <c>Canvas</c> painters defer
 /// boundary execution, cancelled commands wait for cleanup frames before acknowledging, and
 /// <c>dotnet cui ps</c> / <c>dotnet cui --attach</c> drive the live window over its named pipe.
+/// <para>
+/// Windows window tests exercise both boundaries against CUI's real app loop. Windowless tests
+/// exercise the frame-callback path with no native app handle on every platform, without a display.
+/// </para>
 /// </summary>
 public class LiveControlTests
 {
@@ -27,7 +31,7 @@ public class LiveControlTests
         private volatile Exception? _error;
         private nint _hwnd;
 
-        private LiveWindow(bool live, DrawFn draw)
+        private LiveWindow(bool live, DrawFn draw, LiveSession.Boundary? boundary = null)
         {
             DiscoveryDir = Path.Combine(Path.GetTempPath(), $"cui-live-test-{Guid.NewGuid():N}");
             Directory.CreateDirectory(DiscoveryDir);
@@ -37,6 +41,9 @@ public class LiveControlTests
             long generationBefore = LiveSession.Generation;
             _thread = new Thread(() =>
             {
+                // Read by the session this thread is about to construct, so no other window and no
+                // other test can see the choice.
+                LiveSession.ForcedBoundary = boundary;
                 try
                 {
                     CuiApp.Run(
@@ -57,6 +64,7 @@ public class LiveControlTests
                 }
                 finally
                 {
+                    LiveSession.ForcedBoundary = null;
                     _closed.TrySetResult();
                 }
             })
@@ -82,7 +90,7 @@ public class LiveControlTests
 
         internal bool IsClosed => _closed.Task.IsCompleted;
 
-        internal static LiveWindow StartLive(DrawFn draw) => new(live: true, draw);
+        internal static LiveWindow StartLive(DrawFn draw, LiveSession.Boundary? boundary = null) => new(live: true, draw, boundary);
 
         internal static LiveWindow StartPlain(DrawFn draw) => new(live: false, draw);
 
@@ -98,8 +106,8 @@ public class LiveControlTests
                     else Session?.RequestClose();
                 }
 
-                _closed.Task.Wait(TimeSpan.FromSeconds(15));
-                _thread.Join(TimeSpan.FromSeconds(5));
+                Assert.True(_closed.Task.Wait(TimeSpan.FromSeconds(15)), "the proof window did not close");
+                Assert.True(_thread.Join(TimeSpan.FromSeconds(5)), "the proof window thread did not exit");
                 if (_error is not null)
                     throw new InvalidOperationException("The proof window died before it closed.", _error);
             }
@@ -113,6 +121,67 @@ public class LiveControlTests
                 catch (IOException)
                 {
                 }
+            }
+        }
+    }
+
+    /// <summary>The app callback lifecycle over a real CUI context, without a window or app handle.</summary>
+    private sealed class FrameProbe : IDisposable
+    {
+        private readonly CuiSurface _surface = CuiSurface.Create(420, 320);
+        private readonly UiFrameState _frame = new();
+        private readonly string _discoveryDir = Path.Combine(Path.GetTempPath(), $"cui-frame-test-{Guid.NewGuid():N}");
+        private readonly string? _previousLiveDir = Environment.GetEnvironmentVariable(LiveSession.DirectoryEnvironmentVariable);
+        internal readonly LiveSession Session;
+
+        internal FrameProbe()
+        {
+            Environment.SetEnvironmentVariable(LiveSession.DirectoryEnvironmentVariable, _discoveryDir);
+            LiveSession.Boundary? previous = LiveSession.ForcedBoundary;
+            try
+            {
+                LiveSession.ForcedBoundary = LiveSession.Boundary.FrameCallback;
+                Session = new LiveSession(frameState: _frame);
+            }
+            finally { LiveSession.ForcedBoundary = previous; }
+            Session.Bind(0, _surface.Handle);
+        }
+
+        internal void Frame(DrawFn draw)
+        {
+            _frame.Reset();
+            Utf8.BeginFrame();
+            using (_frame.EnterPaint())
+            {
+                Interop.Native.BeginFrame(_surface.Handle, 1f / 60);
+                Session.EnterFrame();
+                try { draw(new Ui(_surface.Handle, _frame)); }
+                finally { Session.SealFrame(); }
+                Session.FrameDrew();
+                // Matches cui__app_render: its second end must not clear the injected input.
+                Interop.Native.EndFrame(_surface.Handle);
+            }
+        }
+
+        internal T Complete<T>(Task<T> task, DrawFn draw)
+        {
+            for (int i = 0; i < 32 && !task.IsCompleted; i++) Frame(draw);
+            Assert.True(task.IsCompleted, "the command did not finish after 32 frame boundaries");
+            return task.GetAwaiter().GetResult();
+        }
+
+        public void Dispose()
+        {
+            try
+            {
+                Session.Dispose();
+                _surface.Dispose();
+                _frame.Release();
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(LiveSession.DirectoryEnvironmentVariable, _previousLiveDir);
+                if (Directory.Exists(_discoveryDir)) Directory.Delete(_discoveryDir, recursive: true);
             }
         }
     }
@@ -166,6 +235,126 @@ public class LiveControlTests
     }
 
     [Fact]
+    public void TheFrameCallbackBoundaryDrivesTheWindowAndCapturesTheFrameItDrew()
+    {
+        if (!CanRun) return;
+        int count = 0;
+        using LiveWindow window = LiveWindow.StartLive(
+            ui =>
+            {
+                ui.Heading("Frame boundary proof", 2);
+                ui.Secondary($"Count: {count}");
+                if (ui.Button("Increase", new ButtonOpts { Variant = ButtonVariant.Primary })) count++;
+                ui.MarkReady();
+            },
+            LiveSession.Boundary.FrameCallback);
+
+        LiveSnapshot before = Await(window.Session.SnapshotAsync());
+        Assert.Contains(before.Entries, entry => entry.Text == "Count: 0");
+        Assert.True(before.Ready, "the frame that ended itself must still report what it marked ready");
+        SemanticWidget button = Assert.Single(before.Entries, entry => entry.Kind == "Button" && entry.Text == "Increase");
+        Assert.NotNull(before.Pixels);
+        Assert.Contains(before.Pixels, byteValue => byteValue != 0);
+
+        LiveSnapshot after = Await(window.Session.ClickAsync(button.Center.X, button.Center.Y));
+
+        Assert.Equal(1, count);
+        Assert.Contains(after.Entries, entry => entry.Text == "Count: 1");
+        Assert.False(before.Pixels.AsSpan().SequenceEqual(after.Pixels!.AsSpan()), "a capture must show the frame it ended");
+        Assert.True(after.Frame > before.Frame, "the answer must be a later frame than the one measured");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void TabNavigationRunsBeforeTheFrameConsumesTypedText(bool frameCallback)
+    {
+        if (!CanRun) return;
+        string first = "", second = "";
+        using LiveWindow window = LiveWindow.StartLive(ui =>
+        {
+            ui.Input("first", ref first);
+            ui.Input("second", ref second);
+        }, frameCallback ? LiveSession.Boundary.FrameCallback : LiveSession.Boundary.MessagePump);
+
+        Await(window.Session.FocusAsync());
+        Await(window.Session.KeyAsync(Key.Tab));
+        Await(window.Session.TypeAsync("one"));
+        Assert.Equal("one", first);
+        Assert.Equal("", second);
+
+        Await(window.Session.KeyAsync(Key.Tab));
+        Await(window.Session.TypeAsync("two"));
+        Assert.Equal("one", first);
+        Assert.Equal("two", second);
+    }
+
+    [Fact]
+    public void TheHandleFreeBoundaryProcessesHoverAndTabBeforeDrawing()
+    {
+        using var probe = new FrameProbe();
+        bool hovered = false;
+        string text = "";
+        DrawFn draw = ui =>
+        {
+            ui.Button("Target");
+            hovered = Interop.Native.LastHovered(ui.Handle) != 0;
+            ui.Input("input", ref text);
+        };
+        LiveSnapshot snapshot = probe.Complete(probe.Session.SnapshotAsync(pixels: false), draw);
+        SemanticWidget button = Assert.Single(snapshot.Entries, widget => widget.Kind == "Button");
+        Assert.True(button.Rect.W > 0 && button.Rect.H > 0);
+        probe.Complete(probe.Session.MoveAsync(button.Center.X, button.Center.Y, pixels: false), draw);
+        Assert.True(hovered);
+
+        probe.Complete(probe.Session.FocusAsync(), draw);
+        probe.Complete(probe.Session.KeyAsync(Key.Tab), draw); // button
+        probe.Complete(probe.Session.KeyAsync(Key.Tab), draw); // input
+        probe.Complete(probe.Session.TypeAsync("typed"), draw);
+        Assert.Equal("typed", text);
+    }
+
+    [Fact]
+    public void AHandleFreePixelRequestFailsWithoutPoisoningTheNextCapture()
+    {
+        using var probe = new FrameProbe();
+        DrawFn draw = ui =>
+        {
+            ui.Text("Still alive");
+            ui.Canvas("ready", Size.Px(80), Size.Px(40), (paint, rect) =>
+            {
+                paint.DrawRect(rect, Color.Accent);
+                paint.MarkReady();
+            });
+        };
+        IOException error = Assert.Throws<IOException>(() => probe.Complete(probe.Session.SnapshotAsync(), draw));
+        Assert.Contains("Pixel capture", error.Message, StringComparison.Ordinal);
+
+        LiveSnapshot next = probe.Complete(probe.Session.SnapshotAsync(pixels: false), draw);
+        Assert.Contains(next.Entries, widget => widget.Text == "Still alive");
+        Assert.True(next.Ready, "deferred paint must finish before readiness is captured");
+        Assert.Null(next.Pixels);
+    }
+
+    [Fact]
+    public void TheFrameCallbackBoundaryWakesAnIdleWindowFromItsOwnHeartbeat()
+    {
+        if (!CanRun) return;
+        using LiveWindow window = LiveWindow.StartLive(
+            ui => ui.Secondary("nothing animates here either"),
+            LiveSession.Boundary.FrameCallback);
+
+        LiveSnapshot settled = Await(window.Session.SnapshotAsync(pixels: false));
+        Thread.Sleep(TimeSpan.FromMilliseconds(1500));
+        LiveSnapshot woken = Await(window.Session.SnapshotAsync(pixels: false));
+
+        // Nothing posts to this window, so only the idle heartbeat can have drawn these frames:
+        // a few of them (2 Hz), never the ninety a continuous loop would draw.
+        ulong drawn = woken.Frame - settled.Frame;
+        Assert.True(drawn <= 8, $"the idle window drew {drawn} frames across the sleep — that is continuous mode, not a heartbeat");
+    }
+
+    [Fact]
     public void AWindowWithoutLiveAttachPublishesNoSession()
     {
         if (!CanRun) return;
@@ -178,8 +367,10 @@ public class LiveControlTests
         Assert.Null(LiveSession.Active);
     }
 
-    [Fact]
-    public void ACancelledPressIsParkedReleasedAndOnlyThenAcknowledgedWithoutClicking()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ACancelledPressIsParkedReleasedAndOnlyThenAcknowledgedWithoutClicking(bool frameCallback)
     {
         if (!CanRun) return;
         int count = 0;
@@ -188,7 +379,7 @@ public class LiveControlTests
             ui.Heading("Cancel proof", 2);
             ui.Secondary($"Count: {count}");
             if (ui.Button("Increase", new ButtonOpts { Variant = ButtonVariant.Primary })) count++;
-        });
+        }, frameCallback ? LiveSession.Boundary.FrameCallback : LiveSession.Boundary.MessagePump);
         LiveSession session = window.Session;
 
         LiveSnapshot first = Await(session.SnapshotAsync(pixels: false));
@@ -219,8 +410,10 @@ public class LiveControlTests
         Assert.Contains(clicked.Entries, entry => entry.Text == "Count: 1");
     }
 
-    [Fact]
-    public void ACancelledReleaseAcknowledgesOnlyAfterTheFrameConsumedIt()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ACancelledReleaseAcknowledgesOnlyAfterTheFrameConsumedIt(bool frameCallback)
     {
         if (!CanRun) return;
         int count = 0;
@@ -233,7 +426,7 @@ public class LiveControlTests
             ui.Heading("Cancel after Up", 2);
             ui.Secondary($"Count: {count}");
             if (ui.Button("Increase", new ButtonOpts { Variant = ButtonVariant.Primary })) count++;
-        });
+        }, frameCallback ? LiveSession.Boundary.FrameCallback : LiveSession.Boundary.MessagePump);
         LiveSession session = window.Session;
 
         LiveSnapshot first = Await(session.SnapshotAsync(pixels: false));
@@ -368,8 +561,10 @@ public class LiveControlTests
         Assert.True(window.WaitClosed(TimeSpan.FromSeconds(10)));
     }
 
-    [Fact]
-    public async Task ACanceledKeyIsReleasedBeforeAcknowledgementAndTheNextKeyStillWorks()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ACanceledKeyIsReleasedBeforeAcknowledgementAndTheNextKeyStillWorks(bool frameCallback)
     {
         if (!CanRun) return;
         using var cancel = new CancellationTokenSource();
@@ -385,7 +580,7 @@ public class LiveControlTests
                 cancel.Cancel();
             }
             ui.Text(held ? "Held" : "Released");
-        });
+        }, frameCallback ? LiveSession.Boundary.FrameCallback : LiveSession.Boundary.MessagePump);
 
         await Assert.ThrowsAsync<TaskCanceledException>(() => window.Session.KeyAsync(Key.A, cancel.Token).WaitAsync(TimeSpan.FromSeconds(5)));
         Assert.True(sawDown);
@@ -503,12 +698,15 @@ public class LiveControlTests
     }
 
     [Theory]
-    [InlineData("")]
-    [InlineData("part of a command")]
-    public async Task ClosingTheWindowClosesAnIdleOrPartialLineClientAndJoinsTheServer(string partialLine)
+    [InlineData("", false)]
+    [InlineData("part of a command", false)]
+    [InlineData("", true)]
+    [InlineData("part of a command", true)]
+    public async Task ClosingTheWindowClosesAnIdleOrPartialLineClientAndJoinsTheServer(string partialLine, bool frameCallback)
     {
         if (!CanRun) return;
-        using LiveWindow window = LiveWindow.StartLive(ui => ui.Text("Shutdown"));
+        using LiveWindow window = LiveWindow.StartLive(ui => ui.Text("Shutdown"),
+            frameCallback ? LiveSession.Boundary.FrameCallback : LiveSession.Boundary.MessagePump);
         using var pipe = ConnectPipe(window);
         using var reader = new StreamReader(pipe, Encoding.UTF8, false, 1024, leaveOpen: true);
         Assert.StartsWith("CUI-READY ", await reader.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(5)));

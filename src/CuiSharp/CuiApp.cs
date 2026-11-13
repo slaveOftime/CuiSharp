@@ -64,8 +64,7 @@ public sealed record CuiAppOptions
     /// <summary>
     /// Let a tool on the same machine drive this window while a human watches it
     /// (<see cref="Hosting.LiveSession"/>). Off by default and never automatic: an app is only
-    /// driven when it says so here, or with <c>CUISHARP_LIVE=1</c> / <c>--live</c>. Windows-only
-    /// for now; asking for it elsewhere fails rather than silently doing nothing.
+    /// driven when it says so here, or with <c>CUISHARP_LIVE=1</c> / <c>--live</c>.
     /// </summary>
     public bool LiveAttach { get; set; }
 }
@@ -267,12 +266,7 @@ public sealed unsafe class CuiApp : IDisposable
         if (Features.Live)
         {
             if (options.LiveAttach || Hosting.LiveSession.Requested(args))
-            {
-                if (!OperatingSystem.IsWindows())
-                    throw new NotSupportedException("Live attach is Windows-only for now. Run without live attach on this platform.");
-                // The message window belongs to the thread about to enter CUI's native loop.
                 state.Live = new Hosting.LiveSession(options, state.Frame);
-            }
         }
 
         GCHandle handle = GCHandle.Alloc(state);
@@ -325,6 +319,7 @@ public sealed unsafe class CuiApp : IDisposable
         internal nint WindowHandle;
         internal CuiWindow? Window;
         internal Hosting.LiveSession? Live;
+        private bool _hooked;
 
         /// <summary>
         /// Publishes the window on the first frame. The app loop keeps its <c>cui_app*</c> private,
@@ -332,7 +327,18 @@ public sealed unsafe class CuiApp : IDisposable
         /// </summary>
         internal void Hooking(nint ui)
         {
-            if (Window is not null || !OperatingSystem.IsWindows()) return;
+            if (_hooked) return;
+
+            if (!OperatingSystem.IsWindows())
+            {
+                // No window procedure to hook and no handle to recover here, so this framework has
+                // no CuiWindow on this platform; a live session binds to CUI's own "current app"
+                // and to the draw callback it is handed.
+                _hooked = true;
+                if (Features.Live) Live?.Bind(0, ui, 0);
+                return;
+            }
+
             nint app = Win32.AppOf(Win32.FindCuiWindow());
             if (app == 0)
             {
@@ -341,6 +347,7 @@ public sealed unsafe class CuiApp : IDisposable
                 return;
             }
 
+            _hooked = true;
             WindowHandle = Native.AppNativeWindow(app);
             Window = new CuiWindow(app) { FileDialog = Options.FileDialog };
             LiveResize.Install(WindowHandle, Options.NoVsync);
@@ -353,7 +360,8 @@ public sealed unsafe class CuiApp : IDisposable
 
     // The frame callback CUI calls for a normal frame and, during a window drag,
     // from the OS modal loop. It is the body of a frame, not the whole frame: CUI
-    // began it already and will end and render it after we return.
+    // began it already and will render it after we return. A frame-callback live session ends it
+    // at the callback's tail so injected input reaches the next begin; CUI's later end is a no-op.
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static void RunThunk(nint ui, void* user)
     {
@@ -382,6 +390,10 @@ public sealed unsafe class CuiApp : IDisposable
         // A frame just happened. A reload wakes the loop itself (HotReloadWake.UpdateApplication),
         // so this only matters on a platform that cannot be woken and has to poll instead.
         HotReloadWake.ForFrame(ui);
+
+        // A live session on the frame-callback boundary has no message to be woken by: the frame
+        // that just drew asks for the next one while a command still runs.
+        if (Features.Live) state.Live?.FrameDrew();
     }
 
     private static NativeAppDesc Describe(CuiAppOptions options) => new()

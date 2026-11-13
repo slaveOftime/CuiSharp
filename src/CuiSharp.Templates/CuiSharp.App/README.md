@@ -35,8 +35,9 @@ dotnet cui docs # the framework guide, offline
   line that fails stops the rest of the session, so read the top of its output first.
 - Disambiguate by kind (`Tab "Markets"`) or by container path when kinds also match:
   `dotnet cui click 'theme > Segment "Dark"' -p CuiSharp.App`. Only the final path step names a kind.
-- `-a` (Windows) drives a window that is already open, which `LiveAttach` in `Program.cs` allows:
-  start the app, then `dotnet cui click 'theme > Dark' -a`. Live commands preserve its state and leave
+- `-a` drives a window that is already open, which `LiveAttach` in `Program.cs` enables in Debug:
+  start the app (or pass `--live` in Release), then `dotnet cui click 'theme > Dark' -a`.
+  Live commands preserve its state and leave
   it open; `dotnet cui quit -a` closes it. A headless run has no window to attach to.
 - A published exe keeps neither channel unless it was published for it — a Release publish strips
   both to keep the binary small: `-p:CuiSharpHeadless=true` for `--app`, `-p:CuiSharpLive=true` for

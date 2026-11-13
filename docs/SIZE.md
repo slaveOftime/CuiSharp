@@ -36,7 +36,7 @@ product: `dotnet run` keeps the headless channel and the framework's exception m
 |---|---|---|
 | `CuiSharpSizeProfile` | `true` for an AOT publish | the diagnostic switches below, as a set |
 | `CuiSharpHeadless` | `false` for an AOT publish, `true` otherwise | the protocol `dotnet cui` drives an app with |
-| `CuiSharpLive` | `false` for an AOT publish, `true` otherwise | the Windows live named-pipe channel; runtime opt-in is still required |
+| `CuiSharpLive` | `false` for an AOT publish, `true` otherwise | the live named-pipe channel; runtime opt-in is still required |
 | `CuiSharpVerboseErrors` | `false` | keeps framework exception messages and stack traces |
 
 The set also turns `DebuggerSupport` off, which drops the debug header an AOT binary otherwise

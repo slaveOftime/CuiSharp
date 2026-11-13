@@ -36,9 +36,9 @@ var options = new CuiAppOptions
     Title = "MiniApp",
     Width = 480,
     Height = 320,
-    // Lets `dotnet cui … -a` drive this window while you look at it. Windows-only for now, so a
-    // build that runs elsewhere asks for nothing.
-    LiveAttach = OperatingSystem.IsWindows(),
+    // Lets `dotnet cui … -a` drive this window while you look at it. File-based apps run in
+    // Release too; published apps still omit the listener unless CuiSharpLive=true.
+    LiveAttach = true,
 };
 
 var clicks = 0;

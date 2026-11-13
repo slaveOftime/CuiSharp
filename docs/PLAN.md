@@ -44,11 +44,17 @@ in [ARCHITECTURE.md](ARCHITECTURE.md). Every item here passes the same gates as 
 - **Complete layout introspection.** `cui layout` can report verified named rectangles and
   lower-bound unions, but CUI exposes neither id-0 container rectangles nor authoritative
   scroll/content extents. A read-only layout walk and scroll-info API belong upstream.
-- **Cross-platform live-window control.** Windows live attach is opt-in and uses the pinned
-  backend's between-frame message pump, thread/context-owned callback guards and destruction
-  hooks. Other backends still need an upstream post-at-frame-boundary/wake and destroy-lifecycle
-  API; do not substitute a background render loop or silently start a headless app. The same wake
-  is what a hot reload needs off Windows: `Hosting/HotReloadWake` posts a message to the window on
-  the pinned backend and falls back to a 500 ms idle cap under `dotnet watch` everywhere else, so a
-  backend that can be woken from another thread retires that fallback.
+- **A wake for an idle window off Windows, and pixels for a live one.** Live attach works on every
+  backend, but two things still need the Win32 backend. Only it can be woken from another thread —
+  CUI pumps messages inside `cui__plat_wait` there, so a post is a frame — while the other backends
+  are reached by a half-second heartbeat the frame loop arms itself (`LiveSession.FrameDrew`), which
+  is why a command that arrives at a sleeping X11 or Cocoa window can take that long to answer. And
+  only it hands back the `cui_app*`: `cui_app_screenshot` takes no `NULL` for "the running app" the
+  way the other `cui_app_*` calls do, so `dotnet cui png -a` answers with that reason off Windows
+  while the tree, the rectangles and every input step work. A backend that can be woken from another
+  thread — an X11 client message, `glfwPostEmptyEvent`, `SDL_PushEvent`, a main-queue dispatch on
+  Cocoa — needs an upstream API for it; the same wake retires the 500 ms idle cap
+  `Hosting/HotReloadWake` arms under `dotnet watch` off Windows. A `cui_app_screenshot` that honours
+  `NULL` retires the second, and both belong upstream, not in `native/patches/`. Do not substitute a
+  background render loop or silently start a headless app.
 - **macOS signing and notarization** for a distributed `.app`.
