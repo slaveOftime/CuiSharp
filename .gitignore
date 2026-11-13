@@ -41,3 +41,5 @@ TestResults/
 .DS_Store
 Thumbs.db
 *.swp
+
+samples/*.exe
