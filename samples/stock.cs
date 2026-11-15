@@ -1,4 +1,4 @@
-#:package CuiSharp@0.4.1
+#:package CuiSharp@*
 #:package System.Net.Http.WinHttpHandler@11.0.0
 
 // The properties below are what make `dotnet publish stock.cs -c Release -o .`
@@ -27,18 +27,19 @@ using System.Text.Json;
 using CuiSharp;
 
 // ---------------------------------------------------------------------------
-// Global Market Cap �?a native CuiSharp dashboard over Tencent + Eastmoney data.
+// Global Market Cap — a native CuiSharp dashboard over Tencent + Eastmoney data.
 //
-//   run      dotnet run stock.cs                       JIT build, window in a second
+//   run      dotnet run stock.cs                        the window
 //   ship     dotnet publish stock.cs -c Release -o .    one stock.exe, no runtime needed
 //            (add -p:CuiSharpHeadless=true to publish a build `dotnet cui` can drive)
 //
 //   iterate  CUISHARP_HEADLESS=1 ./stock.exe            no window; serves the tool's protocol
 //            dotnet cui tree                            the controls the last frame drew
-//            dotnet cui click Refresh                  click one, print the frame it produced
+//            dotnet cui click Refresh                   click one, print the frame it produced
 //            dotnet cui png shot.png                    that frame as a PNG
 //            dotnet cui docs read live-debugging        the guide, offline
 //            dotnet cui api ChartOpts                   one exact declaration
+//            dotnet cui session < steps.txt             many clicks against one app instance
 //
 // Below: Dashboard and its sections, then the model, the feeds, the tracker and
 // the cache.
@@ -871,7 +872,7 @@ internal static class Data
 
     public static int Count => Companies.Length;
 
-    /// <summary>NASDAQ, NYSE, HKEX, SSE, SZSE, TSE �?counted, not hard-coded.</summary>
+    /// <summary>NASDAQ, NYSE, HKEX, SSE, SZSE, TSE — counted, not hard-coded.</summary>
     public static readonly int ExchangeCount =
         Companies.Select(static company => company.Market).Distinct(StringComparer.Ordinal).Count();
 }
@@ -1564,7 +1565,7 @@ internal sealed class MarketTracker
 }
 
 // ---------------------------------------------------------------------------
-// Assembly. Pure: no I/O, no clock beyond "now" �?feed it the books and it
+// Assembly. Pure: no I/O, no clock beyond "now" — feed it the books and it
 // returns the next snapshot.
 // ---------------------------------------------------------------------------
 

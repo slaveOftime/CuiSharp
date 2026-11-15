@@ -1,4 +1,4 @@
-#:package CuiSharp@0.4.1
+#:package CuiSharp@*
 
 // The properties below are what make `dotnet publish disk.cs -c Release -o .`
 // leave one small native executable beside this file, with no .NET on the target.
@@ -23,7 +23,7 @@ using CuiSharp;
 // ---------------------------------------------------------------------------
 // Disk Usage — a native CuiSharp treemap over the file system.
 //
-//   run      dotnet run disk.cs                        the folder the terminal is in
+//   run      dotnet run disk.cs                         the folder the terminal is in
 //            dotnet run disk.cs -- C:\Windows C:\Program Files
 //   ship     dotnet publish disk.cs -c Release -o .     one disk.exe, no runtime needed
 //            (add -p:CuiSharpHeadless=true to publish a build `dotnet cui` can drive)
@@ -33,6 +33,7 @@ using CuiSharp;
 //            dotnet cui click Up                        click one, print the frame it produced
 //            dotnet cui png shot.png                    that frame as a PNG
 //            dotnet cui docs read live-debugging        the guide, offline
+//            dotnet cui api TreemapOpts                 one exact declaration
 //            dotnet cui session < steps.txt             many clicks against one app instance
 //
 // Below: the window, its sections, the scan, and the model it fills.

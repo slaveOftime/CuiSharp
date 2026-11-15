@@ -1,4 +1,4 @@
-#:package CuiSharp@0.4.1
+#:package CuiSharp@*
 
 // The properties below are what make `dotnet publish music.cs -c Release -o .`
 // leave one small native executable beside this file, with no .NET on the target.
@@ -35,15 +35,17 @@ using Windows.Storage.Streams;
 // ---------------------------------------------------------------------------
 // Music — a native CuiSharp player over the folders you point it at.
 //
-//   run      dotnet run music.cs                         the window
-//   ship     dotnet publish music.cs -c Release -o .      one music.exe, no runtime
+//   run      dotnet run music.cs                        the window
+//   ship     dotnet publish music.cs -c Release -o .    one music.exe, no runtime needed
 //            (add -p:CuiSharpHeadless=true to publish a build `dotnet cui` can drive)
 //
-//   iterate  CUISHARP_HEADLESS=1 ./music.exe              no window; serves the tool's protocol
-//            dotnet cui tree                             the controls the last frame drew
-//            dotnet cui click Play                       click one, print the frame it produced
-//            dotnet cui png shot.png                     that frame as a PNG
-//            dotnet cui docs read live-debugging         the guide, offline
+//   iterate  CUISHARP_HEADLESS=1 ./music.exe            no window; serves the tool's protocol
+//            dotnet cui tree                            the controls the last frame drew
+//            dotnet cui click Play                      click one, print the frame it produced
+//            dotnet cui png shot.png                    that frame as a PNG
+//            dotnet cui docs read live-debugging        the guide, offline
+//            dotnet cui api MenuOpts                    one exact declaration
+//            dotnet cui session < steps.txt             many clicks against one app instance
 //
 // Below: the window, its panels, the player, the scan, the spectrum behind the
 // effects, and the state they share.
@@ -65,18 +67,18 @@ return exitCode;
 
 internal sealed class MusicApp
 {
-    private const float SideBySideWidth = 900f;
-    private const float MiniWidth = 720f;
-    private const float MiniHeight = 320f;
-    private const float MiniListHeight = 560f;
+    private const float SideBySideWidth = 860f;
+    private const float MiniWidth = 680f;
+    private const float MiniHeight = 280f;
+    private const float MiniListHeight = 440f;
 
-    // Below this the side-by-side card drops its tags and its volume row, so the
-    // visualizer keeps a strip instead of being squeezed out of the layout.
-    private const float TightHeight = 460f;
-    private const float CompactPlayerShare = 0.44f;
-    private const float CompactPlayerMin = 270f;
-    private const float CompactPlayerMax = 420f;
-    private const float LibraryMinimum = 190f;
+    // Below this the side-by-side card drops its tag line so the visualizer
+    // keeps its room instead of being squeezed out of the layout.
+    private const float TightHeight = 440f;
+    private const float CompactPlayerShare = 0.28f;
+    private const float CompactPlayerMin = 172f;
+    private const float CompactPlayerMax = 216f;
+    private const float LibraryMinimum = 180f;
 
     private readonly Library _library;
     private readonly Player _player;
@@ -147,8 +149,9 @@ internal sealed class MusicApp
         Shortcuts(ui);
         Persist();
 
-        // Forty frames a second while the visualizer moves, one while it rests.
-        ui.RequestWakeup(_player.IsPlaying ? 1f / 40f : 1f);
+        // Forty frames a second while the visualizer moves or a track is still
+        // being decoded for the seek bar, one while it rests.
+        ui.RequestWakeup(_player.IsPlaying || _nowPlaying.IsReading ? 1f / 40f : 1f);
     }
 
     private void DrawSideBySide(Ui ui, float width, float height)
@@ -259,7 +262,6 @@ internal sealed class MusicApp
 internal sealed class NowPlayingPanel(Player player, int visualizer, Action save, ArtCache art)
 {
     private const float TimeWidth = 44f;
-    private const float EffectWidth = 124f;
 
     private readonly Visualizer _visualizer = new(visualizer);
     private readonly SeekBar _seek = new(player);
@@ -270,6 +272,8 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
 
     private string _positionText = "0:00";
     private int _lastSecond = -1;
+
+    public bool IsReading => _reading is not null;
 
     public void Advance(float delta, bool playing)
     {
@@ -308,6 +312,8 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
 
     public void DrawTall(Ui ui, float width, Size height, bool tight)
     {
+        Show(ui);
+
         using (ui.Card(new Card
         {
             Width = Size.Px(width),
@@ -317,19 +323,16 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
             Dir = Dir.Column,
         }))
         {
-            Header(ui);
-            Show(ui);
-
             // The visualizer takes every point left over, so a tall window never
             // leaves a dead band below the transport.
             DrawVisualizer(ui, Size.Fill, Size.Fill);
 
-            Title(ui);
+            Title(ui, size: 18);
 
             // A short window gives up the tag line before it gives up the visualizer.
             if (!tight) Meta(ui);
 
-            Progress(ui, Size.Fill, 28f);
+            Progress(ui, Size.Fill, 26f);
             Transport(ui, mini: false);
         }
     }
@@ -337,21 +340,20 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
     /// <summary>A card wider than it is tall: the cover sits beside the text, not above it.</summary>
     public void DrawWide(Ui ui, float height)
     {
-        var art = Math.Clamp(height - 140f, 92f, 260f);
+        Show(ui);
+
+        var art = Math.Clamp(height - 62f, 96f, 168f);
 
         using (ui.Card(new Card
         {
             Width = Size.Fill,
             Height = Size.Px(height),
-            Pad = 14,
+            Pad = 12,
             Gap = 10,
             Dir = Dir.Column,
         }))
         {
-            Header(ui);
-            Show(ui);
-
-            using (ui.Row(new Box { Width = Size.Fill, Height = Size.Fill, Gap = 16, Align = Align.Stretch }))
+            using (ui.Row(new Box { Width = Size.Fill, Height = Size.Fill, Gap = 14, Align = Align.Stretch }))
             {
                 DrawVisualizer(ui, Size.Px(art), Size.Px(art));
 
@@ -368,11 +370,11 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
                 {
                     using (ui.Column(new Box { Gap = 2 }))
                     {
-                        Title(ui);
-                        Meta(ui);
+                        Title(ui, size: 16);
+                        if (height >= 178f) Meta(ui);
                     }
 
-                    Progress(ui, Size.Fill, 26f);
+                    Progress(ui, Size.Fill, 22f);
                 }
             }
 
@@ -385,8 +387,8 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
         Show(ui);
 
         var pad = width < 520f ? 12f : 16f;
-        var panelWidth = MathF.Min(width - 18f, 560f);
-        var gap = height > 500f ? 10f : 6f;
+        var panelWidth = MathF.Min(width - 18f, 520f);
+        var gap = height > 360f ? 8f : 5f;
 
         using (ui.Box(new Box
         {
@@ -435,7 +437,7 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
                     Color = player.Error is null ? Color.TextSecondary : Color.Danger,
                 });
 
-                Meta(ui, center: true);
+                if (height >= 260f) Meta(ui, center: true);
 
                 Progress(ui, Size.Fill, 18f);
 
@@ -462,27 +464,6 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
         }
     }
 
-    /// <summary>The card's top line: what the panel is and whether it plays.</summary>
-    private void Header(Ui ui)
-    {
-        using (ui.Row(new Box { Align = Align.Center, Gap = 8 }))
-        {
-            ui.Text("NOW PLAYING", new TextOpts { Font = Font.Medium, Size = 10, Color = Color.Accent });
-            ui.Badge(State(), new BadgeOpts
-            {
-                Dot = true,
-                Tone = player.IsPlaying ? Tone.Success : Tone.Neutral,
-                Size = ControlSize.Sm,
-            });
-
-            ui.Spacer();
-
-            if (_reading is not null) ui.Muted("reading audio…");
-        }
-    }
-
-    private string State() => player.Current is null ? "Idle" : player.IsPlaying ? "Playing" : "Paused";
-
     /// <summary>Points the visualizer and the seek bar at the track being played.</summary>
     private void Show(Ui ui)
     {
@@ -501,12 +482,12 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
     private void DrawVisualizer(Ui ui, Size width, Size height) =>
         _visualizer.Draw(ui, "viz", width, height);
 
-    private void Title(Ui ui)
+    private void Title(Ui ui, float size)
     {
         ui.Text(player.Current?.Title ?? "Nothing playing", new TextOpts
         {
             Font = Font.Medium,
-            Size = 19,
+            Size = size,
             NoWrap = true,
         });
 
@@ -585,35 +566,29 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
             {
                 Align = Align.Center,
                 Justify = Justify.Center,
-                Gap = 3,
+                Gap = 4,
                 Width = Size.Fill,
-                Wrap = true,
             }))
             {
-                Buttons(ui, mini: true);
-                EffectMenu(ui, compact: true);
+                Buttons(ui);
+                EffectMenu(ui);
                 Mute(ui);
             }
 
             return;
         }
 
-        using (ui.Column(new Box { Width = Size.Fill, Gap = 8 }))
+        using (ui.Row(new Box { Align = Align.Center, Gap = 4, Width = Size.Fill }))
         {
-            using (ui.Row(new Box { Align = Align.Center, Gap = 6, Width = Size.Fill, Wrap = true }))
-                Buttons(ui, mini: false);
-
-            using (ui.Row(new Box { Align = Align.Center, Gap = 6, Width = Size.Fill }))
-            {
-                EffectMenu(ui, compact: false);
-                ui.Spacer();
-                Volume(ui);
-            }
+            Buttons(ui);
+            ui.Spacer();
+            EffectMenu(ui);
+            Volume(ui);
         }
     }
 
-    /// <summary>Shuffle, previous, play, next, stop, repeat.</summary>
-    private void Buttons(Ui ui, bool mini)
+    /// <summary>Shuffle, previous, play/pause, next, repeat — all icon buttons.</summary>
+    private void Buttons(Ui ui)
     {
         if (ui.IconButton(Icons.Shuffle, new ButtonOpts
         {
@@ -629,23 +604,11 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
         if (ui.IconButton(Icons.SkipBack, new ButtonOpts { Tooltip = "Previous", Size = ControlSize.Sm }))
             player.Previous();
 
-        if (mini)
+        if (ui.IconButton(player.IsPlaying ? Icons.Pause : Icons.Play, new ButtonOpts
         {
-            if (ui.IconButton(player.IsPlaying ? Icons.Pause : Icons.Play, new ButtonOpts
-            {
-                Tooltip = player.IsPlaying ? "Pause" : "Play",
-                Size = ControlSize.Sm,
-                Variant = ButtonVariant.Primary,
-            }))
-            {
-                player.Toggle();
-            }
-        }
-        else if (ui.Button(player.IsPlaying ? "Pause" : "Play", new ButtonOpts
-        {
-            Icon = player.IsPlaying ? Icons.Pause : Icons.Play,
+            Tooltip = player.IsPlaying ? "Pause" : "Play",
+            Size = ControlSize.Sm,
             Variant = ButtonVariant.Primary,
-            Width = Size.Px(104),
         }))
         {
             player.Toggle();
@@ -653,9 +616,6 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
 
         if (ui.IconButton(Icons.SkipForward, new ButtonOpts { Tooltip = "Next", Size = ControlSize.Sm }))
             player.Next();
-
-        if (ui.IconButton(Icons.Square, new ButtonOpts { Tooltip = "Stop", Size = ControlSize.Sm }))
-            player.Stop();
 
         if (ui.IconButton(Icons.Repeat, new ButtonOpts
         {
@@ -669,14 +629,14 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
         }
     }
 
-    /// <summary>The effect picker, in the transport controls rather than the header.</summary>
-    private void EffectMenu(Ui ui, bool compact)
+    /// <summary>The effect picker as an icon button: the active effect is its tooltip.</summary>
+    private void EffectMenu(Ui ui)
     {
         using var menu = ui.Menu(Visualizer.Names[_visualizer.Mode], new MenuOpts
         {
             Icon = Icons.Sparkles,
+            IconOnly = true,
             Variant = ButtonVariant.Ghost,
-            Width = compact ? 104f : EffectWidth,
         });
 
         if (!menu) return;
@@ -696,7 +656,7 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
         Mute(ui);
 
         var slider = player.Volume;
-        if (ui.Slider("##volume", ref slider, 0f, 1f, new SliderOpts { Width = Size.Px(88) }))
+        if (ui.Slider("##volume", ref slider, 0f, 1f, new SliderOpts { Width = Size.Px(76) }))
         {
             player.Volume = slider;
             save();
@@ -726,42 +686,50 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
 internal sealed class LibraryPanel(Library library, Player player, Action add, Action<string> remove)
 {
     private const float RowHeight = 56f;
-    private const float SearchMin = 150f;
-    private const float SearchMax = 260f;
-    private const float SearchCompactMax = 220f;
+    private const float SearchMin = 136f;
+    private const float SearchMax = 240f;
+    private const float SearchCompactMax = 196f;
 
     private string _query = "";
 
     public void Draw(Ui ui, Size width, Size height, float panelWidth, bool compact)
     {
+        var inlineFolder = library.Folders.Count == 1;
+
         using (ui.Card(new Card { Width = width, Height = height, Pad = 12, Gap = 8, Dir = Dir.Column }))
         {
-            Header(ui, compact, panelWidth);
-            Chips(ui);
+            Header(ui, compact, panelWidth, inlineFolder);
+            if (!inlineFolder) Chips(ui);
             ui.Separator();
             Tracks(ui);
         }
     }
 
-    private void Header(Ui ui, bool compact, float panelWidth)
+    private void Header(Ui ui, bool compact, float panelWidth, bool inlineFolder)
     {
-        // The search box takes what is left after the title and the button, up to a
-        // width that reads well on a wide panel.
-        var searchWidth = Math.Clamp(panelWidth - 320f, SearchMin, compact ? SearchCompactMax : SearchMax);
+        // A single folder pill sits on the header row itself; reserve room for it
+        // so the search box never forces a second line.
+        var reserved = inlineFolder ? 220f : 140f;
+        var searchWidth = Math.Clamp(panelWidth - reserved, SearchMin, compact ? SearchCompactMax : SearchMax);
 
-        using (ui.Row(new Box { Align = Align.Center, Gap = 8, Wrap = true }))
+        using (ui.Row(new Box { Align = Align.Center, Gap = 6 }))
         {
-            ui.Text("MUSIC", new TextOpts { Font = Font.Medium, Size = 10, Color = Color.Accent });
+            ui.Icon(Icons.Music, 14, Color.Accent);
 
             var badge = library.IsScanning
-                ? $"scanning {library.Done}/{library.Total}"
-                : $"{Format.Count(library.Count)} tracks";
+                ? $"{library.Done}/{library.Total}"
+                : panelWidth >= 480f
+                    ? $"{Format.Count(library.Count)} tracks"
+                    : Format.Count(library.Count);
 
             ui.Badge(badge, new BadgeOpts { Tone = Tone.Neutral, Size = ControlSize.Sm });
 
-            if (ui.Button("Add folder", new ButtonOpts
+            if (inlineFolder)
+                FolderPill(ui, library.Folders[0]);
+
+            if (ui.IconButton(Icons.Plus, new ButtonOpts
             {
-                Icon = Icons.Plus,
+                Tooltip = "Add folder",
                 Variant = ButtonVariant.Secondary,
                 Size = ControlSize.Sm,
             }))
@@ -791,40 +759,64 @@ internal sealed class LibraryPanel(Library library, Player player, Action add, A
         using (ui.Row(new Box { Gap = 6, Wrap = true, Align = Align.Center }))
         {
             foreach (var folder in library.Folders)
-            {
-                using (ui.Card(new Card
-                {
-                    PadX = 8,
-                    PadY = 3,
-                    Dir = Dir.Row,
-                    Gap = 6,
-                    Align = Align.Center,
-                    MinWidth = 0,
-                    MaxWidth = 420,
-                }, out _))
-                {
-                    // The whole path, not just the leaf: two folders called "Music"
-                    // are otherwise indistinguishable. It ellipsizes when it must.
-                    ui.Text(folder, new TextOpts
-                    {
-                        Size = 11,
-                        Color = Color.TextSecondary,
-                        NoWrap = true,
-                    });
+                if (FolderPill(ui, folder))
+                    return;
+        }
+    }
 
-                    if (ui.IconButton(Icons.X, new ButtonOpts
-                    {
-                        Tooltip = "Remove this folder",
-                        Size = ControlSize.Sm,
-                        Variant = ButtonVariant.Ghost,
-                    }))
-                    {
-                        remove(folder);
-                        return;
-                    }
-                }
+    private bool FolderPill(Ui ui, string folder)
+    {
+        using (ui.Box(new Box
+        {
+            Dir = Dir.Row,
+            Align = Align.Center,
+            PadLeft = 8,
+            PadRight = 2,
+            Gap = 2,
+            Bg = Color.SurfaceMuted,
+            Radius = 6,
+            MinWidth = 0,
+            MaxWidth = 220,
+        }))
+        {
+            ui.Text(FolderLabel(folder), new TextOpts
+            {
+                Size = 11,
+                Color = Color.TextSecondary,
+                NoWrap = true,
+            });
+
+            if (ui.IconButton(Icons.X, new ButtonOpts
+            {
+                Tooltip = $"Remove {folder}",
+                Size = ControlSize.Sm,
+                Variant = ButtonVariant.Ghost,
+            }))
+            {
+                remove(folder);
+                return true;
             }
         }
+
+        return false;
+    }
+
+    private string FolderLabel(string folder)
+    {
+        var leaf = Path.GetFileName(folder);
+        if (leaf.Length == 0) return folder;
+
+        foreach (var other in library.Folders)
+        {
+            if (!string.Equals(other, folder, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(Path.GetFileName(other), leaf, StringComparison.OrdinalIgnoreCase))
+            {
+                var parent = Path.GetFileName(Path.GetDirectoryName(folder) ?? "");
+                return parent.Length > 0 ? $"{parent}\\{leaf}" : folder;
+            }
+        }
+
+        return leaf;
     }
 
     private void Tracks(Ui ui)
@@ -1025,7 +1017,7 @@ internal sealed class Player : IDisposable
         else _media.Play();
     }
 
-    public void Stop()
+    private void Stop()
     {
         _media.Pause();
         Seek(0);
@@ -2638,7 +2630,7 @@ internal sealed class Visualizer
 
         // The mini player puts text on top; keep the moving parts behind it quiet.
         if (background)
-            ui.DrawRect(rect, Color.Background.WithAlpha(0.06f), 0f);
+            ui.DrawRect(rect, new Color(0, 0, 0, 16), 0f);
     }
 
     /// <summary>
@@ -2656,9 +2648,15 @@ internal sealed class Visualizer
             return;
         }
 
-        var scale = MathF.Min(rect.W / ArtWidth, rect.H / ArtHeight) * 0.96f;
+        var scale = MathF.Min(rect.W / ArtWidth, rect.H / ArtHeight);
         var width = ArtWidth * scale;
         var height = ArtHeight * scale;
+
+        if (Frost != 0 && (rect.W - width > 2f || rect.H - height > 2f))
+        {
+            ui.DrawImage(Frost, rect, default, 10f);
+            ui.DrawRect(rect, Color.Oklch(0.08f, 0.02f, Hue).WithAlpha(0.58f), 10f);
+        }
 
         var box = new RectF(
             rect.X + (rect.W - width) / 2f,
@@ -2666,12 +2664,12 @@ internal sealed class Visualizer
             width,
             height);
 
-        ui.DrawImage(Art, box, default, 12f);
+        ui.DrawImage(Art, box, default, 10f);
         ui.DrawRectGradient(
             box,
             Color.Oklch(0.08f, 0.02f, Hue).WithAlpha(0.18f),
             Color.Oklch(0.08f, 0.02f, Hue).WithAlpha(0.62f),
-            12f);
+            10f);
     }
 
     private void Bars(Ui ui, RectF rect)

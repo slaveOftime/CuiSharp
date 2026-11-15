@@ -299,6 +299,9 @@ dotnet run --project samples/CuiSharp.Gallery
 The browser-hosted gallery and GitHub Pages build are documented in
 [`samples/CuiSharp.Gallery.Browser/README.md`](samples/CuiSharp.Gallery.Browser/README.md).
 
+The four file-based apps in [`samples/`](samples/README.md) — Disk Usage, Global Market Cap, Music
+and Downloads — are one `.cs` file each, with the same run / publish / headless header.
+
 ```
 src/CuiSharp/            the library: Interop (generated), Ui, Runtime, Semantics, Hosting, Charting
 src/CuiSharp.Analyzers/  CUI001-CUI008, packed into CuiSharp
