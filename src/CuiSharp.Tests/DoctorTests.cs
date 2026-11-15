@@ -34,6 +34,10 @@ public class DoctorTests
         Doctor.Check warning = Assert.Single(checks, check => check.Level == Doctor.Level.Warning);
         Assert.Contains("floats", warning.Message, StringComparison.Ordinal);
         Assert.Contains("pin", warning.Fix, StringComparison.Ordinal);
+
+        var doctorReport = new Doctor.Report("0.4.2", "0.4.2", "app.cs", checks);
+        Assert.Contains("\"ok\":true", Doctor.RenderJson(doctorReport, strict: false), StringComparison.Ordinal);
+        Assert.Contains("\"ok\":false", Doctor.RenderJson(doctorReport, strict: true), StringComparison.Ordinal);
     }
 
     [Fact]

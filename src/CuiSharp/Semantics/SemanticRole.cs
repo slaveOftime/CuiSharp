@@ -86,6 +86,7 @@ public static class SemanticRoles
         string wanted = Normalize(text);
         foreach (SemanticRole candidate in Enum.GetValues<SemanticRole>())
         {
+            if (candidate == SemanticRole.None) continue;
             if (Normalize(candidate.ToString()).Equals(wanted, StringComparison.OrdinalIgnoreCase))
             {
                 role = candidate;
@@ -100,32 +101,34 @@ public static class SemanticRoles
     public static SemanticRole Of(string kind) => kind switch
     {
         "Frame" => SemanticRole.Frame,
-        "Card" or "Box" or "Row" or "Column" or "Scroll" or "Split" or "DockPanel" or
-        "Inspector" or "Accordion" or "Panel" or "Header" or "Footer" or "Page" => SemanticRole.Container,
+        "Card" or "Box" or "Row" or "Column" or "Scroll" or "Split" or "Dockspace" or "DockPanel" or
+        "Inspector" or "InspectorGroup" or "Accordion" or "ExpandableCard" or "Reasoning" or
+        "Toolbar" or "StatusBar" or "DialogFooter" or "Panel" or "Header" or "Footer" or "Page" => SemanticRole.Container,
 
         "Button" or "IconButton" or "SplitButton" or "ConfirmButton" or "StatusButton" or
-        "HoldButton" or "CopyButton" or "ToolbarButton" or "SpeedDial" or "ControlTile" => SemanticRole.Button,
-        "Link" => SemanticRole.Link,
-        "Checkbox" or "Checklist" or "ToggleGroup" => SemanticRole.CheckBox,
+        "HoldButton" or "CopyButton" or "ToolbarButton" or "SpeedDial" or "ControlTile" or "Chip" => SemanticRole.Button,
+        "Link" or "TocAnchor" => SemanticRole.Link,
+        "Checkbox" or "Checklist" or "ToggleGroup" or "PropBool" => SemanticRole.CheckBox,
         "Radio" or "RadioGroup" or "RadioCards" => SemanticRole.RadioButton,
         "Switch" => SemanticRole.Switch,
 
         "Input" or "TextArea" or "Search" or "TagInput" or "OtpInput" or "InlineEdit" or
-        "PropText" or "ChatComposer" or "FilterBar" or "Comment" => SemanticRole.TextBox,
-        "Number" or "MoneyInput" or "Scrub" or "SpinButton" => SemanticRole.SpinButton,
+        "PropText" or "ChatComposer" or "FilterBar" or "Comment" or "CodeEditor" => SemanticRole.TextBox,
+        "Number" or "MoneyInput" or "Scrub" or "SpinButton" or "PropFloat" or "PropInt" => SemanticRole.SpinButton,
         "Slider" or "RangeSlider" or "RulerSlider" or "HistogramSlider" or "Knob" or "Fader" or
-        "LevelMeter" => SemanticRole.Slider,
-        "Select" or "Combobox" or "DatePicker" or "TimePicker" or "WheelPicker" or "TimeDial" or
-        "DateRangePicker" or "RangeCalendar" or "MonthCalendar" or "ColorPicker" => SemanticRole.ComboBox,
+        "LevelMeter" or "Rating" => SemanticRole.Slider,
+        "Select" or "MultiSelect" or "Combobox" or "DatePicker" or "TimePicker" or "WheelPicker" or
+        "TimeDial" or "DateRangePicker" or "RangeCalendar" or "MonthCalendar" or "Calendar" or
+        "ColorPicker" or "PropColor" or "PropEnum" or "ModelPicker" or "EmojiPicker" or "SchedulePicker" => SemanticRole.ComboBox,
 
         "Tabs" or "TabBar" or "Segmented" or "DocTabs" => SemanticRole.TabList,
         "Tab" or "Segment" => SemanticRole.Tab,
         "List" or "VirtualList" => SemanticRole.List,
         "Tree" or "TreeView" or "TreeTable" => SemanticRole.Tree,
         "ListItem" or "NavItem" => SemanticRole.ListItem,
-        "Menu" or "MenuBarMenu" or "ContextMenu" or "CommandPalette" => SemanticRole.Menu,
+        "Menu" or "MenuBar" or "MenuBarMenu" or "UserMenu" or "PathBarMenu" or "ContextMenu" or "CommandPalette" => SemanticRole.Menu,
         "MenuItem" or "MenuLabel" => SemanticRole.MenuItem,
-        "Dialog" or "Sheet" or "Alert" or "Toast" or "Popover" or "HoverCard" or "Tour" => SemanticRole.Dialog,
+        "Dialog" or "Sheet" or "Alert" or "Banner" or "Toast" or "Popover" or "ConfirmPopover" or "HoverCard" or "Tour" => SemanticRole.Dialog,
         "Tooltip" => SemanticRole.Tooltip,
         "Table" or "DataGrid" => SemanticRole.Table,
         "TableRow" or "DataGridRow" => SemanticRole.TableRow,
@@ -134,10 +137,11 @@ public static class SemanticRoles
         "Image" or "Avatar" or "Emoji" or "ImageViewer" or "Cropper" => SemanticRole.Image,
         "Heading" => SemanticRole.Heading,
         "Text" or "Label" or "Secondary" or "Muted" or "Code" or "Kbd" or "Markdown" or
-        "CodeBlock" or "JsonView" or "ChatMessage" => SemanticRole.Text,
+        "CodeBlock" or "JsonView" or "ChatMessage" or "Badge" or "StatusBarText" or "StatusBarItem" or
+        "Readout" or "DotDisplay" or "Metric" or "EmptyState" or "ExpandableText" or "AgentStatus" => SemanticRole.Text,
         "Progress" or "ProgressRing" or "Meter" or "Gauge" or "RadialGauge" or
         "StatusBarProgress" or "Skeleton" or "Spinner" => SemanticRole.ProgressBar,
-        "Separator" or "Divider" or "Spacer" or "Gap" or "ToolbarSeparator" => SemanticRole.Separator,
+        "Separator" or "Divider" or "Spacer" or "Gap" or "ToolbarSeparator" or "ChatDivider" => SemanticRole.Separator,
         _ => SemanticRole.Other,
     };
 

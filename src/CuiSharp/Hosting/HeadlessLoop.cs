@@ -36,6 +36,9 @@ public static class HeadlessLoop
     /// <summary>The environment variable a headless app reads for its viewport, as <c>WxH</c>.</summary>
     public const string ViewportEnvironmentVariable = "CUISHARP_VIEWPORT";
 
+    /// <summary>The largest viewport dimension a headless run accepts.</summary>
+    internal const int MaxViewportDimension = 16_384;
+
     /// <summary>
     /// Applies <see cref="ViewportEnvironmentVariable"/> to the window description. The tool uses
     /// this to screenshot the same app at several sizes without editing the app; an app that does
@@ -53,10 +56,12 @@ public static class HeadlessLoop
             || !int.TryParse(parts[0], NumberStyles.None, CultureInfo.InvariantCulture, out int width)
             || !int.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out int height)
             || width <= 0
-            || height <= 0)
+            || height <= 0
+            || width > MaxViewportDimension
+            || height > MaxViewportDimension)
         {
             throw new InvalidOperationException(
-                $"{ViewportEnvironmentVariable} must be a positive WxH size, not \"{text}\".");
+                $"{ViewportEnvironmentVariable} must be a positive WxH size (at most {MaxViewportDimension}x{MaxViewportDimension}), not \"{text}\".");
         }
 
         return window with { Width = width, Height = height };
@@ -106,6 +111,7 @@ public static class HeadlessLoop
     {
         ArgumentNullException.ThrowIfNull(draw);
         ArgumentNullException.ThrowIfNull(window);
+        window = WithViewport(window);
         if (input is null && output is null) ClaimStandardOutput();
         using HeadlessApp app = HeadlessApp.Start(
             draw,

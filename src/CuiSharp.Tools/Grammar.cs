@@ -732,12 +732,16 @@ internal static class Grammar
         if (result.CommandResult.Command.Name is "find" or "click")
         {
             bool text = result.CommandResult.Command.Arguments.Count > 0
-                && result.GetResult(result.CommandResult.Command.Arguments[0]) is not null;
+                && result.GetResult(result.CommandResult.Command.Arguments[0]) is { } textResult
+                && !string.IsNullOrWhiteSpace(textResult.GetValueOrDefault<string?>());
             string? role = result.GetValue(S.Role);
             string? value = result.GetValue(S.Value);
             string? id = result.GetValue(S.Id);
 
-            if (!text && role is null && value is null && id is null)
+            if (!text
+                && string.IsNullOrWhiteSpace(role)
+                && string.IsNullOrWhiteSpace(value)
+                && string.IsNullOrWhiteSpace(id))
             {
                 message = $"{result.CommandResult.Command.Name} needs a label, --role, --value or --id";
                 return false;
@@ -794,7 +798,7 @@ internal static class Grammar
         }
 
         OptionResult? attach = result.GetResult(S.Attach);
-        Viewport[] viewports = ReadViewports(result);
+        (Viewport? singleViewport, Viewport[] viewports) = ReadViewports(result);
         return new Cli.Options
         {
             Command = command,
@@ -809,7 +813,7 @@ internal static class Grammar
             Host = result.GetValue(S.App),
             Framework = result.GetValue(S.Framework),
             AppArgs = appArguments,
-            Viewport = viewports.Length > 0 ? viewports[0] : null,
+            Viewport = singleViewport,
             Viewports = viewports,
             Environment = ReadEnvironment(result.GetValue(S.Env)),
             State = result.GetValue(S.State),
@@ -823,27 +827,27 @@ internal static class Grammar
     }
 
     /// <summary>
-    /// The viewport list a command was given: one <c>--size</c>, or the comma-separated
+    /// The viewport a command was given: one <c>--size</c>, or the comma-separated
     /// <c>--sizes</c> its help advertises. Parsing has already rejected malformed values, so an
     /// unreadable value here is simply no viewport.
     /// </summary>
-    private static Viewport[] ReadViewports(ParseResult result)
+    private static (Viewport? Single, Viewport[] Matrix) ReadViewports(ParseResult result)
     {
         OptionResult? size = result.GetResult(S.Size);
         if (size?.GetValueOrDefault<string?>() is { Length: > 0 } one
             && Viewport.TryParse(one, out Viewport viewport))
         {
-            return [viewport];
+            return (viewport, []);
         }
 
         OptionResult? sizes = result.GetResult(S.Sizes);
         if (sizes?.GetValueOrDefault<string?>() is { Length: > 0 } many
             && Viewport.TryParseList(many, out Viewport[] views))
         {
-            return views;
+            return (views[0], views);
         }
 
-        return [];
+        return (null, []);
     }
 
     private static IReadOnlyDictionary<string, string> ReadEnvironment(string[]? pairs)

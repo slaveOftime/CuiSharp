@@ -529,6 +529,64 @@ public class SemanticTreeTests
     }
 
     [Fact]
+    public void AnIdScopePrefersTheActionableControlAndRefusesTwoEqualOnes()
+    {
+        using var row = TestApp.Start(ui =>
+        {
+            ui.Label("save:1");
+            using (ui.Id("save:1"))
+            using (ui.Card(new() { Id = "card:1" }))
+            {
+                ui.Label("Row label");
+                ui.Button("Delete");
+            }
+        }, 300, 180);
+
+        Assert.Equal("Button", row.FindById("save:1").Kind);
+        Assert.Equal("Delete", row.FindUnique("id:save:1").Text);
+        Assert.Equal("Delete", row.FindUnique("role:button card:1 > Delete").Text);
+        Assert.Equal("Delete", row.FindUnique("save:1 > Button \"Delete\"").Text);
+
+        using var duplicate = TestApp.Start(ui =>
+        {
+            using (ui.Id("row:2"))
+            {
+                ui.Button("Edit");
+                ui.Button("Delete");
+            }
+        }, 300, 180);
+
+        Assert.Throws<InvalidOperationException>(() => duplicate.FindUnique("id:row:2"));
+    }
+
+    [Fact]
+    public void ReadOnlyInputsAndHandWrittenTextControlsRecordTheirValuesAndStates()
+    {
+        string ro = "line 1\nline 2";
+        string tags = "ui,aot";
+        string otp = "42";
+        using var app = TestApp.Start(ui =>
+        {
+            ui.Input("ro", ref ro, new InputOpts { ReadOnly = true });
+            ui.TagInput("tags", ref tags);
+            ui.OtpInput("otp", ref otp, 6);
+        }, 400, 260);
+
+        SemanticNode readOnly = app.Tree.Find("Input \"ro\"");
+        Assert.True((readOnly.State & SemanticState.ReadOnly) != 0);
+        Assert.Contains("state=enabled, read-only", readOnly.Describe(), StringComparison.Ordinal);
+        Assert.Contains("value=\"line 1\\nline 2\"", readOnly.Describe(), StringComparison.Ordinal);
+
+        SemanticNode tagNode = app.Tree.Find("TagInput \"tags\"");
+        Assert.Equal(SemanticRole.TextBox, tagNode.Role);
+        Assert.Equal("ui,aot", tagNode.Value);
+
+        SemanticNode otpNode = app.Tree.Find("OtpInput \"otp\"");
+        Assert.Equal(SemanticRole.TextBox, otpNode.Role);
+        Assert.Equal("42", otpNode.Value);
+    }
+
+    [Fact]
     public void AValueQueryFindsTheFieldEvenWhenItsLabelIsNotTheValue()
     {
         var page = new Editor { Draft = "Milk" };

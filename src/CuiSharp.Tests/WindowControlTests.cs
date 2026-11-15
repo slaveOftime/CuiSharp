@@ -6,6 +6,7 @@ namespace CuiSharp.Tests;
 /// The window controls CUI does not own: maximize, restore and close, driven through the
 /// plain Win32 calls beside the ones CUI itself uses.
 /// </summary>
+[Collection("ProcessWindowState")]
 public partial class WindowControlTests
 {
     [StructLayout(LayoutKind.Sequential)]

@@ -9,6 +9,7 @@ namespace CuiSharp.Tests;
 /// The protocol a tool drives an app with. These tests speak it the way a client does — write a
 /// line, read a framed answer — so the wire format is what is under test, not an internal call.
 /// </summary>
+[Collection("ProcessWindowState")]
 public class HeadlessLoopTests
 {
     private sealed class Counter : Component

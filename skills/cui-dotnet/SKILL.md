@@ -17,13 +17,16 @@ a UI that needs an accessibility tree (CUI publishes none).
 1. [The one rule](#the-one-rule) · [A whole app](#a-whole-app) · [Cheat sheet](#cheat-sheet)
 2. [Frame-local types](#frame-local-types-and-text) · [Containers](#containers-are-using-scopes) ·
    [Sizing](#sizing) · [Options](#options-are-structs-of-fields) · [Colours](#colours-come-from-the-theme)
-3. [State in `ref`](#state-goes-in-ref) · [Conditional containers](#containers-that-may-be-closed) ·
-   [Custom controls](#custom-controls) · [Long series](#long-series-and-live-data)
+3. [State in `ref`](#state-goes-in-ref) · [Grid state](#grid-state-and-value-selection) ·
+   [Conditional containers](#containers-that-may-be-closed) · [Custom controls](#custom-controls) ·
+   [Long series](#long-series-and-live-data)
 4. [Pitfalls](#pitfalls) · [Async work](#async-work) · [Renderer](#where-it-renders) · [Keyboard](#keyboard) ·
    [Theming](#theming) · [Translation](#translating-the-date-names) · [Design rules](#design-rules)
 5. [How to work on a UI](#how-to-work-on-a-ui) · [Testing](#testing-without-a-window) ·
-   [Driving a real app](#driving-a-running-app) · [Publishing for size](#publishing-for-size) ·
-   [Widget behaviour](#widget-behaviour) · [Files](#files)
+   [Frame numbers](#frame-numbers) · [Driving a real app](#driving-a-running-app) ·
+   [Roles and ids](#roles-values-and-stable-automation-ids) ·
+   [Headless viewports and readiness](#headless-viewports-state-and-readiness) ·
+   [Publishing for size](#publishing-for-size) · [Widget behaviour](#widget-behaviour) · [Files](#files)
 
 ## The one rule
 

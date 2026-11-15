@@ -62,12 +62,14 @@ public unsafe ref partial struct Ui
         };
         var parsed = new InputResult(result);
         if (parsed.Changed) value = TextFieldPool.Decode(slot);
+        SemanticState state = (parsed.Focused ? SemanticState.Focused : SemanticState.None)
+            | (o.ReadOnly ? SemanticState.ReadOnly : SemanticState.None);
         WidgetRecorder.NoteValue(Handle, kind switch
         {
             TextFieldKind.Area => "TextArea",
             TextFieldKind.Search => "Search",
             _ => "Input",
-        }, id, value, parsed.Focused ? SemanticState.Focused : SemanticState.None);
+        }, id, value, state);
         return parsed;
     }
 

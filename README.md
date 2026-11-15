@@ -35,7 +35,7 @@ dotnet publish demo1.cs -c Release -o .    # one native binary beside it, no .NE
 folder; replace the .ico with your own to change the exe and window icon. Add `-o <folder>`
 only when you want a separate output directory. The generated file carries the properties that make
 that publish one file of about 1.2 MB, and says so at the top. It starts with
-`#:package CuiSharp@*`, resolving the latest stable package; use `--CuiSharpVersion 0.3.3` when
+`#:package CuiSharp@*`, resolving the latest stable package; use `--CuiSharpVersion <version>` when
 generating to pin a version. Its counter and theme switch use the same frame API as a full app;
 `CUISHARP_HEADLESS=1` runs it without a window for automation.
 

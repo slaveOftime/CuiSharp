@@ -60,6 +60,7 @@ internal static class EnvironmentText
 
         key = text[..equals];
         value = text[(equals + 1)..];
+        if (!(char.IsAsciiLetter(key[0]) || key[0] == '_')) return false;
         if (key.Any(static ch => !(char.IsAsciiLetterOrDigit(ch) || ch == '_'))) return false;
         if (key.Contains('\0') || value.Contains('\0')) return false;
         return true;

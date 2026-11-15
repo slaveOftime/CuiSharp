@@ -102,6 +102,14 @@ public class AnalyzerTests
             }
             """);
         Assert.DoesNotContain(guarded, d => d.StartsWith("CUI002", StringComparison.Ordinal) || d.StartsWith("CUI003", StringComparison.Ordinal));
+
+        string[] droppedAutomation = await AnalyzeAsync(Prologue + """
+            public class Page
+            {
+                public void Draw(Ui ui) { ui.Automation("save:1"); }
+            }
+            """);
+        Assert.Contains(droppedAutomation, d => d.StartsWith("CUI002", StringComparison.Ordinal));
     }
 
     // ---- CUI001 -------------------------------------------------------------

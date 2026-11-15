@@ -135,6 +135,7 @@ public unsafe ref partial struct Ui
         var n = o.ToNative();
         bool changed = Native.TagInput(Handle, Utf8.Get(id), (nint)slot.Buffer, (nuint)slot.Capacity, in n) != 0;
         if (changed) value = TextFieldPool.Decode(slot);
+        WidgetRecorder.NoteValue(Handle, "TagInput", id, value);
         return changed;
     }
 
@@ -145,6 +146,7 @@ public unsafe ref partial struct Ui
         var slot = _frame.Text.Rent(key, value, length + 1);
         bool changed = Native.OtpInput(Handle, Utf8.Get(id), (nint)slot.Buffer, length) != 0;
         if (changed) value = TextFieldPool.Decode(slot);
+        WidgetRecorder.NoteValue(Handle, "OtpInput", id, value);
         return changed;
     }
 }

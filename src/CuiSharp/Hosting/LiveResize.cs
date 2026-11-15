@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using CuiSharp.Interop;
@@ -47,7 +48,7 @@ internal enum ResizeStep
 /// </summary>
 internal static unsafe class LiveResize
 {
-    private static readonly Dictionary<nint, Hook> Installed = [];
+    private static readonly ConcurrentDictionary<nint, Hook> Installed = [];
     private static nint _proc;
     private static nint _swapInterval;
     private static int _interval = -1;
@@ -81,7 +82,7 @@ internal static unsafe class LiveResize
     /// <summary>Puts the window procedure back, and the display interval with it.</summary>
     internal static void Uninstall(nint hwnd)
     {
-        if (hwnd == 0 || !Installed.Remove(hwnd, out Hook? hook)) return;
+        if (hwnd == 0 || !Installed.TryRemove(hwnd, out Hook? hook)) return;
 
         Vsync(wants: hook.WantsVsync);
         if (Win32.IsWindow(hwnd) != 0) Win32.UnhookWindowProc(hwnd, hook.Previous);
@@ -122,7 +123,7 @@ internal static unsafe class LiveResize
             case Win32.WmNcDestroy:
                 // The window is going away: stop holding its procedure, then let CUI clean up.
                 if (Features.Live) LiveSession.CurrentThread?.OnWindowDestroying(hwnd);
-                Installed.Remove(hwnd);
+                Installed.TryRemove(hwnd, out _);
                 break;
         }
 

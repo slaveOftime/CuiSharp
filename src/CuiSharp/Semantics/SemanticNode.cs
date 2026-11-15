@@ -154,42 +154,17 @@ public sealed class SemanticNode
 
     internal bool TryFind(WidgetQuery query, out SemanticNode node)
     {
-        // `id:draft` is the exact-id form: no ranking, no partial match, no language. An
-        // explicit automation id is preferred, and a widget whose text is its id still answers.
-        if (query.Path.Length == 0
-            && query.Kind is null
-            && query.Role is null
-            && query.Value is null
-            && query.Text.StartsWith("id:", StringComparison.Ordinal))
-        {
-            string id = query.Text[3..];
-            foreach (SemanticNode candidate in SelfAndDescendants())
-            {
-                if (!string.Equals(candidate.AutomationId, id, StringComparison.Ordinal)
-                    && !string.Equals(candidate.Text, id, StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                node = candidate;
-                return true;
-            }
-
-            node = null!;
-            return false;
-        }
-
         if (query.Path.Length > 0)
         {
             // Walk the named containers, outermost first, then search what the last one holds.
             SemanticNode scope = this;
             foreach (string step in query.Path)
             {
-                if (!scope.TryFind(WidgetQuery.Of(kind: null, step), out SemanticNode container)) goto NotFound;
+                if (!scope.TryFindStep(step, out SemanticNode container)) goto NotFound;
                 scope = container;
             }
 
-            if (scope.TryFind(WidgetQuery.Of(query.Kind, query.Text), out node)) return true;
+            if (scope.TryFind(WidgetQuery.Of(query.Kind, query.Text, role: query.Role, value: query.Value), out node)) return true;
             goto NotFound;
         }
 
@@ -216,6 +191,30 @@ public sealed class SemanticNode
         return false;
     }
 
+    private bool TryFindStep(string step, out SemanticNode container)
+    {
+        WidgetQuery query = WidgetQuery.Of(kind: null, step);
+        WidgetQuery byId = step.StartsWith("id:", StringComparison.Ordinal)
+            ? query
+            : WidgetQuery.Of(kind: null, "id:" + step);
+
+        SemanticNode? best = null;
+        int bestScore = int.MaxValue;
+        foreach (SemanticNode candidate in SelfAndDescendants())
+        {
+            if (!candidate.IsContainer) continue;
+            int score = Math.Min(candidate.Score(query), candidate.Score(byId));
+            if (score < bestScore)
+            {
+                best = candidate;
+                bestScore = score;
+            }
+        }
+
+        container = best!;
+        return best is not null;
+    }
+
     /// <summary>Finds a node below this one, or explains what is there instead.</summary>
     public SemanticNode Find(string query)
     {
@@ -233,23 +232,13 @@ public sealed class SemanticNode
     /// </summary>
     internal bool TryFindUnique(WidgetQuery query, out SemanticNode node)
     {
-        // An exact id is already a deliberate choice: no ranking to settle.
-        if (query.Path.Length == 0
-            && query.Kind is null
-            && query.Role is null
-            && query.Value is null
-            && query.Text.StartsWith("id:", StringComparison.Ordinal))
-        {
-            return TryFind(query, out node);
-        }
-
         // A path narrows the scope, then the leaf uses the same strict search as a plain query.
         if (query.Path.Length > 0)
         {
             SemanticNode scope = this;
             foreach (string step in query.Path)
             {
-                if (!scope.TryFind(WidgetQuery.Of(kind: null, step), out SemanticNode container))
+                if (!scope.TryFindStep(step, out SemanticNode container))
                 {
                     node = null!;
                     return false;
@@ -258,7 +247,7 @@ public sealed class SemanticNode
                 scope = container;
             }
 
-            return scope.TryFindUnique(WidgetQuery.Of(query.Kind, query.Text), out node);
+            return scope.TryFindUnique(WidgetQuery.Of(query.Kind, query.Text, role: query.Role, value: query.Value), out node);
         }
 
         SemanticNode? best = null;
@@ -321,6 +310,22 @@ public sealed class SemanticNode
         if (query.Kind is { } kind && !Kind.Equals(kind, StringComparison.OrdinalIgnoreCase)) return int.MaxValue;
         if (query.Role is { } role && Role != role) return int.MaxValue;
 
+        // `id:draft` is the exact-id form: no partial match, no language. An explicit automation
+        // id beats a fallback text match, and an actionable control beats its container or a
+        // static label inside the same id scope.
+        if (query.Path.Length == 0
+            && query.Role is null
+            && query.Value is null
+            && query.Text.StartsWith("id:", StringComparison.Ordinal))
+        {
+            string id = query.Text[3..];
+            if (id.Length == 0) return int.MaxValue;
+            int rank = IsStatic(Kind) ? 2 : IsContainer ? 1 : 0;
+            if (string.Equals(AutomationId, id, StringComparison.Ordinal)) return rank;
+            if (string.Equals(Text, id, StringComparison.Ordinal)) return 3 + rank;
+            return int.MaxValue;
+        }
+
         int valueTier = 0;
         if (query.Value is { } value)
         {
@@ -353,8 +358,10 @@ public sealed class SemanticNode
     /// both answer the query, which is what keeps <c>click Save</c> on the button.
     /// </summary>
     internal static bool IsStatic(string kind) => kind is
-        "Heading" or "Label" or "Text" or "Muted" or "Badge" or "Caption" or "Code" or "Kbd" or
-        "Divider" or "Spacer" or "Icon" or "ProgressBar" or "Spinner";
+        "Heading" or "Label" or "Secondary" or "Text" or "Muted" or "Badge" or "Caption" or "Code" or
+        "Kbd" or "Divider" or "Separator" or "Spacer" or "Gap" or "Icon" or "Progress" or "ProgressBar" or
+        "ProgressRing" or "Meter" or "Gauge" or "RadialGauge" or "Skeleton" or "Spinner" or "EmptyState" or
+        "Metric" or "Readout" or "DotDisplay" or "StatusBarText";
 
     internal IEnumerable<SemanticNode> SelfAndDescendants()
     {
@@ -395,10 +402,16 @@ public sealed class SemanticNode
         var text = new StringBuilder(Label);
         text.Append(" role=").Append(SemanticRoles.Name(Role));
         if (AutomationId is { Length: > 0 } id) text.Append(" id=").Append(id);
-        if (Value is not null) text.Append(" value=\"").Append(Value.Replace("\"", "\\\"", StringComparison.Ordinal)).Append('"');
+        if (Value is not null) text.Append(" value=\"").Append(Escape(Value)).Append('"');
         if (State != SemanticState.None) text.Append(" state=").Append(SemanticStates.Format(State));
         return text.ToString();
     }
+
+    private static string Escape(string value) => value
+        .Replace("\\", "\\\\", StringComparison.Ordinal)
+        .Replace("\"", "\\\"", StringComparison.Ordinal)
+        .Replace("\r", "\\r", StringComparison.Ordinal)
+        .Replace("\n", "\\n", StringComparison.Ordinal);
 
     /// <summary>
     /// Projects this frame tree onto the shape a platform accessibility layer consumes. The
@@ -415,19 +428,8 @@ public sealed class SemanticNode
     /// Finds a node by the explicit id the app gave it. The text of a widget that takes an id is
     /// still the fallback, so existing <c>FindById("draft")</c> calls keep working.
     /// </summary>
-    internal SemanticNode? FindById(string id)
-    {
-        foreach (SemanticNode candidate in SelfAndDescendants())
-        {
-            if (string.Equals(candidate.AutomationId, id, StringComparison.Ordinal)
-                || string.Equals(candidate.Text, id, StringComparison.Ordinal))
-            {
-                return candidate;
-            }
-        }
-
-        return null;
-    }
+    internal SemanticNode? FindById(string id) =>
+        TryFind(WidgetQuery.Of(kind: null, "id:" + id), out SemanticNode node) ? node : null;
 
     /// <summary>Finds a node by the id CUI gave it, below this one.</summary>
     internal SemanticNode? FindById(uint id)

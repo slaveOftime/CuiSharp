@@ -44,7 +44,7 @@ internal static class Doctor
     internal static int Run(Cli.Options options, TextWriter output)
     {
         Report report = Examine(options);
-        output.WriteLine(options.Json ? RenderJson(report) : Render(report));
+        output.WriteLine(options.Json ? RenderJson(report, options.Strict) : Render(report, options.Strict));
         return report.Failed || (options.Strict && report.Warned) ? 1 : 0;
     }
 
@@ -414,7 +414,7 @@ internal static class Doctor
         static string Normalize(string value)
         {
             string version = value.Trim();
-            if (version.StartsWith('v')) version = version[1..];
+            if (version.StartsWith('v') || version.StartsWith('V')) version = version[1..];
 
             int metadata = version.IndexOf('+');
             if (metadata >= 0) version = version[..metadata];
@@ -469,7 +469,7 @@ internal static class Doctor
         }
     }
 
-    internal static string Render(Report report)
+    internal static string Render(Report report, bool strict = false)
     {
         var text = new StringBuilder();
         text.Append("CuiSharp doctor  tool ")
@@ -505,7 +505,9 @@ internal static class Doctor
         text.Append(errors > 0
             ? $"{errors} error{(errors == 1 ? "" : "s")}, {warnings} warning{(warnings == 1 ? "" : "s")}."
             : warnings > 0
-                ? $"{warnings} warning{(warnings == 1 ? "" : "s")}; --strict makes doctor fail on them."
+                ? strict
+                    ? $"{warnings} warning{(warnings == 1 ? "" : "s")} (--strict)."
+                    : $"{warnings} warning{(warnings == 1 ? "" : "s")}; --strict makes doctor fail on them."
                 : "no problems found.");
         return text.ToString().TrimEnd();
 
@@ -513,7 +515,7 @@ internal static class Doctor
             value.ReplaceLineEndings("\n").Replace("\n", "\n" + new string(' ', width), StringComparison.Ordinal);
     }
 
-    internal static string RenderJson(Report report)
+    internal static string RenderJson(Report report, bool strict = false)
     {
         var buffer = new ArrayBufferWriter<byte>();
         using (var writer = new Utf8JsonWriter(buffer))
@@ -523,7 +525,7 @@ internal static class Doctor
             writer.WriteString("catalog", report.Catalog);
             if (report.Project is null) writer.WriteNull("project");
             else writer.WriteString("project", report.Project);
-            writer.WriteBoolean("ok", !report.Failed);
+            writer.WriteBoolean("ok", !report.Failed && !(strict && report.Warned));
             writer.WriteStartArray("checks");
             foreach (Check check in report.Checks)
             {

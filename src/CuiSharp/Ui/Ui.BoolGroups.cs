@@ -69,7 +69,7 @@ public unsafe ref partial struct Ui
             (nint)slot.Buffer, (nuint)slot.Capacity) != 0;
         for (int i = 0; i < fields.Length; i++) selected[i] = masks[i];
         if (TextChanged(slot)) search = DecodeText(slot);
-        WidgetRecorder.Note(Handle, "FilterBar", id);
+        WidgetRecorder.NoteValue(Handle, "FilterBar", id, search);
         return changed;
     }
 }

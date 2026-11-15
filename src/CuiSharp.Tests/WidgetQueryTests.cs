@@ -81,5 +81,9 @@ public class WidgetQueryTests
 
         Assert.Null(query.Role);
         Assert.Equal("role:not-a-role", query.Text);
+
+        WidgetQuery none = WidgetQuery.Parse("role:none");
+        Assert.Null(none.Role);
+        Assert.Equal("role:none", none.Text);
     }
 }

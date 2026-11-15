@@ -181,7 +181,7 @@ internal sealed class DocLibrary
         lines.Add("  dotnet cui docs search <words>                 ranked sections, with the read to run next");
         lines.Add("  dotnet cui api <Name>                          exact declarations: `api ChartOpts`");
         lines.Add("  dotnet cui icons [filter]                      the glyph index");
-        lines.Add("  dotnet cui tree | find | click | png           inspect and drive a real app");
+        lines.Add("  dotnet cui tree | find | click | png | doctor  inspect, drive or check a real app");
 
         return CatalogResult.Exact("docs", lines);
     }
@@ -868,7 +868,7 @@ internal static class BundledTopics
             "Then `dotnet cui layout` prints the rectangles, the observed union bounds and overflow."),
 
         ("live-debugging",
-            "attach to a window a person is watching, on Windows, and what that cannot promise",
+            "attach to a running window a person is watching, and what that cannot promise",
             ["SKILL#driving-a-running-app"],
             "The opt-in, the discovery and the cancellation rules are the same page's bullets — read them before scripting it."),
 

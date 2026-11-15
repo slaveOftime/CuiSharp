@@ -479,18 +479,10 @@ internal sealed class FrameRecorder
         for (int i = 0; i < _pending.Count; i++)
         {
             Pending widget = _pending[i];
-            if (widget.Text is null && widget.Length > 0)
+            if ((widget.Text is null && widget.Length > 0) || !widget.Automation.IsEmpty)
             {
                 _pending[i] = new Pending(
                     widget.Kind, 0, 0, widget.Decode(), widget.Id, widget.Depth,
-                    widget.Container, widget.OwnRect, widget.Detached, widget.Layer,
-                    Seal(widget.Automation), widget.TextValue, widget.NumberValue,
-                    widget.BoolValue, widget.State);
-            }
-            else if (!widget.Automation.IsEmpty)
-            {
-                _pending[i] = new Pending(
-                    widget.Kind, widget.Pointer, widget.Length, widget.Text, widget.Id, widget.Depth,
                     widget.Container, widget.OwnRect, widget.Detached, widget.Layer,
                     Seal(widget.Automation), widget.TextValue, widget.NumberValue,
                     widget.BoolValue, widget.State);

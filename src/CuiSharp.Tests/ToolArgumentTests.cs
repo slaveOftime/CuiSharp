@@ -86,6 +86,12 @@ public class ToolArgumentTests
         Assert.NotEmpty(empty.Errors);
         Assert.Contains("--role", string.Join(" ", empty.Errors), StringComparison.Ordinal);
 
+        Grammar.Parsed blank = Grammar.Parse(["find", ""]);
+        Assert.NotEmpty(blank.Errors);
+
+        Grammar.Parsed blankId = Grammar.Parse(["click", "--id", "   "]);
+        Assert.NotEmpty(blankId.Errors);
+
         Grammar.Parsed both = Grammar.Parse(["find", "Save", "--value", "Milk"]);
         Assert.NotEmpty(both.Errors);
         Assert.Contains("--value", string.Join(" ", both.Errors), StringComparison.Ordinal);
@@ -360,6 +366,7 @@ public class ToolArgumentTests
     [InlineData("missing-equals")]
     [InlineData("=value")]
     [InlineData("BAD-KEY=value")]
+    [InlineData("1BAD=value")]
     public void AMalformedEnvironmentPairIsAUsageError(string value)
     {
         Assert.NotEmpty(Grammar.Parse(["tree", "--env", value]).Errors);

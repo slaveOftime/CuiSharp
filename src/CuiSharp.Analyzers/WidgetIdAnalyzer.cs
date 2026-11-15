@@ -71,7 +71,7 @@ public sealed class WidgetIdAnalyzer : DiagnosticAnalyzer
         "Icon", "DrawText", "DrawIcon", "MeasureText", "NavSection", "Metric", "TimelineItem",
         "MenuLabel", "ChatDivider", "TreeTableName",
         // Targets an existing widget, uses the last widget's id, or allocates an independent handle.
-        "ScrollTo", "MakeId", "RectOf", "Tooltip", "Toast", "Id",
+        "ScrollTo", "MakeId", "RectOf", "Tooltip", "Toast", "Id", "Automation",
         "PopoverOpen", "PopoverClose", "PopoverToggle", "PopoverIsOpen",
         "CodeEditorGoto", "CodeEditorSelect", "CodeEditorFind", "HexViewGoto", "SignatureClear",
         "DockSave", "DockLoad",

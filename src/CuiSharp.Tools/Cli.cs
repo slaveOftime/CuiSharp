@@ -82,7 +82,7 @@ internal static class Cli
             if (options.Command == "session" && options.Script is { Length: > 0 } script)
                 input = new StringReader(ReadScript(script));
 
-            if (options.Viewports.Length > 1)
+            if (options.Viewports.Length > 0)
                 return RunViewports(options, output, error);
 
             using HeadlessClient client = options.Attach
@@ -160,6 +160,7 @@ internal static class Cli
                     "no .csproj and no file-based .cs app there.");
 
         var environment = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach ((string key, string value) in options.Environment) environment[key] = value;
         if (options.State is { Length: > 0 } state)
         {
             string full;
@@ -176,7 +177,6 @@ internal static class Cli
             environment["CUISHARP_STATE_HOME"] = full;
         }
 
-        foreach ((string key, string value) in options.Environment) environment[key] = value;
         if (options.Viewport is { } viewport) environment["CUISHARP_VIEWPORT"] = viewport.ToString();
 
         return HeadlessClient.Start(
@@ -207,12 +207,19 @@ internal static class Cli
     {
         if (options.Command != "png")
             throw new ToolException(
-                "--sizes with more than one viewport is for `png`; run another command once per --size.");
+                "--sizes is for `png`; run another command once per --size.");
 
+        bool built = false;
         foreach (Viewport viewport in options.Viewports)
         {
-            Options single = options with { Viewport = viewport, Viewports = [viewport] };
+            Options single = options with
+            {
+                Viewport = viewport,
+                Viewports = [],
+                NoBuild = options.NoBuild || built,
+            };
             using HeadlessClient client = StartHeadless(single, error);
+            built = true;
             if (!CheckViewport(client, single, error)) return 1;
             if (!PassPreconditions(client, single, error)) return 1;
 

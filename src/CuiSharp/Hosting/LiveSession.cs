@@ -1043,7 +1043,7 @@ internal sealed class LiveSession : IDisposable
     private static SemanticNode FindNode(LiveSnapshot snapshot, string query)
     {
         SemanticNode tree = snapshot.Tree;
-        if (tree.TryFind(query, out SemanticNode node)) return node;
+        if (tree.TryFindUnique(WidgetQuery.Parse(query), out SemanticNode node)) return node;
         throw new InvalidOperationException($"No widget matching \"{query}\". The frame drew:\n{tree.Print()}");
     }
 
@@ -1149,22 +1149,25 @@ internal sealed class LiveSession : IDisposable
 
     private unsafe bool CreateMessageWindow()
     {
-        _instance = Win32.GetModuleHandle(null);
-        if (!_classRegistered)
+        lock (StaticGate)
         {
-            _wndProc = (nint)(delegate* unmanaged[Stdcall]<nint, uint, nint, nint, nint>)&Proc;
-            fixed (char* name = ClassName)
+            _instance = Win32.GetModuleHandle(null);
+            if (!_classRegistered)
             {
-                var windowClass = new Win32.WndClass
+                _wndProc = (nint)(delegate* unmanaged[Stdcall]<nint, uint, nint, nint, nint>)&Proc;
+                fixed (char* name = ClassName)
                 {
-                    WndProc = _wndProc,
-                    Instance = _instance,
-                    ClassName = (nint)name,
-                };
-                if (Win32.RegisterClass(in windowClass) == 0) return false;
-            }
+                    var windowClass = new Win32.WndClass
+                    {
+                        WndProc = _wndProc,
+                        Instance = _instance,
+                        ClassName = (nint)name,
+                    };
+                    if (Win32.RegisterClass(in windowClass) == 0) return false;
+                }
 
-            _classRegistered = true;
+                _classRegistered = true;
+            }
         }
 
         nint hwnd = Win32.CreateWindowEx(
@@ -1215,10 +1218,13 @@ internal sealed class LiveSession : IDisposable
             _messageHwnd = 0;
         }
 
-        if (_classRegistered)
+        lock (StaticGate)
         {
-            Win32.UnregisterClass(ClassName, _instance);
-            _classRegistered = false;
+            if (_classRegistered)
+            {
+                Win32.UnregisterClass(ClassName, _instance);
+                _classRegistered = false;
+            }
         }
 
         if (_reserved)

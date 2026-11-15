@@ -119,15 +119,11 @@ internal static unsafe partial class Win32
         internal readonly int Height => Bottom - Top;
     }
 
-    // Set by the enumeration callback below; only ever read and written on the
-    // thread that owns the window, while that enumeration is running.
-    private static nint _found;
-
     [UnmanagedCallersOnly(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvStdcall)])]
     private static int OnThreadWindow(nint hwnd, nint lparam)
     {
         if (!IsCuiWindow(hwnd)) return 1;
-        _found = hwnd;
+        *(nint*)lparam = hwnd;
         return 0;
     }
 
@@ -141,18 +137,10 @@ internal static unsafe partial class Win32
         nint active = GetActiveWindow();
         if (IsCuiWindow(active)) return active;
 
-        nint previous = _found;
-        _found = 0;
-        try
-        {
-            EnumThreadWindows(GetCurrentThreadId(),
-                (nint)(delegate* unmanaged[Stdcall]<nint, nint, int>)&OnThreadWindow, 0);
-            return _found;
-        }
-        finally
-        {
-            _found = previous;
-        }
+        nint found = 0;
+        EnumThreadWindows(GetCurrentThreadId(),
+            (nint)(delegate* unmanaged[Stdcall]<nint, nint, int>)&OnThreadWindow, (nint)(&found));
+        return found;
     }
 
     /// <summary>The <c>cui_app*</c> a window belongs to, or 0 when it is not a CUI window.</summary>
