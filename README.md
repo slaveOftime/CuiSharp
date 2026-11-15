@@ -229,7 +229,8 @@ dotnet cui png shot.png --size 420x720   # a viewport without editing the app
 dotnet cui png shot.png --sizes 420x720,1180x820   # one png per viewport
 dotnet cui tree --state artifacts/cui-run        # isolated app state
 dotnet cui tree -a 15036                 # the same, on a live window a person is watching
-dotnet cui session < script.txt          # many commands, one build, one app
+dotnet cui session --script script.txt   # many commands, one build, one app
+dotnet cui doctor                        # check the tool against the app before a bug report
 ```
 
 The query is **one quoted argument** — `click "Button Save"`, not `click Button Save` — because the

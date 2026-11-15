@@ -45,7 +45,7 @@ using Windows.Storage.Streams;
 //            dotnet cui png shot.png                    that frame as a PNG
 //            dotnet cui docs read live-debugging        the guide, offline
 //            dotnet cui api MenuOpts                    one exact declaration
-//            dotnet cui session < steps.txt             many clicks against one app instance
+//            dotnet cui session --script steps.txt      many clicks against one app instance
 //
 // Below: the window, its panels, the player, the scan, the spectrum behind the
 // effects, and the state they share.

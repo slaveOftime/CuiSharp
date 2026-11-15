@@ -36,7 +36,7 @@ using CuiSharp;
 //            dotnet cui png shot.png                    that frame as a PNG
 //            dotnet cui docs read live-debugging        the guide, offline
 //            dotnet cui api ChartOpts                   one exact declaration
-//            dotnet cui session < steps.txt             many clicks against one app instance
+//            dotnet cui session --script steps.txt      many clicks against one app instance
 //
 // Below: Dashboard and its sections, then the model, the feeds, the tracker and
 // the cache.

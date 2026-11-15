@@ -314,7 +314,7 @@ wants them: everything after a standalone `--` is handed to the app untouched, a
 even when it begins with a dash (`--wait-text -loading`), and a query is one quoted argument
 (`click "Button Save type"`), because the app parses the query grammar and this tool does not.
 
-A session is a command (`dotnet cui session < commands.txt`), not a flag. As a flag it could be
+A session is a command (`dotnet cui session --script commands.txt`), not a flag. As a flag it could be
 written beside a verb, and the verb would then be silently dropped; as a command the line says
 which of the two things is happening.
 

@@ -27261,7 +27261,7 @@
     },
     {
       "CName": "cui_http_method",
-      "CsName": "HttpMethod",
+      "CsName": "HttpVerb",
       "Values": [
         {
           "CName": "CUI_HTTP_GET",

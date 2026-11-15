@@ -28,6 +28,9 @@ internal static class Cli
 
     private static readonly Lazy<DocLibrary> BundledDocs = new(DocLibrary.LoadEmbedded);
 
+    /// <summary>The catalog this tool ships, shared with <c>doctor</c> so one bad resource is one error.</summary>
+    internal static ApiCatalog Catalog => EmbeddedCatalog.Value;
+
     /// <summary>Runs the tool; the return value is the process exit code.</summary>
     internal static int Run(string[] args, TextWriter output, TextWriter error, TextReader? input = null)
     {
@@ -73,6 +76,11 @@ internal static class Cli
                 output.WriteLine(LiveClient.FormatList(LiveClient.List(), options.Json));
                 return 0;
             }
+
+            if (options.Command == "doctor") return Doctor.Run(options, output);
+
+            if (options.Command == "session" && options.Script is { Length: > 0 } script)
+                input = new StringReader(ReadScript(script));
 
             if (options.Viewports.Length > 1)
                 return RunViewports(options, output, error);
@@ -274,7 +282,24 @@ internal static class Cli
         return true;
     }
 
-    /// <summary>Feeds commands from stdin to one app session and prints each answer in order.</summary>
+    /// <summary>
+    /// A session script, read before the app starts so a typo in the path is one sentence rather
+    /// than a process that starts, waits for its banner, and then fails to read its first line.
+    /// </summary>
+    internal static string ReadScript(string path)
+    {
+        try
+        {
+            return File.ReadAllText(path);
+        }
+        catch (Exception failure)
+            when (failure is ArgumentException or IOException or UnauthorizedAccessException or NotSupportedException)
+        {
+            throw new ToolException($"Could not read the session script `{path}`: {failure.Message}");
+        }
+    }
+
+    /// <summary>Feeds commands from stdin or a script to one app session and prints each answer in order.</summary>
     internal static int Relay(HeadlessClient client, TextReader? input, TextWriter output, TextWriter error)
     {
         TextReader source = input ?? Console.In;
@@ -415,6 +440,12 @@ internal static class Cli
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         internal string? State { get; init; }
+
+        internal string? Script { get; init; }
+
+        internal bool Aot { get; init; }
+
+        internal bool Strict { get; init; }
 
         internal string Line => Argument.Length == 0 ? Command : $"{Command} {Argument}";
 

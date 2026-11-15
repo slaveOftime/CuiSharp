@@ -124,6 +124,26 @@ internal static class Grammar
             HelpName = "dir",
         };
 
+        // Windows PowerShell has no `<` input redirection, so a session has to be able to name
+        // its script instead of needing a POSIX shell in front of it.
+        internal Option<string?> Script = new("--script")
+        {
+            Description = "read the session's protocol commands from this file instead of stdin",
+            HelpName = "file",
+        };
+
+        // ---- doctor checks -------------------------------------------------------------------
+
+        internal Option<bool> Aot = new("--aot")
+        {
+            Description = "publish an app that enables NativeAOT and report IL2xxx/IL3xxx warnings (slow)",
+        };
+
+        internal Option<bool> Strict = new("--strict")
+        {
+            Description = "exit 1 when a check warns, not only when it fails",
+        };
+
         // ---- what has to be true before the command runs ------------------------------------
 
         internal Option<int?> Frames = new("--frames")
@@ -300,17 +320,32 @@ internal static class Grammar
 
         var session = new Command(
             "session",
-            "read one protocol command per line from stdin, against one build and one app: "
-                + "`dotnet cui session < commands.txt`");
+            "read one protocol command per line from stdin or --script, against one build and one app: "
+                + "`dotnet cui session --script commands.txt`");
         foreach (Option option in symbols.AppOptions) session.Options.Add(option);
+        session.Options.Add(symbols.Script);
         root.Subcommands.Add(session);
 
         root.Subcommands.Add(Ps(symbols));
         root.Subcommands.Add(Api(symbols));
         root.Subcommands.Add(Icons(symbols));
         root.Subcommands.Add(Docs(symbols));
+        root.Subcommands.Add(Doctor(symbols));
 
         return (symbols, root);
+    }
+
+    private static Command Doctor(Symbols symbols)
+    {
+        var doctor = new Command(
+            "doctor",
+            "check this tool against the app's CuiSharp reference, icon and NativeAOT setup");
+        doctor.Options.Add(symbols.Project);
+        doctor.Options.Add(symbols.Framework);
+        doctor.Options.Add(symbols.Json());
+        doctor.Options.Add(symbols.Aot);
+        doctor.Options.Add(symbols.Strict);
+        return doctor;
     }
 
     private static Command Ps(Symbols symbols)
@@ -710,6 +745,9 @@ internal static class Grammar
             Viewports = viewports,
             Environment = ReadEnvironment(result.GetValue(S.Env)),
             State = result.GetValue(S.State),
+            Script = result.GetValue(S.Script),
+            Aot = result.GetValue(S.Aot),
+            Strict = result.GetValue(S.Strict),
             Seconds = command == "dwell" ? double.Parse(argument, CultureInfo.InvariantCulture) : 0,
             WaitSeconds = waiting ? waitSeconds : 0,
             WaitLine = waitLine,

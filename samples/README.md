@@ -41,7 +41,7 @@ WinRT `MediaPlayer`; the other three publish for the current platform.
 
 ```sh
 dotnet publish disk.cs -c Release -p:CuiSharpHeadless=true -o artifacts/disk
-dotnet cui session --app artifacts/disk/disk < steps.txt
+dotnet cui session --app artifacts/disk/disk --script steps.txt
 ```
 
 The published app is `disk.exe` on Windows and `disk` elsewhere. A published build can be inspected
@@ -66,15 +66,11 @@ dotnet cui tree                  the controls the last frame drew
 dotnet cui click Up              click one, print the frame it produced
 dotnet cui png shot.png          that frame as a PNG
 dotnet cui docs read live-debugging
-dotnet cui session < steps.txt
+dotnet cui session --script steps.txt
 ```
 
-Use `dotnet tool update -g CuiSharp.Tools` to keep the tool current. On Windows PowerShell, pipe the
-script instead of using input redirection:
-
-```powershell
-Get-Content steps.txt | dotnet cui session --app artifacts/disk/disk
-```
+Use `dotnet tool update -g CuiSharp.Tools` to keep the tool current. `--script` works in every
+shell; a POSIX shell can still pipe the same file into `dotnet cui session` if it prefers.
 
 `CuiSharp@*` and the tool are versioned separately: restoring the samples always picks the latest
 stable package, while the tool only changes when you update it.

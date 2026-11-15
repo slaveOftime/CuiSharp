@@ -15,7 +15,7 @@ public static unsafe class CuiHttp
     public static string Reason(int status) => Marshal.PtrToStringUTF8(Native.HttpReason(status)) ?? "";
 
     /// <summary>The name of a method, e.g. "PATCH".</summary>
-    public static string MethodName(HttpMethod method) => Marshal.PtrToStringUTF8(Native.HttpMethodName((int)method)) ?? "";
+    public static string MethodName(HttpVerb method) => Marshal.PtrToStringUTF8(Native.HttpMethodName((int)method)) ?? "";
 
     /// <summary>
     /// Decodes a URL's query into pairs, the way the request bar's parameters table shows it.

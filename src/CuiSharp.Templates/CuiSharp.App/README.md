@@ -24,7 +24,7 @@ dotnet cui tree -p CuiSharp.App # the frame's controls, nested
 dotnet cui click 'Tab "Markets"' -p CuiSharp.App # click one, print the frame that reacted
 dotnet cui png shot.png -p CuiSharp.App # the frame as an image
 dotnet cui layout -p CuiSharp.App # rectangles, and anything that overflowed
-dotnet cui session -p CuiSharp.App < steps.txt # many commands, one process
+dotnet cui session -p CuiSharp.App --script steps.txt # many commands, one process
 dotnet cui docs # the framework guide, offline
 ```
 

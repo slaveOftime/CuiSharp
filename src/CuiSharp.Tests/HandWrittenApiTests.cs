@@ -77,8 +77,37 @@ public class HandWrittenApiTests
         var faded = new Color(10, 20, 30, 255).WithAlpha(0.5f);
         Assert.InRange(faded.A, 100, 155);
 
+        // A token has no channels to fade before a frame resolves it; WithAlpha must not turn
+        // Color.Accent into a transparent colour, and the token marker includes alpha.
+        Assert.True(Color.Accent.IsToken);
+        Assert.Equal(Color.Accent, Color.Accent.WithAlpha(0.1f));
+        Assert.False(new Color(5, 0xC5, 0x1D, 255).IsToken);
+
         Assert.Equal("A", Ui.KeyName(Key.A));
         Assert.False(string.IsNullOrEmpty(Ui.AccentName(Accent.Violet)));
+    }
+
+    [Fact]
+    public void SizesDescribeTheirKindWithoutReachingIntoNativeState()
+    {
+        Assert.True(Size.Fit.IsFit);
+        Assert.True(Size.Fill.IsFill);
+        Assert.True(Size.Grow(2).IsFill);
+        Assert.True(Size.Px(240).IsFixed);
+        Assert.True(Size.Percent(50).IsPercent);
+
+        Assert.True(Size.Px(240).TryGetPoints(out float points));
+        Assert.Equal(240f, points);
+        Assert.False(Size.Fill.TryGetPoints(out _));
+
+        Assert.True(Size.Percent(50).TryGetPercent(out float percent));
+        Assert.Equal(50f, percent);
+        Assert.False(Size.Px(240).TryGetPercent(out _));
+
+        Assert.Equal("Fit", Size.Fit.ToString());
+        Assert.Equal("Fill", Size.Fill.ToString());
+        Assert.Equal("240px", Size.Px(240).ToString());
+        Assert.Equal("50%", Size.Percent(50).ToString());
     }
 
     [Fact]

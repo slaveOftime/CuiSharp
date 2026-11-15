@@ -359,6 +359,57 @@ public class ToolArgumentTests
     }
 
     [Fact]
+    public void ASessionCanNameItsScriptInsteadOfNeedingShellRedirection()
+    {
+        // Windows PowerShell has no `<`, so a portable session has to be able to name its file.
+        Grammar.Parsed parsed = Grammar.Parse(["session", "--script", "steps.txt", "--project", "App.cs"]);
+
+        Assert.Empty(parsed.Errors);
+        Assert.Equal("session", parsed.Options!.Command);
+        Assert.Equal("steps.txt", parsed.Options.Script);
+        Assert.Equal("App.cs", parsed.Options.Project);
+    }
+
+    [Fact]
+    public void ASessionScriptIsReadInOrderBeforeTheAppStarts()
+    {
+        string project = Path.Combine(TestPaths.RepositoryRoot, "src", "CuiSharp.Tests", "TestApps", "ReadyProbe");
+        string script = Path.Combine(Path.GetTempPath(), $"cui-script-{Guid.NewGuid():N}.txt");
+        File.WriteAllText(script, "tree\nframe 2\ntree\n");
+
+        try
+        {
+            var output = new StringWriter();
+            var error = new StringWriter();
+            int exit = Cli.Run(
+                ["session", "--script", script, "--project", project, "--wait", "ready", "--wait-timeout", "20", "--", "--ready-after", "3"],
+                output,
+                error);
+
+            Assert.True(exit == 0, $"the script should relay all three answers: {error}");
+            Assert.Equal(3, output.ToString().Split("Frame", StringSplitOptions.None).Length - 1);
+        }
+        finally
+        {
+            File.Delete(script);
+        }
+    }
+
+    [Fact]
+    public void AMissingSessionScriptNamesTheFileAndStartsNoApp()
+    {
+        string missing = Path.Combine(Path.GetTempPath(), $"cui-missing-{Guid.NewGuid():N}.txt");
+        var output = new StringWriter();
+        var error = new StringWriter();
+
+        int exit = Cli.Run(["session", "--script", missing, "--project", "nothing-here"], output, error);
+
+        Assert.Equal(1, exit);
+        Assert.Contains(missing, error.ToString(), StringComparison.Ordinal);
+        Assert.Contains("session script", error.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ASessionCannotBeGivenACommandWordToIgnore()
     {
         // `tree --stdin` used to read stdin and drop the `tree`. The session is a command now,

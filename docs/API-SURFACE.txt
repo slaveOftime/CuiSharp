@@ -651,7 +651,7 @@ class CuiSharp.CuiFiles
   static Void SortTraceSpans(Span<TraceSpan>)
 class CuiSharp.CuiHttp
   static KeyValue[] ParseQuery(String, Int32)
-  static String MethodName(HttpMethod)
+  static String MethodName(HttpVerb)
   static String Reason(Int32)
   static String SetQuery(String, ReadOnlySpan<KeyValue>, Int32)
 class CuiSharp.CuiMath
@@ -1599,7 +1599,14 @@ struct CuiSharp.HoverCardOpts
   field Placement Placement
   field Single Delay
   field Single Width
-enum CuiSharp.HttpMethod
+class CuiSharp.HttpRequestBarUiExtensions
+  static RequestBarResult RequestBar(Ui, UiText, ref HttpVerb, ref String, Int32, RequestBarOpts)
+  static Void ResponseStatus(Ui, Int32, Double, Double)
+class CuiSharp.HttpRequestBarUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
+  RequestBarResult RequestBar(UiText, ref HttpVerb, ref String, Int32, RequestBarOpts)
+  Void ResponseStatus(Int32, Double, Double)
+class CuiSharp.HttpRequestBarUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4+<M>$D152016828D0F2CB0A8B78500F4F70D3
+enum CuiSharp.HttpVerb
   Delete
   Get
   Head
@@ -1607,13 +1614,6 @@ enum CuiSharp.HttpMethod
   Patch
   Post
   Put
-class CuiSharp.HttpRequestBarUiExtensions
-  static RequestBarResult RequestBar(Ui, UiText, ref HttpMethod, ref String, Int32, RequestBarOpts)
-  static Void ResponseStatus(Ui, Int32, Double, Double)
-class CuiSharp.HttpRequestBarUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
-  RequestBarResult RequestBar(UiText, ref HttpMethod, ref String, Int32, RequestBarOpts)
-  Void ResponseStatus(Int32, Double, Double)
-class CuiSharp.HttpRequestBarUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4+<M>$D152016828D0F2CB0A8B78500F4F70D3
 interface CuiSharp.IFileDialogProvider
   FilePickResult Pick(CuiWindow, FileDialogOpts)
 class CuiSharp.Icons
@@ -5529,8 +5529,15 @@ struct CuiSharp.SignatureOpts
   field Size Width
   field String Placeholder
 struct CuiSharp.Size
+  Boolean TryGetPercent(out Single)
+  Boolean TryGetPoints(out Single)
+  String ToString()
   field Size Fill
   field Size Fit
+  property Boolean IsFill { get; }
+  property Boolean IsFit { get; }
+  property Boolean IsFixed { get; }
+  property Boolean IsPercent { get; }
   static Size Grow(Single)
   static Size Percent(Single)
   static Size Px(Single)

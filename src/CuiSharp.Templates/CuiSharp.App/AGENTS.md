@@ -40,4 +40,4 @@ expressions for branching on a value, primary constructors for pages and service
 
 `dotnet test` and `dotnet build -warnaserror` after every change. When the question is what the app
 really draws, `dotnet cui tree -p CuiSharp.App` is one build and one answer, and
-`dotnet cui session -p CuiSharp.App < cmds.txt` keeps a multi-step flow in one process.
+`dotnet cui session -p CuiSharp.App --script cmds.txt` keeps a multi-step flow in one process.

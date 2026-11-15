@@ -43,6 +43,24 @@ internal static class AppLocator
         string? Framework = null,
         string? BaseOutputPath = null);
 
+    /// <summary>
+    /// What MSBuild evaluates about a project without building it: the properties and the two
+    /// reference item lists the doctor reads. Keeping it separate from <see cref="BuildTarget"/>
+    /// means the driver's target resolution keeps asking for exactly the four properties it needs.
+    /// </summary>
+    internal sealed record Inspection(
+        bool FileBased,
+        IReadOnlyDictionary<string, string> Properties,
+        IReadOnlyList<IReadOnlyDictionary<string, string>> Packages,
+        IReadOnlyList<IReadOnlyDictionary<string, string>> ProjectReferences)
+    {
+        internal string Property(string name) => Properties.GetValueOrDefault(name, "");
+
+        internal IEnumerable<IReadOnlyDictionary<string, string>> PackagesNamed(string identity) =>
+            Packages.Where(package =>
+                package.GetValueOrDefault("Identity", "").Equals(identity, StringComparison.OrdinalIgnoreCase));
+    }
+
     /// <summary>The assembly to run, or null when there is no project here.</summary>
     /// <param name="path">A project file, a file-based <c>.cs</c> app, or the directory to look in.</param>
     /// <param name="noBuild">Use the last build instead of building.</param>
@@ -284,6 +302,78 @@ internal static class AppLocator
     }
 
     /// <summary>
+    /// Asks MSBuild for the properties and references <c>doctor</c> checks, without building. The
+    /// runtime identifier is passed when the caller wants RID-conditional properties (the
+    /// templates set <c>PublishAot</c> only then) evaluated the way a publish would see them.
+    /// </summary>
+    internal static Inspection Inspect(string project, BuildRequest request, string? runtimeIdentifier = null)
+    {
+        project = Path.GetFullPath(project);
+        bool fileBased = project.EndsWith(".cs", StringComparison.OrdinalIgnoreCase);
+        List<string> arguments = fileBased
+            ? ["build", project, "-c", request.Configuration, "--nologo"]
+            : ["msbuild", project, "-nologo", $"-p:Configuration={request.Configuration}"];
+        arguments.AddRange(
+        [
+            "-getProperty:TargetPath",
+            "-getProperty:TargetFramework",
+            "-getProperty:TargetFrameworks",
+            "-getProperty:RuntimeIdentifier",
+            "-getProperty:PublishAot",
+            "-getProperty:SelfContained",
+            "-getProperty:ApplicationIcon",
+            "-getProperty:CuiSharpVersion",
+            "-getProperty:ProjectAssetsFile",
+            "-getProperty:UseLocalCuiSharp",
+            "-getItem:PackageReference",
+            "-getItem:ProjectReference",
+        ]);
+        if (request.Framework is not null) arguments.Add($"-p:TargetFramework={request.Framework}");
+        if (request.BaseOutputPath is not null) arguments.Add($"-p:BaseOutputPath={request.BaseOutputPath}");
+        if (!string.IsNullOrEmpty(runtimeIdentifier)) arguments.Add($"-p:RuntimeIdentifier={runtimeIdentifier}");
+
+        (int exit, string report, string complaints) = Run("dotnet", arguments, SourceDirectory(project));
+        if (exit != 0)
+        {
+            throw new ToolException(
+                $"Could not inspect `{Path.GetFileName(project)}`:" +
+                $"{Environment.NewLine}{complaints.Trim()}{Environment.NewLine}{report.Trim()}");
+        }
+
+        return ParseInspection(fileBased, report);
+    }
+
+    /// <summary>
+    /// The properties and reference items out of MSBuild's JSON answer. A project with one target
+    /// framework and no references still answers with the same shape; anything else is reported as
+    /// the host's answer rather than treated as an empty project.
+    /// </summary>
+    internal static Inspection ParseInspection(bool fileBased, string report)
+    {
+        string text = report.Trim();
+        if (!text.StartsWith('{'))
+        {
+            throw new ToolException(UnreadableAnswer(text, "the answer is not an object of properties and items"));
+        }
+
+        try
+        {
+            using JsonDocument document = JsonDocument.Parse(text);
+            JsonElement root = document.RootElement;
+            Dictionary<string, string> properties = ReadProperties(root, text);
+            return new Inspection(
+                fileBased,
+                properties,
+                ReadItems(root, "PackageReference", text),
+                ReadItems(root, "ProjectReference", text));
+        }
+        catch (JsonException malformed)
+        {
+            throw new ToolException(UnreadableAnswer(text, malformed.Message));
+        }
+    }
+
+    /// <summary>
     /// The properties out of MSBuild's own text. One property prints its value, several print a
     /// JSON object; both are answered, so the parsing is testable without a project on disk.
     /// </summary>
@@ -326,15 +416,20 @@ internal static class AppLocator
     /// </summary>
     private static Dictionary<string, string> ReadProperties(string text)
     {
-        var properties = new Dictionary<string, string>(StringComparer.Ordinal);
         using JsonDocument document = JsonDocument.Parse(text);
-        if (document.RootElement.ValueKind != JsonValueKind.Object)
+        return ReadProperties(document.RootElement, text);
+    }
+
+    private static Dictionary<string, string> ReadProperties(JsonElement root, string text)
+    {
+        var properties = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (root.ValueKind != JsonValueKind.Object)
         {
             throw new ToolException(UnreadableAnswer(
-                text, $"the answer is {document.RootElement.ValueKind}, not an object"));
+                text, $"the answer is {root.ValueKind}, not an object"));
         }
 
-        if (!document.RootElement.TryGetProperty("Properties", out JsonElement found)) return properties;
+        if (!root.TryGetProperty("Properties", out JsonElement found)) return properties;
         if (found.ValueKind != JsonValueKind.Object)
         {
             throw new ToolException(UnreadableAnswer(
@@ -353,6 +448,51 @@ internal static class AppLocator
         }
 
         return properties;
+    }
+
+    /// <summary>
+    /// One item list out of MSBuild's answer. Item metadata is read as string values; metadata a
+    /// future SDK emits in another shape is ignored rather than made a parse failure, because the
+    /// doctor only needs identity and version and an extra boolean must not hide the app.
+    /// </summary>
+    private static List<IReadOnlyDictionary<string, string>> ReadItems(JsonElement root, string name, string text)
+    {
+        var items = new List<IReadOnlyDictionary<string, string>>();
+        if (!root.TryGetProperty("Items", out JsonElement all) || all.ValueKind == JsonValueKind.Null) return items;
+        if (all.ValueKind != JsonValueKind.Object)
+        {
+            throw new ToolException(UnreadableAnswer(
+                text, $"`Items` is {all.ValueKind}, not an object of item lists"));
+        }
+
+        if (!all.TryGetProperty(name, out JsonElement found) || found.ValueKind == JsonValueKind.Null) return items;
+        if (found.ValueKind != JsonValueKind.Array)
+        {
+            throw new ToolException(UnreadableAnswer(
+                text, $"`Items.{name}` is {found.ValueKind}, not an array"));
+        }
+
+        foreach (JsonElement item in found.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object)
+            {
+                throw new ToolException(UnreadableAnswer(
+                    text, $"an item in `Items.{name}` is {item.ValueKind}, not an object"));
+            }
+
+            var values = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (JsonProperty metadata in item.EnumerateObject())
+            {
+                if (metadata.Value.ValueKind == JsonValueKind.String)
+                    values[metadata.Name] = metadata.Value.GetString() ?? "";
+                else if (metadata.Value.ValueKind == JsonValueKind.Null)
+                    values[metadata.Name] = "";
+            }
+
+            items.Add(values);
+        }
+
+        return items;
     }
 
     /// <summary>
@@ -416,6 +556,27 @@ internal static class AppLocator
             throw new ToolException($"`{Path.GetFileName(project)}` did not build:" +
                 $"{Environment.NewLine}{complaints.Trim()}{Environment.NewLine}{report.Trim()}");
         }
+    }
+
+    /// <summary>
+    /// Publishes the project for one runtime identifier into a caller-owned directory. Kept here
+    /// with the other MSBuild calls so <c>doctor --aot</c> inherits the same UTF-8 pipe handling,
+    /// the same failure wording, and the same "stderr is part of the report" rule.
+    /// </summary>
+    internal static (int Exit, string Out, string Error) PublishAot(
+        string project, BuildRequest request, string runtimeIdentifier, string output)
+    {
+        project = Path.GetFullPath(project);
+        // PublishAot is deliberately not forced here: a command-line property is global, so it
+        // would also switch AOT on for referenced analyzer projects and fail a publish the app
+        // itself can do. Doctor only publishes an app that says it is AOT in its own project.
+        List<string> arguments =
+        [
+            "publish", project, "-c", request.Configuration, "-r", runtimeIdentifier,
+            "-o", output, "--nologo", "-v", "minimal",
+        ];
+        if (request.Framework is not null) arguments.AddRange(["-f", request.Framework]);
+        return Run("dotnet", arguments, SourceDirectory(project));
     }
 
     /// <summary>The folder the SDK should be run from: the one holding the app's configuration.</summary>

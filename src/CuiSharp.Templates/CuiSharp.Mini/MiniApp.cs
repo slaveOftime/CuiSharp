@@ -12,7 +12,7 @@
 // window of your own — the tool builds it, runs it headless and prints the frame:
 //   dotnet cui tree -p MiniApp.cs
 //   dotnet cui click Increment -p MiniApp.cs
-//   dotnet cui session -p MiniApp.cs < steps.txt
+//   dotnet cui session -p MiniApp.cs --script steps.txt
 //   dotnet cui docs
 //
 // One command is one process, starting at frame 1; a session keeps its lines in one process, so

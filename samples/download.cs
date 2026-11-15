@@ -50,7 +50,7 @@ using MonoTorrent.Client;
 //            dotnet cui png shot.png                    that frame as a PNG
 //            dotnet cui docs read live-debugging        the guide, offline
 //            dotnet cui api ProgressOpts                one exact declaration
-//            dotnet cui session < steps.txt             many clicks against one app instance
+//            dotnet cui session --script steps.txt      many clicks against one app instance
 //
 // The BitTorrent half is MonoTorrent: trackers, DHT, magnet metadata, fast
 // resume and multi-peer downloading are its job. HTTP files are fetched with

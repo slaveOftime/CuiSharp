@@ -220,7 +220,7 @@ public class DeveloperToolTests
         var pattern = @"\b(\w+)@(\w+)\.com\b";
         var text = "ada@example.com and grace@navy.mil";
         var flags = RegexFlags.IgnoreCase;
-        var method = HttpMethod.Get;
+        var method = HttpVerb.Get;
         var url = "https://api.example.com/frames?state=open";
         var apiSelected = -1;
         var lines = new[] { "int main(void) {", "    return 0;", "}" };
@@ -307,7 +307,7 @@ public class DeveloperToolTests
         // The two rented text buffers come back with what they went in with.
         Assert.Equal(@"\b(\w+)@(\w+)\.com\b", pattern);
         Assert.Equal("https://api.example.com/frames?state=open", url);
-        Assert.Equal(HttpMethod.Get, method);
+        Assert.Equal(HttpVerb.Get, method);
         Assert.Equal(RegexFlags.IgnoreCase, flags);
     }
 
@@ -345,7 +345,7 @@ public class DeveloperToolTests
         var pattern = @"(\w+)";
         var regexText = "abc def";
         var regexFlags = RegexFlags.None;
-        var method = HttpMethod.Get;
+        var method = HttpVerb.Get;
         var url = "https://example.com?a=1";
         var apiSelected = -1;
         var endpoints = new ApiEndpoint[] { new("GET", "/v1", "List", "Tag", false) };
@@ -518,7 +518,7 @@ public class DeveloperToolTests
 
         Assert.Equal("Not Found", CuiHttp.Reason(404));
         Assert.Equal("", CuiHttp.Reason(999));
-        Assert.Equal("PATCH", CuiHttp.MethodName(HttpMethod.Patch));
+        Assert.Equal("PATCH", CuiHttp.MethodName(HttpVerb.Patch));
     }
 
     [Fact]
