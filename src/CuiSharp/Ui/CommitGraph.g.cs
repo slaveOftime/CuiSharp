@@ -22,7 +22,7 @@ public static unsafe class CommitGraphUiExtensions
             var __opts = o.ToNative((nint)(&__selected));
             var __result = Native.CommitGraph(ui.Handle, Utf8.Get(id), (nint)__commits, (int)(commits.Length), in __opts);
             selected = __selected;
-            WidgetRecorder.Note(ui.Handle, "CommitGraph", id);
+            WidgetRecorder.NoteValue(ui.Handle, "CommitGraph", id, (double)selected);
             return CommitGraphResult.FromNative(__result);
         }
 

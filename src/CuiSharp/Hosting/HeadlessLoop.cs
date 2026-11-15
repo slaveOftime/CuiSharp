@@ -228,7 +228,7 @@ public static class HeadlessLoop
 
     private static string Execute(HeadlessApp app, string command, string argument) => command switch
     {
-        "tree" or "print" => app.Print(),
+        "tree" or "print" => app.Print(details: string.Equals(argument, "details", StringComparison.OrdinalIgnoreCase)),
         "layout" => app.PrintLayout(),
         "find" => Find(app, argument),
         "click" => Click(app, argument),
@@ -249,7 +249,7 @@ public static class HeadlessLoop
     private static string Find(HeadlessApp app, string argument)
     {
         WidgetTarget target = app.FindUnique(argument);
-        return $"{target.Kind} \"{target.Text}\" at {target.Rect}";
+        return target.Node.Describe() + $" at {target.Rect}";
     }
 
     /// <summary>

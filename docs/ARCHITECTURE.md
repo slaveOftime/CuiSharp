@@ -277,8 +277,15 @@ makes a frame allocate. The snapshot itself is data that outlives the frame, so 
 outside the window `FrameStats` measures.
 
 `SemanticNode` rebuilds that nesting; `WidgetQuery` is the vocabulary a search uses (a label, a
-kind and a label, or a path) and it ranks: exact before prefix before substring, and an actionable
-control before static text at the same tier.
+kind and a label, a role, a value, or a path) and it ranks: exact before prefix before substring,
+and an actionable control before static text at the same tier. A node also carries the
+`SemanticRole`, an optional `Value`, `SemanticState` flags and an optional `AutomationId`: a
+`ui.Id` scope supplies the native identity and the automation id together, while `ui.Automation`
+supplies only the latter. `SemanticNode.ToAccessibility()` is the projection a UIA, AT-SPI or
+NSAccessibility adapter consumes; the platform layers themselves stay ahead, not implied by the
+recording layer. Values are captured as the wrapper already has them (a text field's string, a
+slider's number, a toggle's bool) and formatted after the frame, so recording still adds 0 B to the
+draw.
 
 ## Tests
 

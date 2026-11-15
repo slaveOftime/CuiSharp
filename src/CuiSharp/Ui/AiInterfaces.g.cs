@@ -111,7 +111,7 @@ public static unsafe class AiInterfacesUiExtensions
             for (int i = 0; i < models.Length; i++) __models[i] = models[i].ToNative();
             var __opts = o.ToNative();
             var __result = Native.ModelPicker(ui.Handle, Utf8.Get(id), (nint)__models, (int)(models.Length), ref selected, in __opts);
-            WidgetRecorder.Note(ui.Handle, "ModelPicker", id);
+            WidgetRecorder.NoteValue(ui.Handle, "ModelPicker", id, (double)selected);
             return __result != 0;
         }
 
@@ -126,7 +126,7 @@ public static unsafe class AiInterfacesUiExtensions
             if (Ui.TextChanged(__bufSlot)) buf = Ui.DecodeText(__bufSlot);
             removed = __removed;
             model = __model;
-            WidgetRecorder.Note(ui.Handle, "ChatComposer", id);
+            WidgetRecorder.NoteValue(ui.Handle, "ChatComposer", id, buf);
             return (ComposerEvents)__result;
         }
 

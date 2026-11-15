@@ -37,7 +37,7 @@ public static unsafe class ButtonsUiExtensions
             if (o.Icons is { } __icons && __icons.Length < items.Length) throw new ArgumentException("Icons must contain at least one entry per item.", nameof(o));
             var __opts = o.ToNative();
             var __result = Native.Segmented(ui.Handle, Utf8.Get(id), UiMarshal.Strings(items), (int)(items.Length), ref index, in __opts);
-            WidgetRecorder.NoteItems(ui.Handle, "Segmented", "Segment", id, items);
+            WidgetRecorder.NoteItems(ui.Handle, "Segmented", "Segment", id, items, index);
             return __result != 0;
         }
 

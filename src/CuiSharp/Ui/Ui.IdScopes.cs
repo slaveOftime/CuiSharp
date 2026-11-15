@@ -8,8 +8,13 @@ namespace CuiSharp;
 public ref struct IdScope : IDisposable
 {
     private nint _ui;
+    private readonly bool _automation;
 
-    internal IdScope(nint ui) { _ui = ui; }
+    internal IdScope(nint ui, bool automation = false)
+    {
+        _ui = ui;
+        _automation = automation;
+    }
 
     /// <summary>Pops the id. Disposing the same instance again does nothing.</summary>
     public void Dispose()
@@ -17,7 +22,29 @@ public ref struct IdScope : IDisposable
         nint ui = _ui;
         if (ui == 0) return;
         _ui = 0;
+        if (_automation) WidgetRecorder.PopAutomation(ui);
         Interop.Native.PopId(ui);
+    }
+}
+
+/// <summary>
+/// A stable automation id for the widgets drawn inside it. Unlike <see cref="Ui.Id(UiText)"/>
+/// this does not change CUI's native identity, so it can name a button whose label is already
+/// unique without changing its state key.
+/// </summary>
+public ref struct AutomationScope : IDisposable
+{
+    private nint _ui;
+
+    internal AutomationScope(nint ui) { _ui = ui; }
+
+    /// <summary>Pops the automation id. Disposing twice does nothing.</summary>
+    public void Dispose()
+    {
+        nint ui = _ui;
+        if (ui == 0) return;
+        _ui = 0;
+        WidgetRecorder.PopAutomation(ui);
     }
 }
 
@@ -73,7 +100,9 @@ public ref struct KeyedScope<T>
 
         Current = _items[_index];
         T item = Current;
-        Interop.Native.PushIdInt(_ui, _key(in item));
+        int key = _key(in item);
+        Interop.Native.PushIdInt(_ui, key);
+        WidgetRecorder.PushAutomation(_ui, key);
         _pushed = true;
         return true;
     }
@@ -85,6 +114,7 @@ public ref struct KeyedScope<T>
     {
         if (!_pushed) return;
         _pushed = false;
+        WidgetRecorder.PopAutomation(_ui);
         Interop.Native.PopId(_ui);
     }
 }

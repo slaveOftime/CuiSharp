@@ -20,6 +20,11 @@ different things.
   environment, and a refusal to guess between equally good matches. `CUISHARP_VIEWPORT` makes a
   headless frame the requested size; `ui.MarkReady()` and `--wait ready` replace frame counting for
   async data.
+- **Semantic roles, values, state and automation ids.** Every recorded node now exposes `Role`,
+  `Name`, `Value`, `SemanticState` and `AutomationId`; `ui.Id` and `ui.Automation` name a control
+  independently of its label, and `SemanticNode.ToAccessibility()` is the projection a platform
+  accessibility adapter will consume. `dotnet cui tree --details` prints the metadata, and
+  `find`/`click` accept `--role`, `--value` and `--id` as well as the existing query text.
 
 ### Changed
 

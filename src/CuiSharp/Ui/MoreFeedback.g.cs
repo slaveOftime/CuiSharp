@@ -20,7 +20,7 @@ public static unsafe class MoreFeedbackUiExtensions
             var __opts = o.ToNative();
             var __result = Native.Banner(ui.Handle, Utf8.Get(text), (nint)(&__open), in __opts);
             open = __open != 0;
-            WidgetRecorder.Note(ui.Handle, "Banner", text);
+            WidgetRecorder.NoteValue(ui.Handle, "Banner", text, open, open ? SemanticState.Expanded : SemanticState.None);
             return __result != 0;
         }
 

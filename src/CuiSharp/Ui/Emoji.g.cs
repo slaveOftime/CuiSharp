@@ -68,7 +68,7 @@ public static unsafe class EmojiUiExtensions
             var __result = Native.EmojiPicker(ui.Handle, Utf8.Get(id), in __opts);
             if (Ui.TextChanged(__recentSlot)) recent = Ui.DecodeText(__recentSlot);
             tone = __tone;
-            WidgetRecorder.Note(ui.Handle, "EmojiPicker", id);
+            WidgetRecorder.NoteValue(ui.Handle, "EmojiPicker", id, recent);
             return Marshal.PtrToStringUTF8(__result);
         }
 

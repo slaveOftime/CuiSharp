@@ -57,7 +57,7 @@ public static unsafe class DataGridUiExtensions
             byte __open = (byte)(open ? 1 : 0);
             var __result = Native.TreeCell(ui.Handle, Utf8.Get(label), depth, (byte)(hasChildren ? 1 : 0), (nint)(&__open), Utf8.Get(icon));
             open = __open != 0;
-            WidgetRecorder.Note(ui.Handle, "TreeCell", label);
+            WidgetRecorder.NoteValue(ui.Handle, "TreeCell", label, open, open ? SemanticState.Expanded : SemanticState.None);
             return __result != 0;
         }
 

@@ -45,7 +45,7 @@ public static unsafe class DockingUiExtensions
             var __bufSlot = ui.RentText(Native.MakeId(ui.Handle, Utf8.Get(id)) ^ 0x2cbb8a35u, ref buf, (int)cap);
             var __result = Native.DockSave(ui.Handle, Utf8.Get(id), (nint)__bufSlot.Buffer, (nuint)__bufSlot.Capacity);
             if (Ui.TextChanged(__bufSlot)) buf = Ui.DecodeText(__bufSlot);
-            WidgetRecorder.Note(ui.Handle, "DockSave", id);
+            WidgetRecorder.NoteValue(ui.Handle, "DockSave", id, buf);
             return __result;
         }
 
@@ -79,7 +79,7 @@ public static unsafe class DockingUiExtensions
             byte __open = (byte)(open ? 1 : 0);
             var __result = Native.InspectorGroup(ui.Handle, Utf8.Get(title), (nint)(&__open));
             open = __open != 0;
-            WidgetRecorder.Note(ui.Handle, "InspectorGroup", title);
+            WidgetRecorder.NoteValue(ui.Handle, "InspectorGroup", title, open, open ? SemanticState.Expanded : SemanticState.None);
             return __result != 0;
         }
 
@@ -88,7 +88,7 @@ public static unsafe class DockingUiExtensions
         {
             var __opts = o.ToNative();
             var __result = Native.PropFloat(ui.Handle, Utf8.Get(label), ref value, in __opts);
-            WidgetRecorder.Note(ui.Handle, "PropFloat", label);
+            WidgetRecorder.NoteValue(ui.Handle, "PropFloat", label, (double)value);
             return __result != 0;
         }
 
@@ -97,7 +97,7 @@ public static unsafe class DockingUiExtensions
         {
             var __opts = o.ToNative();
             var __result = Native.PropInt(ui.Handle, Utf8.Get(label), ref value, in __opts);
-            WidgetRecorder.Note(ui.Handle, "PropInt", label);
+            WidgetRecorder.NoteValue(ui.Handle, "PropInt", label, (double)value);
             return __result != 0;
         }
 
@@ -108,7 +108,7 @@ public static unsafe class DockingUiExtensions
             var __opts = o.ToNative();
             var __result = Native.PropText(ui.Handle, Utf8.Get(label), (nint)__bufSlot.Buffer, (nuint)__bufSlot.Capacity, in __opts);
             if (Ui.TextChanged(__bufSlot)) buf = Ui.DecodeText(__bufSlot);
-            WidgetRecorder.Note(ui.Handle, "PropText", label);
+            WidgetRecorder.NoteValue(ui.Handle, "PropText", label, buf);
             return __result != 0;
         }
 
@@ -119,7 +119,7 @@ public static unsafe class DockingUiExtensions
             var __opts = o.ToNative();
             var __result = Native.PropBool(ui.Handle, Utf8.Get(label), (nint)(&__value), in __opts);
             value = __value != 0;
-            WidgetRecorder.Note(ui.Handle, "PropBool", label);
+            WidgetRecorder.NoteValue(ui.Handle, "PropBool", label, value, value ? SemanticState.Checked : SemanticState.None);
             return __result != 0;
         }
 
@@ -128,7 +128,7 @@ public static unsafe class DockingUiExtensions
         {
             var __opts = o.ToNative();
             var __result = Native.PropEnum(ui.Handle, Utf8.Get(label), UiMarshal.Strings(items), (int)(items.Length), ref index, in __opts);
-            WidgetRecorder.Note(ui.Handle, "PropEnum", label);
+            WidgetRecorder.NoteValue(ui.Handle, "PropEnum", label, (double)index);
             return __result != 0;
         }
 
@@ -148,7 +148,7 @@ public static unsafe class DockingUiExtensions
         {
             var __opts = o.ToNative();
             var __result = Native.PropVec(ui.Handle, Utf8.Get(label), ref value, components, in __opts);
-            WidgetRecorder.Note(ui.Handle, "PropVec", label);
+            WidgetRecorder.NoteValue(ui.Handle, "PropVec", label, (double)value);
             return __result != 0;
         }
 

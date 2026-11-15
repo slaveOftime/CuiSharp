@@ -22,7 +22,7 @@ public static unsafe class HttpRequestBarUiExtensions
             var __result = Native.RequestBar(ui.Handle, Utf8.Get(id), ref __method, (nint)__urlSlot.Buffer, (nuint)__urlSlot.Capacity, in __opts);
             method = (HttpVerb)__method;
             if (Ui.TextChanged(__urlSlot)) url = Ui.DecodeText(__urlSlot);
-            WidgetRecorder.Note(ui.Handle, "RequestBar", id);
+            WidgetRecorder.NoteValue(ui.Handle, "RequestBar", id, url);
             return RequestBarResult.FromNative(__result);
         }
 

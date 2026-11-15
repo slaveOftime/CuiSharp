@@ -114,6 +114,8 @@ class CuiSharp.AppChromeMenuBarToolbarStatusBarDocumentTabsUiExtensions+<G>$2E78
   Void ToolbarSeparator()
   Void ToolbarSpacer()
 class CuiSharp.AppChromeMenuBarToolbarStatusBarDocumentTabsUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4+<M>$D152016828D0F2CB0A8B78500F4F70D3
+struct CuiSharp.AutomationScope
+  Void Dispose()
 struct CuiSharp.AvatarOpts
   field Boolean Square
   field Single Size
@@ -1534,7 +1536,7 @@ class CuiSharp.Hosting.HeadlessApp
   HeadlessApp ScrollAt(Single, Single, Single, Single)
   HeadlessApp Type(String)
   Int32 Settle(Int32, Nullable<TimeSpan>)
-  String Print(Boolean)
+  String Print(Boolean, Boolean)
   String PrintLayout()
   String SavePng(String, Boolean)
   String ToString()
@@ -1593,8 +1595,12 @@ struct CuiSharp.Hosting.WidgetTarget
   WidgetTarget Click()
   WidgetTarget Hover()
   property RectF Rect { get; }
+  property SemanticRole Role { get; }
+  property SemanticState State { get; }
+  property String AutomationId { get; }
   property String Kind { get; }
   property String Text { get; }
+  property String Value { get; }
 struct CuiSharp.HoverCardOpts
   field Placement Placement
   field Single Delay
@@ -5460,23 +5466,93 @@ class CuiSharp.SelectionControlsUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B
   Boolean Slider(UiText, ref Single, Single, Single, SliderOpts)
   Boolean Switch(UiText, ref Boolean, CheckOpts)
 class CuiSharp.SelectionControlsUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4+<M>$D152016828D0F2CB0A8B78500F4F70D3
+class CuiSharp.SemanticAccessibilityNode
+  Boolean Equals(Object)
+  Boolean Equals(SemanticAccessibilityNode)
+  Int32 GetHashCode()
+  SemanticAccessibilityNode <Clone>$()
+  String ToString()
+  Void Deconstruct(out SemanticRole, out String, out String, out SemanticState, out String, out RectF, out IReadOnlyList<SemanticAccessibilityNode>)
+  ctor(SemanticRole, String, String, SemanticState, String, RectF, IReadOnlyList<SemanticAccessibilityNode>)
+  property IReadOnlyList<SemanticAccessibilityNode> Children { get; set; }
+  property RectF Bounds { get; set; }
+  property SemanticRole Role { get; set; }
+  property SemanticState State { get; set; }
+  property String AutomationId { get; set; }
+  property String Name { get; set; }
+  property String Value { get; set; }
 class CuiSharp.SemanticNode
   Boolean TryFind(String, out SemanticNode)
   IEnumerable<SemanticNode> Descendants()
+  SemanticAccessibilityNode ToAccessibility()
   SemanticNode Find(String)
-  String Print(Boolean)
+  String Describe()
+  String Print(Boolean, Boolean)
   String ToString()
   property Boolean Detached { get; }
   property Boolean HasOwnRect { get; }
   property Boolean IsContainer { get; set; }
+  property Boolean IsEnabled { get; }
+  property Boolean IsFocused { get; }
   property IReadOnlyList<SemanticNode> Children { get; }
   property Int32 Depth { get; }
   property RectF Rect { get; }
   property SemanticNode Parent { get; }
+  property SemanticRole Role { get; }
+  property SemanticState State { get; }
+  property String AutomationId { get; }
   property String Kind { get; }
+  property String Name { get; }
   property String Path { get; }
   property String Text { get; }
+  property String Value { get; }
   property UInt32 Id { get; }
+enum CuiSharp.SemanticRole
+  Button
+  CheckBox
+  ComboBox
+  Container
+  Dialog
+  Frame
+  Heading
+  Image
+  Link
+  List
+  ListItem
+  Menu
+  MenuItem
+  None
+  Other
+  ProgressBar
+  RadioButton
+  Separator
+  Slider
+  SpinButton
+  Switch
+  Tab
+  TabList
+  Table
+  TableCell
+  TableRow
+  Text
+  TextBox
+  Tooltip
+  Tree
+  TreeItem
+class CuiSharp.SemanticRoles
+  static Boolean TryParse(String, out SemanticRole)
+  static SemanticRole Of(String)
+  static String Name(SemanticRole)
+enum CuiSharp.SemanticState
+  Checked
+  Enabled
+  Expanded
+  Focused
+  None
+  ReadOnly
+  Selected
+class CuiSharp.SemanticStates
+  static String Format(SemanticState)
 struct CuiSharp.SemanticWidget
   Boolean Contains(Single, Single)
   String ToString()
@@ -5485,8 +5561,11 @@ struct CuiSharp.SemanticWidget
   field Boolean IsContainer
   field Int32 Depth
   field RectF Rect
+  field SemanticState State
+  field String AutomationId
   field String Kind
   field String Text
+  field String Value
   field UInt32 Id
   property ValueTuple<Single, Single> Center { get; }
 struct CuiSharp.Series
@@ -6113,6 +6192,7 @@ struct CuiSharp.TreemapOpts
   field Size Width
   field String Format
 struct CuiSharp.Ui
+  AutomationScope Automation(UiText)
   Boolean DateToday(out Date)
   Boolean FilterBar(UiText, ReadOnlySpan<FilterField>, Span<UInt32>, ref String, Int32)
   Boolean KeyDown(Key)
@@ -6294,10 +6374,16 @@ struct CuiSharp.WheelOpts
   field Size Width
 struct CuiSharp.WidgetQuery
   String ToString()
+  property Nullable<SemanticRole> Role { get; }
   property String Kind { get; }
   property String Text { get; }
+  property String Value { get; }
   property String[] Path { get; }
   static WidgetQuery Parse(String)
 class CuiSharp.WidgetRecorder
   property Boolean Enabled { get; }
   static Void Note(IntPtr, String, UiText)
+  static Void Note(IntPtr, String, UiText, SemanticState)
+  static Void NoteValue(IntPtr, String, UiText, Boolean, SemanticState)
+  static Void NoteValue(IntPtr, String, UiText, Double, SemanticState)
+  static Void NoteValue(IntPtr, String, UiText, String, SemanticState)

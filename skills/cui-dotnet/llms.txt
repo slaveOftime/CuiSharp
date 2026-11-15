@@ -355,6 +355,7 @@ Hand-written, because the wrapper needs state a C call cannot carry; they are pa
 - `ui.AddFontFallback(...)` — hand-written in `Ui/Ui.Fonts.cs`
 - `ui.Animate(...)` — hand-written in `Ui/Ui.Draw.cs`
 - `ui.AnimateSpring(...)` — hand-written in `Ui/Ui.Draw.cs`
+- `ui.Automation(...)` — hand-written in `Ui/Ui.Overlays.cs`
 - `ui.Canvas(...)` — hand-written in `Ui/Ui.Draw.cs`
 - `ui.Clip(...)` — hand-written in `Ui/Ui.Draw.cs`
 - `ui.ColorOf(...)` — hand-written in `Ui/Ui.Frame.cs`

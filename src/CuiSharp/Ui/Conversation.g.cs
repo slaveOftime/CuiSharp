@@ -54,7 +54,7 @@ public static unsafe class ConversationUiExtensions
             var __result = Native.Comment(ui.Handle, Utf8.Get(id), Utf8.Get(author), Utf8.Get(text), in __opts);
             likes = __likes;
             liked = __liked != 0;
-            WidgetRecorder.Note(ui.Handle, "Comment", id);
+            WidgetRecorder.NoteValue(ui.Handle, "Comment", id, liked);
             return (CommentEvents)__result;
         }
 

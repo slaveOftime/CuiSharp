@@ -60,14 +60,14 @@ public unsafe ref partial struct Ui
             TextFieldKind.Area => Native.Textarea(Handle, Utf8.Get(id), (nint)slot.Buffer, (nuint)slot.Capacity, in n),
             _ => Native.Search(Handle, Utf8.Get(id), (nint)slot.Buffer, (nuint)slot.Capacity, in n),
         };
-        WidgetRecorder.Note(Handle, kind switch
+        var parsed = new InputResult(result);
+        if (parsed.Changed) value = TextFieldPool.Decode(slot);
+        WidgetRecorder.NoteValue(Handle, kind switch
         {
             TextFieldKind.Area => "TextArea",
             TextFieldKind.Search => "Search",
             _ => "Input",
-        }, id);
-        var parsed = new InputResult(result);
-        if (parsed.Changed) value = TextFieldPool.Decode(slot);
+        }, id, value, parsed.Focused ? SemanticState.Focused : SemanticState.None);
         return parsed;
     }
 
@@ -75,7 +75,7 @@ public unsafe ref partial struct Ui
     {
         var n = o.ToNative();
         bool changed = Native.Number(Handle, Utf8.Get(id), ref value, min, max, in n) != 0;
-        WidgetRecorder.Note(Handle, "Number", id);
+        WidgetRecorder.NoteValue(Handle, "Number", id, value);
         return changed;
     }
 

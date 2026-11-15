@@ -65,7 +65,7 @@ public static unsafe class TreeTableAndPathBarUiExtensions
             var __opts = o.ToNative();
             var __result = Native.FileBrowser(ui.Handle, Utf8.Get(id), (nint)__pathSlot.Buffer, (nuint)__pathSlot.Capacity, in __opts);
             if (Ui.TextChanged(__pathSlot)) path = Ui.DecodeText(__pathSlot);
-            WidgetRecorder.Note(ui.Handle, "FileBrowser", id);
+            WidgetRecorder.NoteValue(ui.Handle, "FileBrowser", id, path);
             return FileBrowserResult.FromNative(__result);
         }
 
@@ -78,7 +78,7 @@ public static unsafe class TreeTableAndPathBarUiExtensions
             var __result = Native.FilePicker(ui.Handle, Utf8.Get(id), (nint)(&__open), (nint)__outSlot.Buffer, (nuint)__outSlot.Capacity, in __opts);
             open = __open != 0;
             if (Ui.TextChanged(__outSlot)) @out = Ui.DecodeText(__outSlot);
-            WidgetRecorder.Note(ui.Handle, "FilePicker", id);
+            WidgetRecorder.NoteValue(ui.Handle, "FilePicker", id, @out, open ? SemanticState.Expanded : SemanticState.None);
             return __result != 0;
         }
 

@@ -20,7 +20,7 @@ public static unsafe class CodeEditorUiExtensions
             var __opts = o.ToNative();
             var __result = Native.CodeEditor(ui.Handle, Utf8.Get(id), (nint)__bufSlot.Buffer, (nuint)__bufSlot.Capacity, in __opts);
             if (Ui.TextChanged(__bufSlot)) buf = Ui.DecodeText(__bufSlot);
-            WidgetRecorder.Note(ui.Handle, "CodeEditor", id);
+            WidgetRecorder.NoteValue(ui.Handle, "CodeEditor", id, buf);
             return CodeEditorResult.FromNative(__result);
         }
 

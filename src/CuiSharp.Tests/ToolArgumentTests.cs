@@ -64,6 +64,44 @@ public class ToolArgumentTests
     }
 
     [Fact]
+    public void RoleValueAndIdAreOnePortableQuery()
+    {
+        Grammar.Parsed byRole = Grammar.Parse(["find", "--role", "button", "Save"]);
+        Assert.Empty(byRole.Errors);
+        Assert.Equal("find role:button Save", byRole.Options!.Line);
+
+        Grammar.Parsed byValue = Grammar.Parse(["find", "--role", "textbox", "--value", "Milk"]);
+        Assert.Empty(byValue.Errors);
+        Assert.Equal("find role:textbox value:Milk", byValue.Options!.Line);
+
+        Grammar.Parsed byId = Grammar.Parse(["click", "--id", "pause:42"]);
+        Assert.Empty(byId.Errors);
+        Assert.Equal("click id:pause:42", byId.Options!.Line);
+    }
+
+    [Fact]
+    public void AQueryWithNoTextOrFilterIsAUsageError()
+    {
+        Grammar.Parsed empty = Grammar.Parse(["find"]);
+        Assert.NotEmpty(empty.Errors);
+        Assert.Contains("--role", string.Join(" ", empty.Errors), StringComparison.Ordinal);
+
+        Grammar.Parsed both = Grammar.Parse(["find", "Save", "--value", "Milk"]);
+        Assert.NotEmpty(both.Errors);
+        Assert.Contains("--value", string.Join(" ", both.Errors), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TreeDetailsRidesOnTheTreeCommand()
+    {
+        Grammar.Parsed parsed = Grammar.Parse(["tree", "--details"]);
+
+        Assert.Empty(parsed.Errors);
+        Assert.Equal("tree", parsed.Options!.Command);
+        Assert.Equal("tree details", parsed.Options.Line);
+    }
+
+    [Fact]
     public void AFlagTheToolDoesNotKnowIsReportedRatherThanForwarded()
     {
         Grammar.Parsed parsed = Grammar.Parse(["tree", "--pgae=2"]);
@@ -174,7 +212,14 @@ public class ToolArgumentTests
                 foreach (string spelling in new[] { option.Name }.Concat(option.Aliases))
                 {
                     var argv = new List<string> { command.Name };
-                    foreach (CliArgument argument in command.Arguments) argv.Add(SampleArgument(argument));
+                    // A value or an exact id is the whole query; adding the sample label would
+                    // ask for two different searches at once, which the grammar refuses.
+                    bool queryOnly = command.Name is "find" or "click" && spelling is "--value" or "--id";
+                    if (!queryOnly)
+                    {
+                        foreach (CliArgument argument in command.Arguments) argv.Add(SampleArgument(argument));
+                    }
+
                     argv.Add(spelling);
                     if (option.ValueType != typeof(bool)) argv.Add(SampleOption(option));
                     // A timeout bounds a wait, so it is only legal beside one.
@@ -249,7 +294,7 @@ public class ToolArgumentTests
         Assert.Equal(0, Cli.Run(["click", "--help"], output, error));
 
         string help = output.ToString();
-        Assert.Contains("click <text>", help, StringComparison.Ordinal);
+        Assert.Contains("click [<text>]", help, StringComparison.Ordinal);
         Assert.Contains("--attach", help, StringComparison.Ordinal);
         Assert.Equal("", error.ToString());
     }

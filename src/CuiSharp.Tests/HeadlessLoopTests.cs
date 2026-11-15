@@ -112,6 +112,28 @@ public class HeadlessLoopTests
     }
 
     [Fact]
+    public void TreeDetailsAndSemanticQueriesSpeakTheSameProtocol()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        var page = new Counter();
+        using var app = TestApp.Start(page, 400, 300);
+
+        string details = Wire(app, "tree details");
+        Assert.Contains("Button \"Add\" role=button", details, StringComparison.Ordinal);
+        Assert.Contains("Input \"name\" role=textbox", details, StringComparison.Ordinal);
+        Assert.Contains("state=enabled", details, StringComparison.Ordinal);
+
+        string found = Wire(app, "find role:button Add");
+        Assert.Contains("Button \"Add\" role=button", found, StringComparison.Ordinal);
+        Assert.Contains(" at ", found, StringComparison.Ordinal);
+
+        // The existing plain tree is unchanged: a reader that does not ask for details pays
+        // neither the extra words nor the extra native calls to read them.
+        Assert.Equal("Frame\n  Label \"clicks 0\"\n  Button \"Add\"\n  Input \"name\"", Wire(app, "tree"));
+    }
+
+    [Fact]
     public void TypingGoesToTheFocusedField()
     {
         if (!OperatingSystem.IsWindows()) return;

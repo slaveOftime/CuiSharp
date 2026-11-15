@@ -36,8 +36,8 @@ internal static class Grammar
         ("faults", [], "what the app threw while drawing, if anything", []),
         ("quit", [], "close the app, or a live attached window", []),
 
-        ("find", [], "one control: kind, label and rectangle", [Text("text", "the label, text or id to find")]),
-        ("click", [], "click a control, then print the frame it produced", [Text("text", "the label, text or id to click")]),
+        ("find", [], "one control: kind, label and rectangle", [OptionalText("text", "the label, text or id to find")]),
+        ("click", [], "click a control, then print the frame it produced", [OptionalText("text", "the label, text or id to click")]),
         ("type", [], "type into the focused control, then print the frame", [Text("text", "the text to type")]),
         ("key", [], "press a key by the name a person would use", [Text("name", "the key: Tab, Enter, Escape, F1, PageDown")]),
 
@@ -142,6 +142,31 @@ internal static class Grammar
         internal Option<bool> Strict = new("--strict")
         {
             Description = "exit 1 when a check warns, not only when it fails",
+        };
+
+        // ---- what to find --------------------------------------------------------------------
+
+        internal Option<string?> Role = new("--role")
+        {
+            Description = "find by semantic role: button, textbox, checkbox, tab, menuitem, …",
+            HelpName = "role",
+        };
+
+        internal Option<string?> Value = new("--value")
+        {
+            Description = "find by the value a control holds: an input's text, a slider's number",
+            HelpName = "text",
+        };
+
+        internal Option<string?> Id = new("--id")
+        {
+            Description = "find by an explicit automation id (`ui.Id` or `ui.Automation`)",
+            HelpName = "id",
+        };
+
+        internal Option<bool> Details = new("--details")
+        {
+            Description = "include role, automation id, value and state in the tree",
         };
 
         // ---- what has to be true before the command runs ------------------------------------
@@ -315,6 +340,14 @@ internal static class Grammar
             foreach (Argument argument in arguments) command.Arguments.Add(argument);
             foreach (Option option in symbols.AppOptions) command.Options.Add(option);
             if (name == "png") command.Options.Add(symbols.Sizes);
+            if (name is "find" or "click")
+            {
+                command.Options.Add(symbols.Role);
+                command.Options.Add(symbols.Value);
+                command.Options.Add(symbols.Id);
+            }
+
+            if (name == "tree") command.Options.Add(symbols.Details);
             root.Subcommands.Add(command);
         }
 
@@ -476,7 +509,13 @@ internal static class Grammar
 
         var errors = new List<string>();
         foreach (ParseError parseError in result.Errors) errors.Add(Cli.Humanize(parseError.Message));
-        if (errors.Count == 0 && !TryCheckCombinations(result, out string conflict)) errors.Add(conflict);
+        // The help page describes a command that has not supplied its arguments yet, so the
+        // cross-option rules must not turn `click --help` into a usage error.
+        if (errors.Count == 0 && result.Action is not HelpAction
+            && !TryCheckCombinations(result, out string conflict))
+        {
+            errors.Add(conflict);
+        }
         if (errors.Count > 0 && Hint(result, grammarArgs) is { } hint) errors = [errors[0], hint];
         if (errors.Count > 0) return new Parsed(false, false, false, null, errors, result);
 
@@ -690,6 +729,33 @@ internal static class Grammar
             return false;
         }
 
+        if (result.CommandResult.Command.Name is "find" or "click")
+        {
+            bool text = result.CommandResult.Command.Arguments.Count > 0
+                && result.GetResult(result.CommandResult.Command.Arguments[0]) is not null;
+            string? role = result.GetValue(S.Role);
+            string? value = result.GetValue(S.Value);
+            string? id = result.GetValue(S.Id);
+
+            if (!text && role is null && value is null && id is null)
+            {
+                message = $"{result.CommandResult.Command.Name} needs a label, --role, --value or --id";
+                return false;
+            }
+
+            if (id is not null && (text || role is not null || value is not null))
+            {
+                message = "--id is exact: it cannot be combined with a label, --role or --value";
+                return false;
+            }
+
+            if (value is not null && text)
+            {
+                message = "choose --value or a label, not both";
+                return false;
+            }
+        }
+
         message = "";
         return true;
     }
@@ -713,6 +779,8 @@ internal static class Grammar
         // `Join` is "" for a command with no arguments, so one line covers every command: the
         // offline ones take a name or words, the app verbs take their protocol slots.
         string argument = name.Length == 0 ? "" : Join(result, matched);
+        if (name is "find" or "click") argument = BuildQuery(result, argument);
+        if (name == "tree" && result.GetValue(S.Details)) argument = "details";
 
         bool waiting = result.GetResult(S.Wait) is not null || result.GetResult(S.WaitText) is not null;
         double waitSeconds = result.GetValue(S.WaitTimeout) ?? Cli.Options.DefaultWaitSeconds;
@@ -797,6 +865,31 @@ internal static class Grammar
     /// </summary>
     private static bool JsonRequested(ParseResult result, CommandResult matched) =>
         matched.Command.Options.Any(option => option is Option<bool> { Name: "--json" } flag && result.GetValue(flag));
+
+    /// <summary>
+    /// A find/click query from its label and the semantic filters. The app parses the same
+    /// <c>role:</c>, <c>value:</c> and <c>id:</c> vocabulary as a person typing the query, so the
+    /// tool only has to serialise the options into that one line.
+    /// </summary>
+    private static string BuildQuery(ParseResult result, string text)
+    {
+        string? role = result.GetValue(S.Role);
+        string? value = result.GetValue(S.Value);
+        string? id = result.GetValue(S.Id);
+
+        var parts = new List<string>(4);
+        if (id is { Length: > 0 }) parts.Add("id:" + id);
+        if (role is { Length: > 0 }) parts.Add("role:" + role);
+        if (value is { Length: > 0 })
+        {
+            parts.Add("value:" + (value.Any(static ch => char.IsWhiteSpace(ch) || ch == '"')
+                ? $"\"{value.Replace("\"", "\\\"", StringComparison.Ordinal)}\""
+                : value));
+        }
+
+        if (text.Length > 0) parts.Add(text);
+        return string.Join(' ', parts);
+    }
 
     /// <summary>
     /// One protocol line from a command's arguments, in declaration order: the wire protocol is a

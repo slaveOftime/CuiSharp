@@ -18,10 +18,18 @@ public readonly struct WidgetTarget
     internal WidgetTarget(HeadlessApp app, SemanticNode node)
     {
         _app = app;
+        Node = node;
         Kind = node.Kind;
         Text = node.Text;
         Rect = node.Rect;
+        Role = node.Role;
+        AutomationId = node.AutomationId;
+        Value = node.Value;
+        State = node.State;
     }
+
+    /// <summary>The node this target was found from; useful for its role and state.</summary>
+    internal SemanticNode Node { get; }
 
     /// <summary>The wrapper that drew it: <c>Button</c>, <c>Input</c>, <c>ListItem</c>.</summary>
     public string Kind { get; }
@@ -31,6 +39,18 @@ public readonly struct WidgetTarget
 
     /// <summary>Where it was laid out in the frame it was found in.</summary>
     public RectF Rect { get; }
+
+    /// <summary>The role its wrapper plays, e.g. <see cref="SemanticRole.Button"/>.</summary>
+    public SemanticRole Role { get; }
+
+    /// <summary>An explicit id from a <c>ui.Id</c> or <c>ui.Automation</c> scope, or null.</summary>
+    public string? AutomationId { get; }
+
+    /// <summary>The value the control held this frame, when it exposes one.</summary>
+    public string? Value { get; }
+
+    /// <summary>The state observed while it was drawn.</summary>
+    public SemanticState State { get; }
 
     /// <summary>Moves the pointer to the middle of the widget and draws a frame.</summary>
     public WidgetTarget Hover()
@@ -494,12 +514,9 @@ public class HeadlessApp : IDisposable
     public WidgetTarget FindById(string id)
     {
         ArgumentException.ThrowIfNullOrEmpty(id);
-        foreach (SemanticNode node in Tree.SelfAndDescendants())
-        {
-            if (string.Equals(node.Text, id, StringComparison.Ordinal)) return new WidgetTarget(this, node);
-        }
-
-        throw new InvalidOperationException($"No widget with id \"{id}\". The frame drew:\n{Print()}");
+        return Tree.FindById(id) is { } node
+            ? new WidgetTarget(this, node)
+            : throw new InvalidOperationException($"No widget with id \"{id}\". The frame drew:\n{Print()}");
     }
 
     /// <summary>
@@ -642,7 +659,7 @@ public class HeadlessApp : IDisposable
     }
 
     /// <summary>The last frame's tree as text, which is also what <see cref="ToString"/> gives.</summary>
-    public string Print(bool rects = false) => Tree.Print(rects);
+    public string Print(bool rects = false, bool details = false) => Tree.Print(rects, details);
 
     /// <summary>
     /// The <see cref="LayoutFormatter"/> view of the last frame: verified rectangles, observed

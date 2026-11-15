@@ -2905,21 +2905,65 @@ sealed class Idiomatic
         if (_overrides.ItemLists.TryGetValue(widget.Native.CName, out var items) &&
             widget.Params.Any(p => p.Name == items.Items))
         {
-            return $"WidgetRecorder.NoteItems(ui.Handle, \"{widget.Name}\", \"{items.Kind}\", {namer.Name}, {items.Items});";
+            return $"WidgetRecorder.NoteItems(ui.Handle, \"{widget.Name}\", \"{items.Kind}\", {namer.Name}, {items.Items}, {items.Index});";
         }
 
         // An icon-only button has no label: its tooltip is the name a person and an agent read.
         // Recording the glyph made `tree` print an unreadable icon and left `click Pause` unable
         // to name the button it meant.
+        string target = namer.Name;
         if (widget.Name == "IconButton"
             && widget.Params.FirstOrDefault(p => p.Type == "ButtonOpts") is { } options)
         {
-            return $"WidgetRecorder.Note(ui.Handle, \"IconButton\", string.IsNullOrEmpty({options.Name}.Tooltip) "
-                + $"? {namer.Name} : (UiText){options.Name}.Tooltip);";
+            target = $"string.IsNullOrEmpty({options.Name}.Tooltip) ? {namer.Name} : (UiText){options.Name}.Tooltip";
         }
 
-        return $"WidgetRecorder.Note(ui.Handle, \"{widget.Name}\", {namer.Name});";
+        // A widget that edits a value can say what it holds without allocating in the frame:
+        // the recorder stores the text or the number and formats it after the draw. A bool
+        // ref is also the state (checked/selected/expanded), so a checkbox reads as more than
+        // its label without a second API.
+        WidgetParam? textValue = widget.Params.FirstOrDefault(p => p.Mode == "ref " && p.Type == "string");
+        WidgetParam? boolValue = widget.Params.FirstOrDefault(p => p.Mode == "ref " && p.Type == "bool");
+        WidgetParam? numberValue = widget.Params.FirstOrDefault(p =>
+            p.Mode == "ref " && p.Type is "float" or "double" or "int" && IsValueName(p.Name));
+
+        string state = boolValue is { } boolean ? StateFor(boolean.Name, boolean: true) : "";
+        string stateArgument = state.Length == 0
+            ? ""
+            : boolValue is { } stateBool
+                ? $", {stateBool.Name} ? SemanticState.{state} : SemanticState.None"
+                : $", SemanticState.{state}";
+
+        if (textValue is { } textParam)
+        {
+            return $"WidgetRecorder.NoteValue(ui.Handle, \"{widget.Name}\", {target}, {textParam.Name}{stateArgument});";
+        }
+
+        if (numberValue is { } numeric)
+        {
+            return $"WidgetRecorder.NoteValue(ui.Handle, \"{widget.Name}\", {target}, (double){numeric.Name}{stateArgument});";
+        }
+
+        if (boolValue is { } flag)
+        {
+            return $"WidgetRecorder.NoteValue(ui.Handle, \"{widget.Name}\", {target}, {flag.Name}{stateArgument});";
+        }
+
+        return state.Length == 0
+            ? $"WidgetRecorder.Note(ui.Handle, \"{widget.Name}\", {target});"
+            : $"WidgetRecorder.Note(ui.Handle, \"{widget.Name}\", {target}, SemanticState.{state});";
     }
+
+    private static bool IsValueName(string name) => name is
+        "value" or "selected" or "index" or "progress" or "ratio";
+
+    private static string StateFor(string name, bool boolean) => name.ToLowerInvariant() switch
+    {
+        "selected" => "Selected",
+        "open" or "expanded" => "Expanded",
+        "checked" or "on" or "value" when boolean => "Checked",
+        _ => "",
+    };
 
     /// <summary>
     /// The scope a container returns, with the name that makes it a node in a recorded tree.

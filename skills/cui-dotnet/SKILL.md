@@ -642,11 +642,15 @@ speaks one command per line. No window, no code added to the app.
 
 ```sh
 dotnet cui tree                     # the controls of the last frame, nested
+dotnet cui tree --details           # …with role, automation id, value and state
 dotnet cui find Save                # one control: kind, label, rectangle
 dotnet cui find id:draft            # or by the id the app gave it, in any language
+dotnet cui find --role button Save  # by semantic role, with an optional label
+dotnet cui find --value Milk        # by the value a field or slider holds
 dotnet cui click Save               # click it, print the frame that reacted
 dotnet cui click "Button Save type"  # be specific when a label is ambiguous
 dotnet cui click "editor > Save"     # or the path to the control, containers bare
+dotnet cui click --id pause:42       # a stable automation id, independent of the label
 dotnet cui type Milk                # type into the focused control
 dotnet cui key Tab                  # a key by name
 dotnet cui png frame.png            # the frame as a PNG, to look at
@@ -693,6 +697,32 @@ not in the app's folder.
   it was published for it, because the package compiles it out of a self-contained AOT publish to
   save about 180 KB (`docs/SIZE.md`): publish with `-p:CuiSharpHeadless=true` before pointing
   `--app` at it.
+
+### Roles, values and stable automation ids
+
+Every recorded node has a `Role` (`button`, `textbox`, `checkbox`, `tab`, `menuitem`, `dialog`, …),
+a `Name`, an optional `Value`, `SemanticState` flags and an optional `AutomationId`. The plain tree
+keeps its short `Button "Save"` form; `tree --details` adds the rest:
+
+```sh
+dotnet cui tree --details
+dotnet cui find --role button Save
+dotnet cui find --value Milk
+dotnet cui find --id pause:42
+```
+
+`ui.Id` gives the native state and the automation id the same stable key. When the label is
+translated but the native identity must not change, use the smaller scope:
+
+```csharp
+using (ui.Automation("pause:42"))
+    ui.IconButton(Icons.Pause, new ButtonOpts { Tooltip = "Pause" });
+```
+
+`ui.Keyed(items, key)` gives each row the integer automation id `#<key>`. The same data is exposed
+in-process as `SemanticNode.Role`/`Value`/`State`/`AutomationId`, and
+`SemanticNode.ToAccessibility()` projects it into the flat record a UIA, AT-SPI or NSAccessibility
+adapter will consume; the platform adapters themselves are not implemented yet.
 
 ## Headless viewports, state and readiness
 

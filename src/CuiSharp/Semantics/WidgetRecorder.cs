@@ -60,9 +60,19 @@ public readonly struct SemanticWidget
     /// </summary>
     internal readonly int Layer;
 
+    /// <summary>A stable id from a <c>ui.Id</c> or <c>ui.Automation</c> scope, or null.</summary>
+    public readonly string? AutomationId;
+
+    /// <summary>The value the control held this frame, when it exposes one.</summary>
+    public readonly string? Value;
+
+    /// <summary>The state observed while the control was drawn.</summary>
+    public readonly SemanticState State;
+
     internal SemanticWidget(
         string kind, string text, RectF rect, int depth, bool container, uint id,
-        bool hasOwnRect, bool detached, int layer)
+        bool hasOwnRect, bool detached, int layer, string? automationId = null,
+        string? value = null, SemanticState state = SemanticState.None)
     {
         Kind = kind;
         Text = text;
@@ -73,6 +83,9 @@ public readonly struct SemanticWidget
         HasOwnRect = hasOwnRect;
         Detached = detached;
         Layer = layer;
+        AutomationId = automationId;
+        Value = value;
+        State = state;
     }
 
     /// <summary>The point at the middle: where a simulated click goes.</summary>
@@ -130,6 +143,42 @@ public static class WidgetRecorder
         frame.Note(ui, kind, text);
     }
 
+    /// <summary>Records the state of a control that exposes no separate value.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void Note(nint ui, string kind, UiText text, SemanticState state)
+    {
+        FrameRecorder? frame = _current;
+        if (frame is null) return;
+        frame.Note(ui, kind, text, state);
+    }
+
+    /// <summary>Records a text value, e.g. an input's current text.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void NoteValue(nint ui, string kind, UiText text, string value, SemanticState state = SemanticState.None)
+    {
+        FrameRecorder? frame = _current;
+        if (frame is null) return;
+        frame.NoteValue(ui, kind, text, value, state);
+    }
+
+    /// <summary>Records a numeric value; formatting happens after the draw, not in the frame.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void NoteValue(nint ui, string kind, UiText text, double value, SemanticState state = SemanticState.None)
+    {
+        FrameRecorder? frame = _current;
+        if (frame is null) return;
+        frame.NoteValue(ui, kind, text, value, state);
+    }
+
+    /// <summary>Records a boolean value, e.g. a checkbox's on/off.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void NoteValue(nint ui, string kind, UiText text, bool value, SemanticState state = SemanticState.None)
+    {
+        FrameRecorder? frame = _current;
+        if (frame is null) return;
+        frame.NoteValue(ui, kind, text, value, state);
+    }
+
     /// <summary>
     /// Called by the wrapper of a widget CUI builds only when it is given items (a toggle group).
     /// <paramref name="itemCount"/> is what native's "no items, no widget" return turns on, and it
@@ -142,7 +191,7 @@ public static class WidgetRecorder
     {
         FrameRecorder? frame = _current;
         if (frame is null) return;
-        frame.Note(ui, kind, text, itemCount);
+        frame.Note(ui, kind, text, itemCount, SemanticState.None);
     }
 
     /// <summary>
@@ -154,12 +203,13 @@ public static class WidgetRecorder
     /// <param name="item">What one item is called: <c>Tab</c>, <c>Segment</c>.</param>
     /// <param name="id">The widget's id, which its items' ids are derived from.</param>
     /// <param name="items">The item labels, in order.</param>
+    /// <param name="selected">The item that is selected, or -1.</param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static void NoteItems(nint ui, string kind, string item, UiText id, ReadOnlySpan<string> items)
+    internal static void NoteItems(nint ui, string kind, string item, UiText id, ReadOnlySpan<string> items, int selected)
     {
         FrameRecorder? frame = _current;
         if (frame is null) return;
-        frame.NoteItems(ui, kind, item, id, items);
+        frame.NoteItems(ui, kind, item, id, items, selected);
     }
 
     /// <summary>A container opened; the widgets drawn from here on sit inside it.</summary>
@@ -183,6 +233,33 @@ public static class WidgetRecorder
         FrameRecorder? frame = _current;
         if (frame is null) return;
         frame.Push(ui, kind, id, nativeId, deriveNamedId);
+    }
+
+    /// <summary>Records the stable automation id for the widgets drawn inside a scope.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static void PushAutomation(nint ui, UiText id)
+    {
+        FrameRecorder? frame = _current;
+        if (frame is null) return;
+        frame.PushAutomation(id);
+    }
+
+    /// <summary>Records an integer automation id, e.g. one row key.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static void PushAutomation(nint ui, int key)
+    {
+        FrameRecorder? frame = _current;
+        if (frame is null) return;
+        frame.PushAutomation(key);
+    }
+
+    /// <summary>Closes the innermost automation id scope.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static void PopAutomation(nint ui)
+    {
+        FrameRecorder? frame = _current;
+        if (frame is null) return;
+        frame.PopAutomation();
     }
 
     /// <summary>
@@ -260,10 +337,17 @@ internal sealed class FrameRecorder
         internal readonly bool OwnRect;
         internal readonly bool Detached;
         internal readonly int Layer;
+        internal readonly AutomationRef Automation;
+        internal readonly string? TextValue;
+        internal readonly double? NumberValue;
+        internal readonly bool? BoolValue;
+        internal readonly SemanticState State;
 
         internal Pending(
             string kind, nint pointer, int length, string? text, uint id, int depth, bool container,
-            bool ownRect, bool detached, int layer)
+            bool ownRect, bool detached, int layer, AutomationRef automation = default,
+            string? textValue = null, double? numberValue = null, bool? boolValue = null,
+            SemanticState state = SemanticState.None)
         {
             Kind = kind;
             Pointer = pointer;
@@ -275,15 +359,35 @@ internal sealed class FrameRecorder
             OwnRect = ownRect;
             Detached = detached;
             Layer = layer;
+            Automation = automation;
+            TextValue = textValue;
+            NumberValue = numberValue;
+            BoolValue = boolValue;
+            State = state;
         }
 
         /// <summary>Already a managed string, or a copy of the frame arena.</summary>
         internal string Decode() => Text ?? (Length == 0 ? "" : FromUtf8(Pointer, Length));
     }
 
+    /// <summary>
+    /// The automation id a widget was drawn under, kept as frame memory until the tree is built.
+    /// A string scope carries a pointer and a length; an integer scope (<c>ui.Id(42)</c>,
+    /// <c>ui.Keyed</c>) carries the number, which is formatted at the same boundary.
+    /// </summary>
+    private readonly struct AutomationRef(nint pointer, int length, string? text, int? key)
+    {
+        internal readonly string Decode() => text ?? (key is { } number
+            ? "#" + number.ToString(System.Globalization.CultureInfo.InvariantCulture)
+            : length == 0 ? "" : FromUtf8(pointer, length));
+
+        internal readonly bool IsEmpty => length == 0 && text is null && key is null;
+    }
+
     private readonly List<Pending> _pending = [];
     private readonly List<SemanticWidget> _entries = [];
     private readonly List<SemanticWidget> _controls = [];
+    private readonly List<AutomationRef> _automation = [];
     private int _depth;
 
     /// <summary>A recording path that does not know how many items native was given.</summary>
@@ -318,6 +422,7 @@ internal sealed class FrameRecorder
         _pending.Clear();
         _entries.Clear();
         _controls.Clear();
+        _automation.Clear();
         _depth = 0;
         _layer = 0;
         _unknownLayer = 0;
@@ -332,6 +437,34 @@ internal sealed class FrameRecorder
         _unknownLayer = 0;
         _entries.Clear();
         _controls.Clear();
+        _automation.Clear();
+    }
+
+    /// <summary>The innermost non-empty automation id, or default.</summary>
+    private AutomationRef CurrentAutomation
+    {
+        get
+        {
+            for (int i = _automation.Count - 1; i >= 0; i--)
+            {
+                if (!_automation[i].IsEmpty) return _automation[i];
+            }
+
+            return default;
+        }
+    }
+
+    internal void PushAutomation(UiText id)
+    {
+        nint pointer = id.GetPointer(out int length);
+        _automation.Add(new AutomationRef(pointer, length, null, null));
+    }
+
+    internal void PushAutomation(int key) => _automation.Add(new AutomationRef(0, 0, null, key));
+
+    internal void PopAutomation()
+    {
+        if (_automation.Count > 0) _automation.RemoveAt(_automation.Count - 1);
     }
 
     /// <summary>
@@ -350,10 +483,26 @@ internal sealed class FrameRecorder
             {
                 _pending[i] = new Pending(
                     widget.Kind, 0, 0, widget.Decode(), widget.Id, widget.Depth,
-                    widget.Container, widget.OwnRect, widget.Detached, widget.Layer);
+                    widget.Container, widget.OwnRect, widget.Detached, widget.Layer,
+                    Seal(widget.Automation), widget.TextValue, widget.NumberValue,
+                    widget.BoolValue, widget.State);
+            }
+            else if (!widget.Automation.IsEmpty)
+            {
+                _pending[i] = new Pending(
+                    widget.Kind, widget.Pointer, widget.Length, widget.Text, widget.Id, widget.Depth,
+                    widget.Container, widget.OwnRect, widget.Detached, widget.Layer,
+                    Seal(widget.Automation), widget.TextValue, widget.NumberValue,
+                    widget.BoolValue, widget.State);
             }
         }
     }
+
+    private static AutomationRef Seal(AutomationRef automation) =>
+        automation.IsEmpty ? default : new AutomationRef(0, 0, automation.Decode(), null);
+
+    private static SemanticState Enabled(nint ui) =>
+        Native.IsDisabled(ui) == 0 ? SemanticState.Enabled : SemanticState.None;
 
     /// <summary>
     /// Opens a scope's layer bookkeeping: a floating kind raises the layer for its whole body
@@ -393,7 +542,8 @@ internal sealed class FrameRecorder
             bool own = nativeId is not null || deriveNamedId || GeometryProvenance.HasOwnLastId(kind);
             _pending.Add(new Pending(
                 kind, default, 0, id, native, _depth, container: true,
-                own, floating, _layer));
+                own, floating, _layer, CurrentAutomation,
+                state: Enabled(ui)));
         }
         _depth++;
     }
@@ -408,7 +558,8 @@ internal sealed class FrameRecorder
             bool own = nativeId is not null || deriveNamedId || GeometryProvenance.HasOwnLastId(kind);
             _pending.Add(new Pending(
                 kind, pointer, length, null, native, _depth, container: true,
-                own, floating, _layer));
+                own, floating, _layer, CurrentAutomation,
+                state: Enabled(ui)));
         }
         _depth++;
     }
@@ -421,9 +572,12 @@ internal sealed class FrameRecorder
         else _layer = --_unknownLayer;
     }
 
-    internal void Note(nint ui, string kind, UiText text) => Note(ui, kind, text, UnknownItemCount);
+    internal void Note(nint ui, string kind, UiText text) => Note(ui, kind, text, UnknownItemCount, SemanticState.None);
 
-    internal void Note(nint ui, string kind, UiText text, int itemCount)
+    internal void Note(nint ui, string kind, UiText text, SemanticState state) =>
+        Note(ui, kind, text, UnknownItemCount, state);
+
+    internal void Note(nint ui, string kind, UiText text, int itemCount, SemanticState state = SemanticState.None)
     {
         nint pointer = text.GetPointer(out int length);
         if (length == 0) return;
@@ -434,7 +588,34 @@ internal sealed class FrameRecorder
         bool own = GeometryProvenance.HasOwnLastId(kind)
             && (!GeometryProvenance.PublishesIdOnlyWhenBuilt(kind) || itemCount > 0);
         Add(ui, kind, pointer, length, null, container: false,
-            own, GeometryProvenance.IsFloating(kind));
+            own, GeometryProvenance.IsFloating(kind), state);
+    }
+
+    internal void NoteValue(nint ui, string kind, UiText text, string value, SemanticState state)
+    {
+        nint pointer = text.GetPointer(out int length);
+        if (length == 0) return;
+        Add(ui, kind, pointer, length, null, container: false,
+            GeometryProvenance.HasOwnLastId(kind), GeometryProvenance.IsFloating(kind), state,
+            textValue: value);
+    }
+
+    internal void NoteValue(nint ui, string kind, UiText text, double value, SemanticState state)
+    {
+        nint pointer = text.GetPointer(out int length);
+        if (length == 0) return;
+        Add(ui, kind, pointer, length, null, container: false,
+            GeometryProvenance.HasOwnLastId(kind), GeometryProvenance.IsFloating(kind), state,
+            numberValue: value);
+    }
+
+    internal void NoteValue(nint ui, string kind, UiText text, bool value, SemanticState state)
+    {
+        nint pointer = text.GetPointer(out int length);
+        if (length == 0) return;
+        Add(ui, kind, pointer, length, null, container: false,
+            GeometryProvenance.HasOwnLastId(kind), GeometryProvenance.IsFloating(kind), state,
+            boolValue: value);
     }
 
     /// <summary>
@@ -446,7 +627,7 @@ internal sealed class FrameRecorder
     /// <c>click Markets</c> rather than "click the middle of the strip". Their ids are the ones
     /// CUI derives for them (<see cref="CuiHash"/>), which is how their rectangles are read back.
     /// </remarks>
-    internal void NoteItems(nint ui, string kind, string item, UiText parent, ReadOnlySpan<string> items)
+    internal void NoteItems(nint ui, string kind, string item, UiText parent, ReadOnlySpan<string> items, int selected)
     {
         nint pointer = parent.GetPointer(out int length);
         if (length == 0) return;
@@ -458,7 +639,7 @@ internal sealed class FrameRecorder
         // passed is the evidence, since no id on record can tell this call from the last one.
         bool built = items.Length > 0;
         Add(ui, kind, pointer, length, null, container: true,
-            GeometryProvenance.HasOwnLastId(kind) && built, floating);
+            GeometryProvenance.HasOwnLastId(kind) && built, floating, Enabled(ui));
         _depth++;
         for (int k = 0; k < items.Length; k++)
         {
@@ -466,7 +647,8 @@ internal sealed class FrameRecorder
             // anyone could have left behind, so each built item owns the rect read under its id.
             _pending.Add(new Pending(
                 item, 0, 0, items[k], CuiHash.Of(k, parentId), _depth, container: false,
-                ownRect: built && k < GeometryProvenance.MaxBuiltItems, floating, _layer));
+                ownRect: built && k < GeometryProvenance.MaxBuiltItems, floating, _layer,
+                state: Enabled(ui) | (k == selected ? SemanticState.Selected : SemanticState.None)));
         }
 
         _depth--;
@@ -483,9 +665,15 @@ internal sealed class FrameRecorder
         foreach (Pending widget in _pending)
         {
             RectF rect = UiMarshal.FromNative(Native.GetRect(ui, widget.Id));
+            string? value = widget.TextValue
+                ?? (widget.NumberValue is { } number
+                    ? number.ToString("R", System.Globalization.CultureInfo.InvariantCulture)
+                    : widget.BoolValue is { } boolean ? (boolean ? "true" : "false") : null);
+            string automation = widget.Automation.Decode();
             var entry = new SemanticWidget(
                 widget.Kind, widget.Decode(), rect, widget.Depth, widget.Container, widget.Id,
-                widget.OwnRect, widget.Detached, widget.Layer);
+                widget.OwnRect, widget.Detached, widget.Layer,
+                automation.Length == 0 ? null : automation, value, widget.State);
             _entries.Add(entry);
             if (!widget.Container) _controls.Add(entry);
         }
@@ -496,8 +684,13 @@ internal sealed class FrameRecorder
     private static unsafe string FromUtf8(nint pointer, int length) =>
         System.Text.Encoding.UTF8.GetString((byte*)pointer, length);
 
-    private void Add(nint ui, string kind, nint pointer, int length, string? text, bool container, bool ownRect, bool detached) =>
-        _pending.Add(new Pending(kind, pointer, length, text, Native.LastId(ui), _depth, container, ownRect, detached, _layer));
+    private void Add(
+        nint ui, string kind, nint pointer, int length, string? text, bool container, bool ownRect,
+        bool detached, SemanticState state = SemanticState.None, string? textValue = null,
+        double? numberValue = null, bool? boolValue = null) =>
+        _pending.Add(new Pending(
+            kind, pointer, length, text, Native.LastId(ui), _depth, container, ownRect, detached,
+            _layer, CurrentAutomation, textValue, numberValue, boolValue, state | Enabled(ui)));
 }
 
 /// <summary>

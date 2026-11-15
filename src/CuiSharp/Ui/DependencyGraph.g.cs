@@ -24,7 +24,7 @@ public static unsafe class DependencyGraphUiExtensions
             var __opts = o.ToNative((nint)(&__selected));
             var __result = Native.GraphView(ui.Handle, Utf8.Get(id), (nint)__nodes, (int)(nodes.Length), (nint)__edges, (int)(edges.Length), in __opts);
             selected = __selected;
-            WidgetRecorder.Note(ui.Handle, "GraphView", id);
+            WidgetRecorder.NoteValue(ui.Handle, "GraphView", id, (double)selected);
             return GraphResult.FromNative(__result);
         }
 

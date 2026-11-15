@@ -37,18 +37,34 @@ public unsafe ref partial struct Ui
         return d.Year != 0;
     }
 
-    /// <summary>Pushes a string id for the widgets drawn inside the scope.</summary>
+    /// <summary>
+    /// Pushes a string id for the widgets drawn inside the scope. It is also their automation id:
+    /// <c>using (ui.Id("row:42")) ui.Button("Delete")</c> makes <c>id:row:42</c> find that button.
+    /// </summary>
     public IdScope Id(UiText id)
     {
+        WidgetRecorder.PushAutomation(Handle, id);
         Native.PushId(Handle, Utf8.Get(id));
-        return new IdScope(Handle);
+        return new IdScope(Handle, automation: true);
     }
 
-    /// <summary>Pushes an integer id, typically a row or item index.</summary>
+    /// <summary>Pushes an integer id, typically a row or item index; it is the automation id too.</summary>
     public IdScope Id(int key)
     {
+        WidgetRecorder.PushAutomation(Handle, key);
         Native.PushIdInt(Handle, key);
-        return new IdScope(Handle);
+        return new IdScope(Handle, automation: true);
+    }
+
+    /// <summary>
+    /// Names the widgets drawn inside this scope for automation without changing their native
+    /// identity. Use it when a label is readable but not unique; use <see cref="Id(UiText)"/> when
+    /// the native state also has to be separated by the same key.
+    /// </summary>
+    public AutomationScope Automation(UiText id)
+    {
+        WidgetRecorder.PushAutomation(Handle, id);
+        return new AutomationScope(Handle);
     }
 
     /// <summary>

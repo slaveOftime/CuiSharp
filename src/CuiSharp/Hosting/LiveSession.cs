@@ -913,7 +913,7 @@ internal sealed class LiveSession : IDisposable
             case "tree" or "print":
                 {
                     LiveSnapshot snap = await SnapshotAsync(pixels: false, ct).ConfigureAwait(false);
-                    return snap.Print();
+                    return snap.Print(details: string.Equals(argument, "details", StringComparison.OrdinalIgnoreCase));
                 }
 
             case "layout":
@@ -927,7 +927,7 @@ internal sealed class LiveSession : IDisposable
                     ArgumentException.ThrowIfNullOrEmpty(argument);
                     LiveSnapshot snap = await SnapshotAsync(pixels: false, ct).ConfigureAwait(false);
                     SemanticNode node = FindNode(snap, argument);
-                    return $"{node.Kind} \"{node.Text}\" at {node.Rect}";
+                    return node.Describe() + $" at {node.Rect}";
                 }
 
             case "click":
@@ -1306,5 +1306,5 @@ internal sealed record LiveSnapshot(
     internal SemanticNode Tree => _tree ??= SemanticNode.Build(Entries);
 
     /// <summary>The frame's controls nested the way the app drew them.</summary>
-    internal string Print() => Tree.Print();
+    internal string Print(bool details = false) => Tree.Print(details: details);
 }

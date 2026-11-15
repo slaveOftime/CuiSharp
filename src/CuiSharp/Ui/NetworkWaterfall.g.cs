@@ -22,7 +22,7 @@ public static unsafe class NetworkWaterfallUiExtensions
             var __opts = o.ToNative((nint)(&__selected));
             var __result = Native.Waterfall(ui.Handle, Utf8.Get(id), (nint)__requests, (int)(requests.Length), in __opts);
             selected = __selected;
-            WidgetRecorder.Note(ui.Handle, "Waterfall", id);
+            WidgetRecorder.NoteValue(ui.Handle, "Waterfall", id, (double)selected);
             return WaterfallResult.FromNative(__result);
         }
 

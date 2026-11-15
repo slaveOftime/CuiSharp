@@ -24,7 +24,7 @@ public static unsafe class TraceViewerUiExtensions
             var __opts = o.ToNative();
             var __result = Native.TraceView(ui.Handle, Utf8.Get(id), (nint)__tracks, (int)(tracks.Length), (nint)__spans, (int)(spans.Length), ref __view, ref selected, in __opts);
             view = TraceViewState.FromNative(__view);
-            WidgetRecorder.Note(ui.Handle, "TraceView", id);
+            WidgetRecorder.NoteValue(ui.Handle, "TraceView", id, (double)selected);
             return TraceResult.FromNative(__result);
         }
 

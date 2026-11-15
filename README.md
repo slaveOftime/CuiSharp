@@ -220,6 +220,9 @@ Assert.True(app.PaintedAnything());
 
 ```sh
 dotnet cui tree                          # the controls of the last frame, nested
+dotnet cui tree --details                # …with role, automation id, value and state
+dotnet cui find --role button Save       # find by semantic role and label
+dotnet cui find --value Milk             # find by the value a field holds
 dotnet cui click Save                    # click a control, print the frame it produced
 dotnet cui click "Button Save"           # …when a heading says the same word
 dotnet cui click "editor > Save"         # …or the path to the control

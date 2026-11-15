@@ -25,7 +25,7 @@ public static unsafe class InstrumentsDotMatrixChartEventTrackReadoutDotMatrixDi
             new Span<double>(__times, Math.Min(__timesCount, times.Length)).CopyTo(times);
             count = __timesCount;
             selected = __selected;
-            WidgetRecorder.Note(ui.Handle, "EventTrack", id);
+            WidgetRecorder.NoteValue(ui.Handle, "EventTrack", id, (double)selected);
             return EventTrackResult.FromNative(__result);
         }
 

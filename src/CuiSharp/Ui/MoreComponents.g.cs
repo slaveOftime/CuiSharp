@@ -20,7 +20,7 @@ public static unsafe class MoreComponentsUiExtensions
             for (int i = 0; i < choices.Length; i++) __choices[i] = choices[i].ToNative();
             var __opts = o.ToNative();
             var __result = Native.RadioCards(ui.Handle, Utf8.Get(id), (nint)__choices, (int)(choices.Length), ref index, in __opts);
-            WidgetRecorder.Note(ui.Handle, "RadioCards", id);
+            WidgetRecorder.NoteValue(ui.Handle, "RadioCards", id, (double)index);
             return __result != 0;
         }
 
