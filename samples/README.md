@@ -21,7 +21,7 @@ dotnet run music.cs
 dotnet run download.cs
 ```
 
-`disk.cs` also takes folders: `dotnet run disk.cs -- C:\Windows "C:\Program Files"`.
+`disk.cs` also takes folders: `dotnet run disk.cs -- <folder> [folder...]`.
 
 ## Publish
 
@@ -34,22 +34,23 @@ dotnet publish music.cs -c Release -o .
 dotnet publish download.cs -c Release -o .
 ```
 
-The generated `.exe` files are gitignored. `music.cs` targets Windows because its player is the
+The generated binaries are gitignored. `music.cs` targets Windows because its player is the
 WinRT `MediaPlayer`; the other three publish for the current platform.
 
 ## Drive a published build headlessly
 
 ```sh
 dotnet publish disk.cs -c Release -p:CuiSharpHeadless=true -o artifacts/disk
-dotnet cui session --app artifacts/disk/disk.exe < steps.txt
+dotnet cui session --app artifacts/disk/disk < steps.txt
 ```
 
-A published build can be inspected at any viewport, with its state kept away from the real profile:
+The published app is `disk.exe` on Windows and `disk` elsewhere. A published build can be inspected
+at any viewport, with its state kept away from the real profile:
 
 ```sh
-dotnet cui png shot.png --app artifacts/disk/disk.exe --size 420x720
-dotnet cui png shot.png --app artifacts/disk/disk.exe --sizes 420x720,1180x820
-dotnet cui tree --app artifacts/disk/disk.exe --state artifacts/cui-run
+dotnet cui png shot.png --app artifacts/disk/disk --size 420x720
+dotnet cui png shot.png --app artifacts/disk/disk --sizes 420x720,1180x820
+dotnet cui tree --app artifacts/disk/disk --state artifacts/cui-run
 ```
 
 The apps read `CUISHARP_STATE_HOME`: `music` uses `<root>/CuiMusic`, `download` uses
@@ -72,7 +73,7 @@ Use `dotnet tool update -g CuiSharp.Tools` to keep the tool current. On Windows 
 script instead of using input redirection:
 
 ```powershell
-Get-Content steps.txt | dotnet cui session --app artifacts/disk/disk.exe
+Get-Content steps.txt | dotnet cui session --app artifacts/disk/disk
 ```
 
 `CuiSharp@*` and the tool are versioned separately: restoring the samples always picks the latest

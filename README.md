@@ -275,7 +275,7 @@ dotnet tool install -g CuiSharp.Tools    # exposes `dotnet cui`
 ```
 
 ```sh
-dotnet publish -c Release -r win-x64      # one executable, from ~1.2 MB up, nothing beside it
+dotnet publish -c Release -r win-x64      # or linux-x64 / osx-arm64; one executable, nothing beside it
 ```
 
 `cui.lib` is linked statically through the package's targets, so there is no `cui.dll` in the output.
@@ -303,7 +303,8 @@ The browser-hosted gallery and GitHub Pages build are documented in
 [`samples/CuiSharp.Gallery.Browser/README.md`](samples/CuiSharp.Gallery.Browser/README.md).
 
 The four file-based apps in [`samples/`](samples/README.md) — Disk Usage, Global Market Cap, Music
-and Downloads — are one `.cs` file each, with the same run / publish / headless header.
+and Downloads — are one `.cs` file each, with the same run / publish / headless header. Music is
+Windows-only because it uses the WinRT `MediaPlayer`; the other three publish for the current platform.
 
 ```
 src/CuiSharp/            the library: Interop (generated), Ui, Runtime, Semantics, Hosting, Charting

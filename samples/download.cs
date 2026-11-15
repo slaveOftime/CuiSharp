@@ -41,10 +41,10 @@ using MonoTorrent.Client;
 // with its real progress, peers and speed.
 //
 //   run      dotnet run download.cs                     the window
-//   ship     dotnet publish download.cs -c Release -o . one download.exe, no runtime needed
+//   ship     dotnet publish download.cs -c Release -o . one native executable, no runtime needed
 //            (add -p:CuiSharpHeadless=true to publish a build `dotnet cui` can drive)
 //
-//   iterate  CUISHARP_HEADLESS=1 ./download.exe         no window; serves the tool's protocol
+//   iterate  CUISHARP_HEADLESS=1 ./download            no window; serves the tool's protocol
 //            dotnet cui tree                            the controls the last frame drew
 //            dotnet cui click Pause                     click one, print the frame it produced
 //            dotnet cui png shot.png                    that frame as a PNG
@@ -2483,28 +2483,65 @@ internal static class Shell
         {
             if (path.Length == 0) return;
 
-            if (Directory.Exists(path))
+            if (OperatingSystem.IsWindows())
             {
-                Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+                RevealOnWindows(path);
                 return;
             }
 
-            if (File.Exists(path))
+            if (OperatingSystem.IsMacOS())
             {
-                Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{path}\"")
+                if (Directory.Exists(path))
                 {
-                    UseShellExecute = true,
-                });
+                    Start("open", path);
+                }
+                else if (File.Exists(path))
+                {
+                    Start("open", "-R", path);
+                }
+                else if (Path.GetDirectoryName(path) is { Length: > 0 } parent && Directory.Exists(parent))
+                {
+                    Start("open", parent);
+                }
+
                 return;
             }
 
-            var folder = Path.GetDirectoryName(path);
-            if (folder is { Length: > 0 } && Directory.Exists(folder))
-                Process.Start(new ProcessStartInfo(folder) { UseShellExecute = true });
+            // Linux and the BSDs: xdg-open cannot select a file, so reveal its folder.
+            string? folder = Directory.Exists(path) ? path : Path.GetDirectoryName(path);
+            if (folder is { Length: > 0 } && Directory.Exists(folder)) Start("xdg-open", folder);
         }
         catch
         {
-            // Explorer refusing to open is not a download failure.
+            // The desktop refusing to open a folder is not a download failure.
         }
+    }
+
+    private static void RevealOnWindows(string path)
+    {
+        if (Directory.Exists(path))
+        {
+            Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+            return;
+        }
+
+        if (File.Exists(path))
+        {
+            Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{path}\"")
+            {
+                UseShellExecute = true,
+            });
+            return;
+        }
+
+        if (Path.GetDirectoryName(path) is { Length: > 0 } folder && Directory.Exists(folder))
+            Process.Start(new ProcessStartInfo(folder) { UseShellExecute = true });
+    }
+
+    private static void Start(string program, params string[] arguments)
+    {
+        var info = new ProcessStartInfo(program) { UseShellExecute = false };
+        foreach (string argument in arguments) info.ArgumentList.Add(argument);
+        Process.Start(info);
     }
 }

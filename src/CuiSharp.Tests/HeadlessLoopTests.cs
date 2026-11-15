@@ -278,8 +278,6 @@ public class HeadlessLoopTests
     [Fact]
     public void ClickRefusesTwoEquallyGoodMatches()
     {
-        if (!OperatingSystem.IsWindows()) return;
-
         var page = new TwoSaves();
         using var app = TestApp.Start(page, 400, 300);
 
@@ -306,8 +304,6 @@ public class HeadlessLoopTests
     [Fact]
     public void AnIconButtonIsFoundAndClickedByItsTooltip()
     {
-        if (!OperatingSystem.IsWindows()) return;
-
         var page = new IconPage();
         using var app = TestApp.Start(page, 400, 300);
 

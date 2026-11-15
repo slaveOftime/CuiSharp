@@ -600,8 +600,8 @@ answers. State carries across the commands because it is one process — but a r
 behind, so anything that should be checked twice belongs in a test instead.
 
 - `click` answers with the frame *after* the click; a transition may need `frame N` first.
-- `--frames N` draws N frames before the command; `--app bin/App.exe` inspects a published build;
-  `--no-build` reuses the last build; `--` passes the rest to the app.
+- `--frames N` draws N frames before the command; `--app bin/App` inspects a published build
+  (`.exe` on Windows); `--no-build` reuses the last build; `--` passes the rest to the app.
 - To drive a **live window** while a human watches it (`dotnet watch run -- --live`, `CUISHARP_LIVE=1`,
   or `CuiAppOptions { LiveAttach = true }`), run `dotnet cui ps` to list active windows and
   pass `-a <pid|title>` to any command, or a bare `-a` when only one window is open
@@ -685,7 +685,8 @@ its tooltip (`IconButton "Pause"`), not by the glyph it draws.
 
 ## Publishing for size
 
-`dotnet publish -c Release -r win-x64` links CUI into one executable. The package already trims it:
+`dotnet publish -c Release -r win-x64` (or the host's RID: `linux-x64`, `osx-arm64`, …) links CUI
+into one executable. The package already trims it:
 a self-contained publish compiles the headless channel and the framework diagnostics a shipped app
 never reads out of the binary, which is about 20% of a small app. Four properties are the whole
 vocabulary, and the defaults are right for most apps:

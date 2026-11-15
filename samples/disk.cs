@@ -23,12 +23,12 @@ using CuiSharp;
 // ---------------------------------------------------------------------------
 // Disk Usage — a native CuiSharp treemap over the file system.
 //
-//   run      dotnet run disk.cs                         the folder the terminal is in
-//            dotnet run disk.cs -- C:\Windows C:\Program Files
-//   ship     dotnet publish disk.cs -c Release -o .     one disk.exe, no runtime needed
+//   run      dotnet run disk.cs                        the folder the terminal is in
+//            dotnet run disk.cs -- <folder> [folder...]
+//   ship     dotnet publish disk.cs -c Release -o .     one native executable, no runtime needed
 //            (add -p:CuiSharpHeadless=true to publish a build `dotnet cui` can drive)
 //
-//   iterate  CUISHARP_HEADLESS=1 ./disk.exe             no window; serves the tool's protocol
+//   iterate  CUISHARP_HEADLESS=1 ./disk                no window; serves the tool's protocol
 //            dotnet cui tree                            the controls the last frame drew
 //            dotnet cui click Up                        click one, print the frame it produced
 //            dotnet cui png shot.png                    that frame as a PNG

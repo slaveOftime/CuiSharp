@@ -502,8 +502,6 @@ public class ToolArgumentTests
     [Fact]
     public void AHeadlessRunCanOverrideItsViewportAndState()
     {
-        if (!OperatingSystem.IsWindows()) return;
-
         string project = Path.Combine(TestPaths.RepositoryRoot, "src", "CuiSharp.Tests", "TestApps", "ReadyProbe");
         string root = Directory.CreateTempSubdirectory("cui-viewport-").FullName;
 
