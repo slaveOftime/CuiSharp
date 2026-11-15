@@ -97,6 +97,33 @@ internal static class Grammar
             Arity = ArgumentArity.ZeroOrOne,
         };
 
+        // ---- the environment the app starts in -----------------------------------------------
+
+        internal Option<string?> Size = new("--size")
+        {
+            Description = "headless viewport as WxH, e.g. 420x720",
+            HelpName = "WxH",
+        };
+
+        internal Option<string?> Sizes = new("--sizes")
+        {
+            Description = "comma-separated viewports for `png`, e.g. 420x720,1180x820",
+            HelpName = "WxH,...",
+        };
+
+        internal Option<string[]> Env = new("--env")
+        {
+            Description = "set KEY=VALUE for the app; repeat it for several variables",
+            HelpName = "KEY=VALUE",
+            Arity = ArgumentArity.ZeroOrMore,
+        };
+
+        internal Option<string?> State = new("--state")
+        {
+            Description = "app state root; sets CUISHARP_STATE_HOME for this run",
+            HelpName = "dir",
+        };
+
         // ---- what has to be true before the command runs ------------------------------------
 
         internal Option<int?> Frames = new("--frames")
@@ -157,11 +184,48 @@ internal static class Grammar
         /// what to drive, what to draw first, then how loud to be.
         /// </summary>
         internal Option[] AppOptions =>
-            [Project, App, Framework, NoBuild, Attach, Frames, Wait, WaitText, WaitTimeout, Quiet];
+            [Project, App, Framework, NoBuild, Attach, Size, Env, State, Frames, Wait, WaitText, WaitTimeout, Quiet];
 
         internal void Validate()
         {
             Wait.AcceptOnlyFromAmong("ready");
+
+            Size.Validators.Add(result =>
+            {
+                if (result.GetValueOrDefault<string?>() is { Length: > 0 } value
+                    && !Viewport.TryParse(value, out _))
+                {
+                    result.AddError("--size needs a positive WxH size, e.g. 420x720");
+                }
+            });
+
+            Sizes.Validators.Add(result =>
+            {
+                if (result.GetValueOrDefault<string?>() is { Length: > 0 } value
+                    && !Viewport.TryParseList(value, out _))
+                {
+                    result.AddError("--sizes needs comma-separated positive WxH sizes, e.g. 420x720,1180x820");
+                }
+            });
+
+            Env.Validators.Add(result =>
+            {
+                string[]? values = result.GetValueOrDefault<string[]?>();
+                if (result is OptionResult { Implicit: false } && (values is null || values.Length == 0))
+                {
+                    result.AddError("--env needs KEY=VALUE");
+                    return;
+                }
+
+                foreach (string value in values ?? [])
+                {
+                    if (!EnvironmentText.TryParse(value, out _, out _))
+                    {
+                        result.AddError($"--env needs KEY=VALUE, not \"{value}\"");
+                        return;
+                    }
+                }
+            });
 
             Frames.Validators.Add(result =>
             {
@@ -230,6 +294,7 @@ internal static class Grammar
             foreach (string alias in aliases) command.Aliases.Add(alias);
             foreach (Argument argument in arguments) command.Arguments.Add(argument);
             foreach (Option option in symbols.AppOptions) command.Options.Add(option);
+            if (name == "png") command.Options.Add(symbols.Sizes);
             root.Subcommands.Add(command);
         }
 
@@ -535,6 +600,35 @@ internal static class Grammar
             return false;
         }
 
+        bool size = result.GetResult(S.Size) is not null;
+        bool sizes = result.GetResult(S.Sizes) is not null;
+        if (size && sizes)
+        {
+            message = "choose one size source: --size WxH or --sizes WxH,WxH";
+            return false;
+        }
+
+        if (result.GetResult(S.Attach) is not null
+            && (result.GetResult(S.Size) is not null
+                || result.GetResult(S.Sizes) is not null
+                || result.GetResult(S.Env) is not null
+                || result.GetResult(S.State) is not null))
+        {
+            message = "--size, --sizes, --env and --state start a headless app; "
+                + "a live --attach window is already running";
+            return false;
+        }
+
+        if (result.GetResult(S.Sizes) is { } sizesResult
+            && sizesResult.GetValueOrDefault<string?>() is { Length: > 0 } sizesText
+            && Viewport.TryParseList(sizesText, out Viewport[] views)
+            && views.Length > 1
+            && result.CommandResult.Command.Name != "png")
+        {
+            message = "--sizes with more than one viewport is for `png`; run another command once per --size";
+            return false;
+        }
+
         bool published = result.GetResult(S.App) is not null;
         bool attached = result.GetResult(S.Attach) is not null;
         bool project = result.GetResult(S.Project) is not null;
@@ -597,6 +691,7 @@ internal static class Grammar
         }
 
         OptionResult? attach = result.GetResult(S.Attach);
+        Viewport[] viewports = ReadViewports(result);
         return new Cli.Options
         {
             Command = command,
@@ -611,10 +706,50 @@ internal static class Grammar
             Host = result.GetValue(S.App),
             Framework = result.GetValue(S.Framework),
             AppArgs = appArguments,
+            Viewport = viewports.Length > 0 ? viewports[0] : null,
+            Viewports = viewports,
+            Environment = ReadEnvironment(result.GetValue(S.Env)),
+            State = result.GetValue(S.State),
             Seconds = command == "dwell" ? double.Parse(argument, CultureInfo.InvariantCulture) : 0,
             WaitSeconds = waiting ? waitSeconds : 0,
             WaitLine = waitLine,
         };
+    }
+
+    /// <summary>
+    /// The viewport list a command was given: one <c>--size</c>, or the comma-separated
+    /// <c>--sizes</c> its help advertises. Parsing has already rejected malformed values, so an
+    /// unreadable value here is simply no viewport.
+    /// </summary>
+    private static Viewport[] ReadViewports(ParseResult result)
+    {
+        OptionResult? size = result.GetResult(S.Size);
+        if (size?.GetValueOrDefault<string?>() is { Length: > 0 } one
+            && Viewport.TryParse(one, out Viewport viewport))
+        {
+            return [viewport];
+        }
+
+        OptionResult? sizes = result.GetResult(S.Sizes);
+        if (sizes?.GetValueOrDefault<string?>() is { Length: > 0 } many
+            && Viewport.TryParseList(many, out Viewport[] views))
+        {
+            return views;
+        }
+
+        return [];
+    }
+
+    private static IReadOnlyDictionary<string, string> ReadEnvironment(string[]? pairs)
+    {
+        var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (string pair in pairs ?? [])
+        {
+            if (EnvironmentText.TryParse(pair, out string key, out string value))
+                values[key] = value;
+        }
+
+        return values;
     }
 
     /// <summary>

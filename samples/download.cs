@@ -2117,15 +2117,23 @@ internal sealed class SavedItem
 
 internal static class StateStore
 {
-    private static readonly string Folder = Environment.GetEnvironmentVariable("CUIDOWNLOAD_HOME") is
-    { Length: > 0 } custom
-        ? Format.FullPath(custom) ?? custom
-        : Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CuiDownload");
+    private static readonly string Folder = StateFolder();
 
     private static readonly string StatePath = Path.Combine(Folder, "state.json");
 
     public static string Home => Folder;
+
+    private static string StateFolder()
+    {
+        if (Environment.GetEnvironmentVariable("CUIDOWNLOAD_HOME") is { Length: > 0 } custom)
+            return Format.FullPath(custom) ?? custom;
+
+        if (Environment.GetEnvironmentVariable("CUISHARP_STATE_HOME") is { Length: > 0 } root)
+            return Path.Combine(root, "CuiDownload");
+
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CuiDownload");
+    }
 
     public static string DefaultDestination()
     {

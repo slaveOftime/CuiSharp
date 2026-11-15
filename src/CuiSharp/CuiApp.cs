@@ -250,7 +250,7 @@ public sealed unsafe class CuiApp : IDisposable
         // is the only place that decides it, and the draw callback is the whole app — for a
         // hosted one it is the host's frame, so a tool sees the same lifecycle a window does.
         if (Features.Headless && Hosting.HeadlessLoop.Requested(args))
-            return Hosting.HeadlessLoop.Run(draw, options);
+            return Hosting.HeadlessLoop.Run(draw, Hosting.HeadlessLoop.WithViewport(options));
 
         // CUI owns the loop here on purpose. `cui_app_run` registers a frame
         // callback, and that is the callback the OS-driven resize loop invokes:

@@ -27,7 +27,7 @@ public static unsafe class ButtonsUiExtensions
         {
             var __opts = o.ToNative();
             var __result = Native.IconButton(ui.Handle, Utf8.Get(icon), in __opts);
-            WidgetRecorder.Note(ui.Handle, "IconButton", icon);
+            WidgetRecorder.Note(ui.Handle, "IconButton", string.IsNullOrEmpty(o.Tooltip) ? icon : (UiText)o.Tooltip);
             return __result != 0;
         }
 

@@ -1725,10 +1725,12 @@ internal static class Cache
 {
     private const int Version = 1;
 
-    private static readonly string FilePath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "GlobalMarketCap",
-        "snapshot.json");
+    private static readonly string FilePath = Path.Combine(StateRoot(), "GlobalMarketCap", "snapshot.json");
+
+    private static string StateRoot() =>
+        Environment.GetEnvironmentVariable("CUISHARP_STATE_HOME") is { Length: > 0 } root
+            ? root
+            : Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
 
     private static readonly Dictionary<string, Company> ByKey =
         Data.Companies.ToDictionary(static company => company.Key, StringComparer.Ordinal);

@@ -74,10 +74,14 @@ internal static class Cli
                 return 0;
             }
 
+            if (options.Viewports.Length > 1)
+                return RunViewports(options, output, error);
+
             using HeadlessClient client = options.Attach
                 ? LiveClient.Connect(options, error)
                 : StartHeadless(options, error);
 
+            if (!CheckViewport(client, options, error)) return 1;
             if (!PassPreconditions(client, options, error)) return 1;
 
             if (options.Command == "session") return Relay(client, input, output, error);
@@ -147,8 +151,87 @@ internal static class Cli
                     $"No app found at \"{options.Project ?? Directory.GetCurrentDirectory()}\": " +
                     "no .csproj and no file-based .cs app there.");
 
+        var environment = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (options.State is { Length: > 0 } state)
+        {
+            string full;
+            try
+            {
+                full = Path.GetFullPath(state);
+                Directory.CreateDirectory(full);
+            }
+            catch (Exception failure) when (failure is ArgumentException or IOException or UnauthorizedAccessException)
+            {
+                throw new ToolException($"`{state}` is not a state directory this tool can use: {failure.Message}");
+            }
+
+            environment["CUISHARP_STATE_HOME"] = full;
+        }
+
+        foreach ((string key, string value) in options.Environment) environment[key] = value;
+        if (options.Viewport is { } viewport) environment["CUISHARP_VIEWPORT"] = viewport.ToString();
+
         return HeadlessClient.Start(
-            host, hostArgs, echo: options.Quiet ? null : error.WriteLine);
+            host, hostArgs, echo: options.Quiet ? null : error.WriteLine, environment: environment);
+    }
+
+    /// <summary>
+    /// The app's banner is the truth about the frame size. A package that predates
+    /// <c>CUISHARP_VIEWPORT</c> ignores it, so a silent 1080x720 screenshot would be worse than
+    /// a refusal: say which size arrived and how to get the requested one.
+    /// </summary>
+    private static bool CheckViewport(HeadlessClient client, Options options, TextWriter error)
+    {
+        if (options.Viewport is not { } viewport) return true;
+        if (string.Equals(client.Size, viewport.ToString(), StringComparison.Ordinal)) return true;
+
+        error.WriteLine(
+            $"The app started at {client.Size}, not {viewport}. This CuiSharp build does not apply " +
+            "CUISHARP_VIEWPORT; rebuild it with a package or project reference that does, then retry.");
+        return false;
+    }
+
+    /// <summary>
+    /// Runs <c>png</c> once per <c>--sizes</c> viewport. Each app instance gets its own frame
+    /// size, and each output name carries the size so the files cannot overwrite one another.
+    /// </summary>
+    private static int RunViewports(Options options, TextWriter output, TextWriter error)
+    {
+        if (options.Command != "png")
+            throw new ToolException(
+                "--sizes with more than one viewport is for `png`; run another command once per --size.");
+
+        foreach (Viewport viewport in options.Viewports)
+        {
+            Options single = options with { Viewport = viewport, Viewports = [viewport] };
+            using HeadlessClient client = StartHeadless(single, error);
+            if (!CheckViewport(client, single, error)) return 1;
+            if (!PassPreconditions(client, single, error)) return 1;
+
+            string path = PngPath(single.Argument, viewport);
+            Answer answer = Ask(client, $"png {path}");
+            if (!answer.Ok)
+            {
+                error.WriteLine(answer.Payload);
+                return 1;
+            }
+
+            output.WriteLine(answer.Payload);
+        }
+
+        return 0;
+    }
+
+    private static string PngPath(string argument, Viewport viewport)
+    {
+        string path = argument.Length == 0
+            ? Path.Combine(Path.GetTempPath(), $"cui-{viewport}.png")
+            : Path.GetFullPath(argument);
+        string directory = Path.GetDirectoryName(path) ?? Directory.GetCurrentDirectory();
+        string extension = Path.GetExtension(path);
+        if (extension.Length == 0) extension = ".png";
+        string stem = Path.GetFileNameWithoutExtension(path);
+        return Path.Combine(directory, $"{stem}-{viewport}{extension}");
     }
 
     private static int AnswerCatalog(Options options, TextWriter output)
@@ -323,6 +406,15 @@ internal static class Cli
         internal string? Framework { get; init; }
 
         internal string[] AppArgs { get; init; } = [];
+
+        internal Viewport? Viewport { get; init; }
+
+        internal Viewport[] Viewports { get; init; } = [];
+
+        internal IReadOnlyDictionary<string, string> Environment { get; init; } =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        internal string? State { get; init; }
 
         internal string Line => Argument.Length == 0 ? Command : $"{Command} {Argument}";
 

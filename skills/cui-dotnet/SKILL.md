@@ -626,6 +626,63 @@ behind, so anything that should be checked twice belongs in a test instead.
   save about 180 KB (`docs/SIZE.md`): publish with `-p:CuiSharpHeadless=true` before pointing
   `--app` at it.
 
+## Headless viewports, state and readiness
+
+A headless run takes its frame size from `CUISHARP_VIEWPORT`, not from the app's own
+`CuiAppOptions`. `dotnet cui` sets that variable when you ask for a size, so the same build can be
+checked at desktop and phone widths without editing `Width` or `Height`:
+
+```sh
+dotnet cui png shot.png --size 420x720
+dotnet cui png shot.png --sizes 420x720,1180x820   # png only: shot-420x720.png and shot-1180x820.png
+dotnet cui tree --size 620x700
+```
+
+`--sizes` is a `png` convenience: each viewport gets its own app start and its result is written with
+the size in the name. The app's banner is the frame size the tool compares with the request; a
+package that predates `CUISHARP_VIEWPORT` reports its own size and the tool exits nonzero instead of
+passing off a different frame as the requested one.
+
+A headless run can also be given an isolated state root and extra environment:
+
+```sh
+dotnet cui png shot.png --state artifacts/cui-run --env LOG_LEVEL=debug
+```
+
+`--state` sets `CUISHARP_STATE_HOME` to that directory. Apps that keep state should put their own
+folder under it (`CuiMusic`, `CuiDownload`, `GlobalMarketCap`, ...); the samples do. `--env
+KEY=VALUE` is repeated for each variable and is applied before the app starts; `CUISHARP_HEADLESS`
+stays the tool's decision. This keeps a screenshot or a scripted click from reading or changing the
+real user profile.
+
+Async data needs a readiness signal, not a guess at how many frames a decode or a network call
+takes. Mark the frame when the data is usable:
+
+```csharp
+ui.Label(ready ? $"data {rows}" : "loading");
+if (ready) ui.MarkReady();
+```
+
+```sh
+dotnet cui png shot.png --wait ready --wait-timeout 20
+dotnet cui waittext 20 "data 42"
+```
+
+`--wait ready` draws until `ui.MarkReady()`; `--wait-text` waits for a label or query and names the
+last frame when the window closes. A `wait` that times out is an error, not an empty screenshot.
+
+`find` and `click` refuse to guess between equally good matches. A frame with two rows both called
+`Pause` needs a kind, a path or an id:
+
+```sh
+dotnet cui click "Button Pause"
+dotnet cui click "row:42 > Button Pause"
+dotnet cui click id:pause-42
+```
+
+The error lists the candidates and the forms that disambiguate them. An icon-only button is named by
+its tooltip (`IconButton "Pause"`), not by the glyph it draws.
+
 ## Publishing for size
 
 `dotnet publish -c Release -r win-x64` links CUI into one executable. The package already trims it:

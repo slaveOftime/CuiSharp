@@ -872,6 +872,11 @@ internal static class BundledTopics
             ["SKILL#driving-a-running-app"],
             "The opt-in, the discovery and the cancellation rules are the same page's bullets — read them before scripting it."),
 
+        ("headless",
+            "viewports, isolated state and readiness for a headless run",
+            ["SKILL#headless-viewports-state-and-readiness"],
+            "Next: `dotnet cui png shot.png --size 420x720 --wait ready`, then inspect the document with `dotnet cui tree`."),
+
         ("performance",
             "0 B per frame, virtualized rows, decimated charts, and the numbers that prove it",
             ["SKILL#long-series-and-live-data", "SKILL#frame-numbers", "SKILL#pitfalls"],

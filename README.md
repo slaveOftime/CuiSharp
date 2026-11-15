@@ -181,9 +181,9 @@ Then this is the whole of what a project's `AGENTS.md` has to say about CuiSharp
 > project, not in a shell history.
 
 `dotnet cui docs` answers from the guide, the reference and the behaviour pages **inside the tool**:
-no repository, no NuGet cache, no network, nothing built and nothing started. Fourteen topics cover
+no repository, no NuGet cache, no network, nothing built and nothing started. Fifteen topics cover
 the tasks an assistant arrives with — `getting-started`, `writing-ui`, `custom-controls`, `hosting`,
-`testing`, `debugging`, `layout`, `live-debugging`, `performance`, `theming`, `translation`,
+`testing`, `debugging`, `layout`, `live-debugging`, `headless`, `performance`, `theming`, `translation`,
 `publishing`, `signatures`, `widgets` — and each one is a named set of sections of the shipped pages,
 so the tool cannot say anything the documentation does not.
 
@@ -225,6 +225,9 @@ dotnet cui click "Button Save"           # …when a heading says the same word
 dotnet cui click "editor > Save"         # …or the path to the control
 dotnet cui type Milk                     # type into the focused field
 dotnet cui png shot.png                  # the frame as a PNG, for a person or a model
+dotnet cui png shot.png --size 420x720   # a viewport without editing the app
+dotnet cui png shot.png --sizes 420x720,1180x820   # one png per viewport
+dotnet cui tree --state artifacts/cui-run        # isolated app state
 dotnet cui tree -a 15036                 # the same, on a live window a person is watching
 dotnet cui session < script.txt          # many commands, one build, one app
 ```

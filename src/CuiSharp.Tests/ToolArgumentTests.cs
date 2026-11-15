@@ -200,6 +200,9 @@ public class ToolArgumentTests
     private static string SampleOption(CliOption option) => option.Name switch
     {
         "--wait" => "ready",
+        "--size" => "420x720",
+        "--sizes" => "420x720,1180x820",
+        "--env" => "KEY=VALUE",
         _ => option.ValueType == typeof(string) ? "x" : "2",
     };
 
@@ -262,6 +265,59 @@ public class ToolArgumentTests
         Assert.Equal("png out.png", parsed.Options!.Line);
         Assert.Equal("wait 10", parsed.Options.WaitLine);
         Assert.Equal(Cli.Options.DefaultWaitSeconds, parsed.Options.WaitSeconds);
+    }
+
+    [Fact]
+    public void AViewportSizeIsParsedOnceAndKeepsItsForm()
+    {
+        Grammar.Parsed parsed = Grammar.Parse(["tree", "--size", "420x720"]);
+
+        Assert.Empty(parsed.Errors);
+        Assert.Equal(new Viewport(420, 720), parsed.Options!.Viewport);
+        Assert.Equal("420x720", parsed.Options.Viewport.ToString());
+    }
+
+    [Theory]
+    [InlineData("420")]
+    [InlineData("0x720")]
+    [InlineData("420x0")]
+    [InlineData("widex720")]
+    [InlineData("420x720x1080")]
+    public void AMalformedViewportIsAUsageError(string value)
+    {
+        Assert.NotEmpty(Grammar.Parse(["tree", "--size", value]).Errors);
+    }
+
+    [Fact]
+    public void SizesAreACommaSeparatedPngMatrix()
+    {
+        Grammar.Parsed parsed = Grammar.Parse(["png", "shot.png", "--sizes", "420x720,1180x820"]);
+
+        Assert.Empty(parsed.Errors);
+        Assert.Equal(["420x720", "1180x820"], parsed.Options!.Viewports.Select(static viewport => viewport.ToString()));
+        Assert.NotEmpty(Grammar.Parse(["tree", "--sizes", "420x720,1180x820"]).Errors);
+    }
+
+    [Fact]
+    public void EnvironmentPairsAndAStateRootReachTheOptions()
+    {
+        Grammar.Parsed parsed = Grammar.Parse(
+            ["tree", "--env", "CUI_STATE_HOME=C:\\scratch", "--env", "LANG=zh-CN", "--env", "EMPTY=", "--state", "C:\\state"]);
+
+        Assert.Empty(parsed.Errors);
+        Assert.Equal("C:\\scratch", parsed.Options!.Environment["CUI_STATE_HOME"]);
+        Assert.Equal("zh-CN", parsed.Options.Environment["LANG"]);
+        Assert.Equal("", parsed.Options.Environment["EMPTY"]);
+        Assert.Equal("C:\\state", parsed.Options.State);
+    }
+
+    [Theory]
+    [InlineData("missing-equals")]
+    [InlineData("=value")]
+    [InlineData("BAD-KEY=value")]
+    public void AMalformedEnvironmentPairIsAUsageError(string value)
+    {
+        Assert.NotEmpty(Grammar.Parse(["tree", "--env", value]).Errors);
     }
 
     [Fact]
@@ -440,6 +496,58 @@ public class ToolArgumentTests
         {
             if (File.Exists(png)) File.Delete(png);
             if (File.Exists(late)) File.Delete(late);
+        }
+    }
+
+    [Fact]
+    public void AHeadlessRunCanOverrideItsViewportAndState()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        string project = Path.Combine(TestPaths.RepositoryRoot, "src", "CuiSharp.Tests", "TestApps", "ReadyProbe");
+        string root = Directory.CreateTempSubdirectory("cui-viewport-").FullName;
+
+        try
+        {
+            var output = new StringWriter();
+            var error = new StringWriter();
+            int sized = Cli.Run(["tree", "--project", project, "--size", "420x720"], output, error);
+
+            Assert.True(sized == 0, $"the app should start at the requested size: {error}");
+            Assert.Contains("loading", output.ToString(), StringComparison.Ordinal);
+
+            var envOutput = new StringWriter();
+            var envError = new StringWriter();
+            int env = Cli.Run(
+                ["tree", "--project", project, "--no-build", "--env", "P0_ENV=ok", "--", "--label-env", "P0_ENV"],
+                envOutput,
+                envError);
+
+            Assert.True(env == 0, $"the environment should reach the app: {envError}");
+            Assert.Contains("ok", envOutput.ToString(), StringComparison.Ordinal);
+
+            string state = Path.Combine(root, "state");
+            var stateError = new StringWriter();
+            int restored = Cli.Run(
+                ["tree", "--project", project, "--no-build", "--state", state], new StringWriter(), stateError);
+
+            Assert.True(restored == 0, $"the state directory should be accepted: {stateError}");
+            Assert.True(Directory.Exists(state), "--state should create the app state root");
+
+            string shot = Path.Combine(root, "shot.png");
+            var matrixError = new StringWriter();
+            int matrix = Cli.Run(
+                ["png", shot, "--project", project, "--no-build", "--sizes", "320x200,400x300"],
+                new StringWriter(),
+                matrixError);
+
+            Assert.True(matrix == 0, $"the size matrix should screenshot both viewports: {matrixError}");
+            Assert.True(File.Exists(Path.Combine(root, "shot-320x200.png")));
+            Assert.True(File.Exists(Path.Combine(root, "shot-400x300.png")));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
         }
     }
 

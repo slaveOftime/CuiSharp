@@ -185,6 +185,87 @@ public sealed class SemanticNode
     }
 
     /// <summary>
+    /// Finds one node, refusing to choose when several controls share the best rank. The ordinary
+    /// <see cref="TryFind(string, out SemanticNode)"/> keeps its ranking for programmatic callers;
+    /// the headless <c>find</c> and <c>click</c> use this so a test can never silently hit the
+    /// wrong row.
+    /// </summary>
+    internal bool TryFindUnique(WidgetQuery query, out SemanticNode node)
+    {
+        // An exact id is already a deliberate choice: no ranking to settle.
+        if (query.Path.Length == 0
+            && query.Kind is null
+            && query.Text.StartsWith("id:", StringComparison.Ordinal))
+        {
+            return TryFind(query, out node);
+        }
+
+        // A path narrows the scope, then the leaf uses the same strict search as a plain query.
+        if (query.Path.Length > 0)
+        {
+            SemanticNode scope = this;
+            foreach (string step in query.Path)
+            {
+                if (!scope.TryFind(WidgetQuery.Of(kind: null, step), out SemanticNode container))
+                {
+                    node = null!;
+                    return false;
+                }
+
+                scope = container;
+            }
+
+            return scope.TryFindUnique(WidgetQuery.Of(query.Kind, query.Text), out node);
+        }
+
+        SemanticNode? best = null;
+        int bestScore = int.MaxValue;
+        var matches = new List<SemanticNode>();
+
+        foreach (SemanticNode candidate in SelfAndDescendants())
+        {
+            int score = candidate.Score(query);
+            if (score == int.MaxValue) continue;
+
+            if (score < bestScore)
+            {
+                bestScore = score;
+                best = candidate;
+                matches.Clear();
+                matches.Add(candidate);
+            }
+            else if (score == bestScore)
+            {
+                matches.Add(candidate);
+            }
+        }
+
+        if (best is null)
+        {
+            node = null!;
+            return false;
+        }
+
+        if (matches.Count > 1)
+            throw new InvalidOperationException(Ambiguous(query, matches));
+
+        node = best;
+        return true;
+    }
+
+    private static string Ambiguous(WidgetQuery query, List<SemanticNode> matches)
+    {
+        const int shown = 8;
+        string paths = string.Join(
+            '\n', matches.Take(shown).Select(static match => "  " + match.Path));
+        string more = matches.Count > shown ? $"\n  …and {matches.Count - shown} more" : "";
+
+        return $"\"{query}\" matches {matches.Count} controls; refusing to guess.{Environment.NewLine}" +
+            paths + more + Environment.NewLine +
+            "Use a kind (`Button \"…\"`), a path (`card > Button \"…\"`) or `id:…`.";
+    }
+
+    /// <summary>
     /// How well a node answers a query: lower is better, <see cref="int.MaxValue"/> is not at all.
     /// </summary>
     /// <remarks>

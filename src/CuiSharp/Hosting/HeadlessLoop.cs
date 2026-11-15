@@ -33,6 +33,35 @@ public static class HeadlessLoop
     /// <summary>The environment variable an app checks to run without a window.</summary>
     public const string EnvironmentVariable = "CUISHARP_HEADLESS";
 
+    /// <summary>The environment variable a headless app reads for its viewport, as <c>WxH</c>.</summary>
+    public const string ViewportEnvironmentVariable = "CUISHARP_VIEWPORT";
+
+    /// <summary>
+    /// Applies <see cref="ViewportEnvironmentVariable"/> to the window description. The tool uses
+    /// this to screenshot the same app at several sizes without editing the app; an app that does
+    /// not set it keeps its own width and height.
+    /// </summary>
+    internal static CuiAppOptions WithViewport(CuiAppOptions window)
+    {
+        string? text = Environment.GetEnvironmentVariable(ViewportEnvironmentVariable);
+        if (string.IsNullOrWhiteSpace(text)) return window;
+
+        string[] parts = text.Trim().Split(['x', 'X']);
+        if (parts.Length != 2
+            || parts[0].Length == 0
+            || parts[1].Length == 0
+            || !int.TryParse(parts[0], NumberStyles.None, CultureInfo.InvariantCulture, out int width)
+            || !int.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out int height)
+            || width <= 0
+            || height <= 0)
+        {
+            throw new InvalidOperationException(
+                $"{ViewportEnvironmentVariable} must be a positive WxH size, not \"{text}\".");
+        }
+
+        return window with { Width = width, Height = height };
+    }
+
     /// <summary>
     /// The longest answer the loop will send. A whole-page tree of a large window is kilobytes; a
     /// megabyte means the caller asked for something that cannot travel down this pipe, and a
@@ -219,7 +248,7 @@ public static class HeadlessLoop
 
     private static string Find(HeadlessApp app, string argument)
     {
-        WidgetTarget target = app.Find(argument);
+        WidgetTarget target = app.FindUnique(argument);
         return $"{target.Kind} \"{target.Text}\" at {target.Rect}";
     }
 
@@ -317,7 +346,7 @@ public static class HeadlessLoop
         // read next, and it saves a round trip. CUI reports the click on the release frame, and
         // a widget drawn earlier in that frame still shows the state from before it, so one
         // more frame is what proves the handler ran.
-        app.Find(argument).Click();
+        app.FindUnique(argument).Click();
         return app.Frame().Print();
     }
 

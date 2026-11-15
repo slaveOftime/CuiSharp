@@ -263,6 +263,59 @@ public class HeadlessLoopTests
         Assert.StartsWith("Heading", Wire(app, "find Heading \"Save\""), StringComparison.Ordinal);
     }
 
+    /// <summary>Two identical controls: a click must not pick one silently.</summary>
+    private sealed class TwoSaves : Component
+    {
+        public int Saves;
+
+        protected override void Draw(Ui ui)
+        {
+            if (ui.Button("Save")) Saves++;
+            if (ui.Button("Save")) Saves++;
+        }
+    }
+
+    [Fact]
+    public void ClickRefusesTwoEquallyGoodMatches()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        var page = new TwoSaves();
+        using var app = TestApp.Start(page, 400, 300);
+
+        string error = ErrorWire(app, "click Save");
+        Assert.Contains("matches 2 controls", error, StringComparison.Ordinal);
+        Assert.Contains("id:", error, StringComparison.Ordinal);
+        Assert.Equal(0, page.Saves);
+
+        // A kind is not enough when both controls share it; an id or a path is.
+        Assert.Contains("matches 2 controls", ErrorWire(app, "find Button \"Save\""), StringComparison.Ordinal);
+    }
+
+    /// <summary>An icon-only control with no label but a tooltip.</summary>
+    private sealed class IconPage : Component
+    {
+        public int Clicks;
+
+        protected override void Draw(Ui ui)
+        {
+            if (ui.IconButton(Icons.Pause, new ButtonOpts { Tooltip = "Pause" })) Clicks++;
+        }
+    }
+
+    [Fact]
+    public void AnIconButtonIsFoundAndClickedByItsTooltip()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        var page = new IconPage();
+        using var app = TestApp.Start(page, 400, 300);
+
+        Assert.StartsWith("IconButton \"Pause\"", Wire(app, "find Pause"), StringComparison.Ordinal);
+        Wire(app, "click Pause");
+        Assert.Equal(1, page.Clicks);
+    }
+
     /// <summary>A page whose frames mark ready and draw a label only once a flag flips.</summary>
     private sealed class ReadyPage : Component
     {

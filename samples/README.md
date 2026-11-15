@@ -44,6 +44,19 @@ dotnet publish disk.cs -c Release -p:CuiSharpHeadless=true -o artifacts/disk
 dotnet cui session --app artifacts/disk/disk.exe < steps.txt
 ```
 
+A published build can be inspected at any viewport, with its state kept away from the real profile:
+
+```sh
+dotnet cui png shot.png --app artifacts/disk/disk.exe --size 420x720
+dotnet cui png shot.png --app artifacts/disk/disk.exe --sizes 420x720,1180x820
+dotnet cui tree --app artifacts/disk/disk.exe --state artifacts/cui-run
+```
+
+The apps read `CUISHARP_STATE_HOME`: `music` uses `<root>/CuiMusic`, `download` uses
+`<root>/CuiDownload`, and `stock` uses `<root>/GlobalMarketCap`. `CuiSharp@*` must resolve a package
+that carries the `CUISHARP_VIEWPORT` override; with an older build, `--size` refuses rather than
+reporting a size it did not get.
+
 `dotnet cui` is the companion tool (`dotnet tool install -g CuiSharp.Tools`). Every app repeats the
 full recipe at the top of its file:
 

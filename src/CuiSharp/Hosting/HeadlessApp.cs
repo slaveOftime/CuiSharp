@@ -444,6 +444,19 @@ public class HeadlessApp : IDisposable
             : throw new InvalidOperationException($"No widget matching \"{query}\". The frame drew:\n{Print()}");
     }
 
+    /// <summary>
+    /// Finds one control and refuses when the frame draws several equally good matches. Use it for
+    /// commands where guessing would act on the wrong row; <see cref="Find(string)"/> keeps the
+    /// best-ranked match for programmatic callers.
+    /// </summary>
+    public WidgetTarget FindUnique(string query)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(query);
+        return Tree.TryFindUnique(WidgetQuery.Parse(query), out SemanticNode node)
+            ? new WidgetTarget(this, node)
+            : throw new InvalidOperationException($"No widget matching \"{query}\". The frame drew:\n{Print()}");
+    }
+
     /// <summary>Finds a control of a kind and a label, e.g. <c>Find("Button", "Save")</c>.</summary>
     public WidgetTarget Find(string kind, string text) => Find(WidgetQuery.Of(kind, text));
 

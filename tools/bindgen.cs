@@ -2908,6 +2908,16 @@ sealed class Idiomatic
             return $"WidgetRecorder.NoteItems(ui.Handle, \"{widget.Name}\", \"{items.Kind}\", {namer.Name}, {items.Items});";
         }
 
+        // An icon-only button has no label: its tooltip is the name a person and an agent read.
+        // Recording the glyph made `tree` print an unreadable icon and left `click Pause` unable
+        // to name the button it meant.
+        if (widget.Name == "IconButton"
+            && widget.Params.FirstOrDefault(p => p.Type == "ButtonOpts") is { } options)
+        {
+            return $"WidgetRecorder.Note(ui.Handle, \"IconButton\", string.IsNullOrEmpty({options.Name}.Tooltip) "
+                + $"? {namer.Name} : (UiText){options.Name}.Tooltip);";
+        }
+
         return $"WidgetRecorder.Note(ui.Handle, \"{widget.Name}\", {namer.Name});";
     }
 

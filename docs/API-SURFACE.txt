@@ -1547,6 +1547,7 @@ class CuiSharp.Hosting.HeadlessApp
   WidgetTarget FindById(String)
   WidgetTarget FindInput(String)
   WidgetTarget FindItem(String, Int32)
+  WidgetTarget FindUnique(String)
   property Boolean Animating { get; }
   property Boolean Ready { get; }
   property Component Root { get; }
@@ -1566,6 +1567,7 @@ struct CuiSharp.Hosting.HeadlessApp+WaitOutcome
   property TimeSpan Elapsed { get; }
 class CuiSharp.Hosting.HeadlessLoop
   field String EnvironmentVariable
+  field String ViewportEnvironmentVariable
   property IReadOnlyList<String> Known { get; }
   static Boolean Requested(String[])
   static Int32 Run(DrawFn, CuiAppOptions, TextReader, TextWriter)
