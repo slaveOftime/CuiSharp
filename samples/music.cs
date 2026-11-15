@@ -18,14 +18,19 @@
 #:property StackTraceSupport=false
 #:property MetricsSupport=false
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json;
 using CuiSharp;
+using Windows.Graphics.Imaging;
 using Windows.Media.Core;
+using Windows.Media.MediaProperties;
 using Windows.Media.Playback;
+using Windows.Media.Transcoding;
 using Windows.Storage;
 using Windows.Storage.FileProperties;
+using Windows.Storage.Streams;
 
 // ---------------------------------------------------------------------------
 // Music — a native CuiSharp player over the folders you point it at.
@@ -40,7 +45,8 @@ using Windows.Storage.FileProperties;
 //            dotnet cui png shot.png                     that frame as a PNG
 //            dotnet cui docs read live-debugging         the guide, offline
 //
-// Below: the window, its panels, the player, the scan, and the state they share.
+// Below: the window, its panels, the player, the scan, the spectrum behind the
+// effects, and the state they share.
 // ---------------------------------------------------------------------------
 
 var preferences = Store.LoadPreferences();
@@ -61,13 +67,14 @@ internal sealed class MusicApp
 {
     private const float SideBySideWidth = 900f;
     private const float MiniWidth = 720f;
-    private const float MiniHeight = 340f;
+    private const float MiniHeight = 320f;
+    private const float MiniListHeight = 560f;
 
     // Below this the side-by-side card drops its tags and its volume row, so the
     // visualizer keeps a strip instead of being squeezed out of the layout.
     private const float TightHeight = 460f;
     private const float CompactPlayerShare = 0.44f;
-    private const float CompactPlayerMin = 240f;
+    private const float CompactPlayerMin = 270f;
     private const float CompactPlayerMax = 420f;
     private const float LibraryMinimum = 190f;
 
@@ -92,24 +99,26 @@ internal sealed class MusicApp
         _nowPlaying = new NowPlayingPanel(player, preferences.Visualizer, Save, new ArtCache());
         _libraryPanel = new LibraryPanel(library, player, AddFolder, RemoveFolder);
 
+        Options = new CuiAppOptions
+        {
+            Title = "Music",
+            Width = 1240,
+            Height = 840,
+
+            // Below this the strip has nothing left to give; the stack takes over
+            // above it, so the window can still shrink to a small player.
+            MinWidth = 380,
+            MinHeight = 200,
+
+            Theme = Theme.Dark,
+            Accent = Accent.Violet,
+            Renderer = Renderer.Software,
+        };
+
         _player.Restore(library.Find(preferences.TrackPath), preferences.Position);
     }
 
-    public CuiAppOptions Options { get; } = new()
-    {
-        Title = "Music",
-        Width = 1240,
-        Height = 840,
-
-        // Below this the strip has nothing left to give; the stack takes over
-        // above it, so the window can still shrink to a small player.
-        MinWidth = 380,
-        MinHeight = 300,
-
-        Theme = Theme.Dark,
-        Accent = Accent.Violet,
-        Renderer = Renderer.Software,
-    };
+    public CuiAppOptions Options { get; }
 
     public void Draw(Ui ui)
     {
@@ -127,7 +136,10 @@ internal sealed class MusicApp
 
         var (width, height) = ui.ViewportSize();
 
-        if (width < MiniWidth || height < MiniHeight) DrawMini(ui, width, height);
+        // A narrow window still has room for the library when it is tall enough
+        // to give the player a card and keep a list under it.
+        if (height < MiniHeight || (width < MiniWidth && height < MiniListHeight))
+            DrawMini(ui, width, height);
         else if (width < SideBySideWidth) DrawStacked(ui, width, height);
         else DrawSideBySide(ui, width, height);
 
@@ -143,7 +155,7 @@ internal sealed class MusicApp
     {
         var playerWidth = Math.Clamp(width * 0.38f, 340f, 520f);
 
-        using (ui.Column(new Box { Pad = 16, Gap = 12, Height = Size.Fill }))
+        using (ui.Column(new Box { Pad = 16, Gap = 10, Width = Size.Fill, Height = Size.Fill }))
         {
             using (ui.Row(new Box { Gap = 12, Width = Size.Fill, Height = Size.Fill, Align = Align.Stretch }))
             {
@@ -158,24 +170,20 @@ internal sealed class MusicApp
     private void DrawStacked(Ui ui, float width, float height)
     {
         // The player takes its share of the height, but never the library's last rows.
+        var content = height - 34f;
         var playerHeight = MathF.Min(
-            Math.Clamp(height * CompactPlayerShare, CompactPlayerMin, CompactPlayerMax),
-            MathF.Max(CompactPlayerMin, height - LibraryMinimum));
+            Math.Clamp(content * CompactPlayerShare, CompactPlayerMin, CompactPlayerMax),
+            MathF.Max(CompactPlayerMin, content - LibraryMinimum));
 
-        using (ui.Column(new Box { Pad = 12, Gap = 10, Height = Size.Fill }))
+        using (ui.Column(new Box { Pad = 12, Gap = 10, Width = Size.Fill, Height = Size.Fill }))
         {
             _nowPlaying.DrawWide(ui, playerHeight);
             _libraryPanel.Draw(ui, Size.Fill, Size.Fill, width - 24f, compact: true);
         }
     }
 
-    private void DrawMini(Ui ui, float width, float height)
-    {
-        // A row is as wide as its children, so the panel is handed the width it
-        // has to lay out against rather than asking the layout for it.
-        using (ui.Column(new Box { Width = Size.Px(width), Height = Size.Px(height) }))
-            _nowPlaying.DrawMini(ui, width, height);
-    }
+    private void DrawMini(Ui ui, float width, float height) =>
+        _nowPlaying.DrawMini(ui, width, height);
 
     private void Footer(Ui ui)
     {
@@ -253,20 +261,50 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
     private const float TimeWidth = 44f;
     private const float EffectWidth = 124f;
 
-    // A card this narrow has no room for the "Effect" caption beside the picker.
-    private const float CaptionWidth = 420f;
-
-    // ... and a card narrower still no longer fits the volume slider beside the
-    // transport buttons, so the slider takes a row of its own.
-    private const float InlineVolumeWidth = 480f;
-
     private readonly Visualizer _visualizer = new(visualizer);
     private readonly SeekBar _seek = new(player);
+
+    private Sound? _sound;
+    private string _soundPath = "";
+    private Task<Sound?>? _reading;
 
     private string _positionText = "0:00";
     private int _lastSecond = -1;
 
-    public void Advance(float delta, bool playing) => _visualizer.Advance(delta, playing);
+    public void Advance(float delta, bool playing)
+    {
+        var sound = Listening();
+
+        _visualizer.Advance(sound, player.Position, player.Duration, delta, playing);
+        _seek.Sound = sound;
+    }
+
+    /// <summary>The decoded track, once the background read has one to hand.</summary>
+    private Sound? Listening()
+    {
+        if (player.Current is not { } track)
+        {
+            _sound = null;
+            _soundPath = "";
+            _reading = null;
+            return null;
+        }
+
+        if (track.Path != _soundPath)
+        {
+            _soundPath = track.Path;
+            _sound = null;
+            _reading = Task.Run(() => Sound.LoadAsync(track.Path, track.Duration));
+        }
+
+        if (_reading is { IsCompleted: true } reading)
+        {
+            _reading = null;
+            _sound = reading.Result;
+        }
+
+        return _sound;
+    }
 
     public void DrawTall(Ui ui, float width, Size height, bool tight)
     {
@@ -279,7 +317,7 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
             Dir = Dir.Column,
         }))
         {
-            Header(ui, room: width >= CaptionWidth);
+            Header(ui);
             Show(ui);
 
             // The visualizer takes every point left over, so a tall window never
@@ -288,12 +326,11 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
 
             Title(ui);
 
-            // A short window gives up the tag line and the volume row before it
-            // gives up the visualizer.
+            // A short window gives up the tag line before it gives up the visualizer.
             if (!tight) Meta(ui);
 
             Progress(ui, Size.Fill, 28f);
-            Transport(ui, mini: false, narrow: width < InlineVolumeWidth, volume: !tight);
+            Transport(ui, mini: false);
         }
     }
 
@@ -311,7 +348,7 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
             Dir = Dir.Column,
         }))
         {
-            Header(ui, room: true);
+            Header(ui);
             Show(ui);
 
             using (ui.Row(new Box { Width = Size.Fill, Height = Size.Fill, Gap = 16, Align = Align.Stretch }))
@@ -345,109 +382,88 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
 
     public void DrawMini(Ui ui, float width, float height)
     {
-        // A short, wide window keeps the strip. A small one stacks instead: three
-        // columns do not fit, and the strip ends up hugging the left edge.
-        if (width < height * 1.7f) Stack(ui, width, height);
-        else Strip(ui, width, height);
-    }
-
-    private void Strip(Ui ui, float width, float height)
-    {
-        const float TransportWidth = 104f;
-        const float Chrome = 48f;
-
-        // The cover takes the height it is given, up to a share of the width, so a
-        // tall window is not a small picture floating in the middle.
-        var art = Math.Clamp(MathF.Min(height - 24f, width * 0.34f), 64f, 220f);
-        var text = Math.Max(120f, width - art - TransportWidth - Chrome);
-
         Show(ui);
 
-        using (ui.Row(new Box
+        var pad = width < 520f ? 12f : 16f;
+        var panelWidth = MathF.Min(width - 18f, 560f);
+        var gap = height > 500f ? 10f : 6f;
+
+        using (ui.Box(new Box
         {
-            Pad = 12,
-            Gap = 12,
+            Dir = Dir.Stack,
             Width = Size.Px(width),
             Height = Size.Px(height),
             Align = Align.Center,
+            Justify = Justify.Center,
+            Bg = Color.Background,
         }))
         {
-            DrawVisualizer(ui, Size.Px(art), Size.Px(art));
+            Background(ui, width, height);
 
-            using (ui.Column(new Box { Width = Size.Px(text), MinWidth = 0, Gap = 4 }))
+            using (ui.Box(new Box
+            {
+                Width = Size.Px(panelWidth),
+                Pad = pad,
+                Gap = gap,
+                Dir = Dir.Column,
+
+                // Glass: the blurred cover reads through a cool tint, with a hairline
+                // that catches the light and a shadow to lift it off the artwork.
+                // The tint thickens with the music, so the card breathes with it.
+                Bg = Color.Oklch(0.26f, 0.02f, _visualizer.Hue).WithAlpha(0.36f + _visualizer.Level * 0.10f),
+                Border = 1,
+                BorderColor = new Color(255, 255, 255, 44),
+                Radius = 18,
+                Elevation = Elevation.Raised,
+            }))
             {
                 ui.Text(player.Current?.Title ?? "Nothing playing", new TextOpts
                 {
                     Font = Font.Medium,
-                    Size = 13,
+                    Size = 16,
                     NoWrap = true,
+                    Width = Size.Fill,
+                    Align = TextAlign.Center,
                 });
 
                 ui.Text(Subtitle(), new TextOpts
                 {
                     Size = 11,
-                    Color = player.Error is null ? Color.TextSecondary : Color.Danger,
                     NoWrap = true,
+                    Width = Size.Fill,
+                    Align = TextAlign.Center,
+                    Color = player.Error is null ? Color.TextSecondary : Color.Danger,
                 });
 
-                Progress(ui, Size.Px(text), 18f);
-            }
+                Meta(ui, center: true);
 
-            Transport(ui, mini: true);
+                Progress(ui, Size.Fill, 18f);
+
+                Transport(ui, mini: true);
+            }
         }
     }
 
-    private void Stack(Ui ui, float width, float height)
+    /// <summary>The effect at full size, dimmed under the glass panel.</summary>
+    private void Background(Ui ui, float width, float height)
     {
-        const float Pad = 14f;
-
-        // A tall window gets a cover to match; a short one keeps room for the text.
-        var art = Math.Clamp(MathF.Min(width - Pad * 2f - 24f, height - 192f), 64f, 400f);
-        var gap = height > 600f ? 12f : 7f;
-
-        Show(ui);
-
-        using (ui.Column(new Box
+        using (ui.Box(new Box
         {
-            Width = Size.Px(width),
-            Height = Size.Px(height),
-            Pad = Pad,
-            Gap = gap,
-            Align = Align.Center,
-            Justify = Justify.Center,
+            Dir = Dir.Stack,
+            Width = Size.Fill,
+            Height = Size.Fill,
+            Opacity = 0.60f,
         }))
         {
-            DrawVisualizer(ui, Size.Px(art), Size.Px(art));
-
-            ui.Text(player.Current?.Title ?? "Nothing playing", new TextOpts
-            {
-                Font = Font.Medium,
-                Size = 14,
-                NoWrap = true,
-                Width = Size.Fill,
-                Align = TextAlign.Center,
-            });
-
-            ui.Text(Subtitle(), new TextOpts
-            {
-                Size = 11,
-                NoWrap = true,
-                Width = Size.Fill,
-                Align = TextAlign.Center,
-                Color = player.Error is null ? Color.TextSecondary : Color.Danger,
-            });
-
-            Meta(ui, center: true);
-
-            Progress(ui, Size.Px(width - Pad * 2f), 20f);
-
-            using (ui.Row(new Box { Width = Size.Px(width - Pad * 2f), Justify = Justify.Center, Gap = 6 }))
-                Transport(ui, mini: true);
+            if (_visualizer.Mode == Visualizer.GridIndex)
+                _visualizer.DrawHeat(ui, "viz-bg-heat", width, height);
+            else
+                _visualizer.Draw(ui, "viz-bg", Size.Fill, Size.Fill, background: true);
         }
     }
 
-    /// <summary>The card's top line: what the panel is, whether it plays, and the effect.</summary>
-    private void Header(Ui ui, bool room)
+    /// <summary>The card's top line: what the panel is and whether it plays.</summary>
+    private void Header(Ui ui)
     {
         using (ui.Row(new Box { Align = Align.Center, Gap = 8 }))
         {
@@ -461,15 +477,7 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
 
             ui.Spacer();
 
-            if (room) ui.Text("Effect", new TextOpts { Size = 11, Color = Color.TextMuted });
-
-            var index = _visualizer.Mode;
-
-            if (ui.Select("viz-mode", Visualizer.Names, ref index, new SelectOpts { Width = Size.Px(EffectWidth) }))
-            {
-                _visualizer.Mode = index;
-                save();
-            }
+            if (_reading is not null) ui.Muted("reading audio…");
         }
     }
 
@@ -487,6 +495,7 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
         _visualizer.Art = cover.Texture;
         _visualizer.ArtWidth = cover.Width;
         _visualizer.ArtHeight = cover.Height;
+        _visualizer.Frost = cover.Frost;
     }
 
     private void DrawVisualizer(Ui ui, Size width, Size height) =>
@@ -568,82 +577,134 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
         }
     }
 
-    private void Transport(Ui ui, bool mini, bool narrow = false, bool volume = true)
+    private void Transport(Ui ui, bool mini)
     {
-        using (ui.Row(new Box { Align = Align.Center, Gap = mini ? 4 : 6 }))
+        if (mini)
         {
-            if (!mini && ui.IconButton(Icons.Shuffle, new ButtonOpts
+            using (ui.Row(new Box
             {
-                Tooltip = "Shuffle",
-                Size = ControlSize.Sm,
-                Selected = player.Shuffle,
+                Align = Align.Center,
+                Justify = Justify.Center,
+                Gap = 3,
+                Width = Size.Fill,
+                Wrap = true,
             }))
             {
-                player.Shuffle = !player.Shuffle;
-                save();
+                Buttons(ui, mini: true);
+                EffectMenu(ui, compact: true);
+                Mute(ui);
             }
 
-            if (ui.IconButton(Icons.SkipBack, new ButtonOpts { Tooltip = "Previous", Size = ControlSize.Sm }))
-                player.Previous();
+            return;
+        }
 
-            if (mini)
+        using (ui.Column(new Box { Width = Size.Fill, Gap = 8 }))
+        {
+            using (ui.Row(new Box { Align = Align.Center, Gap = 6, Width = Size.Fill, Wrap = true }))
+                Buttons(ui, mini: false);
+
+            using (ui.Row(new Box { Align = Align.Center, Gap = 6, Width = Size.Fill }))
             {
-                if (ui.IconButton(player.IsPlaying ? Icons.Pause : Icons.Play, new ButtonOpts
-                {
-                    Tooltip = player.IsPlaying ? "Pause" : "Play",
-                    Size = ControlSize.Sm,
-                    Variant = ButtonVariant.Primary,
-                }))
-                {
-                    player.Toggle();
-                }
+                EffectMenu(ui, compact: false);
+                ui.Spacer();
+                Volume(ui);
             }
-            else if (ui.Button(player.IsPlaying ? "Pause" : "Play", new ButtonOpts
+        }
+    }
+
+    /// <summary>Shuffle, previous, play, next, stop, repeat.</summary>
+    private void Buttons(Ui ui, bool mini)
+    {
+        if (ui.IconButton(Icons.Shuffle, new ButtonOpts
+        {
+            Tooltip = "Shuffle",
+            Size = ControlSize.Sm,
+            Selected = player.Shuffle,
+        }))
+        {
+            player.Shuffle = !player.Shuffle;
+            save();
+        }
+
+        if (ui.IconButton(Icons.SkipBack, new ButtonOpts { Tooltip = "Previous", Size = ControlSize.Sm }))
+            player.Previous();
+
+        if (mini)
+        {
+            if (ui.IconButton(player.IsPlaying ? Icons.Pause : Icons.Play, new ButtonOpts
             {
-                Icon = player.IsPlaying ? Icons.Pause : Icons.Play,
+                Tooltip = player.IsPlaying ? "Pause" : "Play",
+                Size = ControlSize.Sm,
                 Variant = ButtonVariant.Primary,
-                Width = Size.Px(104),
             }))
             {
                 player.Toggle();
             }
-
-            if (ui.IconButton(Icons.SkipForward, new ButtonOpts { Tooltip = "Next", Size = ControlSize.Sm }))
-                player.Next();
-
-            if (!mini)
-            {
-                if (ui.IconButton(Icons.Square, new ButtonOpts { Tooltip = "Stop", Size = ControlSize.Sm }))
-                    player.Stop();
-
-                if (ui.IconButton(Icons.Repeat, new ButtonOpts
-                {
-                    Tooltip = player.Repeat switch { 1 => "Repeat all", 2 => "Repeat one", _ => "Repeat off" },
-                    Size = ControlSize.Sm,
-                    Selected = player.Repeat != 0,
-                }))
-                {
-                    player.Repeat = (player.Repeat + 1) % 3;
-                    save();
-                }
-
-                if (volume && !narrow) Volume(ui);
-            }
+        }
+        else if (ui.Button(player.IsPlaying ? "Pause" : "Play", new ButtonOpts
+        {
+            Icon = player.IsPlaying ? Icons.Pause : Icons.Play,
+            Variant = ButtonVariant.Primary,
+            Width = Size.Px(104),
+        }))
+        {
+            player.Toggle();
         }
 
-        // A card too narrow for a slider beside the buttons gives it a row below,
-        // rather than letting the row wrap and leave the volume under the thumb.
-        if (!mini && volume && narrow)
+        if (ui.IconButton(Icons.SkipForward, new ButtonOpts { Tooltip = "Next", Size = ControlSize.Sm }))
+            player.Next();
+
+        if (ui.IconButton(Icons.Square, new ButtonOpts { Tooltip = "Stop", Size = ControlSize.Sm }))
+            player.Stop();
+
+        if (ui.IconButton(Icons.Repeat, new ButtonOpts
         {
-            using (ui.Row(new Box { Align = Align.Center, Gap = 6 }))
-                Volume(ui);
+            Tooltip = player.Repeat switch { 1 => "Repeat all", 2 => "Repeat one", _ => "Repeat off" },
+            Size = ControlSize.Sm,
+            Selected = player.Repeat != 0,
+        }))
+        {
+            player.Repeat = (player.Repeat + 1) % 3;
+            save();
+        }
+    }
+
+    /// <summary>The effect picker, in the transport controls rather than the header.</summary>
+    private void EffectMenu(Ui ui, bool compact)
+    {
+        using var menu = ui.Menu(Visualizer.Names[_visualizer.Mode], new MenuOpts
+        {
+            Icon = Icons.Sparkles,
+            Variant = ButtonVariant.Ghost,
+            Width = compact ? 104f : EffectWidth,
+        });
+
+        if (!menu) return;
+
+        for (var i = 0; i < Visualizer.Names.Length; i++)
+        {
+            if (ui.MenuItem(Visualizer.Names[i], new MenuItemOpts { Checked = i == _visualizer.Mode }))
+            {
+                _visualizer.Mode = i;
+                save();
+            }
         }
     }
 
     private void Volume(Ui ui)
     {
-        ui.Spacer();
+        Mute(ui);
 
+        var slider = player.Volume;
+        if (ui.Slider("##volume", ref slider, 0f, 1f, new SliderOpts { Width = Size.Px(88) }))
+        {
+            player.Volume = slider;
+            save();
+        }
+    }
+
+    private void Mute(Ui ui)
+    {
         var volume = player.Volume;
 
         if (ui.IconButton(volume <= 0.001f ? Icons.VolumeX : Icons.Volume2, new ButtonOpts
@@ -652,15 +713,7 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
             Size = ControlSize.Sm,
         }))
         {
-            volume = volume <= 0.001f ? 0.7f : 0f;
-            player.Volume = volume;
-            save();
-        }
-
-        var slider = player.Volume;
-        if (ui.Slider("##volume", ref slider, 0f, 1f, new SliderOpts { Width = Size.Px(88) }))
-        {
-            player.Volume = slider;
+            player.Volume = volume <= 0.001f ? 0.7f : 0f;
             save();
         }
     }
@@ -1386,6 +1439,10 @@ internal static class Artwork
 {
     private const int Limit = 8 << 20;
 
+    // A cover this small has no detail left; blown back up it is a soft wash of
+    // the album's colours, which is the closest the renderer gets to a blur.
+    private const int Frost = 48;
+
     private static readonly string Folder = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CuiMusic", "art");
 
@@ -1405,6 +1462,38 @@ internal static class Artwork
         }
         catch
         {
+            return null;
+        }
+    }
+
+    /// <summary>The same picture at a few dozen pixels, for the glass behind the mini player.</summary>
+    public static (int Width, int Height, byte[] Pixels)? Frosted(string path)
+    {
+        try
+        {
+            var file = StorageFile.GetFileFromPathAsync(path).AsTask().GetAwaiter().GetResult();
+            using var stream = file.OpenReadAsync().AsTask().GetAwaiter().GetResult();
+            var decoder = BitmapDecoder.CreateAsync(stream).AsTask().GetAwaiter().GetResult();
+
+            var transform = new BitmapTransform
+            {
+                ScaledWidth = Frost,
+                ScaledHeight = Frost,
+                InterpolationMode = BitmapInterpolationMode.Fant,
+            };
+
+            var pixels = decoder.GetPixelDataAsync(
+                BitmapPixelFormat.Rgba8,
+                BitmapAlphaMode.Ignore,
+                transform,
+                ExifOrientationMode.IgnoreExifOrientation,
+                ColorManagementMode.DoNotColorManage).AsTask().GetAwaiter().GetResult();
+
+            return (Frost, Frost, pixels.DetachPixelData());
+        }
+        catch
+        {
+            // A picture CUI can load but WIC cannot still plays, just without glass.
             return null;
         }
     }
@@ -1591,20 +1680,30 @@ internal sealed class ArtCache
             return default;
         }
 
-        _covers[track.Path] = new Cover(texture, width, height);
+        _covers[track.Path] = new Cover(texture, width, height, Frost(ui, file));
         _order.Enqueue(track.Path);
 
         while (_order.Count > Keep)
         {
             var oldest = _order.Dequeue();
-            if (_covers.Remove(oldest, out var cover)) ui.DestroyImage(cover.Texture);
+
+            if (_covers.Remove(oldest, out var cover))
+            {
+                ui.DestroyImage(cover.Texture);
+                ui.DestroyImage(cover.Frost);
+            }
         }
 
         return _covers[track.Path];
     }
+
+    private static ulong Frost(Ui ui, string file) =>
+        Artwork.Frosted(file) is { } frosted
+            ? ui.CreateImage(frosted.Width, frosted.Height, frosted.Pixels)
+            : 0;
 }
 
-internal readonly record struct Cover(ulong Texture, int Width, int Height);
+internal readonly record struct Cover(ulong Texture, int Width, int Height, ulong Frost);
 
 // ---------------------------------------------------------------------------
 // Model.
@@ -1871,9 +1970,433 @@ internal static class Store
 }
 
 // ---------------------------------------------------------------------------
-// The seek bar. The bars are the shape of the track: the part already played is
-// lit, the rest waits. CUI hands the app no samples, so the shape is a stable
-// envelope seeded from the file path — one track always draws the same bars.
+// What a track sounds like. CUI hands the app no samples, so the file is
+// decoded once, off the frame thread, into a table of spectra: one row per
+// ~20 ms of playback. The effects read the row at the position being heard, so
+// the bars follow the song rather than a clock, and a seek moves them with it.
+// ---------------------------------------------------------------------------
+
+internal sealed class Sound
+{
+    public const int Bands = 64;
+
+    private const int Window = 1024;         // 64 ms: long enough to show a bass note
+    private const int RowsPerSecond = 50;    // one row per 20 ms of playback
+    private const int FrameCap = 12000;      // bounds a long file's table at a few MB
+    private const int LowBands = 14;         // a kick drum and a bass line live here
+    private const int OnsetGap = 4;          // rows compared to spot a transient
+    private const float OnsetDecay = 0.92f;  // how fast a hit lets go
+    private const float MinHz = 40f;
+    private const float MaxHz = 7000f;
+    private const double MaxSeconds = 15 * 60;
+    private const ulong MaxBytes = 30ul << 20;   // 15 minutes of the WAV profile below
+    private const int Keep = 2;
+    private const float Tau = MathF.PI * 2f;
+
+    private static readonly Lock Gate = new();
+    private static readonly Dictionary<string, Sound?> Cache = [with(StringComparer.OrdinalIgnoreCase)];
+    private static readonly Queue<string> Order = new();
+
+    private readonly float[] _cells;    // Bands per row, normalized 0..1
+    private readonly float[] _level;    // one loudness value per row
+    private readonly float[] _attack;   // one onset value per row
+    private readonly int _rows;
+
+    private Sound(float[] cells, float[] level, float[] attack, int rows)
+    {
+        _cells = cells;
+        _level = level;
+        _attack = attack;
+        _rows = rows;
+    }
+
+    /// <summary>
+    /// Decodes and measures a track. Never throws: a file the system will not
+    /// decode still plays, it just has no spectrum to draw.
+    /// </summary>
+    public static async Task<Sound?> LoadAsync(string path, double duration)
+    {
+        if (path.Length == 0 || duration > MaxSeconds) return null;
+
+        lock (Gate)
+        {
+            if (Cache.TryGetValue(path, out var cached)) return cached;
+        }
+
+        Sound? sound;
+
+        try
+        {
+            sound = await MeasureFileAsync(path);
+        }
+        catch
+        {
+            // A file that defeats the reader must not take the frame loop down.
+            sound = null;
+        }
+
+        lock (Gate)
+        {
+            Cache[path] = sound;
+            Order.Enqueue(path);
+
+            // Two tracks is enough to make skipping back and forth instant.
+            while (Order.Count > Keep) Cache.Remove(Order.Dequeue());
+        }
+
+        return sound;
+    }
+
+    /// <summary>
+    /// The row at <paramref name="position"/>, blended between neighbours so a
+    /// slow frame rate does not turn the spectrum into steps.
+    /// </summary>
+    public void Read(double position, double duration, Span<float> bands, out float level, out float attack)
+    {
+        var at = duration > 0 ? (float)(position / duration) : 0f;
+        var row = Math.Clamp(at * (_rows - 1), 0f, _rows - 1f);
+        var index = (int)row;
+        var next = Math.Min(index + 1, _rows - 1);
+        var blend = row - index;
+
+        var now = index * Bands;
+        var later = next * Bands;
+
+        for (var band = 0; band < Bands; band++)
+            bands[band] = _cells[now + band] + (_cells[later + band] - _cells[now + band]) * blend;
+
+        level = _level[index] + (_level[next] - _level[index]) * blend;
+        attack = _attack[index] + (_attack[next] - _attack[index]) * blend;
+    }
+
+    /// <summary>The loudest row behind one bar of the seek bar, 0..1.</summary>
+    public float Shape(int index, int count)
+    {
+        var from = (int)((long)index * _rows / count);
+        var to = Math.Max(from + 1, (int)((long)(index + 1) * _rows / count));
+        var peak = 0f;
+
+        for (var row = from; row < to && row < _rows; row++)
+            peak = MathF.Max(peak, _level[row]);
+
+        return peak;
+    }
+
+    private static async Task<Sound?> MeasureFileAsync(string path)
+    {
+        var pcm = await DecodeAsync(path);
+
+        // The transcoder writes a RIFF header before the samples; reading it as
+        // audio would put a click at the start of every track.
+        return Parse(pcm) is { } wave ? Measure(pcm, wave) : null;
+    }
+
+    /// <summary>Any codec the system can read, through the same WAV.</summary>
+    private static async Task<byte[]> DecodeAsync(string path)
+    {
+        try
+        {
+            var file = await StorageFile.GetFileFromPathAsync(path);
+
+            using var source = await file.OpenReadAsync();
+            using var destination = new InMemoryRandomAccessStream();
+
+            var profile = MediaEncodingProfile.CreateWav(AudioEncodingQuality.Low);
+            var transcoder = new MediaTranscoder { HardwareAccelerationEnabled = false };
+            var prepared = await transcoder.PrepareStreamTranscodeAsync(source, destination, profile);
+
+            if (!prepared.CanTranscode) return [];
+
+            await prepared.TranscodeAsync();
+
+            // Reading the whole stream is the expensive part; a track this long
+            // is not worth the megabytes for a bar chart.
+            if (destination.Size > MaxBytes) return [];
+
+            var size = (uint)destination.Size;
+            destination.Seek(0);
+
+            using var reader = new DataReader(destination.GetInputStreamAt(0));
+            await reader.LoadAsync(size);
+
+            var pcm = new byte[(int)size];
+            reader.ReadBytes(pcm);
+            return pcm;
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    /// <summary>PCM inside the RIFF the transcoder wrote: where it starts and what it is.</summary>
+    private static Wave? Parse(byte[] file)
+    {
+        if (file.Length < 12) return null;
+        if (!IsChunk(file, 0, "RIFF") || !IsChunk(file, 8, "WAVE")) return null;
+
+        var rate = 0;
+        var channels = 0;
+        var at = 12;
+
+        while (at + 8 <= file.Length)
+        {
+            var length = BinaryPrimitives.ReadInt32LittleEndian(file.AsSpan(at + 4));
+            if (length < 0 || at + 8 + length > file.Length) break;
+
+            if (IsChunk(file, at, "fmt "))
+            {
+                var tag = BinaryPrimitives.ReadInt16LittleEndian(file.AsSpan(at + 8));
+                channels = BinaryPrimitives.ReadInt16LittleEndian(file.AsSpan(at + 10));
+                rate = BinaryPrimitives.ReadInt32LittleEndian(file.AsSpan(at + 12));
+                var bits = BinaryPrimitives.ReadInt16LittleEndian(file.AsSpan(at + 22));
+
+                // The profile asks for PCM; anything else would read as noise.
+                if (tag != 1 || bits != 16 || channels <= 0 || rate <= 0) return null;
+            }
+            else if (IsChunk(file, at, "data"))
+            {
+                return rate > 0 ? new Wave(rate, channels, at + 8, length) : null;
+            }
+
+            at += 8 + length + (length & 1);
+        }
+
+        return null;
+    }
+
+    private static bool IsChunk(byte[] file, int at, string id) =>
+        file[at] == id[0] && file[at + 1] == id[1] && file[at + 2] == id[2] && file[at + 3] == id[3];
+
+    private static Sound? Measure(byte[] pcm, Wave wave)
+    {
+        var frames = wave.Length / (wave.Channels * 2);
+        if (frames < Window) return null;
+
+        var seconds = frames / (double)wave.Rate;
+        if (seconds > MaxSeconds) return null;
+
+        // A three-minute single keeps one row every 20 ms; a long file uses fewer
+        // rows per second so the table never grows past FrameCap.
+        var rows = Math.Min(FrameCap, Math.Max(1, (int)(seconds * RowsPerSecond)));
+        var hop = Math.Max(1, (frames - Window) / rows);
+        rows = (frames - Window) / hop + 1;
+
+        var cells = new float[rows * Bands];
+        var level = new float[rows];
+        var attack = new float[rows];
+        var hann = new float[Window];
+        var edges = BandEdges(wave.Rate);
+        var step = wave.Channels * 2;
+
+        for (var i = 0; i < Window; i++)
+            hann[i] = 0.5f - 0.5f * MathF.Cos(Tau * i / (Window - 1));
+
+        void MeasureRow(int row, float[] re, float[] im)
+        {
+            var start = wave.Start + row * hop * step;
+            var energy = 0f;
+
+            for (var i = 0; i < Window; i++)
+            {
+                var frame = start + i * step;
+                var sum = 0f;
+
+                for (var channel = 0; channel < wave.Channels; channel++)
+                    sum += BinaryPrimitives.ReadInt16LittleEndian(pcm.AsSpan(frame + channel * 2)) / 32768f;
+
+                var sample = sum / wave.Channels;
+
+                re[i] = sample * hann[i];
+                im[i] = 0f;
+                energy += sample * sample;
+            }
+
+            level[row] = MathF.Sqrt(energy / Window);
+            Transform(re, im);
+
+            var cell = row * Bands;
+            for (var band = 0; band < Bands; band++)
+            {
+                var first = edges[band];
+                var last = Math.Max(first + 1, edges[band + 1]);
+                var sum = 0f;
+
+                for (var bin = first; bin < last; bin++)
+                    sum += MathF.Sqrt(re[bin] * re[bin] + im[bin] * im[bin]);
+
+                cells[cell + band] = sum / (last - first);
+            }
+        }
+
+        // The rows are independent, and a whole track is a few seconds of maths:
+        // one core less than the machine keeps the frame loop smooth meanwhile.
+        var options = new ParallelOptions { MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount - 1) };
+
+        Parallel.For(0, rows, options, () => new Scratch(),
+            (row, _, scratch) =>
+            {
+                MeasureRow(row, scratch.Re, scratch.Im);
+                return scratch;
+            },
+            _ => { });
+
+        Normalize(cells, level, rows);
+        Transients(cells, attack, rows);
+
+        return new Sound(cells, level, attack, rows);
+    }
+
+    /// <summary>
+    /// Loudness is scaled to the track's loudest moment; each band to its own,
+    /// because on one shared scale the bass would flatten the treble into the
+    /// floor and half the bars would never move.
+    /// </summary>
+    private static void Normalize(float[] cells, float[] level, int rows)
+    {
+        var bandPeak = new float[Bands];
+
+        for (var row = 0; row < rows; row++)
+        {
+            var cell = row * Bands;
+
+            for (var band = 0; band < Bands; band++)
+                bandPeak[band] = MathF.Max(bandPeak[band], cells[cell + band]);
+        }
+
+        for (var band = 0; band < Bands; band++)
+        {
+            var peak = bandPeak[band];
+            if (peak <= 0f) continue;
+
+            for (var row = 0; row < rows; row++)
+            {
+                var cell = row * Bands + band;
+                cells[cell] = MathF.Sqrt(cells[cell] / peak);
+            }
+        }
+
+        var loudest = 0f;
+        foreach (var value in level) loudest = MathF.Max(loudest, value);
+
+        if (loudest <= 0f) return;
+
+        for (var row = 0; row < rows; row++)
+            level[row] = MathF.Sqrt(level[row] / loudest);
+    }
+
+    /// <summary>
+    /// A hit is the bass getting louder between two rows; a short tail keeps it
+    /// on screen for the few frames a ring needs to be born.
+    /// </summary>
+    private static void Transients(float[] cells, float[] attack, int rows)
+    {
+        var low = new float[rows];
+
+        for (var row = 0; row < rows; row++)
+        {
+            var cell = row * Bands;
+            var sum = 0f;
+
+            for (var band = 0; band < LowBands; band++) sum += cells[cell + band];
+            low[row] = sum / LowBands;
+        }
+
+        var envelope = 0f;
+        for (var row = 0; row < rows; row++)
+        {
+            var before = row >= OnsetGap ? low[row - OnsetGap] : low[row];
+            var onset = MathF.Min(1f, MathF.Max(0f, low[row] - before) * 5f);
+
+            envelope = MathF.Max(onset, envelope * OnsetDecay);
+            attack[row] = envelope;
+        }
+    }
+
+    /// <summary>Log-spaced band edges in FFT bins, so a bass octave gets as many bars as a treble one.</summary>
+    private static int[] BandEdges(int rate)
+    {
+        var edges = new int[Bands + 1];
+
+        for (var band = 0; band <= Bands; band++)
+        {
+            var hz = MinHz * MathF.Pow(MaxHz / MinHz, band / (float)Bands);
+            var bin = Math.Clamp((int)MathF.Round(hz * Window / rate), 1, Window / 2 - 1);
+
+            // Below the window's first few bins several bands share one; the
+            // average then reads that bin once, instead of inventing detail.
+            edges[band] = band == 0 ? bin : Math.Max(bin, edges[band - 1]);
+        }
+
+        return edges;
+    }
+
+    /// <summary>An in-place radix-2 FFT: the row loop allocates nothing.</summary>
+    private static void Transform(float[] re, float[] im)
+    {
+        var n = re.Length;
+
+        for (int i = 1, j = 0; i < n; i++)
+        {
+            var bit = n >> 1;
+            for (; (j & bit) != 0; bit >>= 1) j ^= bit;
+            j ^= bit;
+
+            if (i >= j) continue;
+
+            (re[i], re[j]) = (re[j], re[i]);
+            (im[i], im[j]) = (im[j], im[i]);
+        }
+
+        for (var length = 2; length <= n; length <<= 1)
+        {
+            var angle = -Tau / length;
+            var stepRe = MathF.Cos(angle);
+            var stepIm = MathF.Sin(angle);
+            var half = length / 2;
+
+            for (var start = 0; start < n; start += length)
+            {
+                float turnRe = 1f, turnIm = 0f;
+
+                for (var k = 0; k < half; k++)
+                {
+                    var at = start + k;
+                    var mirror = at + half;
+
+                    var vRe = re[mirror] * turnRe - im[mirror] * turnIm;
+                    var vIm = re[mirror] * turnIm + im[mirror] * turnRe;
+
+                    var uRe = re[at];
+                    var uIm = im[at];
+
+                    re[at] = uRe + vRe;
+                    im[at] = uIm + vIm;
+                    re[mirror] = uRe - vRe;
+                    im[mirror] = uIm - vIm;
+
+                    (turnRe, turnIm) = (
+                        turnRe * stepRe - turnIm * stepIm,
+                        turnRe * stepIm + turnIm * stepRe);
+                }
+            }
+        }
+    }
+
+    /// <summary>Where the samples start, and the rate they were written at.</summary>
+    private readonly record struct Wave(int Rate, int Channels, int Start, int Length);
+
+    /// <summary>Two windows a worker reuses, so a whole track does not churn the heap.</summary>
+    private sealed class Scratch
+    {
+        public readonly float[] Re = new float[Window];
+        public readonly float[] Im = new float[Window];
+    }
+}
+
+// ---------------------------------------------------------------------------
+// The seek bar. The bars are the track's own loudness, one sample of the
+// measured envelope per bar: the part already played is lit, the rest waits.
 // ---------------------------------------------------------------------------
 
 internal sealed class SeekBar
@@ -1881,9 +2404,7 @@ internal sealed class SeekBar
     private const int Bins = 96;
 
     private readonly Player _player;
-    private readonly float[] _bins = new float[Bins];
     private readonly PaintFn _paint;
-    private string _track = "";
 
     public SeekBar(Player player)
     {
@@ -1893,10 +2414,11 @@ internal sealed class SeekBar
 
     public float Hue { get; set; } = 268f;
 
+    /// <summary>The decoded track; null until the background read has one.</summary>
+    public Sound? Sound { get; set; }
+
     public void Draw(Ui ui, UiText id, Size width, float height)
     {
-        Shape(_player.Current);
-
         var canvas = ui.Canvas(id, width, Size.Px(height), _paint);
 
         if (canvas.Pressed && _player.Duration > 0)
@@ -1904,58 +2426,6 @@ internal sealed class SeekBar
             var fraction = Math.Clamp(canvas.MouseX / MathF.Max(1f, canvas.Rect.W), 0f, 1f);
             _player.Seek(fraction * _player.Duration);
         }
-    }
-
-    private void Shape(Track? track)
-    {
-        if (track is null)
-        {
-            if (_track.Length == 0) return;
-
-            _track = "";
-            Array.Clear(_bins);
-            return;
-        }
-
-        if (track.Path == _track) return;
-
-        _track = track.Path;
-
-        var seed = 2166136261u;
-        foreach (var c in track.Path)
-        {
-            seed ^= c;
-            seed *= 16777619;
-        }
-
-        for (var i = 0; i < Bins; i++)
-        {
-            var f = i / (float)(Bins - 1);
-
-            // Loud in the middle, quiet at both ends: it reads as a song.
-            var envelope = 0.32f + 0.68f * MathF.Sin(MathF.PI * Math.Clamp(f * 1.08f, 0f, 1f));
-            var grain = 0.55f + 0.45f * Noise(seed, i);
-
-            _bins[i] = Math.Clamp(envelope * grain, 0.05f, 1f);
-        }
-
-        for (var i = 0; i < Bins; i++)
-        {
-            var left = _bins[Math.Max(0, i - 1)];
-            var right = _bins[Math.Min(Bins - 1, i + 1)];
-
-            _bins[i] = (left + _bins[i] * 2f + right) / 4f;
-        }
-    }
-
-    private static float Noise(uint seed, int index)
-    {
-        var hash = seed + (uint)index * 2654435761u;
-        hash ^= hash >> 15;
-        hash *= 2246822519u;
-        hash ^= hash >> 13;
-
-        return (hash & 0xFFFF) / 65535f;
     }
 
     private void Paint(Ui ui, RectF rect)
@@ -1974,7 +2444,7 @@ internal sealed class SeekBar
 
         for (var i = 0; i < count; i++)
         {
-            var value = _bins[i * Bins / count];
+            var value = Sound?.Shape(i, count) ?? 0f;
             var height = MathF.Max(2f, value * span);
             var x = rect.X + i * step;
 
@@ -1991,9 +2461,9 @@ internal sealed class SeekBar
 }
 
 // ---------------------------------------------------------------------------
-// The four effects. A spectrum is generated, not measured: the player hands
-// CUI no samples, so the bands are layered sines on a beat, seeded per track,
-// and they stop when the music does.
+// The eight effects. What they move is measured from the file — the row of the
+// spectrum being heard — so only the motion between rows is animation. Nothing
+// here invents a wave: when the track is silent, the field is empty.
 // ---------------------------------------------------------------------------
 
 internal sealed class Visualizer
@@ -2003,20 +2473,31 @@ internal sealed class Visualizer
 
     public static int Count => Names.Length;
 
-    private const int Bands = 64;
+    /// <summary>The Grid effect is drawn with CUI's own Heatmap in the mini window.</summary>
+    public const int GridIndex = 6;
+
+    private const int Bands = Sound.Bands;
     private const float Tau = MathF.PI * 2f;
+    private const float RingLife = 1.5f;
 
     private readonly float[] _bands = new float[Bands];
+    private readonly float[] _rings = [-1f, -1f, -1f, -1f];
     private readonly (float X, float Y)[] _points = new (float, float)[Bands * 2 + 4];
     private readonly PaintFn _paint;
+    private readonly PaintFn _paintBackground;
 
+    private float[] _heat = [];
     private float _time;
+    private float _beat;
+    private float _sinceRing;
+    private int _nextRing;
     private int _mode;
 
     public Visualizer(int mode)
     {
         _mode = Math.Clamp(mode, 0, Count - 1);
-        _paint = Paint;
+        _paint = (ui, rect) => Paint(ui, rect, background: false);
+        _paintBackground = (ui, rect) => Paint(ui, rect, background: true);
     }
 
     public int Mode
@@ -2027,53 +2508,121 @@ internal sealed class Visualizer
 
     public float Hue { get; set; } = 268f;
 
+    /// <summary>How loud the moment being played is, 0..1.</summary>
+    public float Level { get; private set; }
+
     /// <summary>The current track's cover, drawn whole behind the bars.</summary>
     public ulong Art { get; set; }
     public int ArtWidth { get; set; }
     public int ArtHeight { get; set; }
 
-    public void Advance(float delta, bool playing)
+    /// <summary>The same cover at 48 pixels, stretched behind the mini player as glass.</summary>
+    public ulong Frost { get; set; }
+
+    public void Advance(Sound? sound, double position, double duration, float delta, bool playing)
     {
         delta = Math.Clamp(delta, 0f, 0.1f);
-        _time += delta * (playing ? 1f : 0.12f);
+        _time += playing ? delta : 0f;
 
-        for (var i = 0; i < Bands; i++)
+        Span<float> target = stackalloc float[Bands];
+        var level = 0f;
+        var attack = 0f;
+
+        sound?.Read(position, duration, target, out level, out attack);
+
+        for (var band = 0; band < Bands; band++)
         {
-            // Paused, the bars breathe instead of going flat: an empty box reads as broken.
-            var target = playing ? Energy(i) : 0.12f + 0.07f * MathF.Sin(_time * 1.3f + i * 0.18f);
-            var rate = playing ? 12f : 5f;
-            _bands[i] += (target - _bands[i]) * MathF.Min(1f, delta * rate);
+            // A meter jumps to a hit and falls back; the spectrum is measured,
+            // the fall is the only part that is taste.
+            var rate = target[band] > _bands[band] ? 28f : 6f;
+            _bands[band] += (target[band] - _bands[band]) * MathF.Min(1f, delta * rate);
+        }
+
+        Level = level;
+        _beat = MathF.Max(attack, _beat * MathF.Exp(-delta * 6f));
+
+        for (var ring = 0; ring < _rings.Length; ring++)
+        {
+            if (_rings[ring] < 0f) continue;
+
+            _rings[ring] += delta;
+            if (_rings[ring] > RingLife) _rings[ring] = -1f;
+        }
+
+        _sinceRing += delta;
+        if (attack > 0.28f && _sinceRing > 0.15f)
+        {
+            _rings[_nextRing] = 0f;
+            _nextRing = (_nextRing + 1) % _rings.Length;
+            _sinceRing = 0f;
         }
     }
 
-    public CanvasResult Draw(Ui ui, UiText id, Size width, Size height) => ui.Canvas(id, width, height, _paint);
+    public CanvasResult Draw(Ui ui, UiText id, Size width, Size height, bool background = false) =>
+        ui.Canvas(id, width, height, background ? _paintBackground : _paint);
 
-    private float Energy(int index)
+    /// <summary>
+    /// The Grid effect as CUI's Heatmap. The wrapper is exactly the grid's
+    /// height so the scale the control draws below it is clipped away.
+    /// </summary>
+    public void DrawHeat(Ui ui, UiText id, float width, float height)
     {
-        var f = index / (float)(Bands - 1);
-        var tilt = MathF.Pow(1f - f * 0.8f, 1.4f);
-        var wobble = 0.55f + 0.45f * MathF.Sin(_time * (3.1f + f * 11f) + Noise(index) * Tau);
-        var pulse = 0.55f + 0.45f * Beat();
+        if (width < 8 || height < 8) return;
 
-        return Math.Clamp(tilt * wobble * pulse * 1.2f, 0f, 1f);
+        var cols = Math.Clamp((int)MathF.Ceiling(width / 24f), 6, 30);
+        var rows = Math.Clamp((int)MathF.Ceiling(height / 24f), 4, 18);
+        var cell = MathF.Min(width / cols, height / rows);
+
+        var count = cols * rows;
+        if (_heat.Length < count) _heat = new float[count];
+
+        for (var c = 0; c < cols; c++)
+        {
+            var level = (0.18f + _bands[c * Bands / cols] * 0.82f) * rows;
+
+            for (var r = 0; r < rows; r++)
+                _heat[r * cols + c] = Math.Clamp(level - (rows - r) + 1f, 0f, 1f);
+        }
+
+        var gridWidth = cols * cell;
+        var gridHeight = rows * cell;
+
+        using (ui.Box(new Box
+        {
+            Width = Size.Px(width),
+            Height = Size.Px(height),
+            Align = Align.Center,
+            Justify = Justify.Center,
+            Clip = true,
+        }))
+        using (ui.Box(new Box { Width = Size.Px(gridWidth), Height = Size.Px(gridHeight), Clip = true }))
+        {
+            ui.Heatmap(id, _heat.AsSpan(0, count), rows, cols, new HeatmapOpts
+            {
+                Cell = cell,
+                Min = 0f,
+                Max = 1f,
+                Color = Color.Oklch(0.66f, 0.20f, Hue),
+                Width = Size.Px(gridWidth),
+            });
+        }
     }
 
-    private float Beat() => MathF.Exp(-6f * (_time * 1.9f % 1f));
-
-    private static float Noise(int index)
+    /// <summary>Where a dust mote sits in the field: a fixed scatter, not a signal.</summary>
+    private static float Scatter(int index)
     {
         var hash = (uint)index * 2654435761u;
         hash ^= hash >> 13;
         return (hash & 0xFFFF) / 65535f;
     }
 
-    private void Paint(Ui ui, RectF rect)
+    private void Paint(Ui ui, RectF rect, bool background)
     {
         if (rect.W < 8 || rect.H < 8) return;
 
         ui.DrawRectGradient(rect, Color.Oklch(0.26f, 0.05f, Hue), Color.Oklch(0.15f, 0.02f, Hue), 10f);
 
-        if (Art != 0 && ArtWidth > 0 && ArtHeight > 0) Cover(ui, rect);
+        if (Art != 0 && ArtWidth > 0 && ArtHeight > 0) Cover(ui, rect, background);
 
         switch (_mode)
         {
@@ -2086,14 +2635,27 @@ internal sealed class Visualizer
             case 6: Grid(ui, rect); break;
             default: Nebula(ui, rect); break;
         }
+
+        // The mini player puts text on top; keep the moving parts behind it quiet.
+        if (background)
+            ui.DrawRect(rect, Color.Background.WithAlpha(0.06f), 0f);
     }
 
     /// <summary>
     /// The cover whole and undistorted, under a scrim that deepens towards the
     /// floor: the art stays readable at the top, the bars and the wave at the bottom.
     /// </summary>
-    private void Cover(Ui ui, RectF rect)
+    private void Cover(Ui ui, RectF rect, bool fill)
     {
+        // Behind the mini player the 48-pixel copy IS the blur: stretched over the
+        // window it is a wash of the album's colours with nothing left to read.
+        if (fill)
+        {
+            ui.DrawImage(Frost != 0 ? Frost : Art, rect, default, 0f);
+            ui.DrawRect(rect, Color.Oklch(0.08f, 0.02f, Hue).WithAlpha(0.10f), 0f);
+            return;
+        }
+
         var scale = MathF.Min(rect.W / ArtWidth, rect.H / ArtHeight) * 0.96f;
         var width = ArtWidth * scale;
         var height = ArtHeight * scale;
@@ -2186,7 +2748,7 @@ internal sealed class Visualizer
         var radius = MathF.Min(rect.W, rect.H) * 0.26f;
         var count = 56;
 
-        ui.DrawCircle(cx, cy, radius * (0.96f + Beat() * 0.10f), Color.Oklch(0.40f, 0.14f, Hue + 30f).WithAlpha(0.55f));
+        ui.DrawCircle(cx, cy, radius * (0.96f + _beat * 0.10f), Color.Oklch(0.40f, 0.14f, Hue + 30f).WithAlpha(0.55f));
 
         for (var i = 0; i < count; i++)
         {
@@ -2208,7 +2770,7 @@ internal sealed class Visualizer
         {
             var angle = Tau * i / 24f + _time * 0.4f;
             var inner = radius * 0.62f;
-            var reach = 4f + Beat() * 6f;
+            var reach = 4f + _beat * 6f;
             var cos = MathF.Cos(angle);
             var sin = MathF.Sin(angle);
 
@@ -2240,7 +2802,7 @@ internal sealed class Visualizer
             ui.DrawCircle(x, y, radius, Color.Oklch(0.72f, 0.20f, hue).WithAlpha(0.35f + value * 0.5f));
         }
 
-        ui.DrawCircle(cx, cy, 16f + Beat() * 10f, Color.Oklch(0.88f, 0.14f, Hue + 60f).WithAlpha(0.30f));
+        ui.DrawCircle(cx, cy, 16f + _beat * 10f, Color.Oklch(0.88f, 0.14f, Hue + 60f).WithAlpha(0.30f));
     }
 
     /// <summary>Three ribbons of light drifting across the panel, each a hue apart.</summary>
@@ -2284,7 +2846,7 @@ internal sealed class Visualizer
         }
     }
 
-    /// <summary>Rings of light opening outwards on the beat.</summary>
+    /// <summary>Rings of light opening outwards from each real onset.</summary>
     private void Pulse(Ui ui, RectF rect)
     {
         var cx = rect.X + rect.W * 0.5f;
@@ -2292,14 +2854,16 @@ internal sealed class Visualizer
         var reach = MathF.Min(rect.W, rect.H) * 0.48f;
         var segments = 44;
 
-        for (var ring = 0; ring < 4; ring++)
+        for (var ring = 0; ring < _rings.Length; ring++)
         {
-            var age = (_time * 0.42f + ring * 0.25f) % 1f;
-            var radius = reach * age;
-            if (radius < 4f) continue;
+            var age = _rings[ring];
+            if (age < 0f) continue;
 
-            var color = Color.Oklch(0.72f, 0.19f, Hue + ring * 34f + age * 60f)
-                .WithAlpha((1f - age) * (0.35f + Beat() * 0.30f));
+            var life = Math.Clamp(age / RingLife, 0f, 1f);
+            var radius = reach * (0.12f + life * 0.88f);
+
+            var color = Color.Oklch(0.72f, 0.19f, Hue + ring * 34f + life * 60f)
+                .WithAlpha((1f - life) * (0.35f + _beat * 0.30f));
 
             for (var i = 0; i < segments; i++)
             {
@@ -2314,7 +2878,7 @@ internal sealed class Visualizer
             }
         }
 
-        ui.DrawCircle(cx, cy, 10f + Beat() * 16f, Color.Oklch(0.88f, 0.15f, Hue + 24f).WithAlpha(0.32f));
+        ui.DrawCircle(cx, cy, 10f + _beat * 16f, Color.Oklch(0.88f, 0.15f, Hue + 24f).WithAlpha(0.32f));
     }
 
     /// <summary>An LED matrix: each column rises like a level meter, hue walking left to right.</summary>
@@ -2362,7 +2926,7 @@ internal sealed class Visualizer
 
         for (var i = 0; i < count; i++)
         {
-            var seed = Noise(i * 7 + 3);
+            var seed = Scatter(i * 7 + 3);
             var band = _bands[i * Bands / count];
             var angle = seed * Tau + _time * (0.10f + seed * 0.22f);
             var distance = span * (0.15f + seed * 0.95f);
