@@ -1,12 +1,11 @@
 <#
 .SYNOPSIS
-    Lists what CUI's public API gained or lost between two revisions, without checking either out.
+    Lists what CUI's public API gained, lost or changed between two revisions, without checking either out.
 
 .DESCRIPTION
-    A sync starts by reading a 15 000-line diff, which is the most expensive part of the job and
-    mostly says nothing: upstream restructures its C files constantly. This prints only what CuiSharp
-    has to answer for — public functions, structs and header sections — plus the upstream changelog
-    section for the target, which already says in prose which components are new.
+    Compares declaration sets from complete header snapshots, not changed lines: moving a
+    declaration or reformatting a typedef must not look like a new API. Reports functions,
+    structs and header sections, plus the upstream changelog when requested.
 
 .EXAMPLE
     pwsh skills/cui-sync/scripts/cui-api-diff.ps1                  # pinned commit -> newest tag
@@ -19,27 +18,18 @@
 #>
 [CmdletBinding()]
 param(
-    # What the binding was generated from. Defaults to the submodule's checked-out commit, which is
-    # the pinned one until the bump.
     [string] $From,
-
-    # What to compare against. Defaults to the newest tag in the submodule.
     [string] $To,
-
-    # Print the upstream CHANGELOG.md section for $To: it names the new components in prose.
     [switch] $Notes,
-
-    # The submodule to read; defaults to the one this repository pins.
     [string] $Submodule
 )
 
 $ErrorActionPreference = 'Stop'
-
 $root = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../..'))
 if (-not $Submodule) { $Submodule = Join-Path $root 'native/CUI' }
 if (-not (Test-Path (Join-Path $Submodule 'include/cui/cui.h'))) { throw "no CUI checkout at $Submodule" }
 
-# Not named `Git`: PowerShell resolves the `git` inside it to the function itself, and recurse.
+# Not named Git: PowerShell would resolve the git inside it to the function itself.
 function Invoke-Git([string[]] $Arguments) {
     $output = @(& git -C $Submodule @Arguments 2>&1)
     if ($LASTEXITCODE -ne 0) { throw ("git " + ($Arguments -join ' ') + " failed: " + ($output -join ' ')) }
@@ -47,9 +37,10 @@ function Invoke-Git([string[]] $Arguments) {
 }
 
 function Show-List([string] $Title, $Items) {
-    if ($null -eq $Items -or $Items.Count -eq 0) { return }
-    Write-Host "$Title ($($Items.Count))" -ForegroundColor Yellow
-    foreach ($item in $Items) { Write-Host "  $item" }
+    $items = @($Items)
+    if ($items.Count -eq 0) { return }
+    Write-Host "$Title ($($items.Count))" -ForegroundColor Yellow
+    foreach ($item in $items) { Write-Host "  $item" }
     Write-Host ''
 }
 
@@ -60,51 +51,48 @@ if (-not $To) {
     $To = $tags[0].Trim()
 }
 
+$headers = 'include/cui/cui.h', 'include/cui/cui_app.h', 'include/cui/cui_render.h'
+function Read-Api([string] $Revision) {
+    $text = ($headers | ForEach-Object { (Invoke-Git @('show', "${Revision}:$_")) -join "`n" }) -join "`n"
+    $sections = [System.Collections.Generic.SortedSet[string]]::new([StringComparer]::Ordinal)
+    # One-line rulers and the two multi-line title forms used by CUI.
+    foreach ($match in [regex]::Matches($text, '/\*\s*-{4,}\s*([^\r\n]+?)\s*-{2,}\s*(?:\*/)?(?:\r?\n|$)|/\*\s*-{4,}\s*\*/\s*\r?\n/\*\s*([^\r\n]+?)\s*\*/')) {
+        $title = if ($match.Groups[1].Success) { $match.Groups[1].Value } else { $match.Groups[2].Value }
+        $title = $title.Trim('-', ' ', '*')
+        if ($title -match '[A-Za-z]') { [void]$sections.Add($title) }
+    }
+    # Comments may contain example calls and preprocessing contains function-like macros.
+    $code = [regex]::Replace($text, '(?s)/\*.*?\*/|//[^\r\n]*', ' ')
+    $code = [regex]::Replace($code, '(?m)^\s*#[^\r\n]*(?:\\\r?\n[^\r\n]*)*', '')
+    $functions = [System.Collections.Generic.SortedDictionary[string,string]]::new([StringComparer]::Ordinal)
+    foreach ($match in [regex]::Matches($code, '\bCUI_API\s+[^;{}]*?\b(cui_\w+)\s*\)?\s*\([^;{}]*\)\s*;')) {
+        $functions[$match.Groups[1].Value] = [regex]::Replace($match.Value, '\s+', ' ').Trim()
+    }
+    $structs = [System.Collections.Generic.SortedSet[string]]::new([StringComparer]::Ordinal)
+    foreach ($match in [regex]::Matches($code, '\btypedef\s+struct\s+(cui_\w+)')) { [void]$structs.Add($match.Groups[1].Value) }
+    return @{ Functions = $functions; Structs = $structs; Sections = $sections }
+}
+
 $range = "$From..$To"
 Write-Host "CUI $range" -ForegroundColor Cyan
 (Invoke-Git @('log', '--oneline', $range)) | ForEach-Object { Write-Host "  $_" }
 Write-Host ''
-
-# The headers, not the sources: a declaration is what a wrapper answers for, and a function split
-# into phases inside src/ is invisible to the binding.
-$headers = 'include/cui/cui.h', 'include/cui/cui_app.h', 'include/cui/cui_render.h'
-$diff = Invoke-Git (@('diff', '--unified=0', $range, '--') + $headers)
-
-# One declaration may wrap over several lines; the name is in the first few.
-function Get-Declared([string] $Marker, [string] $Pattern) {
-    $found = [System.Collections.Generic.SortedSet[string]]::new([StringComparer]::Ordinal)
-    for ($i = 0; $i -lt $diff.Count; $i++) {
-        if (-not $diff[$i].StartsWith($Marker)) { continue }
-        for ($look = 0; $look -lt 3 -and ($i + $look) -lt $diff.Count; $look++) {
-            $line = $diff[$i + $look]
-            if (-not $line.StartsWith($Marker)) { break }
-            if (($line.Substring(1)) -match $Pattern) { [void]$found.Add($Matches[1]); break }
-        }
-    }
-    return , $found
-}
-
-$added = Get-Declared '+' 'CUI_API\s+[\w \*]+?\b(cui_\w+)\s*\('
-$removed = Get-Declared '-' 'CUI_API\s+[\w \*]+?\b(cui_\w+)\s*\('
-foreach ($name in @($added)) { if ($removed.Contains($name)) { [void]$removed.Remove($name) } }
-
+$before = Read-Api $From
+$after = Read-Api $To
+$added = @($after.Functions.Keys | Where-Object { -not $before.Functions.ContainsKey($_) })
+$removed = @($before.Functions.Keys | Where-Object { -not $after.Functions.ContainsKey($_) })
+$changed = @($after.Functions.Keys | Where-Object { $before.Functions.ContainsKey($_) -and $before.Functions[$_] -cne $after.Functions[$_] })
+$structsAdded = @($after.Structs | Where-Object { -not $before.Structs.Contains($_) })
+$structsRemoved = @($before.Structs | Where-Object { -not $after.Structs.Contains($_) })
+$sections = @($after.Sections | Where-Object { -not $before.Sections.Contains($_) })
 Show-List 'functions added' $added
 Show-List 'functions removed' $removed
-Show-List 'structs added' (Get-Declared '+' 'typedef\s+struct\s+(cui_\w+)')
-Show-List 'structs removed' (Get-Declared '-' 'typedef\s+struct\s+(cui_\w+)')
-
-# A section title is the file the wrapper lands in: one extension class per section.
-$sections = [System.Collections.Generic.SortedSet[string]]::new([StringComparer]::Ordinal)
-foreach ($line in $diff) {
-    if ($line -notmatch '^\+\s*/\*\s*-{4,}\s*(.+?)\s*-{2,}\s*(\*/)?\s*$') { continue }
-    # A bare rule is not a title; only a rule with words in it names a section.
-    $title = $Matches[1].Trim('-', ' ', '*')
-    if ($title.Length -gt 0) { [void]$sections.Add($title) }
-}
+Show-List 'function declarations changed (review signatures)' $changed
+Show-List 'structs added' $structsAdded
+Show-List 'structs removed' $structsRemoved
 Show-List 'new header sections' $sections
 
 if ($Notes) {
-    # Not `$notes`: PowerShell variable names are case-insensitive, so it would be the switch itself.
     $section = [System.Collections.Generic.List[string]]::new()
     $started = $false
     foreach ($line in (Invoke-Git @('show', "${To}:CHANGELOG.md"))) {
@@ -120,6 +108,6 @@ if ($Notes) {
     }
 }
 
-if ($added.Count -eq 0 -and $removed.Count -eq 0 -and $sections.Count -eq 0) {
-    Write-Host 'No public API change: the bump is a rebuild and a regenerate.' -ForegroundColor Green
+if ($added.Count -eq 0 -and $removed.Count -eq 0 -and $changed.Count -eq 0 -and $structsAdded.Count -eq 0 -and $structsRemoved.Count -eq 0 -and $sections.Count -eq 0) {
+    Write-Host 'No declaration additions or removals; regenerate to check field and ABI changes.' -ForegroundColor Green
 }

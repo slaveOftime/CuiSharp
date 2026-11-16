@@ -38,18 +38,20 @@ public static unsafe class VoiceUiExtensions
         }
 
         /// <summary>Voice note: a recorded message in a bubble, with play and pause, its voice waveform as the seek bar (click or drag; the arrow keys step), the time played and the length, and a speed chip that cycles 1x, 1.5x and 2x. It plays nothing itself: you play the audio and pass the position on every frame. Returns CUI_PLAYER_TOGGLE, CUI_PLAYER_SEEK and CUI_PLAYER_SPEED.</summary>
-        public int VoiceNote(UiText id, ref VoiceNoteState note, VoiceNoteOpts o = default)
+        public PlayerEvents VoiceNote(UiText id, ref VoiceNoteState note, VoiceNoteOpts o = default)
         {
             var __note = note.ToNative();
             var __opts = o.ToNative();
             var __result = Native.VoiceNote(ui.Handle, Utf8.Get(id), ref __note, in __opts);
-            note = VoiceNoteState.FromNative(__note);
+            var __updatednote = VoiceNoteState.FromNative(__note);
+            __updatednote.Levels = note.Levels;
+            note = __updatednote;
             WidgetRecorder.Note(ui.Handle, "VoiceNote", id);
-            return __result;
+            return (PlayerEvents)__result;
         }
 
         /// <summary>cui_voice_session_ex</summary>
-        public int VoiceSession(UiText id, VoiceState state, ReadOnlySpan<float> levels, ref bool muted, VoiceSessionOpts o = default)
+        public VoiceSessionEvents VoiceSession(UiText id, VoiceState state, ReadOnlySpan<float> levels, ref bool muted, VoiceSessionOpts o = default)
         {
             byte __muted = (byte)(muted ? 1 : 0);
             if (o.Owners is { } __owners && __owners.Length < levels.Length)
@@ -58,18 +60,18 @@ public static unsafe class VoiceUiExtensions
             var __result = Native.VoiceSession(ui.Handle, Utf8.Get(id), state, UiMarshal.Values<float>(levels), (int)(levels.Length), in __opts);
             muted = __muted != 0;
             WidgetRecorder.NoteValue(ui.Handle, "VoiceSession", id, muted);
-            return __result;
+            return (VoiceSessionEvents)__result;
         }
 
         /// <summary>Same as the overload with ref muted, but reports nothing back: the state pointer is null, so the widget stores no state the caller could read.</summary>
-        public int VoiceSession(UiText id, VoiceState state, ReadOnlySpan<float> levels, VoiceSessionOpts o = default)
+        public VoiceSessionEvents VoiceSession(UiText id, VoiceState state, ReadOnlySpan<float> levels, VoiceSessionOpts o = default)
         {
             if (o.Owners is { } __owners && __owners.Length < levels.Length)
                 throw new ArgumentException($"Owners needs at least {levels.Length} entries.", nameof(o));
             var __opts = o.ToNative(0);
             var __result = Native.VoiceSession(ui.Handle, Utf8.Get(id), state, UiMarshal.Values<float>(levels), (int)(levels.Length), in __opts);
             WidgetRecorder.Note(ui.Handle, "VoiceSession", id);
-            return __result;
+            return (VoiceSessionEvents)__result;
         }
 
     }

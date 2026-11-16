@@ -10,8 +10,6 @@ internal sealed partial class GalleryApp
     // Who is here. Positions are canvas points under the view the rail below moves, so both are
     // fields: a fresh array per frame would throw away the drag.
     private NodeView _view = new(0, 0, 1);
-    private bool _grid = true;
-    private bool _snap = true;
     private readonly CanvasToggle[] _canvasToggles =
     [
         new(Icons.Grid3x3, "Show grid") { On = true },
@@ -66,14 +64,11 @@ internal sealed partial class GalleryApp
         using (ui.Card(new Card()))
         using (ui.Box(new Box { Height = Size.Px(200), Width = Size.Fill }))
         {
-            int asked = ui.CanvasControls("canvas", ref _view, _canvasToggles, new CanvasControlsOpts
+            CanvasEvents asked = ui.CanvasControls("canvas", ref _view, _canvasToggles, new CanvasControlsOpts
             {
                 Content = new RectF(0, 0, 640, 480),
             });
-            ui.Secondary($"zoom {_view.Zoom:0.00} at ({_view.X:0}, {_view.Y:0}), flags {asked}, " +
-                $"grid {_canvasToggles[0].On}, snap {_canvasToggles[1].On}");
-            _grid = _canvasToggles[0].On;
-            _snap = _canvasToggles[1].On;
+            ui.Secondary($"zoom {_view.Zoom:0.00} at ({_view.X:0}, {_view.Y:0}), flags {(int)asked}, grid {_canvasToggles[0].On}, snap {_canvasToggles[1].On}");
         }
 
         Section(ui, "Selection ring", "A ring in someone's color around the previous component, for " +
@@ -93,7 +88,9 @@ internal sealed partial class GalleryApp
             {
                 CountFormat = "%d cards selected",
             });
-            ui.Secondary($"{_cardsSelected.Count(s => s)} selected, last action {action}");
+            int count = 0;
+            foreach (bool selected in _cardsSelected) if (selected) count++;
+            ui.Secondary($"{count} selected, last action {action}");
         }
 
         Section(ui, "Result card", "A picture with rounded corners, a caption and an optional status " +
@@ -128,8 +125,7 @@ internal sealed partial class GalleryApp
                 Styles = Styles,
                 Footer = "Text options",
             });
-            ui.Secondary($"style {_textFormat.Style}, {_textFormat.Size:0} pt, bold {_textFormat.Bold}, " +
-                $"align {_textFormat.Align}");
+            ui.Secondary($"style {_textFormat.Style}, {_textFormat.Size:0} pt, bold {_textFormat.Bold}, align {(int)_textFormat.Align}");
         }
     }
 }

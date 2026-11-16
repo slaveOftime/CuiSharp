@@ -25,7 +25,7 @@ cui_aspect_picker_ex
 ## `GradientSlider`
 
 ```csharp
-public int GradientSlider(UiText label, ref float value, float min, float max, ref Color colorout, GradientSliderOpts o = default)
+public WellEvents GradientSlider(UiText label, ref float value, float min, float max, ref Color colorout, GradientSliderOpts o = default)
 ```
 
 Edit a gradient slider without snapping a passive model value or an endpoint.
@@ -33,7 +33,7 @@ Edit a gradient slider without snapping a passive model value or an endpoint.
 ## `OptionAction`
 
 ```csharp
-public int OptionAction(UiText label, ReadOnlySpan<string> items, ref int index, UiText icon, OptionActionOpts o = default)
+public WellEvents OptionAction(UiText label, ReadOnlySpan<string> items, ref int index, UiText icon, OptionActionOpts o = default)
 ```
 
 Option field with action: a compact segmented choice and the icon button of the action it feeds (save as png, jpg or webp, then download). Returns CUI_WELL_* flags.
@@ -49,7 +49,7 @@ Ratio slider: a whole split into two named parts, with a bar between them to dra
 ## `SeedField`
 
 ```csharp
-public int SeedField(UiText label, ref uint seed, ref bool locked, SeedFieldOpts o = default)
+public WellEvents SeedField(UiText label, ref uint seed, ref bool locked, SeedFieldOpts o = default)
 ```
 
 Seed field: a random seed in the monospaced font. The dice rolls a new one, its digits rolling into place, and the lock keeps it fixed (the dice is off while locked). Returns CUI_WELL_CHANGED when the seed or the lock changed and CUI_WELL_ACTION on a roll.
@@ -65,7 +65,7 @@ cui_status_tag_ex
 ## `StepSlider`
 
 ```csharp
-public int StepSlider(UiText label, ref int value, int min, int max, StepSliderOpts o = default)
+public WellEvents StepSlider(UiText label, ref int value, int min, int max, StepSliderOpts o = default)
 ```
 
 Step slider: a few discrete stops marked with dots; the thumb snaps to each and glides between them. Arrows move one stop, Home and End go to the ends. Returns CUI_WELL_* flags.

@@ -27,6 +27,18 @@
     ],
     "CUI_COMMENT_LIKE": [
       "None = 0"
+    ],
+    "CUI_WELL_CHANGED": [
+      "None = 0"
+    ],
+    "CUI_FORMAT_CHANGED": [
+      "None = 0"
+    ],
+    "CUI_CANVAS_ZOOMED": [
+      "None = 0"
+    ],
+    "CUI_VOICE_SESSION_MUTE": [
+      "None = 0"
     ]
   },
   "flagsEnums": [
@@ -34,7 +46,11 @@
     "CUI_PLAYER_TOGGLE",
     "CUI_COMPOSER_SEND",
     "CUI_RESPONSE_COPY",
-    "CUI_COMMENT_LIKE"
+    "CUI_COMMENT_LIKE",
+    "CUI_WELL_CHANGED",
+    "CUI_FORMAT_CHANGED",
+    "CUI_CANVAS_ZOOMED",
+    "CUI_VOICE_SESSION_MUTE"
   ],
   "skipFunctions": [],
   "skipStructs": [],
@@ -45,7 +61,11 @@
     "CUI_COMPOSER_SEND": "ComposerEvents",
     "CUI_RESPONSE_COPY": "ResponseEvents",
     "CUI_COMMENT_LIKE": "CommentEvents",
-    "CUI_TOUR_NONE": "TourAction"
+    "CUI_TOUR_NONE": "TourAction",
+    "CUI_WELL_CHANGED": "WellEvents",
+    "CUI_FORMAT_CHANGED": "FormatEvents",
+    "CUI_CANVAS_ZOOMED": "CanvasEvents",
+    "CUI_VOICE_SESSION_MUTE": "VoiceSessionEvents"
   },
   "typeAliases": {
     "cui_font": {
@@ -267,7 +287,7 @@
     },
     "cui_voice_note_ex.note": {
       "storage": "value",
-      "why": "cui_voice_note is the message's playback state; the wrapper converts it to VoiceNote and writes it back when the call returns."
+      "why": "cui_voice_note is playback state: convert to VoiceNoteState, write back position, speed and playing, and preserve the caller-owned const levels array."
     }
   },
   "capacityParams": {
@@ -1582,6 +1602,34 @@
     "cui_comment_ex": {
       "name": "CommentEvents",
       "why": "The int is a CUI_COMMENT_* flag word: like and reply."
+    },
+    "cui_gradient_slider_ex": {
+      "name": "WellEvents",
+      "why": "Returns CUI_WELL_* flags: the value changed or the tool button was pressed."
+    },
+    "cui_step_slider_ex": {
+      "name": "WellEvents",
+      "why": "Returns CUI_WELL_* flags: the value changed or the tool button was pressed."
+    },
+    "cui_option_action_ex": {
+      "name": "WellEvents",
+      "why": "Returns CUI_WELL_* flags: a choice changed or the action was pressed."
+    },
+    "cui_seed_field_ex": {
+      "name": "WellEvents",
+      "why": "Returns CUI_WELL_* flags: the seed or lock changed, or the dice was pressed."
+    },
+    "cui_format_bar_ex": {
+      "name": "FormatEvents",
+      "why": "Returns CUI_FORMAT_* flags, separate from the TextFormat state it edits."
+    },
+    "cui_voice_note_ex": {
+      "name": "PlayerEvents",
+      "why": "Returns CUI_PLAYER_* flags, shared with NowPlaying: toggle, seek and speed."
+    },
+    "cui_voice_session_ex": {
+      "name": "VoiceSessionEvents",
+      "why": "Returns CUI_VOICE_SESSION_* flags: mute toggled or End was pressed."
     }
   },
   "textFields": {
@@ -1842,8 +1890,16 @@
       "why": "One name per icon: native reads `count` labels, so the wrapper rejects a shorter array."
     },
     "cui_step_slider_opts.labels": {
-      "atLeast": "max - min + 1",
-      "why": "A name per stop from min to max: native indexes labels[*value - min], so one per stop is the minimum."
+      "atLeast": "(long)max - min + 1",
+      "why": "Native normalizes max <= min to two stops and indexes every stop. Normalize before checking labels and reject a range whose stop count would overflow C int, even without labels.",
+      "prepare": [
+        "if (max <= min)",
+        "{",
+        "    if (min == int.MaxValue) throw new ArgumentOutOfRangeException(nameof(min), \"The range must leave room for two stops.\");",
+        "    max = min + 1;",
+        "}",
+        "if ((long)max - min >= int.MaxValue) throw new ArgumentOutOfRangeException(nameof(max), \"The step count must fit in a native int.\");"
+      ]
     },
     "cui_voice_wave_opts.owners": {
       "atLeast": "levels.Length",

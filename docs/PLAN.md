@@ -12,6 +12,11 @@ in [ARCHITECTURE.md](ARCHITECTURE.md). Every item here passes the same gates as 
   do not depend on Workspaces. Still needed: safe rewrites for the remaining rules and sequential
   fix-all for overlapping scope bodies. Nested loops and ambiguous row keys remain manual.
 
+- **Profile the real-time chart regression across the latest CUI sync.** Alternating isolated old-
+  and new-pin builds measured 0.82–0.84 ms versus 0.94 ms at 1280x720, with 0 B/frame throughout.
+  The frame ceiling moved to 1.00 ms explicitly; identify the cost before claiming a cause or
+  dismissing it as noise. Native fixes still belong upstream.
+
 ## 2. Where upstream has to move first
 
 `native/CUI` is pristine (D2). These are its work, not ours:

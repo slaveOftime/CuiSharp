@@ -8,8 +8,8 @@ different things.
 
 ### Added
 
-- **CUI is now at `6e6b353`, 148 commits past 1.4.0**: 40 new functions, 36 new structs, and two new
-  header sections (Voice, Creative controls). Every one has a decided status in
+- **CUI is now at `6e6b353`, 148 commits past 1.4.0**: 36 new functions, 32 new structs, and the new
+  Creative controls header section; the existing Voice section gains its widgets. Every function has a decided status in
   `bindings/coverage.txt`: 532 functions, 0 pending.
 - **The creative controls** (gallery page *Creative controls*): `ui.StatusTag` with the eight states,
   `ui.RatioSlider`, `ui.GradientSlider` (hue, white balance, opacity, and a `ref Color` under the
@@ -26,21 +26,6 @@ different things.
   text is copied out of frame memory, so it stays valid after the frame.
 - **Seven new data records**: `Aspect`, `MeterPart`, `SelectionAction`, `LiveUser`, `TextStyle`,
   `TextFormat` and `VoiceNoteState`. A widget that writes its state back takes that record `ref`.
-
-### Changed
-
-- **`ui.Treemap` takes `ref int selected`**, so a chart can keep which tile a click picked. The
-  overload without it passes null, which is what a display-only treemap wants, so existing calls
-  compile unchanged. `ui.Sankey` takes `Color[]? nodeColors`, one per node.
-- **`ui.CanvasControls`, `ui.PaletteStrip` and `ui.SelectionBar` are hand-written.** Each carries a
-  pointer per item, or two arrays edited in place and counted once: `CanvasToggle.On`,
-  `PaletteStrip`'s colors and lock flags, and the selection flags native clears. The wrapper owns
-  those flags for the call and copies them back, which a generated record cannot do.
-- **`cui_spinner` became `cui_spinner_ex`**: `ui.Spinner(size)` still compiles, and the style is a
-  `SpinnerStyle` option. `GanttTask` gained `State`, `GaugeBand` gained `Name`.
-- **A length that is one of the widget's own parameters is checked before the call**, not derived:
-  `ToolbarRadio`'s labels, `StepSlider`'s stop names, the voice owners and the sankey node colors
-  throw rather than let native read past a short span.
 
 - **`dotnet cui session --script <file>`** names the command file instead of relying on `<` input
   redirection, which Windows PowerShell does not have. Stdin still works in a POSIX shell.
@@ -62,6 +47,27 @@ different things.
 
 ### Changed
 
+- **`ui.Treemap` gains `ref int selected`**, with a null-pointer overload preserving display-only
+  calls. `ui.Sankey` gains one optional node color per node.
+- **`ui.CanvasControls`, `ui.PaletteStrip` and `ui.SelectionBar` are hand-written** to own and copy
+  back the per-item flags. Palette colors and lock flags must have equal lengths; without a seed,
+  Shuffle reports the press but leaves colors unchanged. Selection clear returns -2, no action -1.
+- **CUI adds `cui_spinner_ex` but retains `cui_spinner`**: `ui.Spinner(size)` still compiles, with
+  styles available in `SpinnerOpts`. `GanttTask` gained `State`, `GaugeBand` gained `Name`.
+- **Short option arrays throw before native can read past them.** This covers toolbar labels,
+  step labels, voice owners and sankey node colors. The step range is normalized as in CUI before
+  checking labels, and an overflowing native stop count is rejected even without labels.
+- **Native flag results are typed**: `WellEvents`, `FormatEvents`, `CanvasEvents`,
+  `VoiceSessionEvents`, and the voice note's shared `PlayerEvents`.
+- **Record write-back preserves caller-owned const arrays**, including a voice note's waveform.
+  `CuiVoice.Resample` rejects overlapping input/output rather than corrupting unread samples.
+- **The API-diff helper compares complete header snapshots**, so a moved declaration is not a new
+  function and a reformatted typedef is not a removed/new struct. Parenthesized compatibility
+  declarations such as `(cui_spinner)` remain visible.
+- **Measured budgets move explicitly**: gallery AOT 3 177 984 B (ceiling 3.20 MB), real-time chart
+  0.94 ms mean with 0 B/frame (ceiling 1.00 ms). Alternating runs against an isolated old-pin build
+  confirm a roughly 14% frame regression; its cause is not yet profiled, not dismissed as noise.
+  The three new gallery pages are independently tested at 0 B/frame.
 - **`HttpMethod` is now `HttpVerb`.** The old name collided with `System.Net.Http.HttpMethod` in
   every app that also made an HTTP request. `RequestBar` and `CuiHttp.MethodName` take `HttpVerb`;
   the generated C binding is unchanged.

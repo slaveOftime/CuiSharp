@@ -16,7 +16,6 @@ internal sealed partial class GalleryApp
     private float _played = 0.35f;
     private bool _muted;
     private VoiceNoteState _note = new(Clip, Position: 1.5f, Duration: 4.2f, Speed: 1);
-    private static readonly string[] SpinnerStyles = ["ring", "inline"];
 
     private static float[] BuildClip()
     {
@@ -61,16 +60,15 @@ internal sealed partial class GalleryApp
             "time played and a speed chip. It plays nothing itself: you play the audio.");
         using (ui.Card(new Card()))
         {
-            int events = ui.VoiceNote("note", ref _note, new VoiceNoteOpts { Mine = true });
-            ui.Secondary($"{_note.Position:0.0} of {_note.Duration:0.0} s at {_note.Speed}x, " +
-                $"playing {_note.Playing}, events {events}");
+            PlayerEvents events = ui.VoiceNote("note", ref _note, new VoiceNoteOpts { Mine = true });
+            ui.Secondary($"{_note.Position:0.0} of {_note.Duration:0.0} s at {_note.Speed}x, playing {_note.Playing}, events {(int)events}");
         }
 
         Section(ui, "Voice session", "A spoken conversation with an assistant on one timeline: the " +
             "waveform, a state label, the live transcript and Mute and End.");
         using (ui.Card(new Card()))
         {
-            int result = ui.VoiceSession("session", VoiceState.Speaking, Clip, ref _muted, new VoiceSessionOpts
+            VoiceSessionEvents result = ui.VoiceSession("session", VoiceState.Speaking, Clip, ref _muted, new VoiceSessionOpts
             {
                 Owners = Owners,
                 Transcript = "Let me read the file and summarise the changes",
@@ -79,7 +77,7 @@ internal sealed partial class GalleryApp
                 You = "You",
                 Assistant = "Assistant",
             });
-            ui.Secondary($"muted {_muted}, events {result}");
+            ui.Secondary($"muted {_muted}, events {(int)result}");
         }
 
         Section(ui, "Typing indicator", "Three bouncing dots with a name, for a reply that is being " +

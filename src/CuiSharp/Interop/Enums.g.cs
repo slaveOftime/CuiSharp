@@ -687,3 +687,51 @@ public enum ComposerEvents
     Cancel = 64,
     Voice = 128,
 }
+
+/// <summary>Voice session: a spoken conversation with an assistant on one timeline. The waveform scrolls with both voices, you in the foreground color and the assistant in the accent (tag each level in `owners`); a label says what is happening (Listening, Thinking..., Speaking, Muted: the `state` you pass), with a legend, the live transcript under it and Mute and End buttons. While the assistant thinks there is no sound, so push CUI_VOICE_SILENT: the strip shows a flat gap rather than a made-up wave. Returns CUI_VOICE_SESSION_*.</summary>
+[System.Flags]
+public enum VoiceSessionEvents
+{
+    None = 0,
+    Mute = 1,
+    End = 2,
+}
+
+/// <summary>The controls below sit in a control well: a rounded panel with the label on the left, the value on the right and the control under them. `plain` drops the panel and keeps the label row and the control. A label that starts with &quot;##&quot; shows no label row. Those that take an action button return these flags:</summary>
+[System.Flags]
+public enum WellEvents
+{
+    None = 0,
+    /// <summary>the value changed; the action button was pressed</summary>
+    Changed = 1,
+    /// <summary>the value changed; the action button was pressed</summary>
+    Action = 2,
+}
+
+/// <summary>CUI_FORMAT_CHANGED</summary>
+[System.Flags]
+public enum FormatEvents
+{
+    None = 0,
+    /// <summary>a field of the format changed</summary>
+    Changed = 1,
+    /// <summary>the link button was clicked</summary>
+    Link = 2,
+    /// <summary>delete was confirmed</summary>
+    Delete = 4,
+    /// <summary>the &quot;...&quot; button was clicked</summary>
+    More = 8,
+}
+
+/// <summary>CUI_CANVAS_ZOOMED</summary>
+[System.Flags]
+public enum CanvasEvents
+{
+    None = 0,
+    /// <summary>the zoom changed (in, out, reset or fit)</summary>
+    Zoomed = 1,
+    /// <summary>fit was clicked</summary>
+    Fit = 2,
+    /// <summary>a toggle flipped</summary>
+    Toggled = 4,
+}

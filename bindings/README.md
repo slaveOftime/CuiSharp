@@ -67,7 +67,7 @@ and missing reasons fail generation.
 | `optionFieldNames` | `name`, `why` | Combined-word casing, e.g. NoWrap / AutoFocus. |
 | `parameterDefaults` | `value`, `why` | Defaults not described by the signature, e.g. Heading level 2. |
 | `injectedFields` | `type`, `why` | Internal native value provided by a wrapper, not a public dangling address. TableSort remains wrapper-owned. |
-| `parameterStorage` | `storage`, `why` | `frame` for ref primitives whose addresses native code retains; `value` for native records converted through `UiMarshal` and written back. |
+| `parameterStorage` | `storage`, optional `type`, `why` | `frame` for ref primitives whose addresses native retains; `value` converts records and writes back state while preserving caller-owned const arrays; `enum` exposes a typed enum over a C int pointer. |
 | `scopes` | `end`, `clicked`, `why` | Non-standard pairs, or a bool that means clicked rather than open. |
 | `recordNames` | `name`, `why` | Native structs used as `const T *` array items, e.g. `cui_choice` to `Choice`. |
 | `outParams` | `why` | Parameters the header documents as filled in; the wrapper takes `out` instead of `ref`. |
@@ -80,7 +80,7 @@ and missing reasons fail generation.
 | `capacityParams` | `array`, `why` | An `int capacity` the widget writes up to, where the array's length is that number. The wrapper passes the span's length and the parameter leaves the signature: supplying both lets them disagree, and the widget writes past the caller's array. |
 | `textFields` | `capacity`, `why` | A `char * buf` pair the caller sees as one `ref string`; the wrapper rents a pooled buffer and reads the text back only when it changed. |
 | `optionPointers` | `type`, `why` | An option field that is a pointer to a primitive (`int *`, `_Bool *`), exposed as a `ref` parameter. |
-| `optionArrayChecks` | `atLeast`, `why` | An option array whose length is a widget parameter; the wrapper rejects a short array before the call. |
+| `optionArrayChecks` | `atLeast`, optional `prepare`, `why` | An option array whose length is a widget parameter; the wrapper rejects a short array before the call. |
 | `scopeResults` | `type`, `out`, `why` | A `begin` whose `end` reports a value: the wrapper emits the body overload and returns it. |
 | `stringResults` | `why` | A function that returns a C string; the wrapper copies it. |
 | `excludedFunctions` | `why` | One C function deliberately not wrapped: the pure helpers (diff computation, date maths, the log writer) belong in a static API, not on a frame-local `Ui`. |

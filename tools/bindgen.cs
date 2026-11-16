@@ -403,7 +403,7 @@ sealed record ArrayParamOverride(string Why);
 /// An option array whose length is one of the widget's own parameters. The wrapper
 /// checks the length before the call, so a short array cannot be over-read.
 /// </summary>
-sealed record OptionArrayCheck(string AtLeast, string Why);
+sealed record OptionArrayCheck(string AtLeast, string Why, string[]? Prepare = null);
 
 /// <summary>
 /// A record array the widget edits in place. <c>ChangedWhen</c> is the condition the widget reports
@@ -1665,12 +1665,13 @@ sealed class Idiomatic
             RequireReason(key, value.Why);
             int dot = key.LastIndexOf('.');
             string function = key[..dot], param = key[(dot + 1)..];
-            if (!_api.Functions.Any(f => f.CName == function))
-                throw new InvalidOperationException($"Unknown function for optional injected parameter: {key}");
-            // The key names the parameter the wrapper emits, not the C field: an injection that
-            // renames (`param`) or whose record camels differently is matched by that name.
-            if (!_overrides.InjectedFields.Any(e => ComponentParamName(e.Key, e.Value) == param)
-                && !IsOptionPointerParam(param))
+            var target = _api.Functions.SingleOrDefault(f => f.CName == function)
+                ?? throw new InvalidOperationException($"Unknown function for optional injected parameter: {key}");
+            // A matching name on some other widget is not an injection this signature owns.
+            bool UsesOption(string fieldKey) => target.Params.Any(p => p.Type.Element is { } element
+                && Trim(element.Spelling) == fieldKey[..fieldKey.IndexOf('.')]);
+            if (!_overrides.InjectedFields.Any(e => UsesOption(e.Key) && ComponentParamName(e.Key, e.Value) == param)
+                && !IsOptionPointerParam(target, param))
                 throw new InvalidOperationException($"Optional injected parameter needs a matching injected field: {key}");
         }
         foreach (var (key, value) in _overrides.ParameterDefaults)
@@ -1873,18 +1874,21 @@ sealed class Idiomatic
     /// an option field (`struct.field`), the optional-injection key names a function's parameter,
     /// so the two are matched on the name the field becomes.
     /// </summary>
-    private bool IsOptionPointerParam(string param) =>
+    private bool IsOptionPointerParam(FunctionModel function, string param) =>
         _overrides.OptionPointers.Keys.Any(key =>
         {
             int dot = key.LastIndexOf('.');
-            if (dot < 0) return false;
+            if (dot < 0 || !function.Params.Any(p => p.Type.Element is { } element
+                && Trim(element.Spelling) == key[..dot])) return false;
             StructModel? str = _api.Structs.FirstOrDefault(s => s.CName == key[..dot]);
             FieldModel? field = str?.Fields.FirstOrDefault(f => f.CName == key[(dot + 1)..]);
-            return field is not null && Names.Escape(Names.Camel(field.CsName)) == param;
+            string name = _overrides.OptionFieldNames.TryGetValue(key, out var rename) ? rename.Name : field?.CsName ?? "";
+            return field is not null && Names.Escape(Names.Camel(name)) == param;
         });
 
     private void RequireField(string key)
-    {        if (!_api.Structs.Any(s => s.Fields.Any(f => s.CName + "." + f.CName == key)))
+    {
+        if (!_api.Structs.Any(s => s.Fields.Any(f => s.CName + "." + f.CName == key)))
             throw new InvalidOperationException($"Unknown option field: {key}");
     }
 
@@ -2039,12 +2043,8 @@ sealed class Idiomatic
         }
         // Read-back needs the value to survive the call: a field backed by a C pointer is
         // CUI's memory, while a fixed buffer belongs to the record the caller handed over.
-        bool canReadBack = fields.All(f => f.Type switch
-        {
-            "string[]?" or "float[]?" => false,
-            "string?" => f.Native.IsFixedBuffer,
-            _ => true,
-        });
+        bool canReadBack = fields.All(f => !(f.Native.Type.Kind == "Pointer" && IsArrayField(f.Native.Type))
+            && (f.Type != "string?" || f.Native.IsFixedBuffer));
         return new(str, name, [.. fields], canReadBack);
     }
 
@@ -2136,7 +2136,7 @@ sealed class Idiomatic
                     "bool[]?" => $"UiMarshal.ReadBooleans(n.{f.Native.CsName}, {f.Native.ArrayLength})",
                     "int[]?" or "float[]?" when f.Native.IsFixedBuffer =>
                         $"UiMarshal.ReadValues(n.{f.Native.CsName}, {f.Native.ArrayLength})",
-                    "string[]?" or "float[]?" => "null",
+                    _ when f.Native.Type.Kind == "Pointer" && IsArrayField(f.Native.Type) => "null",
                     "Size" or "Color" or "Date" or "RectF" => $"UiMarshal.FromNative(n.{f.Native.CsName})",
                     _ => f.Native.Type.Kind != "Pointer" && _records.TryGetValue(Trim(f.Native.Type.Spelling), out var nestedField)
                         ? $"{nestedField.Name}.FromNative(n.{f.Native.CsName})"
@@ -2568,9 +2568,11 @@ sealed class Idiomatic
                     _overrides.OptionArrayChecks.ContainsKey(option.Native.CName + "." + f.Native.CName)))
                 {
                     var check = _overrides.OptionArrayChecks[option.Native.CName + "." + checkedArray.Native.CName];
+                    if (check.Prepare is { } prelude) prepare.AddRange(prelude);
                     prepare.Add($"if (o.{checkedArray.Name} is {{ }} __{Names.Camel(checkedArray.Name)} && __{Names.Camel(checkedArray.Name)}.Length < {check.AtLeast})");
                     prepare.Add($"    throw new ArgumentException($\"{checkedArray.Name} needs at least {{{check.AtLeast}}} entries.\", nameof(o));");
-                }                foreach (string array in stringArrays)
+                }
+                foreach (string array in stringArrays)
                 {
                     var icons = option.Fields.SingleOrDefault(f => !f.Hidden && f.Native.CName == "icons");
                     if (icons is not null)
@@ -2777,9 +2779,21 @@ sealed class Idiomatic
                             : $"var __{name} = UiMarshal.ToNative({name});");
                         arguments.Add((mode == "in " ? "in " : "ref ") + "__" + name);
                         if (mode != "in ")
-                            writeBack.Add($"{name} = " + (record
-                                ? $"{_records[Trim(p.Type.Element!.Spelling)].Name}.FromNative(__{name});"
-                                : $"UiMarshal.FromNative(__{name});"));
+                        {
+                            var plan = record ? _records[Trim(p.Type.Element!.Spelling)] : null;
+                            var borrowed = plan?.Fields.Where(f => !f.Hidden && f.Native.Type.Kind == "Pointer"
+                                && f.Native.Type.Element?.IsConst == true && IsArrayField(f.Native.Type)).ToArray() ?? [];
+                            string converted = record ? $"{plan!.Name}.FromNative(__{name})" : $"UiMarshal.FromNative(__{name})";
+                            if (borrowed.Length == 0) writeBack.Add($"{name} = {converted};");
+                            else
+                            {
+                                // Const arrays are caller-owned input, not output state. FromNative
+                                // cannot recover their managed identity from an arena address.
+                                writeBack.Add($"var __updated{name} = {converted};");
+                                foreach (var field in borrowed) writeBack.Add($"__updated{name}.{field.Name} = {name}.{field.Name};");
+                                writeBack.Add($"{name} = __updated{name};");
+                            }
+                        }
                     }
                     else
                     {
@@ -3559,6 +3573,12 @@ static class BindgenChecks
         var notInjected = Clone(overrides);
         notInjected.OptionalInjectedParams["cui_table_begin_ex.missing"] = new("Synthetic negative test.");
         Check("optional injected state must name a real injection", Rejects(() => new Idiomatic(api, notInjected)));
+        var wrongWidget = Clone(overrides);
+        wrongWidget.OptionalInjectedParams["cui_button_ex.selected"] = new("Synthetic negative test.");
+        Check("optional scalar state belongs to this widget", Rejects(() => new Idiomatic(api, wrongWidget)));
+        wrongWidget = Clone(overrides);
+        wrongWidget.OptionalInjectedParams["cui_button_ex.sort"] = new("Synthetic negative test.");
+        Check("optional record state belongs to this widget", Rejects(() => new Idiomatic(api, wrongWidget)));
 
         Console.WriteLine($"bindgen self-test: {checks} passed (no files written)");
     }

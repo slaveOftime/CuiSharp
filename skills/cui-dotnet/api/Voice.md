@@ -17,7 +17,7 @@ protected override void Draw(Ui ui)
 ## `VoiceNote`
 
 ```csharp
-public int VoiceNote(UiText id, ref VoiceNoteState note, VoiceNoteOpts o = default)
+public PlayerEvents VoiceNote(UiText id, ref VoiceNoteState note, VoiceNoteOpts o = default)
 ```
 
 Voice note: a recorded message in a bubble, with play and pause, its voice waveform as the seek bar (click or drag; the arrow keys step), the time played and the length, and a speed chip that cycles 1x, 1.5x and 2x. It plays nothing itself: you play the audio and pass the position on every frame. Returns CUI_PLAYER_TOGGLE, CUI_PLAYER_SEEK and CUI_PLAYER_SPEED.
@@ -25,7 +25,7 @@ Voice note: a recorded message in a bubble, with play and pause, its voice wavef
 ## `VoiceSession`
 
 ```csharp
-public int VoiceSession(UiText id, VoiceState state, ReadOnlySpan<float> levels, ref bool muted, VoiceSessionOpts o = default)
+public VoiceSessionEvents VoiceSession(UiText id, VoiceState state, ReadOnlySpan<float> levels, ref bool muted, VoiceSessionOpts o = default)
 ```
 
 cui_voice_session_ex

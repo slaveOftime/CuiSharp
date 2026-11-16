@@ -287,6 +287,11 @@ struct CuiSharp.CanvasControlsOpts
   field Boolean StartSide
   field RectF Content
   field Single[] Steps
+enum CuiSharp.CanvasEvents
+  Fit
+  None
+  Toggled
+  Zoomed
 struct CuiSharp.CanvasResult
   field Boolean Clicked
   field Boolean Hovered
@@ -626,20 +631,20 @@ class CuiSharp.CreativeControlsUiExtensions
   static Boolean AspectPicker(Ui, UiText, ref Int32, AspectPickerOpts)
   static Boolean RatioSlider(Ui, UiText, UiText, ref Single, RatioSliderOpts)
   static Boolean StatusTag(Ui, UiText, TagStatus, StatusTagOpts)
-  static Int32 GradientSlider(Ui, UiText, ref Single, Single, Single, GradientSliderOpts)
-  static Int32 GradientSlider(Ui, UiText, ref Single, Single, Single, ref Color, GradientSliderOpts)
-  static Int32 OptionAction(Ui, UiText, ReadOnlySpan<String>, ref Int32, UiText, OptionActionOpts)
-  static Int32 SeedField(Ui, UiText, ref UInt32, ref Boolean, SeedFieldOpts)
-  static Int32 StepSlider(Ui, UiText, ref Int32, Int32, Int32, StepSliderOpts)
+  static WellEvents GradientSlider(Ui, UiText, ref Single, Single, Single, GradientSliderOpts)
+  static WellEvents GradientSlider(Ui, UiText, ref Single, Single, Single, ref Color, GradientSliderOpts)
+  static WellEvents OptionAction(Ui, UiText, ReadOnlySpan<String>, ref Int32, UiText, OptionActionOpts)
+  static WellEvents SeedField(Ui, UiText, ref UInt32, ref Boolean, SeedFieldOpts)
+  static WellEvents StepSlider(Ui, UiText, ref Int32, Int32, Int32, StepSliderOpts)
 class CuiSharp.CreativeControlsUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
   Boolean AspectPicker(UiText, ref Int32, AspectPickerOpts)
   Boolean RatioSlider(UiText, UiText, ref Single, RatioSliderOpts)
   Boolean StatusTag(UiText, TagStatus, StatusTagOpts)
-  Int32 GradientSlider(UiText, ref Single, Single, Single, GradientSliderOpts)
-  Int32 GradientSlider(UiText, ref Single, Single, Single, ref Color, GradientSliderOpts)
-  Int32 OptionAction(UiText, ReadOnlySpan<String>, ref Int32, UiText, OptionActionOpts)
-  Int32 SeedField(UiText, ref UInt32, ref Boolean, SeedFieldOpts)
-  Int32 StepSlider(UiText, ref Int32, Int32, Int32, StepSliderOpts)
+  WellEvents GradientSlider(UiText, ref Single, Single, Single, GradientSliderOpts)
+  WellEvents GradientSlider(UiText, ref Single, Single, Single, ref Color, GradientSliderOpts)
+  WellEvents OptionAction(UiText, ReadOnlySpan<String>, ref Int32, UiText, OptionActionOpts)
+  WellEvents SeedField(UiText, ref UInt32, ref Boolean, SeedFieldOpts)
+  WellEvents StepSlider(UiText, ref Int32, Int32, Int32, StepSliderOpts)
 class CuiSharp.CreativeControlsUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4+<M>$D152016828D0F2CB0A8B78500F4F70D3
 struct CuiSharp.CropperOpts
   field Boolean Round
@@ -1415,6 +1420,12 @@ struct CuiSharp.FormatBarOpts
   field String FooterKeys
   field TextStyle[] Styles
   field Tone[] Colors
+enum CuiSharp.FormatEvents
+  Changed
+  Delete
+  Link
+  More
+  None
 enum CuiSharp.FormatList
   Bullets
   Checks
@@ -1961,7 +1972,7 @@ struct CuiSharp.InspectorOpts
 class CuiSharp.InstrumentsDotMatrixChartEventTrackReadoutDotMatrixDisplayUiExtensions
   static Boolean ResultCard(Ui, UiText, UInt64, UiText, ResultCardOpts)
   static EventTrackResult EventTrack(Ui, UiText, Span<Double>, ref Int32, Double, Double, ref Int32, EventTrackOpts)
-  static Int32 FormatBar(Ui, UiText, ref TextFormat, FormatBarOpts)
+  static FormatEvents FormatBar(Ui, UiText, ref TextFormat, FormatBarOpts)
   static Void DotDisplay(Ui, UiText, DotDisplayOpts)
   static Void LiveCursors(Ui, UiText, ReadOnlySpan<LiveUser>, ref NodeView, LiveCursorsOpts)
   static Void PresencePill(Ui, UiText, ReadOnlySpan<LiveUser>, PresencePillOpts)
@@ -1970,7 +1981,7 @@ class CuiSharp.InstrumentsDotMatrixChartEventTrackReadoutDotMatrixDisplayUiExten
 class CuiSharp.InstrumentsDotMatrixChartEventTrackReadoutDotMatrixDisplayUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
   Boolean ResultCard(UiText, UInt64, UiText, ResultCardOpts)
   EventTrackResult EventTrack(UiText, Span<Double>, ref Int32, Double, Double, ref Int32, EventTrackOpts)
-  Int32 FormatBar(UiText, ref TextFormat, FormatBarOpts)
+  FormatEvents FormatBar(UiText, ref TextFormat, FormatBarOpts)
   Void DotDisplay(UiText, DotDisplayOpts)
   Void LiveCursors(UiText, ReadOnlySpan<LiveUser>, ref NodeView, LiveCursorsOpts)
   Void PresencePill(UiText, ReadOnlySpan<LiveUser>, PresencePillOpts)
@@ -6786,6 +6797,7 @@ struct CuiSharp.Ui
   Boolean Shortcut(Mods, Key)
   Boolean TagInput(UiText, ref String, TagOpts)
   Boolean ToggleGroup(UiText, ReadOnlySpan<String>, Span<Boolean>, ToggleGroupOpts)
+  CanvasEvents CanvasControls(UiText, ref NodeView, Span<CanvasToggle>, CanvasControlsOpts)
   CanvasResult Canvas(UiText, Size, Size, PaintFn)
   ClipScope Clip(RectF)
   Color ColorOf(Color)
@@ -6798,9 +6810,6 @@ struct CuiSharp.Ui
   InputResult Input(UiText, ref String, InputOpts)
   InputResult Search(UiText, ref String, InputOpts)
   InputResult TextArea(UiText, ref String, InputOpts)
-  Int32 CanvasControls(UiText, ref NodeView, Span<CanvasToggle>, CanvasControlsOpts)
-  Int32 PaletteStrip(UiText, Span<Color>, Span<Boolean>, PaletteStripOpts)
-  Int32 PaletteStrip(UiText, ref UInt32, Span<Color>, Span<Boolean>, PaletteStripOpts)
   Int32 SelectionBar(UiText, Span<Boolean>, ReadOnlySpan<SelectionAction>, SelectionBarOpts)
   KeyedScope<T> Keyed(T[], KeyFn<T>)
   LayoutScope ReorderItem(Int32)
@@ -6845,6 +6854,8 @@ struct CuiSharp.Ui
   Void SetLocalization(Localization)
   Void SetReducedMotion(Boolean)
   Void ToggleTheme()
+  WellEvents PaletteStrip(UiText, Span<Color>, Span<Boolean>, PaletteStripOpts)
+  WellEvents PaletteStrip(UiText, ref UInt32, Span<Color>, Span<Boolean>, PaletteStripOpts)
   property Accent Accent { get; set; }
   property Boolean FileDragActive { get; }
   property Boolean IsDisabled { get; }
@@ -6939,6 +6950,10 @@ struct CuiSharp.VoiceOrbOpts
 enum CuiSharp.VoiceOwner
   Reply
   You
+enum CuiSharp.VoiceSessionEvents
+  End
+  Mute
+  None
 struct CuiSharp.VoiceSessionOpts
   field Boolean NoEnd
   field Byte[] Owners
@@ -6958,15 +6973,15 @@ enum CuiSharp.VoiceState
 class CuiSharp.VoiceUiExtensions
   static Boolean VoiceWave(Ui, UiText, ReadOnlySpan<Single>, VoiceWaveOpts)
   static Boolean VoiceWave(Ui, UiText, ReadOnlySpan<Single>, ref Single, VoiceWaveOpts)
-  static Int32 VoiceNote(Ui, UiText, ref VoiceNoteState, VoiceNoteOpts)
-  static Int32 VoiceSession(Ui, UiText, VoiceState, ReadOnlySpan<Single>, VoiceSessionOpts)
-  static Int32 VoiceSession(Ui, UiText, VoiceState, ReadOnlySpan<Single>, ref Boolean, VoiceSessionOpts)
+  static PlayerEvents VoiceNote(Ui, UiText, ref VoiceNoteState, VoiceNoteOpts)
+  static VoiceSessionEvents VoiceSession(Ui, UiText, VoiceState, ReadOnlySpan<Single>, VoiceSessionOpts)
+  static VoiceSessionEvents VoiceSession(Ui, UiText, VoiceState, ReadOnlySpan<Single>, ref Boolean, VoiceSessionOpts)
 class CuiSharp.VoiceUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
   Boolean VoiceWave(UiText, ReadOnlySpan<Single>, VoiceWaveOpts)
   Boolean VoiceWave(UiText, ReadOnlySpan<Single>, ref Single, VoiceWaveOpts)
-  Int32 VoiceNote(UiText, ref VoiceNoteState, VoiceNoteOpts)
-  Int32 VoiceSession(UiText, VoiceState, ReadOnlySpan<Single>, VoiceSessionOpts)
-  Int32 VoiceSession(UiText, VoiceState, ReadOnlySpan<Single>, ref Boolean, VoiceSessionOpts)
+  PlayerEvents VoiceNote(UiText, ref VoiceNoteState, VoiceNoteOpts)
+  VoiceSessionEvents VoiceSession(UiText, VoiceState, ReadOnlySpan<Single>, VoiceSessionOpts)
+  VoiceSessionEvents VoiceSession(UiText, VoiceState, ReadOnlySpan<Single>, ref Boolean, VoiceSessionOpts)
 class CuiSharp.VoiceUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4+<M>$D152016828D0F2CB0A8B78500F4F70D3
 struct CuiSharp.VoiceWaveOpts
   field Boolean Clip
@@ -7003,6 +7018,10 @@ struct CuiSharp.WeekOpts
   field Single HourHeight
   field Single StartHour
   field Size Height
+enum CuiSharp.WellEvents
+  Action
+  Changed
+  None
 struct CuiSharp.WheelOpts
   field Boolean JoinLeft
   field Boolean JoinRight

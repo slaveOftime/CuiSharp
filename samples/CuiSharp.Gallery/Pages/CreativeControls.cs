@@ -36,6 +36,7 @@ internal sealed partial class GalleryApp
     ];
 
     private static readonly string[] StopNames = ["Draft", "Refined", "Variation", "Final"];
+    private static readonly TagStatus[] TagStates = Enum.GetValues<TagStatus>();
 
     private void PageCreativeControls(Ui ui)
     {
@@ -44,11 +45,11 @@ internal sealed partial class GalleryApp
         using (ui.Card(new Card()))
         using (ui.Row(new Box { Gap = 8, Wrap = true }))
         {
-            foreach (TagStatus state in Enum.GetValues<TagStatus>())
+            foreach (TagStatus state in TagStates)
             {
                 if (state == TagStatus.Custom) continue;
                 // One id per state: a constant id inside a loop gives every tag the same state.
-                using (ui.Id(state.ToString()))
+                using (ui.Id((int)state))
                     ui.StatusTag(null, state);
             }
 
@@ -107,9 +108,11 @@ internal sealed partial class GalleryApp
             "recolors the unlocked ones from a seed the caller keeps.");
         using (ui.Card(new Card()))
         {
-            int changed = ui.PaletteStrip("Color palette", ref _seed, _paletteColors, _paletteLocked,
-                new PaletteStripOpts { Value = $"{_paletteLocked.Count(l => l)} locked, seed {_seed}" });
-            ui.Secondary($"changed {(changed & 1) != 0}, action {(changed & 2) != 0}");
+            WellEvents changed = ui.PaletteStrip("Color palette", ref _seed, _paletteColors, _paletteLocked,
+                new PaletteStripOpts { Value = "Click a swatch to lock it" });
+            int locked = 0;
+            foreach (bool flag in _paletteLocked) if (flag) locked++;
+            ui.Secondary($"{locked} locked, seed {_seed}; changed {(changed & WellEvents.Changed) != 0}, action {(changed & WellEvents.Action) != 0}");
         }
 
         Section(ui, "Aspect picker", "Each choice drawn as a rectangle of its own proportions, with " +

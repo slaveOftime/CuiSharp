@@ -41,7 +41,7 @@ public unsafe ref partial struct Ui
     /// a pointer per item, so the flags live in the frame arena for the call and are copied back into
     /// the span afterwards.
     /// </remarks>
-    public int CanvasControls(UiText id, ref NodeView view, Span<CanvasToggle> toggles, CanvasControlsOpts o = default)
+    public CanvasEvents CanvasControls(UiText id, ref NodeView view, scoped Span<CanvasToggle> toggles, CanvasControlsOpts o = default)
     {
         int count = toggles.Length;
         byte* flags = count == 0 ? null : Utf8.AllocFrameBytes(count);
@@ -74,7 +74,7 @@ public unsafe ref partial struct Ui
         }
 
         WidgetRecorder.Note(Handle, "CanvasControls", id);
-        return result;
+        return (CanvasEvents)result;
     }
 
     /// <summary>
@@ -87,32 +87,14 @@ public unsafe ref partial struct Ui
     /// <param name="locked">One flag per swatch, flipped by a click and copied back.</param>
     /// <param name="o">The row's height, value text and whether it has a shuffle button.</param>
     /// <remarks>
-    /// Hand-written because the colors and the lock flags are both edited in place and native counts
-    /// them by the one <c>count</c>: a generated wrapper copies one array back and derives one length.
+    /// Both buffers describe the same swatches and must have equal lengths. CUI displays up to 16.
+    /// Hand-written because both arrays are edited in place and share one native count.
     /// </remarks>
-    public int PaletteStrip(UiText label, ref uint seed, Span<Color> colors, Span<bool> locked, PaletteStripOpts o = default)
+    public WellEvents PaletteStrip(UiText label, ref uint seed, scoped Span<Color> colors, scoped Span<bool> locked, PaletteStripOpts o = default)
     {
-        int count = Math.Min(colors.Length, locked.Length);
-        NativeColor* nativeColors = count == 0 ? null : Utf8.AllocFrame<NativeColor>(count);
-        byte* flags = count == 0 ? null : Utf8.AllocFrameBytes(count);
-        for (int i = 0; i < count; i++)
-        {
-            nativeColors[i] = UiMarshal.ToNative(colors[i]);
-            flags[i] = (byte)(locked[i] ? 1 : 0);
-        }
-
         uint nativeSeed = seed;
-        var opts = o.ToNative((nint)(&nativeSeed));
-        int result = Native.PaletteStrip(Handle, Utf8.Get(label), (nint)nativeColors, (nint)flags, count, in opts);
+        WellEvents result = PaletteStripCore(label, &nativeSeed, colors, locked, o);
         seed = nativeSeed;
-
-        for (int i = 0; i < count; i++)
-        {
-            colors[i] = UiMarshal.FromNative(nativeColors[i]);
-            locked[i] = flags[i] != 0;
-        }
-
-        WidgetRecorder.Note(Handle, "PaletteStrip", label);
         return result;
     }
 
@@ -120,18 +102,35 @@ public unsafe ref partial struct Ui
     /// A palette strip without shuffle state: the shuffle button only reports that it was pressed.
     /// </summary>
     /// <param name="label">The row's label; a label starting with "##" shows no label row.</param>
-    /// <param name="colors">The swatches, written back when a shuffle recolors them.</param>
+    /// <param name="colors">The swatches. Without a seed, shuffle leaves them unchanged.</param>
     /// <param name="locked">One flag per swatch, flipped by a click and copied back.</param>
     /// <param name="o">The row's height, value text and whether it has a shuffle button.</param>
-    public int PaletteStrip(UiText label, Span<Color> colors, Span<bool> locked, PaletteStripOpts o = default)
+    public WellEvents PaletteStrip(UiText label, scoped Span<Color> colors, scoped Span<bool> locked, PaletteStripOpts o = default) =>
+        PaletteStripCore(label, null, colors, locked, o);
+
+    private WellEvents PaletteStripCore(UiText label, uint* seed, scoped Span<Color> colors, scoped Span<bool> locked, PaletteStripOpts o)
     {
-        uint seed = 0;
-        return PaletteStrip(label, ref seed, colors, locked, o);
+        if (locked.Length != colors.Length)
+            throw new ArgumentException("One lock flag is required per color.", nameof(locked));
+
+        int count = colors.Length;
+        NativeColor* nativeColors = (NativeColor*)UiMarshal.Colors(colors);
+        byte* flags = count == 0 ? null : Utf8.AllocFrameBytes(count);
+        for (int i = 0; i < count; i++) flags[i] = (byte)(locked[i] ? 1 : 0);
+
+        var opts = o.ToNative((nint)seed);
+        int result = Native.PaletteStrip(Handle, Utf8.Get(label), (nint)nativeColors, (nint)flags, count, in opts);
+        UiMarshal.ReadColors(nativeColors, colors);
+        for (int i = 0; i < count; i++) locked[i] = flags[i] != 0;
+
+        WidgetRecorder.Note(Handle, "PaletteStrip", label);
+        return (WellEvents)result;
     }
 
     /// <summary>
     /// A bar that says how many items are selected, with the actions that apply to them, over the
-    /// component it belongs to. Returns the index of the action that was pressed, or -1.
+    /// component it belongs to. Returns the action index, -1 when nothing happened, or -2 when
+    /// the clear button or Esc cleared the selection.
     /// </summary>
     /// <param name="id">The widget id, which is also the identity of its hover and keyboard state.</param>
     /// <param name="selected">One flag per item; the clear button and Esc clear them, and the loop copies them back.</param>
@@ -141,7 +140,7 @@ public unsafe ref partial struct Ui
     /// Hand-written because <c>selected</c> is a <c>bool *</c> per item that native clears itself: the
     /// span is the caller's storage, so the wrapper passes it and copies the cleared flags back.
     /// </remarks>
-    public int SelectionBar(UiText id, Span<bool> selected, scoped ReadOnlySpan<SelectionAction> actions, SelectionBarOpts o = default)
+    public int SelectionBar(UiText id, scoped Span<bool> selected, scoped ReadOnlySpan<SelectionAction> actions, SelectionBarOpts o = default)
     {
         int itemCount = selected.Length;
         byte* flags = itemCount == 0 ? null : Utf8.AllocFrameBytes(itemCount);

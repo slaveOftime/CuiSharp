@@ -32,34 +32,40 @@ public static unsafe class CreativeControlsUiExtensions
         }
 
         /// <summary>Edit a gradient slider without snapping a passive model value or an endpoint.</summary>
-        public int GradientSlider(UiText label, ref float value, float min, float max, ref Color colorout, GradientSliderOpts o = default)
+        public WellEvents GradientSlider(UiText label, ref float value, float min, float max, ref Color colorout, GradientSliderOpts o = default)
         {
             NativeColor __colorout = UiMarshal.ToNative(colorout);
             var __opts = o.ToNative((nint)(&__colorout));
             var __result = Native.GradientSlider(ui.Handle, Utf8.Get(label), ref value, min, max, in __opts);
             colorout = UiMarshal.FromNative(__colorout);
             WidgetRecorder.NoteValue(ui.Handle, "GradientSlider", label, (double)value);
-            return __result;
+            return (WellEvents)__result;
         }
 
         /// <summary>Same as the overload with ref colorout, but reports nothing back: the state pointer is null, so the widget stores no state the caller could read.</summary>
-        public int GradientSlider(UiText label, ref float value, float min, float max, GradientSliderOpts o = default)
+        public WellEvents GradientSlider(UiText label, ref float value, float min, float max, GradientSliderOpts o = default)
         {
             var __opts = o.ToNative(0);
             var __result = Native.GradientSlider(ui.Handle, Utf8.Get(label), ref value, min, max, in __opts);
             WidgetRecorder.NoteValue(ui.Handle, "GradientSlider", label, (double)value);
-            return __result;
+            return (WellEvents)__result;
         }
 
         /// <summary>Step slider: a few discrete stops marked with dots; the thumb snaps to each and glides between them. Arrows move one stop, Home and End go to the ends. Returns CUI_WELL_* flags.</summary>
-        public int StepSlider(UiText label, ref int value, int min, int max, StepSliderOpts o = default)
+        public WellEvents StepSlider(UiText label, ref int value, int min, int max, StepSliderOpts o = default)
         {
-            if (o.Labels is { } __labels && __labels.Length < max - min + 1)
-                throw new ArgumentException($"Labels needs at least {max - min + 1} entries.", nameof(o));
+            if (max <= min)
+            {
+                if (min == int.MaxValue) throw new ArgumentOutOfRangeException(nameof(min), "The range must leave room for two stops.");
+                max = min + 1;
+            }
+            if ((long)max - min >= int.MaxValue) throw new ArgumentOutOfRangeException(nameof(max), "The step count must fit in a native int.");
+            if (o.Labels is { } __labels && __labels.Length < (long)max - min + 1)
+                throw new ArgumentException($"Labels needs at least {(long)max - min + 1} entries.", nameof(o));
             var __opts = o.ToNative();
             var __result = Native.StepSlider(ui.Handle, Utf8.Get(label), ref value, min, max, in __opts);
             WidgetRecorder.NoteValue(ui.Handle, "StepSlider", label, (double)value);
-            return __result;
+            return (WellEvents)__result;
         }
 
         /// <summary>cui_aspect_picker_ex</summary>
@@ -72,23 +78,23 @@ public static unsafe class CreativeControlsUiExtensions
         }
 
         /// <summary>Option field with action: a compact segmented choice and the icon button of the action it feeds (save as png, jpg or webp, then download). Returns CUI_WELL_* flags.</summary>
-        public int OptionAction(UiText label, ReadOnlySpan<string> items, ref int index, UiText icon, OptionActionOpts o = default)
+        public WellEvents OptionAction(UiText label, ReadOnlySpan<string> items, ref int index, UiText icon, OptionActionOpts o = default)
         {
             var __opts = o.ToNative();
             var __result = Native.OptionAction(ui.Handle, Utf8.Get(label), UiMarshal.Strings(items), (int)(items.Length), ref index, Utf8.Get(icon), in __opts);
             WidgetRecorder.NoteValue(ui.Handle, "OptionAction", label, (double)index);
-            return __result;
+            return (WellEvents)__result;
         }
 
         /// <summary>Seed field: a random seed in the monospaced font. The dice rolls a new one, its digits rolling into place, and the lock keeps it fixed (the dice is off while locked). Returns CUI_WELL_CHANGED when the seed or the lock changed and CUI_WELL_ACTION on a roll.</summary>
-        public int SeedField(UiText label, ref uint seed, ref bool locked, SeedFieldOpts o = default)
+        public WellEvents SeedField(UiText label, ref uint seed, ref bool locked, SeedFieldOpts o = default)
         {
             byte __locked = (byte)(locked ? 1 : 0);
             var __opts = o.ToNative();
             var __result = Native.SeedField(ui.Handle, Utf8.Get(label), ref seed, (nint)(&__locked), in __opts);
             locked = __locked != 0;
             WidgetRecorder.NoteValue(ui.Handle, "SeedField", label, locked);
-            return __result;
+            return (WellEvents)__result;
         }
 
     }

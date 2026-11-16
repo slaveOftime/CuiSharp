@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\CuiSharp\CuiSharp.csproj" />
+    <InternalsVisibleTo Include="CuiSharp.Tests" />
   </ItemGroup>
 
   <!--

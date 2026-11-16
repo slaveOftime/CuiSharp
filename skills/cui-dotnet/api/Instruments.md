@@ -33,7 +33,7 @@ Event track: moments on a time axis, as dots you drag along it. A click on an em
 ## `FormatBar`
 
 ```csharp
-public int FormatBar(UiText id, ref TextFormat format, FormatBarOpts o = default)
+public FormatEvents FormatBar(UiText id, ref TextFormat format, FormatBarOpts o = default)
 ```
 
 Returns CUI_FORMAT_* flags.

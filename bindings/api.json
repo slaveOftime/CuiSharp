@@ -31199,6 +31199,128 @@
         }
       ],
       "Doc": "Chat composer: a growing text area with attachments, a model picker and a send button that turns into stop while busy. Enter sends, Shift+Enter adds a line. Returns CUI_COMPOSER_* flags; *removed is the attachment whose x was clicked."
+    },
+    {
+      "CName": "CUI_VOICE_SESSION_MUTE",
+      "CsName": "VoiceSessionEvents",
+      "IsFlags": true,
+      "Values": [
+        {
+          "CName": "None",
+          "CsName": "None",
+          "Value": "0",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_VOICE_SESSION_MUTE",
+          "CsName": "Mute",
+          "Value": "1",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_VOICE_SESSION_END",
+          "CsName": "End",
+          "Value": "2",
+          "Doc": ""
+        }
+      ],
+      "Doc": "Voice session: a spoken conversation with an assistant on one timeline. The waveform scrolls with both voices, you in the foreground color and the assistant in the accent (tag each level in `owners`); a label says what is happening (Listening, Thinking..., Speaking, Muted: the `state` you pass), with a legend, the live transcript under it and Mute and End buttons. While the assistant thinks there is no sound, so push CUI_VOICE_SILENT: the strip shows a flat gap rather than a made-up wave. Returns CUI_VOICE_SESSION_*."
+    },
+    {
+      "CName": "CUI_WELL_CHANGED",
+      "CsName": "WellEvents",
+      "IsFlags": true,
+      "Values": [
+        {
+          "CName": "None",
+          "CsName": "None",
+          "Value": "0",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_WELL_CHANGED",
+          "CsName": "Changed",
+          "Value": "1",
+          "Doc": "the value changed; the action button was pressed"
+        },
+        {
+          "CName": "CUI_WELL_ACTION",
+          "CsName": "Action",
+          "Value": "2",
+          "Doc": "the value changed; the action button was pressed"
+        }
+      ],
+      "Doc": "The controls below sit in a control well: a rounded panel with the label on the left, the value on the right and the control under them. `plain` drops the panel and keeps the label row and the control. A label that starts with \"##\" shows no label row. Those that take an action button return these flags:"
+    },
+    {
+      "CName": "CUI_FORMAT_CHANGED",
+      "CsName": "FormatEvents",
+      "IsFlags": true,
+      "Values": [
+        {
+          "CName": "None",
+          "CsName": "None",
+          "Value": "0",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_FORMAT_CHANGED",
+          "CsName": "Changed",
+          "Value": "1",
+          "Doc": "a field of the format changed"
+        },
+        {
+          "CName": "CUI_FORMAT_LINK",
+          "CsName": "Link",
+          "Value": "2",
+          "Doc": "the link button was clicked"
+        },
+        {
+          "CName": "CUI_FORMAT_DELETE",
+          "CsName": "Delete",
+          "Value": "4",
+          "Doc": "delete was confirmed"
+        },
+        {
+          "CName": "CUI_FORMAT_MORE",
+          "CsName": "More",
+          "Value": "8",
+          "Doc": "the \"...\" button was clicked"
+        }
+      ],
+      "Doc": ""
+    },
+    {
+      "CName": "CUI_CANVAS_ZOOMED",
+      "CsName": "CanvasEvents",
+      "IsFlags": true,
+      "Values": [
+        {
+          "CName": "None",
+          "CsName": "None",
+          "Value": "0",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_CANVAS_ZOOMED",
+          "CsName": "Zoomed",
+          "Value": "1",
+          "Doc": "the zoom changed (in, out, reset or fit)"
+        },
+        {
+          "CName": "CUI_CANVAS_FIT",
+          "CsName": "Fit",
+          "Value": "2",
+          "Doc": "fit was clicked"
+        },
+        {
+          "CName": "CUI_CANVAS_TOGGLED",
+          "CsName": "Toggled",
+          "Value": "4",
+          "Doc": "a toggle flipped"
+        }
+      ],
+      "Doc": ""
     }
   ],
   "Functions": [
@@ -60478,22 +60600,6 @@
       "Value": 1
     },
     {
-      "CName": "CUI_VOICE_SESSION_MUTE",
-      "Value": 1
-    },
-    {
-      "CName": "CUI_VOICE_SESSION_END",
-      "Value": 2
-    },
-    {
-      "CName": "CUI_WELL_CHANGED",
-      "Value": 1
-    },
-    {
-      "CName": "CUI_WELL_ACTION",
-      "Value": 2
-    },
-    {
       "CName": "CUI_REGEX_ICASE",
       "Value": 1
     },
@@ -60503,34 +60609,6 @@
     },
     {
       "CName": "CUI_REGEX_DOTALL",
-      "Value": 4
-    },
-    {
-      "CName": "CUI_FORMAT_CHANGED",
-      "Value": 1
-    },
-    {
-      "CName": "CUI_FORMAT_LINK",
-      "Value": 2
-    },
-    {
-      "CName": "CUI_FORMAT_DELETE",
-      "Value": 4
-    },
-    {
-      "CName": "CUI_FORMAT_MORE",
-      "Value": 8
-    },
-    {
-      "CName": "CUI_CANVAS_ZOOMED",
-      "Value": 1
-    },
-    {
-      "CName": "CUI_CANVAS_FIT",
-      "Value": 2
-    },
-    {
-      "CName": "CUI_CANVAS_TOGGLED",
       "Value": 4
     },
     {

@@ -16,9 +16,12 @@ public static class CuiVoice
     /// <param name="levels">The clip's loudness, 0..1, oldest first, and <see cref="Silent"/> for no audio.</param>
     /// <param name="columns">Where the resampled levels go; its length is how many are kept.</param>
     /// <returns>How many levels were written.</returns>
+    /// <exception cref="ArgumentException">Input and output overlap; native resampling is not in-place.</exception>
     public static unsafe int Resample(ReadOnlySpan<float> levels, Span<float> columns)
     {
         if (columns.IsEmpty) return 0;
+        if (levels.Overlaps(columns))
+            throw new ArgumentException("Resampling requires non-overlapping input and output.", nameof(columns));
         fixed (float* source = levels)
         fixed (float* target = columns)
             return Native.VoiceResample((nint)source, levels.Length, ref *target, columns.Length);

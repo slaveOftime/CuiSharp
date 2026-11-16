@@ -46,14 +46,14 @@ public static unsafe class InstrumentsDotMatrixChartEventTrackReadoutDotMatrixDi
         }
 
         /// <summary>Returns CUI_FORMAT_* flags.</summary>
-        public int FormatBar(UiText id, ref TextFormat format, FormatBarOpts o = default)
+        public FormatEvents FormatBar(UiText id, ref TextFormat format, FormatBarOpts o = default)
         {
             var __format = format.ToNative();
             var __opts = o.ToNative();
             var __result = Native.FormatBar(ui.Handle, Utf8.Get(id), ref __format, in __opts);
             format = TextFormat.FromNative(__format);
             WidgetRecorder.Note(ui.Handle, "FormatBar", id);
-            return __result;
+            return (FormatEvents)__result;
         }
 
         /// <summary>cui_live_cursors_ex</summary>
