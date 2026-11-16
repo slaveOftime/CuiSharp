@@ -13,14 +13,14 @@ public static unsafe class MoreChartsUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>Heatmap: a rows x cols matrix (values[row * cols + col]) on one hue, light to dark, with a scale below.</summary>
+        /// <summary>Heatmap: a rows x cols matrix (values[row * cols + col]) in five steps from the empty surface to the accent, with the range and a Less / More key below.</summary>
         public int Heatmap(UiText id, ReadOnlySpan<float> values, int rows, int cols, HeatmapOpts o = default)
         {
             if (values.Length < rows * cols) throw new ArgumentException("values needs at least rows * cols entries.", nameof(values));
             if (o.RowLabels is { } __rowlabels && __rowlabels.Length < rows)
-                throw new ArgumentException("RowLabels needs at least rows entries.", nameof(o));
+                throw new ArgumentException($"RowLabels needs at least {rows} entries.", nameof(o));
             if (o.ColLabels is { } __collabels && __collabels.Length < cols)
-                throw new ArgumentException("ColLabels needs at least cols entries.", nameof(o));
+                throw new ArgumentException($"ColLabels needs at least {cols} entries.", nameof(o));
             var __opts = o.ToNative();
             var __result = Native.Heatmap(ui.Handle, Utf8.Get(id), UiMarshal.Values<float>(values), rows, cols, in __opts);
             WidgetRecorder.Note(ui.Handle, "Heatmap", id);
@@ -37,17 +37,30 @@ public static unsafe class MoreChartsUiExtensions
         }
 
         /// <summary>cui_treemap_ex</summary>
+        public int Treemap(UiText id, ReadOnlySpan<VizItem> items, ref int selected, TreemapOpts o = default)
+        {
+            var __items = Utf8.AllocFrame<NativeVizItem>(items.Length);
+            for (int i = 0; i < items.Length; i++) __items[i] = items[i].ToNative();
+            int __selected = (int)(selected);
+            var __opts = o.ToNative((nint)(&__selected));
+            var __result = Native.Treemap(ui.Handle, Utf8.Get(id), (nint)__items, (int)(items.Length), in __opts);
+            selected = __selected;
+            WidgetRecorder.NoteValue(ui.Handle, "Treemap", id, (double)selected);
+            return __result;
+        }
+
+        /// <summary>Same as the overload with ref selected, but reports nothing back: the state pointer is null, so the widget stores no state the caller could read.</summary>
         public int Treemap(UiText id, ReadOnlySpan<VizItem> items, TreemapOpts o = default)
         {
             var __items = Utf8.AllocFrame<NativeVizItem>(items.Length);
             for (int i = 0; i < items.Length; i++) __items[i] = items[i].ToNative();
-            var __opts = o.ToNative();
+            var __opts = o.ToNative(0);
             var __result = Native.Treemap(ui.Handle, Utf8.Get(id), (nint)__items, (int)(items.Length), in __opts);
             WidgetRecorder.Note(ui.Handle, "Treemap", id);
             return __result;
         }
 
-        /// <summary>Radar chart: series over shared axes (series[i].values[axis]).</summary>
+        /// <summary>Radar chart: series over shared axes (series[i].values[axis]), light fills with crisp outlines on hairline rings. The last series shows its points, or the one nearest the pointer, with a chip of the hovered value.</summary>
         public int RadarChart(UiText id, ReadOnlySpan<Series> series, ReadOnlySpan<string> axes, RadarOpts o = default)
         {
             var __series = Utf8.AllocFrame<NativeSeries>(series.Length);
@@ -69,11 +82,13 @@ public static unsafe class MoreChartsUiExtensions
             return __result;
         }
 
-        /// <summary>Sankey: flows between nodes; columns follow the links from the sources.</summary>
+        /// <summary>Returns the clicked node index, node_count + the clicked input link index, or -1.</summary>
         public int Sankey(UiText id, ReadOnlySpan<string> nodes, ReadOnlySpan<SankeyLink> links, SankeyOpts o = default)
         {
             var __links = Utf8.AllocFrame<NativeSankeyLink>(links.Length);
             for (int i = 0; i < links.Length; i++) __links[i] = links[i].ToNative();
+            if (o.NodeColors is { } __nodecolors && __nodecolors.Length < nodes.Length)
+                throw new ArgumentException($"NodeColors needs at least {nodes.Length} entries.", nameof(o));
             var __opts = o.ToNative();
             var __result = Native.Sankey(ui.Handle, Utf8.Get(id), UiMarshal.Strings(nodes), (int)(nodes.Length), (nint)__links, (int)(links.Length), in __opts);
             WidgetRecorder.Note(ui.Handle, "Sankey", id);
@@ -149,7 +164,7 @@ public static unsafe class MoreChartsUiExtensions
             var __candles = Utf8.AllocFrame<NativeCandle>(candles.Length);
             for (int i = 0; i < candles.Length; i++) __candles[i] = candles[i].ToNative();
             if (o.Labels is { } __labels && __labels.Length < candles.Length)
-                throw new ArgumentException("Labels needs at least candles.Length entries.", nameof(o));
+                throw new ArgumentException($"Labels needs at least {candles.Length} entries.", nameof(o));
             var __opts = o.ToNative();
             var __result = Native.Candlestick(ui.Handle, Utf8.Get(id), (nint)__candles, (int)(candles.Length), in __opts);
             WidgetRecorder.Note(ui.Handle, "Candlestick", id);

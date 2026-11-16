@@ -37,7 +37,7 @@ public static unsafe class AiInterfacesUiExtensions
             WidgetRecorder.Note(ui.Handle, "ToolCall", id);
         }
 
-        /// <summary>Agent plan: steps with their status on a connected rail, and progress.</summary>
+        /// <summary>Agent plan: steps with their status on a connected rail, and progress. Reduced motion holds the running glyph still, including in tool calls.</summary>
         public int AgentPlan(UiText id, ReadOnlySpan<PlanStep> steps, AgentPlanOpts o = default)
         {
             var __steps = Utf8.AllocFrame<NativePlanStep>(steps.Length);
@@ -130,7 +130,7 @@ public static unsafe class AiInterfacesUiExtensions
             return (ComposerEvents)__result;
         }
 
-        /// <summary>cui_voice_orb_ex</summary>
+        /// <summary>Deprecated: use the voice session (cui_voice_session), the voice waveform (cui_voice_wave) or the composer&apos;s recorder instead. Kept so existing code builds; it gets no new features. Voice orb: a living shape for voice modes. level is the input or output loudness (0..1). Returns true when clicked.</summary>
         public bool VoiceOrb(UiText id, VoiceState state, float level, VoiceOrbOpts o = default)
         {
             var __opts = o.ToNative();

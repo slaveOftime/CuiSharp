@@ -20,7 +20,7 @@ protected override void Draw(Ui ui)
 public int AgentPlan(UiText id, ReadOnlySpan<PlanStep> steps, AgentPlanOpts o = default)
 ```
 
-Agent plan: steps with their status on a connected rail, and progress.
+Agent plan: steps with their status on a connected rail, and progress. Reduced motion holds the running glyph still, including in tool calls.
 
 ## `AgentStatus`
 
@@ -108,4 +108,4 @@ cui_tool_call_ex
 public bool VoiceOrb(UiText id, VoiceState state, float level, VoiceOrbOpts o = default)
 ```
 
-cui_voice_orb_ex
+Deprecated: use the voice session (cui_voice_session), the voice waveform (cui_voice_wave) or the composer's recorder instead. Kept so existing code builds; it gets no new features. Voice orb: a living shape for voice modes. level is the input or output loudness (0..1). Returns true when clicked.

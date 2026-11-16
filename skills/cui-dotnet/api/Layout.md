@@ -92,7 +92,7 @@ flexible space
 public LayoutScope Split(UiText id, ref float ratio, SplitOpts o = default)
 ```
 
-Resizable split view: two panes with a draggable divider. `ratio` is the size of the first pane in 0..1. Call cui_split_next between the panes.
+Open a split with pane minimums that can fit the available main axis.
 
 ## `SplitNext`
 

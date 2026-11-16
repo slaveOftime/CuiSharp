@@ -63,7 +63,7 @@ public static unsafe class EmojiUiExtensions
             var __recentSlot = ui.RentText(Native.MakeId(ui.Handle, Utf8.Get(id)) ^ 0xa3514724u, ref recent, 512);
             int __tone = (int)(tone);
             if (o.GroupNames is { } __groupnames && __groupnames.Length < 10)
-                throw new ArgumentException("GroupNames needs at least 10 entries.", nameof(o));
+                throw new ArgumentException($"GroupNames needs at least {10} entries.", nameof(o));
             var __opts = o.ToNative((nint)__recentSlot.Buffer, (nuint)__recentSlot.Capacity, (nint)(&__tone));
             var __result = Native.EmojiPicker(ui.Handle, Utf8.Get(id), in __opts);
             if (Ui.TextChanged(__recentSlot)) recent = Ui.DecodeText(__recentSlot);

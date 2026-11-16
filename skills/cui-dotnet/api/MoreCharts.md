@@ -60,7 +60,7 @@ Funnel: stages narrowing by value, with the conversion between them.
 public int Heatmap(UiText id, ReadOnlySpan<float> values, int rows, int cols, HeatmapOpts o = default)
 ```
 
-Heatmap: a rows x cols matrix (values[row * cols + col]) on one hue, light to dark, with a scale below.
+Heatmap: a rows x cols matrix (values[row * cols + col]) in five steps from the empty surface to the accent, with the range and a Less / More key below.
 
 ## `RadarChart`
 
@@ -68,7 +68,7 @@ Heatmap: a rows x cols matrix (values[row * cols + col]) on one hue, light to da
 public int RadarChart(UiText id, ReadOnlySpan<Series> series, ReadOnlySpan<string> axes, RadarOpts o = default)
 ```
 
-Radar chart: series over shared axes (series[i].values[axis]).
+Radar chart: series over shared axes (series[i].values[axis]), light fills with crisp outlines on hairline rings. The last series shows its points, or the one nearest the pointer, with a chip of the hovered value.
 
 ## `RadialGauge`
 
@@ -84,7 +84,7 @@ cui_radial_gauge_ex
 public int Sankey(UiText id, ReadOnlySpan<string> nodes, ReadOnlySpan<SankeyLink> links, SankeyOpts o = default)
 ```
 
-Sankey: flows between nodes; columns follow the links from the sources.
+Returns the clicked node index, node_count + the clicked input link index, or -1.
 
 ## `ScatterChart`
 
@@ -105,7 +105,7 @@ Split bar: one bar split into parts, with a legend of values and shares.
 ## `Treemap`
 
 ```csharp
-public int Treemap(UiText id, ReadOnlySpan<VizItem> items, TreemapOpts o = default)
+public int Treemap(UiText id, ReadOnlySpan<VizItem> items, ref int selected, TreemapOpts o = default)
 ```
 
 cui_treemap_ex

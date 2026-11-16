@@ -28,7 +28,7 @@ Inline alert. Returns false once dismissed (when dismissible).
 public OpenScope Dialog(UiText title, ref bool open, DialogOpts o = default)
 ```
 
-Modal dialog. Shown while *open is true; closing sets it to false.
+Modal dialog. Shown while *open is true; closing sets it to false. Escape leaves a focused text field before it can dismiss the dialog.
 
 ## `DialogFooter`
 
@@ -52,7 +52,7 @@ cui_sheet_begin
 public int Toast(UiText title, ToastOpts o = default)
 ```
 
-Queue a toast. Returns a handle; cui_toast_action_clicked(handle) tells whether its action button was pressed.
+Queue a toast. Returns a handle; cui_toast_action_clicked(handle) tells whether its action button was pressed before the toast started closing.
 
 ## `ToastActionClicked`
 

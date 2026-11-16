@@ -64,7 +64,7 @@ public static unsafe class DataDisplayUiExtensions
             return __result != 0;
         }
 
-        /// <summary>Virtual list: only the visible rows are built, so lists with a million rows stay fast. Fills first/last with the visible range.</summary>
+        /// <summary>Virtual list: only the visible rows are built, so lists with a million rows stay fast. Fills first/last with the visible range for this row count.</summary>
         public LayoutScope VirtualList(UiText id, int count, float rowHeight, Size height, out int first, out int last)
         {
             int __first = 0;
@@ -75,7 +75,7 @@ public static unsafe class DataDisplayUiExtensions
             return new LayoutScope(ui.Handle, &Native.VirtualListEnd, "VirtualList", id, deriveNamedId: true);
         }
 
-        /// <summary>cui_table_begin_ex</summary>
+        /// <summary>Begin a table with keyboard focus indicators for its sortable headers.</summary>
         public OpenScope Table(UiText id, ReadOnlySpan<TableColumn> columns, ref TableSort sort, TableOpts o = default)
         {
             var __columns = Utf8.AllocFrame<NativeTableColumn>(columns.Length);
@@ -136,6 +136,17 @@ public static unsafe class DataDisplayUiExtensions
         {
             Native.Gauge(ui.Handle, Utf8.Get(label), value, size);
             WidgetRecorder.Note(ui.Handle, "Gauge", label);
+        }
+
+        /// <summary>Pattern meter: a stacked usage bar (storage, budgets, quotas) whose parts differ in color and in the density of their dots, so it still reads in grayscale, in print and without telling hues apart. One dot of space parts the parts, and the rest of `total` is free space in the track color. Hovering a part, or its legend entry, steps the others back and shows its name, value and share above the bar; the keyboard does the same with Left and Right. Returns the part shown, or -1.</summary>
+        public int PatternMeter(UiText id, ReadOnlySpan<MeterPart> parts, PatternMeterOpts o = default)
+        {
+            var __parts = Utf8.AllocFrame<NativeMeterPart>(parts.Length);
+            for (int i = 0; i < parts.Length; i++) __parts[i] = parts[i].ToNative();
+            var __opts = o.ToNative();
+            var __result = Native.PatternMeter(ui.Handle, Utf8.Get(id), (nint)__parts, (int)(parts.Length), in __opts);
+            WidgetRecorder.Note(ui.Handle, "PatternMeter", id);
+            return __result;
         }
 
         /// <summary>cui_image_ex</summary>

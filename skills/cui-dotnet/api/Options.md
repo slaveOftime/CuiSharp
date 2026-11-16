@@ -35,6 +35,17 @@ C `cui_api_explorer_opts`.
 - `Width`: Size (default `UiMarshal.ToNative(Width)`)
 - `Height`: float (default `Height`)
 
+## `AspectPickerOpts`
+
+C `cui_aspect_picker_opts`.
+
+- `Ratios`: Aspect[]? (default `Aspect.ToFrameArray(Ratios)`)
+- `Custom`: bool (default `(byte)(Custom ? 1 : 0)`)
+- `CustomLabel`: string? (default `Utf8.Get(CustomLabel)`)
+- `Base`: int (default `Base`)
+- `Value`: string? (default `Utf8.Get(Value)`)
+- `Plain`: bool (default `(byte)(Plain ? 1 : 0)`)
+
 ## `AvatarOpts`
 
 C `cui_avatar_opts`.
@@ -163,6 +174,15 @@ C `cui_candlestick_opts`.
 - `Up`: Color (default `UiMarshal.ToNative(Up)`)
 - `Down`: Color (default `UiMarshal.ToNative(Down)`)
 
+## `CanvasControlsOpts`
+
+C `cui_canvas_controls_opts`.
+
+- `Steps`: float[]? (default `UiMarshal.Values<float>(Steps)`)
+- `Content`: RectF (default `UiMarshal.ToNative(Content)`)
+- `NoFit`: bool (default `(byte)(NoFit ? 1 : 0)`)
+- `StartSide`: bool (default `(byte)(StartSide ? 1 : 0)`)
+
 ## `Card`
 
 C `cui_card_opts`.
@@ -218,6 +238,7 @@ C `cui_chart_opts`.
 - `Min`: float (default `Min`)
 - `Max`: float (default `Max`)
 - `Annotations`: ChartAnnotation[]? (default `ChartAnnotation.ToFrameArray(Annotations)`)
+- `Dither`: bool (default `(byte)(Dither ? 1 : 0)`)
 
 ## `ChatOpts`
 
@@ -319,6 +340,10 @@ C `cui_composer_opts`.
 - `Models`: Model[]? (default `Model.ToFrameArray(Models)`)
 - `MaxLines`: int (default `MaxLines`)
 - `Width`: Size (default `UiMarshal.ToNative(Width)`)
+- `Mic`: bool (default `(byte)(Mic ? 1 : 0)`)
+- `Recording`: bool (default `(byte)(Recording ? 1 : 0)`)
+- `Levels`: float[]? (default `UiMarshal.Values<float>(Levels)`)
+- `RecordSeconds`: float (default `RecordSeconds`)
 
 ## `ConfirmOpts`
 
@@ -427,6 +452,8 @@ C `cui_dialog_opts`.
 - `Width`: float (default `Width`)
 - `NoCloseButton`: bool (default `(byte)(NoCloseButton ? 1 : 0)`)
 - `Persistent`: bool (default `(byte)(Persistent ? 1 : 0)`)
+- `Draggable`: bool (default `(byte)(Draggable ? 1 : 0)`)
+- `Resizable`: bool (default `(byte)(Resizable ? 1 : 0)`)
 
 ## `DiffOpts`
 
@@ -651,6 +678,18 @@ C `cui_flame_opts`.
 - `RowHeight`: float (default `RowHeight`)
 - `MinRange`: double (default `MinRange`)
 
+## `FormatBarOpts`
+
+C `cui_format_bar_opts`.
+
+- `Styles`: TextStyle[]? (default `TextStyle.ToFrameArray(Styles)`)
+- `Colors`: Tone[]? (default `UiMarshal.Values<Tone>(Colors)`)
+- `Footer`: string? (default `Utf8.Get(Footer)`)
+- `FooterKeys`: string? (default `Utf8.Get(FooterKeys)`)
+- `DeleteQuestion`: string? (default `Utf8.Get(DeleteQuestion)`)
+- `NoDelete`: bool (default `(byte)(NoDelete ? 1 : 0)`)
+- `NoMore`: bool (default `(byte)(NoMore ? 1 : 0)`)
+
 ## `FunnelOpts`
 
 C `cui_funnel_opts`.
@@ -676,6 +715,23 @@ C `cui_gradient_opts`.
 
 - `Width`: Size (default `UiMarshal.ToNative(Width)`)
 - `Height`: float (default `Height`)
+
+## `GradientSliderOpts`
+
+C `cui_gradient_slider_opts`.
+
+- `Track`: GradientTrack (default `Track`)
+- `Stops`: GradientStop[]? (default `GradientStop.ToFrameArray(Stops)`)
+- `Color`: Color (default `UiMarshal.ToNative(Color)`)
+- `Step`: float (default `Step`)
+- `Format`: string? (default `Utf8.Get(Format)`)
+- `Value`: string? (default `Utf8.Get(Value)`)
+- `Swatch`: bool (default `(byte)(Swatch ? 1 : 0)`)
+- `Tool`: string? (default `Utf8.Get(Tool)`)
+- `ToolTooltip`: string? (default `Utf8.Get(ToolTooltip)`)
+- `ToolOn`: bool (default `(byte)(ToolOn ? 1 : 0)`)
+- `Plain`: bool (default `(byte)(Plain ? 1 : 0)`)
+- `Disabled`: bool (default `(byte)(Disabled ? 1 : 0)`)
 
 ## `GradientTextOpts`
 
@@ -884,6 +940,12 @@ C `cui_list_item_opts`.
 - `Selected`: bool (default `(byte)(Selected ? 1 : 0)`)
 - `Avatar`: string? (default `Utf8.Get(Avatar)`)
 
+## `LiveCursorsOpts`
+
+C `cui_live_cursors_opts`.
+
+- `NoGlide`: bool (default `(byte)(NoGlide ? 1 : 0)`)
+
 ## `LoaderOpts`
 
 C `cui_loader_opts`.
@@ -937,6 +999,8 @@ C `cui_menu_item_opts`.
 - `Danger`: bool (default `(byte)(Danger ? 1 : 0)`)
 - `Disabled`: bool (default `(byte)(Disabled ? 1 : 0)`)
 - `Checked`: bool (default `(byte)(Checked ? 1 : 0)`)
+- `Font`: Font (default `Font`)
+- `TextSize`: float (default `TextSize`)
 
 ## `MenuOpts`
 
@@ -1044,6 +1108,25 @@ C `cui_number_opts`.
 - `Width`: Size (default `UiMarshal.ToNative(Width)`)
 - `Suffix`: string? (default `Utf8.Get(Suffix)`)
 
+## `OptionActionOpts`
+
+C `cui_option_action_opts`.
+
+- `Tooltip`: string? (default `Utf8.Get(Tooltip)`)
+- `ActionOn`: bool (default `(byte)(ActionOn ? 1 : 0)`)
+- `ActionDisabled`: bool (default `(byte)(ActionDisabled ? 1 : 0)`)
+- `Value`: string? (default `Utf8.Get(Value)`)
+- `Plain`: bool (default `(byte)(Plain ? 1 : 0)`)
+
+## `PaletteStripOpts`
+
+C `cui_palette_strip_opts`.
+
+- `Value`: string? (default `Utf8.Get(Value)`)
+- `NoShuffle`: bool (default `(byte)(NoShuffle ? 1 : 0)`)
+- `Height`: float (default `Height`)
+- `Plain`: bool (default `(byte)(Plain ? 1 : 0)`)
+
 ## `PathBarOpts`
 
 C `cui_path_bar_opts`.
@@ -1055,6 +1138,20 @@ C `cui_path_bar_opts`.
 - `Width`: Size (default `UiMarshal.ToNative(Width)`)
 - `Menus`: bool (default `(byte)(Menus ? 1 : 0)`)
 - `NoEdit`: bool (default `(byte)(NoEdit ? 1 : 0)`)
+
+## `PatternMeterOpts`
+
+C `cui_pattern_meter_opts`.
+
+- `Total`: float (default `Total`)
+- `Label`: string? (default `Utf8.Get(Label)`)
+- `Unit`: string? (default `Utf8.Get(Unit)`)
+- `Format`: string? (default `Utf8.Get(Format)`)
+- `FreeLabel`: string? (default `Utf8.Get(FreeLabel)`)
+- `Grayscale`: bool (default `(byte)(Grayscale ? 1 : 0)`)
+- `NoLegend`: bool (default `(byte)(NoLegend ? 1 : 0)`)
+- `Height`: float (default `Height`)
+- `Width`: Size (default `UiMarshal.ToNative(Width)`)
 
 ## `PinOpts`
 
@@ -1077,6 +1174,13 @@ C `cui_popover_opts`.
 - `Pad`: float (default `Pad`)
 - `Gap`: float (default `Gap`)
 
+## `PresencePillOpts`
+
+C `cui_presence_pill_opts`.
+
+- `Size`: float (default `Size`)
+- `MaxVisible`: int (default `MaxVisible`)
+
 ## `ProblemsOpts`
 
 C `cui_problems_opts`.
@@ -1095,6 +1199,7 @@ C `cui_progress_opts`.
 - `Label`: string? (default `Utf8.Get(Label)`)
 - `ShowValue`: bool (default `(byte)(ShowValue ? 1 : 0)`)
 - `Width`: Size (default `UiMarshal.ToNative(Width)`)
+- `Dither`: bool (default `(byte)(Dither ? 1 : 0)`)
 
 ## `PromptSuggestionsOpts`
 
@@ -1147,12 +1252,25 @@ C `cui_radial_gauge_opts`.
 - `Target`: float (default `Target`)
 - `ShowTarget`: bool (default `(byte)(ShowTarget ? 1 : 0)`)
 - `NoNeedle`: bool (default `(byte)(NoNeedle ? 1 : 0)`)
+- `Style`: GaugeStyle (default `Style`)
+- `Detail`: string? (default `Utf8.Get(Detail)`)
+- `Color`: Color (default `UiMarshal.ToNative(Color)`)
 
 ## `RadioCardsOpts`
 
 C `cui_radio_cards_opts`.
 
 - `Columns`: int (default `Columns`)
+
+## `RatioSliderOpts`
+
+C `cui_ratio_slider_opts`.
+
+- `Tone`: Tone (default `Tone`)
+- `Step`: float (default `Step`)
+- `Height`: float (default `Height`)
+- `Width`: Size (default `UiMarshal.ToNative(Width)`)
+- `Disabled`: bool (default `(byte)(Disabled ? 1 : 0)`)
 
 ## `ReadoutOpts`
 
@@ -1197,6 +1315,18 @@ C `cui_response_actions_opts`.
 - `NoRegenerate`: bool (default `(byte)(NoRegenerate ? 1 : 0)`)
 - `NoShare`: bool (default `(byte)(NoShare ? 1 : 0)`)
 
+## `ResultCardOpts`
+
+C `cui_result_card_opts`.
+
+- `Caption`: string? (default `Utf8.Get(Caption)`)
+- `Badge`: string? (default `Utf8.Get(Badge)`)
+- `BadgeTone`: Tone (default `BadgeTone`)
+- `ImageW`: int (default `ImageW`)
+- `ImageH`: int (default `ImageH`)
+- `Width`: Size (default `UiMarshal.ToNative(Width)`)
+- `Aspect`: float (default `Aspect`)
+
 ## `RingsOpts`
 
 C `cui_rings_opts`.
@@ -1226,6 +1356,7 @@ C `cui_sankey_opts`.
 - `Height`: float (default `Height`)
 - `Format`: string? (default `Utf8.Get(Format)`)
 - `NodeWidth`: float (default `NodeWidth`)
+- `NodeColors`: Color[]? (default `UiMarshal.Colors(NodeColors)`)
 
 ## `ScatterOpts`
 
@@ -1271,6 +1402,15 @@ C `cui_scrub_opts`.
 - `Icon`: string? (default `Utf8.Get(Icon)`)
 - `Width`: Size (default `UiMarshal.ToNative(Width)`)
 
+## `SeedFieldOpts`
+
+C `cui_seed_field_opts`.
+
+- `Value`: string? (default `Utf8.Get(Value)`)
+- `RandomText`: string? (default `Utf8.Get(RandomText)`)
+- `FixedText`: string? (default `Utf8.Get(FixedText)`)
+- `Plain`: bool (default `(byte)(Plain ? 1 : 0)`)
+
 ## `SegmentedOpts`
 
 C `cui_segmented_opts`.
@@ -1289,6 +1429,21 @@ C `cui_select_opts`.
 - `Searchable`: bool (default `(byte)(Searchable ? 1 : 0)`)
 - `Disabled`: bool (default `(byte)(Disabled ? 1 : 0)`)
 - `Width`: Size (default `UiMarshal.ToNative(Width)`)
+
+## `SelectionBarOpts`
+
+C `cui_selection_bar_opts`.
+
+- `CountFormat`: string? (default `Utf8.Get(CountFormat)`)
+- `Anchor`: uint (default `Anchor`)
+- `NoEscape`: bool (default `(byte)(NoEscape ? 1 : 0)`)
+
+## `SelectionRingOpts`
+
+C `cui_selection_ring_opts`.
+
+- `Name`: string? (default `Utf8.Get(Name)`)
+- `Radius`: float (default `Radius`)
 
 ## `SheetOpts`
 
@@ -1314,6 +1469,14 @@ C `cui_signature_opts`.
 - `Placeholder`: string? (default `Utf8.Get(Placeholder)`)
 - `Ink`: Color (default `UiMarshal.ToNative(Ink)`)
 
+## `SkeletonGroupOpts`
+
+C `cui_skeleton_group_opts`.
+
+- `Dither`: bool (default `(byte)(Dither ? 1 : 0)`)
+- `Width`: Size (default `UiMarshal.ToNative(Width)`)
+- `Gap`: float (default `Gap`)
+
 ## `SliderOpts`
 
 C `cui_slider_opts`.
@@ -1331,6 +1494,14 @@ C `cui_speed_dial_opts`.
 - `Icon`: string? (default `Utf8.Get(Icon)`)
 - `Placement`: Placement (default `Placement`)
 - `Tooltip`: string? (default `Utf8.Get(Tooltip)`)
+
+## `SpinnerOpts`
+
+C `cui_spinner_opts`.
+
+- `Style`: SpinnerStyle (default `Style`)
+- `Color`: Color (default `UiMarshal.ToNative(Color)`)
+- `Track`: Color (default `UiMarshal.ToNative(Track)`)
 
 ## `SplitBarOpts`
 
@@ -1414,6 +1585,37 @@ C `cui_status_progress_opts`.
 - `Label`: string? (default `Utf8.Get(Label)`)
 - `Indeterminate`: bool (default `(byte)(Indeterminate ? 1 : 0)`)
 - `Width`: float (default `Width`)
+
+## `StatusSpinnerOpts`
+
+C `cui_status_spinner_opts`.
+
+- `Size`: float (default `Size`)
+- `Color`: Color (default `UiMarshal.ToNative(Color)`)
+- `Keep`: bool (default `(byte)(Keep ? 1 : 0)`)
+
+## `StatusTagOpts`
+
+C `cui_status_tag_opts`.
+
+- `Size`: ControlSize (default `Size`)
+- `Removable`: bool (default `(byte)(Removable ? 1 : 0)`)
+- `Icon`: string? (default `Utf8.Get(Icon)`)
+- `Tone`: Tone (default `Tone`)
+- `Id`: string? (default `Utf8.Get(Id)`)
+
+## `StepSliderOpts`
+
+C `cui_step_slider_opts`.
+
+- `Labels`: string[]? (default `UiMarshal.Strings(Labels)`)
+- `Format`: string? (default `Utf8.Get(Format)`)
+- `Value`: string? (default `Utf8.Get(Value)`)
+- `Tool`: string? (default `Utf8.Get(Tool)`)
+- `ToolTooltip`: string? (default `Utf8.Get(ToolTooltip)`)
+- `ToolOn`: bool (default `(byte)(ToolOn ? 1 : 0)`)
+- `Plain`: bool (default `(byte)(Plain ? 1 : 0)`)
+- `Disabled`: bool (default `(byte)(Disabled ? 1 : 0)`)
 
 ## `TabBarOpts`
 
@@ -1590,12 +1792,21 @@ C `cui_tool_opts`.
 - `Tooltip`: string? (default `Utf8.Get(Tooltip)`)
 - `Shortcut`: string? (default `Utf8.Get(Shortcut)`)
 - `Disabled`: bool (default `(byte)(Disabled ? 1 : 0)`)
+- `Tone`: Tone (default `Tone`)
+- `Flyout`: bool (default `(byte)(Flyout ? 1 : 0)`)
 
 ## `ToolbarOpts`
 
 C `cui_toolbar_opts`.
 
 - `NoBorder`: bool (default `(byte)(NoBorder ? 1 : 0)`)
+- `Style`: ToolbarStyle (default `Style`)
+
+## `ToolbarRadioOpts`
+
+C `cui_toolbar_radio_opts`.
+
+- `Labels`: string[]? (default `UiMarshal.Strings(Labels)`)
 
 ## `TourOpts`
 
@@ -1662,12 +1873,56 @@ C `cui_user_menu_opts`.
 - `Placement`: Placement (default `Placement`)
 - `Width`: float (default `Width`)
 
+## `VeilOpts`
+
+C `cui_veil_opts`.
+
+- `Label`: string? (default `Utf8.Get(Label)`)
+- `Hint`: string? (default `Utf8.Get(Hint)`)
+- `Toggle`: bool (default `(byte)(Toggle ? 1 : 0)`)
+- `Radius`: float (default `Radius`)
+- `Color`: Color (default `UiMarshal.ToNative(Color)`)
+- `Width`: Size (default `UiMarshal.ToNative(Width)`)
+
+## `VoiceNoteOpts`
+
+C `cui_voice_note_opts`.
+
+- `Mine`: bool (default `(byte)(Mine ? 1 : 0)`)
+- `Width`: Size (default `UiMarshal.ToNative(Width)`)
+
 ## `VoiceOrbOpts`
 
 C `cui_voice_orb_opts`.
 
 - `Size`: float (default `Size`)
 - `Color`: Color (default `UiMarshal.ToNative(Color)`)
+
+## `VoiceSessionOpts`
+
+C `cui_voice_session_opts`.
+
+- `Owners`: byte[]? (default `UiMarshal.Values<byte>(Owners)`)
+- `Label`: string? (default `Utf8.Get(Label)`)
+- `Transcript`: string? (default `Utf8.Get(Transcript)`)
+- `Upcoming`: string? (default `Utf8.Get(Upcoming)`)
+- `Speaker`: VoiceOwner (default `Speaker`)
+- `You`: string? (default `Utf8.Get(You)`)
+- `Assistant`: string? (default `Utf8.Get(Assistant)`)
+- `NoEnd`: bool (default `(byte)(NoEnd ? 1 : 0)`)
+- `Width`: Size (default `UiMarshal.ToNative(Width)`)
+
+## `VoiceWaveOpts`
+
+C `cui_voice_wave_opts`.
+
+- `Clip`: bool (default `(byte)(Clip ? 1 : 0)`)
+- `Owners`: byte[]? (default `UiMarshal.Values<byte>(Owners)`)
+- `Owner`: VoiceOwner (default `Owner`)
+- `Color`: Color (default `UiMarshal.ToNative(Color)`)
+- `Pitch`: float (default `Pitch`)
+- `Step`: float (default `Step`)
+- `Width`: Size (default `UiMarshal.ToNative(Width)`)
 
 ## `WaffleOpts`
 

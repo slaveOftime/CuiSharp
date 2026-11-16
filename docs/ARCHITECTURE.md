@@ -43,7 +43,7 @@ src/CuiSharp.Tools/           dotnet cui: the docs and API offline, then build, 
 src/CuiSharp.Templates/       dotnet new cui-app / cui-mini
 src/CuiSharp.Tests/           ABI, enums, marshalling, frame behaviour, hosting, tools, docs drift
 src/CuiSharp.Benchmarks/      BenchmarkDotNet suites + --fps and --scale harnesses
-samples/CuiSharp.Gallery/     twenty-nine pages of every component, one file per page
+samples/CuiSharp.Gallery/     thirty-two pages of every component, one file per page
 native/                       submodule + the two build scripts
 tools/                        bindgen.cs, regen.ps1, verify-template.ps1, api-surface.ps1, snapshots.ps1
 bindings/                     api.json (generated IR), overrides.json (inputs), coverage.txt (report)
@@ -124,6 +124,11 @@ documentation and are dropped: a section title bar (`---- Terminal ----`), which
 the declaration beneath it, and a note written to CUI's next reader (`left to right in any
 interface: see cui__keep_ltr`), which would otherwise stand in for the description the header has.
 What stays uncommented is counted in `docs/PLAN.md` rather than filled in by hand.
+
+A `parameterStorage: value` record can mix output scalars with caller-owned const arrays, as
+`VoiceNoteState` does. Write-back preserves those managed array references while copying the scalar
+state; an arena pointer cannot recover the caller's array identity, and rebuilding the record with
+null arrays would erase the next frame's input.
 
 Record array counts derive only through explicit `recordFieldCounts` overrides identifying
 input-only metadata (`QueryField.Choices`, `ApiEndpoint.Params`, `UptimeService.Days`,

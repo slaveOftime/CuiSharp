@@ -28,7 +28,7 @@ Avatar upload: a round avatar that takes a dropped image, with a camera badge on
 public int Dropzone(UiText id, DropzoneOpts o = default)
 ```
 
-Dropzone: drop files from the OS, or click to browse. Returns the number of files dropped on it this frame (read them with cui_dropped_file), -1 when clicked (open a file dialog), 0 otherwise. accept filters by extension, e.g. "png;jpg;pdf".
+Build a dropzone and show drag feedback only while it can accept a drop.
 
 ## `SignatureClear`
 

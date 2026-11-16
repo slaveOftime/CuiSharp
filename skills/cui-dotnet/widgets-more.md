@@ -4,7 +4,7 @@ Screenshots are dropped: their 215 files and 28 MB stay in the CUI submodule, an
 
 # More components
 
-The second half of the library: richer actions and inputs, pickers, disclosure, data views, more charts, motion, AI interface pieces and developer tools. Everything follows the same rules as the [core components](widgets.md): named options, keyboard support, light and dark, reduced motion. Each family has a page in the gallery (`./build/examples/gallery`, section *Extended*).
+The second half of the library: richer actions and inputs, pickers, disclosure, data views, more charts, motion, AI interface pieces, developer tools, instruments, creative controls, canvas and bars, and voice. Everything follows the same rules as the [core components](widgets.md): named options, keyboard support, light and dark, reduced motion. Each family has a page in the gallery (`./build/examples/gallery`, section *Extended*).
 
 ## Actions
 
@@ -43,7 +43,7 @@ Each item flips its own `bool`. With `.exclusive = true` exactly one stays on, l
 
 Returns true on the frame an item is clicked. `format` is your array with one `bool` for each item: the group reads it every frame and writes the item that was clicked, or all of them when `exclusive` is set. Exclusive mode acts on clicks only, so start with one value already true; a click on the item that is on leaves it on. At most 32 items are shown. `icon_only` hides a label only where that item has an icon. For a choice held in one `int`, use the segmented control.
 
-Keyboard: Tab, or Left and Right, move between the toggles, and Enter or Space flips the focused one.
+Keyboard: Tab moves through the toggles. Each Left or Right press moves focus one item. Enter or Space flips the focused toggle.
 
 ### Confirm button
 
@@ -438,6 +438,8 @@ Focus moves to the confirm button, so Enter confirms and Esc cancels.
 
 Returns true once, on the frame the question is confirmed, and closes itself. The cancel button and a click outside close it too. You keep no state: the popover stays closed until `cui_popover_open(ui, id)` is called with the same `id` in the same id scope. It anchors to the previous component, so call `cui_confirm_popover` on every frame right after the button, not inside the button's `if`. `title` and `description` wrap in a panel 290 points wide. `confirm_label` and `cancel_label` default to "Confirm" and "Cancel", and `danger` gives the confirm button the danger color. A confirm button asks with a second click and no text, and a dialog blocks the whole window.
 
+Press Enter again to confirm a question opened with Enter.
+
 ### Expandable text and card
 
 Long text clamped to a few lines with a Show more link, and a card that opens to show its details.
@@ -498,6 +500,31 @@ The rail fills as you read, and a marker glides to the section in view. Clicking
 
 Keyboard: Tab moves through the entries, and Enter or Space jumps to the focused section.
 
+### Veil
+
+Covers sensitive content, a secret or a spoiler with slowly moving dots in muted tones that keep its space, and dissolves when it is revealed.
+
+```c
+static bool photo, key, spoiler;
+cui_veil(ui, "photo", &photo, .label = "Sensitive image", .hint = "Click to show", .toggle = true, .radius = 10) {
+    cui_image(ui, tex, .width = CUI_PX(234), .height = CUI_PX(150), .radius = 10);
+}
+cui_veil(ui, "key", &key, .color = CUI_COLOR_SURFACE) { cui_text(ui, api_key, .font = CUI_FONT_MONO); }
+if (cui_button(ui, key ? "Hide" : "Reveal")) key = !key;
+cui_row(ui, .gap = 4) {
+    cui_text(ui, "The ending:");
+    cui_veil(ui, "spoiler", &spoiler, .toggle = true) { cui_text(ui, "the keeper was the narrator"); }
+}
+```
+
+The veil wraps whatever is built inside it and takes exactly its size. Covered, it is an ordered dither of the `color` (the muted surface by default) and a step toward the text color, its density moving slowly like a noise, with an optional `label` and smaller `hint` in the middle. A click reveals the content: the veil's dots turn off in threshold order, a dissolve of about 0.28 seconds, and come back the same way when hidden. While it is covered, or still coming back, the content takes no clicks, and fully covered it takes no keyboard focus either; once revealed, both reach the content again.
+
+`revealed` is your `bool`: a click on the veil sets it, and setting it yourself shows or covers the content, as the Hide button does above. With `toggle` a click on the revealed content (where it is not a control of its own) covers it again. `radius` rounds the veil's corners and `width` sizes it instead of the content. `cui_veil_begin_ex` returns true on the frame a click or a key changed `revealed`, for code that needs to know; `cui_veil_end` closes it. Veils may nest.
+
+The noise moves in steps, a dozen a second, so a covered veil does not redraw every frame. Reduced motion holds the noise still and reveals and covers at once.
+
+Keyboard: Tab focuses the veil, and Enter or Space reveals it or covers it again.
+
 ## Feedback
 
 ### Banner and countdown
@@ -557,6 +584,39 @@ The undo toast is `cui_toast` with two options. Call `cui_toast` once, on the fr
 
 Keyboard: the Undo button takes Tab, and Enter or Space presses it.
 
+### Status spinner
+
+A dither spinner for work that ends: a ring while it runs, then a disc with a check or a cross that holds for a moment and dissolves away.
+
+```c
+cui_status st = uploading ? CUI_STATUS_BUSY : upload_ok ? CUI_STATUS_SUCCESS : CUI_STATUS_ERROR;
+cui_row(ui, .gap = 8, .align = CUI_ALIGN_CENTER) {
+    cui_status_spinner(ui, "upload", st, .size = 16);
+    cui_text(ui, uploading ? "Uploading" : upload_ok ? "Uploaded" : "Upload failed");
+}
+```
+
+It takes the same `cui_status` as the status button. While the status is `CUI_STATUS_BUSY` it is the comet ring of the [dither spinners](components.md#dither-spinners). When the status turns to `CUI_STATUS_SUCCESS` a disc in the success color dissolves in over 0.35 seconds with a check cut out of it in the background color; `CUI_STATUS_ERROR` does the same in the danger color with a cross. The result holds until 1.8 seconds after the change, then dissolves away over 0.6 seconds. `keep` holds it for as long as you call it. `CUI_STATUS_IDLE` shows nothing. It keeps its space throughout, so the text beside it does not move.
+
+Returns true while it shows something, so after a result you can stop calling it once it returns false. The id keeps the time of the last change; a status that changes again starts over. Options: `size` in points (20) and `color` for the ring. It asks for 30 frames a second while the ring turns and while the disc dissolves in or away, one frame at the end of the hold, and none after that. Under reduced motion the ring holds still, and the result shows at once and goes at once when the hold and the dissolve would have ended.
+
+### Skeleton group
+
+Placeholders for content that is loading, sharing one shine that passes over them together; with `dither` they are drawn in dots under a passing band of brighter dots.
+
+```c
+cui_skeleton_group(ui, .dither = true, .gap = 12) {
+    cui_row(ui, .gap = 12, .align = CUI_ALIGN_CENTER, .width = CUI_FILL) {
+        cui_skeleton(ui, CUI_PX(32), 32);                  /* an avatar */
+        cui_column(ui, .gap = 8, .width = CUI_FILL) { cui_skeleton(ui, CUI_PCT(60), 8); cui_skeleton(ui, CUI_PCT(40), 8); }
+    }
+    cui_skeleton(ui, CUI_FILL, 8);
+    cui_skeleton(ui, CUI_PCT(80), 8);
+}
+```
+
+Build the placeholders inside the group with `cui_skeleton`, in the rows and columns the content will have. Every placeholder in a group takes its shine from the group's rectangle, so one sweep crosses them all instead of each running its own. With `dither` a placeholder is a solid base of dots in the skeleton's color, and a soft diagonal band of brighter dots, on one grid for the whole group, travels across from 30 dots before the group to 30 after it at 42 dots a second. The band moves in steps, 20 a second, and the group asks for frames only while it is on screen; reduced motion holds the band a third of the way across. Without `dither` the placeholders look as they do on their own and the reduced motion path draws no shine. The group is a column: `width` (the container's width when unset) and `gap` (8). Groups nest. It returns nothing and takes no input.
+
 ## Data
 
 ### Data grid and filter bar
@@ -584,9 +644,9 @@ if (cui_data_grid_begin(ui, "people", cols, 3, 2000, &first, &last, .height = CU
 }
 ```
 
-Only the rows in view are built, so the row count barely matters. Headers are sticky; drag a header edge to resize a column; click a sortable header to set `sort` (you reorder your data). With `selected`, a checkbox column appears and rows select like a spreadsheet: click, Shift+click for a range, Ctrl+click to toggle, Ctrl+A for all, arrows to move the cursor, Esc to clear. Editable cells start on double click or Enter and commit on Enter or clicking away.
+Only the rows in view are built, so the row count barely matters. When rows are removed, the scroll position and visible range are adjusted in the same frame. Headers are sticky; drag a header edge to resize a column; click a sortable header to set `sort` (you reorder your data). With `selected`, a checkbox column appears and rows select like a spreadsheet: click, Shift+click for a range, Ctrl+click to toggle, Ctrl+A for all, arrows to move the cursor, Esc to clear. Editable cells start on double click or Enter and commit on Enter or clicking away.
 
-The filter bar keeps one bit mask per field in `selected`; each active field shows as a chip that opens its value list, "Filter" adds one and "Clear all" resets them. `cui_tree_cell` draws a disclosure chevron and indentation inside any table or grid cell for tree tables.
+The filter bar keeps one bit mask per field in `selected`. Each active field shows as a chip. Choosing a field in "Filter" adds its chip and opens its value list. Click a chip to reopen the list, or "Clear all" to reset the filters. `cui_tree_cell` draws a disclosure chevron and indentation inside any table or grid cell for tree tables.
 
 ### Tree table and path bar
 
@@ -670,7 +730,7 @@ cui_code_block(ui, "counter", source, .lang = "c", .title = "counter.c", .line_n
 
 Highlighting for C, C++, JavaScript, TypeScript, Python, Rust, Go, JSON and shell, in colors that follow the theme. Long lines scroll sideways, `max_height` makes the block scroll vertically, and the copy button morphs into a check after copying.
 
-Returns nothing. `source` is your string, read on every frame, so it can change while it is shown. `lang` takes "c", "cpp", "js", "ts", "python", "rust", "go", "json" or "shell", and "text" for no colors. The title bar shows `title`, or the language when there is no title, and holds the copy button: a block with neither, or with `no_header`, has no copy button. `highlight_from` and `highlight_to` are line numbers from 1, and `highlight_from` alone marks one line. To let people change the code, use the code editor.
+Returns nothing. `source` is your string, read on every frame, so it can change while it is shown. `lang` takes "c", "cpp", "js", "ts", "python", "rust", "go", "json", "shell" or "sql", and "text" for no colors. SQL keywords, types and `NULL`, `TRUE` and `FALSE` match in any case, `--` starts a comment and `/* */` comments run across lines. The title bar shows `title`, or the language when there is no title, and holds the copy button: a block with neither, or with `no_header`, has no copy button. `highlight_from` and `highlight_to` are line numbers from 1, and `highlight_from` alone marks one line. To let people change the code, use the code editor.
 
 Keyboard: the copy button takes Tab, and Enter or Space presses it. The code itself takes no focus.
 
@@ -727,6 +787,8 @@ if (error_line) cui_code_editor_goto(ui, "shader", error_line, error_column);   
 ```
 
 Editable code for shader editors, script consoles and config files, with the code block's highlighting (C, C++, JavaScript, TypeScript, Python, Rust, Go, JSON and shell, or plain text with no `lang`), its surface and its monospace font. You own the text: a NUL terminated buffer and its capacity, edited in place. An edit that would not fit is refused whole, never cut in half, and the result reports it (`refused`) so you can say so. The result also gives the caret's line and column (columns count a tab to its stop), the selection as byte offsets, the line count, whether the text changed this frame and, with the find bar open, how many matches there are and which one is selected. A gutter on the left numbers the lines and marks the caret's line, which also gets a quiet band across the editor; the bracket beside the caret and its partner are boxed. Lines never wrap: long ones scroll sideways under the gutter, which stays, and a hairline marks the gutter's edge while the code is scrolled. Only the lines in view are tokenized and drawn, so a file of tens of thousands of lines scrolls and types like a short one. `.read_only` keeps selection, copy, find and go to line but refuses every edit; `.placeholder` shows while the text is empty; `.tab_size` (default 4) and `.use_tabs` choose how indentation is typed; `.height` defaults to 320 points and a negative height fills the space. `cui_code_editor_goto` puts the caret at a line and column, `cui_code_editor_select` selects bytes and `cui_code_editor_find` opens the find bar with a query; each focuses the editor and scrolls there on its next frame (call them from the same id scope).
+
+Use `.lang = "text"` for plain text without syntax colors. Leading spaces and tabs preserve the visible text on the line; tabs advance to the next `.tab_size` column stop.
 
 Mouse: click places the caret, Shift+click extends, drag selects (the view scrolls when the pointer leaves it), double-click selects a word, triple-click or a click in the gutter selects a line, and dragging after a double or triple click extends by words or lines. The wheel scrolls, Shift+wheel or a sideways scroll goes sideways, and the thin scrollbars that appear can be dragged. Keys, with the editor focused (on a Mac, Cmd for Ctrl and Option for the word moves):
 
@@ -1046,6 +1108,8 @@ Conditions joined by all or any, in groups you can nest (three deep by default, 
 
 Keyboard: Tab moves through the controls of each rule. Left and Right switch between All and Any, Up and Down change a focused select, Space opens it, and the remove buttons take Enter or Space.
 
+A read-only or disabled query builder shows the rules without changing the caller's array or count. A disabled one keeps the editable layout.
+
 ### Schedule picker
 
 A cron schedule edited through plain choices instead of the expression, with the next runs listed.
@@ -1131,6 +1195,8 @@ cui_trace_view(ui, "trace", tracks, 3, spans, span_count, &view, &selected,
 
 Each thread, process or service has a lane of nested spans, drawn like the flame graph and sharing its colors and ruler. Markers (vsync, a GC pause, a deploy) run across every lane, with their names in a strip under the ruler. The wheel zooms around the pointer, Shift+wheel pans, and over the lane names the wheel scrolls the lanes. Dragging pans, a click selects, and a double click zooms to a span. Shift+drag measures a range, which `view.mark_start` and `mark_end` hold and the ruler labels with its length. A click on a lane's name folds it to its top row, and `collapsed` keeps that in your track array. With the viewer focused, Left and Right step along the row, Up goes to the parent and Down to the first child. + and - zoom, Enter zooms to the selection, F fits, and Esc clears the measurement and then the selection. Only the rows and spans in view are visited, and spans thinner than a point merge into runs, so 200,000 spans take under a millisecond a frame. Below 560 points the lane names get a narrower column.
 
+The trace result's `view_changed` flag also reports updates to the measurement, including when Esc clears it.
+
 ### Regex tester
 
 A pattern, its flags and a test text, with every match and group highlighted.
@@ -1212,7 +1278,7 @@ const cui_uptime_service services[] = { { "API", api_days, 90 }, { "Website", we
 cui_uptime(ui, "status", services, 2, .last_day = today);
 ```
 
-Each service shows its state from its last day (operational, degraded or outage) and its uptime over the days with data. Below it is one bar per day, colored by availability: green from 99.9%, olive from 99%, amber from 95%, red below that, and gray without data. A hover lifts the bar and shows its date and uptime, and the result names the service and day under the pointer. On a narrow panel only the most recent days that fit are shown, newest on the right.
+Each service shows its state from its last day (operational, degraded or outage) and its uptime over the days with data. Below it is one bar per day, colored by availability: a soft green from 99.9%, olive from 99%, amber from 95%, red below that, and gray without data. A hover lifts the bar and shows its date and uptime, and the result names the service and day under the pointer. On a narrow panel only the most recent days that fit are shown, newest on the right.
 
 ### Time histogram
 
@@ -1305,7 +1371,7 @@ cui_chat_message(ui, "It did. 2,000 rows scroll at 60 fps on my laptop.", .mine 
 cui_typing_indicator(ui, "Jonas");
 ```
 
-Grouped messages stack tightly with the avatar on the last bubble and tighter inner corners. Your own messages sit on the right in the primary color. The typing dots bounce in sequence. With `.markdown = true` a message renders its text with the markdown view, so an assistant's reply can carry lists, code and links.
+Grouped messages stack tightly with the avatar on the last bubble and tighter inner corners. Your own messages sit on the right in the primary color. The typing dots bounce in sequence and hold still with reduced motion. With `.markdown = true` a message renders its text with the markdown view, so an assistant's reply can carry lists, code and links.
 
 ### Comments
 
@@ -1431,7 +1497,7 @@ static cui_cal_event events[] = {
 int clicked = cui_week_calendar(ui, "week", monday, events, 2, .start_hour = 8, .end_hour = 18, .height = CUI_PX(460));
 ```
 
-Drag an event to move it (it snaps to 15 minutes and keeps its length) or pull its bottom edge to resize it; the calendar writes the new times into your array. Overlapping events share the day side by side. Today is circled and a line marks the current time. `read_only` turns editing off but keeps clicks. With the keyboard, Up and Down move a focused event by 15 minutes, Left and Right by a day, and Shift with Up or Down changes its end.
+Drag an event to move it (it snaps to 15 minutes and keeps its length) or pull its bottom edge to resize it; the calendar writes the new times into your array. Overlapping events share the day side by side. Today is circled and a line marks the current time. With `read_only`, a click or Enter or Space on a focused event still returns its index. The editing keys do not move or resize it. With the keyboard, Up and Down move a focused event by 15 minutes, Left and Right by a day, and Shift with Up or Down changes its end.
 
 ### Month calendar
 
@@ -1461,15 +1527,18 @@ A task list on the left and a timeline that scrolls sideways, with months, day n
 
 ```c
 static cui_gantt_task tasks[] = {
-    /* name, owner, start day, end day, progress, tone, depends on, milestone */
-    { "Research", "Maya Okafor", 0, 5, 1.0f, CUI_TONE_VIOLET, -1, false },
-    { "Core engine", "Jonas Berg", 6, 19, 0.55f, CUI_TONE_INFO, 0, false },
-    { "Beta", NULL, 21, 21, 0, CUI_TONE_WARNING, 1, true },
+    /* name, owner, start day, end day, progress, tone, depends on, milestone, state */
+    { "Research", "Maya Okafor", 0, 5, 1.0f, 0, -1, false },               /* done: its progress is 1 */
+    { "Core engine", "Jonas Berg", 6, 19, 0.55f, 0, 0, false },            /* active */
+    { "Beta", NULL, 21, 21, 0, 0, 1, true },                               /* a milestone */
+    { "Launch", "Priya Nair", 22, 27, 0, 0, 2, false, CUI_GANTT_PLANNED },
 };
-int clicked = cui_gantt(ui, "plan", tasks, 3, start_date, 28, .today = 10);
+int clicked = cui_gantt(ui, "plan", tasks, 4, start_date, 28, .today = 10);
 ```
 
-Drag a bar to reschedule it, or drag either end to change its length. The darker part of a bar is its progress. Dependencies draw as elbow arrows and milestones as diamonds. A focused bar moves a day with the arrow keys and changes its length with Shift and the arrows.
+Drag a bar to reschedule it, or drag either end to change its length. Bars are colored by `state`: done in green, active in the first series color, planned in a neutral tint with a dashed edge. `CUI_GANTT_AUTO`, the default, works the state out: a progress of 1 is done, any progress is active, and untouched work is planned when it starts after `today` and active once that day has come. A task's `tone`, when set, replaces the state's color. The filled part of a bar is its progress, with the percentage at the bar's end when the name leaves room for it. Dependencies are soft curves with small arrowheads, running behind the bars; when a task starts before the one it waits for ends, the curve leaves from that bar's edge. A milestone is an outlined diamond labelled with its name and date. `today` draws an accent line over the rows with a small "Today" chip in the header, and weekends are lightly shaded. A focused bar moves a day with the arrow keys and changes its length with Shift and the arrows.
+
+In read-only mode, clicking a bar or pressing Enter or Space on the focused task returns its index. Moving and resizing are disabled.
 
 ### Node editor
 
@@ -1500,7 +1569,7 @@ You own the graph: node, pin and link ids are your integers, the editor moves th
 
 ## More charts
 
-These follow the same rules as the [core charts](components.md#charts): a tooltip on hover, an intro animation, theme colors. Each returns the index of the mark that was clicked, or -1. Series colors come from a palette checked for color blindness in both modes: neighbouring series stay apart for protanopia and deuteranopia, and the palette rotates so the first series sits next to your accent. Charts that compare amounts on one scale (heatmaps, the treemap, the bar list) use shades of a single hue instead.
+These follow the same rules as the [core charts](components.md#charts): a tooltip on hover, an intro animation, theme colors. Each returns the index of the mark that was clicked, or -1. Series colors come from a palette checked for color blindness in both modes: neighbouring series stay apart for protanopia and deuteranopia, and the palette rotates so the first series sits next to your accent. Charts that compare amounts on one scale use one color instead: the heatmaps step up to the accent, the bar list uses shades of one hue, and the treemap uses neutral tiles with the accent only on the tile you point at or select.
 
 ### Heatmap
 
@@ -1511,7 +1580,7 @@ float traffic[7 * 24];   /* values[row * cols + col] */
 cui_heatmap(ui, "traffic", traffic, 7, 24, .row_labels = weekdays, .col_labels = hours, .format = "%.0f req");
 ```
 
-One hue, light to dark (dim to bright in dark mode), with a scale below. Column labels skip themselves when they would collide; pass NULL for the ones you do not want. `min` and `max` fix the range; `cell` fixes the size, otherwise the cells fit the width.
+Each cell falls into one of five steps: the empty surface for values at the bottom of the range, then four even mixes toward the accent (a gray ramp under the neutral accent, or toward `color` when you set one). Under the grid sit the value range and a Less to More key of the five steps. Cells are at most 28 points with 5 point gaps (3 under 20 points, 2 on a phone). Hovering a cell rings it, lights its row label and its column label when it has one, and shows a tooltip. Column labels skip themselves when they would collide; pass NULL for the ones you do not want. `min` and `max` fix the range; `cell` fixes the size, otherwise the cells fit the width.
 
 ### Calendar heatmap
 
@@ -1523,7 +1592,7 @@ cui_date start = { 2025, 11, 11 };           /* year, month, day */
 cui_calendar_heatmap(ui, "year", start, per_day, 364, .unit = "contributions");
 ```
 
-One square a day in five levels, weeks as columns starting on Monday, month labels where a month begins. The tooltip shows the date and the value; `unit` also adds a total under the grid.
+One square a day in the same five steps as the heatmap, from the empty surface to the accent (or `color`), weeks as columns starting on Monday, month labels where a month begins, and a Less to More key. Hovering a day rings it, lights its weekday and month labels and shows the date and the value; `unit` also adds a total under the grid.
 
 Returns the index of the day that was clicked, or -1. `per_day` is your array of `days` floats, only read. A value of 0 or less leaves the square empty, and the rest fall into four levels by their share of the largest value, so one extreme day dims all the others. In a container too narrow for the whole range, only the most recent weeks that fit are drawn, and the returned index then counts from the first day drawn.
 
@@ -1533,13 +1602,14 @@ A treemap shows the parts of a whole as rectangles sized by value. A radar chart
 
 ```c
 static const cui_viz_item mods[] = { { "Layout", 55 }, { "Text", 42 }, { "Draw", 35 } /* ... */ };
-cui_treemap(ui, "bundle", mods, 10, .height = 290, .format = "%.0f KB");
+static int picked = -1;
+cui_treemap(ui, "bundle", mods, 10, .height = 290, .format = "%.0f KB", .selected = &picked);
 
 cui_series releases[] = { { "1.0", a, 6 }, { "1.1", b, 6 } };
 cui_radar_chart(ui, "radar", releases, 2, axes, 6, .size = 210, .max = 100);
 ```
 
-The treemap uses a squarified layout, so rectangles stay close to square; labels appear where they fit and the text color follows the fill. Give an item a `color` to pick it out. The radar draws a ring per tick with its value, fills each series lightly and lists them in a legend; hovering near an axis shows every series' value on it.
+The treemap uses a squarified layout, so rectangles stay close to square, with 3 point gaps and corners of up to 10 points. Tiles are neutral, a little lighter (darker in light mode) for larger items, so size reads without a color competing for attention. A tile shows its label, its value and, when tall enough, its share; a small tile keeps only a compact value. The accent fills and rings only the hovered tile and the selected one: pass `selected`, an int you keep (-1 for none), and a click selects a tile and a second click clears it. Give an item a `color` to fill its tile with it; the text then follows that fill. The radar draws hairline rings and spokes, fills every series lightly under a crisp 1.75 point outline, and lists them in a legend. The ring values sit beside the most upright spoke that keeps them clear of the data (on the top spoke with a small backing when none does). Only the last series shows its points; hovering near an axis picks the series whose point there is nearest, shows its points and puts its value in a chip beside the point.
 
 ### Funnel, split bar and waffle
 
@@ -1561,10 +1631,13 @@ Flows between stages, drawn as ribbons whose width follows the amount.
 ```c
 static const char *nodes[] = { "Search", "Social", "Referral", "Sign up", "Bounced", "Trial", "Paid", "Churned" };
 static const cui_sankey_link links[] = { { 0, 3, 420 }, { 1, 3, 260 }, { 3, 5, 860 }, { 5, 6, 580 } /* ... */ };
-cui_sankey(ui, "flow", nodes, 8, links, 8, .height = 300);
+const cui_color colors[] = { { 0 }, { 0 }, { 0 }, CUI_COLOR_SERIES(0), CUI_COLOR_DANGER, CUI_COLOR_SERIES(0), CUI_COLOR_SUCCESS, CUI_COLOR_TEXT_MUTED };
+cui_sankey(ui, "flow", nodes, 8, links, 8, .height = 300, .node_colors = colors);
 ```
 
-Columns follow the links from the sources, and an outcome sits at the step it is reached from, so a drop off stays beside the step it left and no ribbon crosses a column of nodes. Color goes to the outcomes, the largest first, and each ribbon takes the color of where it ends; sources and steps stay neutral gray, so the eye follows where things end up. Hover a node to highlight its links, or a ribbon to see the flow and its share of the source. A cycle in the links does not hang the layout.
+Columns follow the links from the sources, and an outcome sits at the step it is reached from, so a drop off stays beside the step it left and no ribbon crosses a column of nodes. Nodes are slim rounded bars (`node_width`, 6 points by default) colored by meaning: give `node_colors` one color per node, and any node left unset (or every node, without `node_colors`) falls back to the palette for outcomes, the largest first, and neutral gray for sources and steps. Each ribbon fades from its source's color to its target's at a low opacity. Labels sit beside the nodes: the name, then the value and, past the sources, its share of everything that leaves them ("860 · 62%"); a label that runs into the next column is cut with an ellipsis. Hover a node or a ribbon to light its whole path, everything upstream of it and everything downstream, and to see its values in a tooltip. A cycle in the links does not hang the layout.
+
+On a click, `cui_sankey` returns the node index or the node count plus the ribbon's index in the original links array. It returns -1 without an activation.
 
 ### Bar list and activity rings
 
@@ -1591,17 +1664,23 @@ Leave `sizes` NULL for a scatter. With sizes, the area of a bubble follows its v
 
 ### Radial gauge
 
-One value on a dial, for dashboards: speed, load, temperature, a score against a goal.
+One value on an arc, for dashboards: load, speed, temperature, a score against a goal. The number is the hero; the arc around it says how full.
 
 ```c
-static const cui_gauge_band load[] = { { 60, CUI_TONE_SUCCESS }, { 85, CUI_TONE_WARNING }, { 100, CUI_TONE_DANGER } };
+static const cui_gauge_band load[] = { { 60, CUI_TONE_SUCCESS, "Normal" }, { 85, CUI_TONE_WARNING, "Elevated" }, { 100, CUI_TONE_DANGER, "High" } };
 
-cui_radial_gauge(ui, "cpu", cpu_load, 0, 100, .unit = "%", .label = "CPU load", .bands = load, .band_count = 3);
-cui_radial_gauge(ui, "rps", rps, 0, 2500, .label = "Requests per second", .show_target = true, .target = 2000);
-cui_radial_gauge(ui, "disk", disk_used, 0, 100, .unit = "%", .label = "Disk", .no_needle = true, .ticks = -1);
+cui_radial_gauge(ui, "cpu", cpu_load, 0, 100, .unit = "%", .label = "CPU load", .bands = load, .band_count = 3);   /* segments */
+cui_radial_gauge(ui, "rps", rps, 0, 2500, .label = "Requests / s", .show_target = true, .target = 2000);              /* arc */
+cui_radial_gauge(ui, "disk", disk_used, 0, 100, .unit = "%", .label = "Disk", .style = CUI_GAUGE_RING, .detail = "190 of 500 GB");
 ```
 
-The arc sweeps 240 degrees (`sweep`, 90 to 300) between `min` and `max`, with labelled major ticks (`ticks` divisions, 5 by default, -1 for none) and four minor ticks between them. `bands` color stretches of the arc in the theme's tones, each running from the band before it (or `min`) up to its `to`. A needle points at the value and springs there with a little overshoot when the value changes (it snaps with reduced motion); `no_needle` fills a thick arc instead and puts the readout in the middle, in the color of the band the value is in. `show_target` adds a marker at `target`. The readout uses `format` (by default whole numbers, with large ones shortened to 1.8k) and `unit`, with `label` under it. `size` sets the width and the height follows the sweep.
+Three styles, set with `style`:
+
+- `CUI_GAUGE_SEGMENTS`: a ring of short segments. Those up to the value light in the tone of the band they fall in, and the rest stay a quiet track, so the zone colors show only as far as the value reaches. The band the value is in shows its `name` as a tinted chip under the label.
+- `CUI_GAUGE_ARC`: a track and a value arc with round caps, with `min` and `max` under its ends (`ticks = -1` hides them). `show_target` crosses the arc at `target` with a short stroke in the warning tone, labelled with its value.
+- `CUI_GAUGE_RING`: a slim full ring from the top, for a share of a whole, with `detail` under it.
+
+`CUI_GAUGE_AUTO`, the default, picks the segments when you pass `bands` and the arc otherwise, so code written before the styles keeps a sensible look. `no_needle` is still accepted and does nothing, since no style has a needle. The arc and the segments sweep 270 degrees (`sweep`, 90 to 300) between `min` and `max`; the ring is always a full turn. The value's color is `color` when set, else the tone of the band the value is in, else the accent (the first series color for the ring). The arc fills to a new value with a spring, and snaps with reduced motion. The readout uses `format` (by default whole numbers, with large ones shortened to 1.8k) and `unit`, with `label` under it; `detail` adds a muted line under any style. `size` sets the width and the height follows the sweep.
 
 ### Candlestick chart
 
@@ -1680,7 +1759,7 @@ cui_loader(ui, .style = CUI_LOADER_DOTS);    /* also BARS, PULSE, ORBIT, GRID */
 cui_loader(ui, .style = CUI_LOADER_PULSE, .size = 32, .color = CUI_COLOR_ACCENT);
 ```
 
-A loader returns nothing, takes no `id` and keeps no state: it draws for as long as you call it, so call it only while the work is running. The five styles are `CUI_LOADER_DOTS` (the default), `CUI_LOADER_BARS`, `CUI_LOADER_PULSE`, `CUI_LOADER_ORBIT` and `CUI_LOADER_GRID`. `size` is the width in points and defaults to 24; every style is square except the dots, which are half as tall. `color` defaults to the secondary text color. While a loader is on screen the window redraws every frame, so an idle app does not sleep until it is gone. A loader says that something is happening, not how much is done: use `cui_progress` when you know the fraction, and `cui_spinner` for the plain ring.
+A loader returns nothing, takes no `id` and keeps no state: it draws for as long as you call it, so call it only while the work is running. The five styles are `CUI_LOADER_DOTS` (the default), `CUI_LOADER_BARS`, `CUI_LOADER_PULSE`, `CUI_LOADER_ORBIT` and `CUI_LOADER_GRID`. `size` is the width in points and defaults to 24; every style is square except the dots, which are half as tall. `color` defaults to the secondary text color. While a loader is on screen the window redraws every frame, so an idle app does not sleep until it is gone. A loader says that something is happening, not how much is done: use `cui_progress` when you know the fraction, and `cui_spinner` for the plain ring or for loading animations in dots (see [Dither spinners](components.md#dither-spinners)).
 
 ### Dock
 
@@ -1772,7 +1851,7 @@ int step = cui_agent_plan(ui, "plan", steps, 3, .title = "Research plan");
 cui_agent_status(ui, "Reading quarterly-report.pdf", .status = CUI_TASK_RUNNING, .seconds = elapsed);
 ```
 
-The rail fills up to the step in progress, the running step shimmers, and the header counts finished steps with a progress bar. The status pill shows loader dots while running and a check or a cross when done.
+The rail fills up to the step in progress, the running step shimmers, and the header counts finished steps with a progress bar. With reduced motion, the running glyph holds still in both the plan and the tool call. The status pill shows loader dots while running and a check or a cross when done.
 
 `cui_agent_plan` returns the index of the step that was clicked this frame, or -1. `steps` is your array and is only read: you change each `status` as the agent moves on. A step is a title, a detail line that may be `NULL`, and one of `CUI_TASK_PENDING`, `CUI_TASK_RUNNING`, `CUI_TASK_DONE`, `CUI_TASK_FAILED` or `CUI_TASK_SKIPPED`. Pending is the zero value. The header counts done and skipped steps as finished, and shows `title`, or "Plan".
 
@@ -1811,7 +1890,7 @@ if (ev & CUI_COMPOSER_STOP) stop();
 if (ev & CUI_COMPOSER_REMOVE) remove_file(removed);
 ```
 
-The text area grows with its content up to `max_lines`, then scrolls. Enter sends and Shift+Enter starts a new line. Send stays disabled while the draft is empty, and while `busy` it becomes a stop button. The model picker can also be used alone: `cui_model_picker(ui, "model", models, n, &model)`.
+The text area grows with its content up to `max_lines`, then scrolls. Enter sends and Shift+Enter starts a new line. Send stays disabled while the draft is empty, and while `busy` it becomes a stop button. The model picker can also be used alone: `cui_model_picker(ui, "model", models, n, &model)`. With `mic` the composer also records voice messages: see [Voice recorder](#voice-recorder).
 
 ### Suggestions, response actions and the context meter
 
@@ -1843,6 +1922,8 @@ Keyboard: Tab moves through the suggestions and the response actions, and Enter 
 ### Voice orb
 
 An animated orb for voice modes that shows listening, thinking and speaking.
+
+**Deprecated.** The [voice components](#voice) replace it: the [voice session](#voice-session) for a spoken conversation, the [voice waveform](#voice-waveform) for a level, and the composer's [recorder](#voice-recorder) for a voice message. `cui_voice_orb` keeps working so existing code builds, but it gets no new features and is no longer in the gallery.
 
 ```c
 if (cui_voice_orb(ui, "voice", listening ? CUI_VOICE_LISTENING : CUI_VOICE_IDLE, mic_level)) toggle_listening();
@@ -1999,7 +2080,7 @@ The result reports the sample under the pointer or the keyboard cursor (`hovered
 
 In a right-to-left interface the chart keeps time running left to right, like the other time-based components, and Right still moves later. Its labels and readout are drawn with the library's text, so Persian and Arabic labels are shaped when CUI is built with `CUI_TEXT_SHAPING` and a font that covers them is loaded ([Text in other languages](integration.md#text-in-other-languages)).
 
-Keyboard: Tab focuses the chart, Left and Right move the readout a sample (Shift: ten), Home and End jump to the first and last sample, Enter clicks at the cursor, and Esc hides the readout.
+Keyboard: Tab focuses the chart, Left and Right move the readout a sample (Shift: ten), Home and End jump to the first and last sample, Enter clicks at the cursor, and Esc hides the readout. When neither the pointer nor the keys have picked a sample, Enter or Space puts the cursor on the middle sample and clicks there.
 
 ### Chart annotations
 
@@ -2070,3 +2151,381 @@ Each glyph is five dots wide and seven high, with a column of space between glyp
 The lit dots take the foreground color, `color`, or the accent with `accent`. In a box narrower than the text the dots shrink until it fits. With `marquee` the text scrolls instead, and asks for frames only while it does; with reduced motion it shrinks rather than moves. The glyphs run left to right in every reading direction, while `align` follows it: in a right-to-left interface the start is the right edge of the box.
 
 A dot-matrix display only displays: it takes no focus and returns nothing.
+
+## Creative controls
+
+Controls for editors, generators and design tools: a status tag, a ratio slider, and six controls that sit in a control well, a rounded panel with the label on the left, the value on the right and the control under them. Wells side by side line up, since their control rows share one height. Every well control takes `plain` to drop the panel and keep the label row and the control, and a label that starts with `##` shows no label row. The gallery's *Creative controls* page shows them all.
+
+### Status tag
+
+A tag with an icon, a label and a fill tinted by its state, for a table cell, a card header or a group of tags.
+
+```c
+cui_status_tag(ui, "Failed", CUI_TAG_FAILED);
+cui_status_tag(ui, NULL, CUI_TAG_IN_PROGRESS);                /* NULL: the state's name, "In progress" */
+if (cui_status_tag(ui, name, CUI_TAG_CUSTOM, .icon = CUI_ICON_TAG, .tone = CUI_TONE_TEAL,
+                   .size = CUI_SIZE_SM, .removable = true))
+    remove_tag(name);
+```
+
+The seven states each have an icon and a color from the theme: pending orange, in progress sky, submitted violet, in review amber, success green, failed red and expired gray. "In progress" shows a dashed ring that turns once every 2.4 seconds and holds still with reduced motion. `icon` and `tone` replace the state's icon and color; `CUI_TAG_CUSTOM` has only yours, gray when you give no tone. The text keeps a 4.5:1 contrast with the fill in light and dark. `size` set to `CUI_SIZE_SM` makes the tag 24 points high instead of 30, for tables and tag groups.
+
+A tag only displays unless it is `removable`. Then it is a button that grows an x on hover and focus, and the call returns true on the frame it is clicked. It keeps its state by its label, so give `id` when two removable tags share one. The tag does not hide itself: stop drawing it when the call returns true.
+
+Keyboard: a removable tag is a Tab stop; Enter, Space, Delete or Backspace removes it.
+
+### Ratio slider
+
+A whole split into two named parts, with a bar between them to drag.
+
+```c
+static float coffee = 0.37f;   /* the first part's share, 0..1 */
+if (cui_ratio_slider(ui, "COFFEE", "MILK", &coffee, .tone = CUI_TONE_WARNING)) mix(coffee);
+```
+
+The first part takes `tone` (the accent by default) and reads from the start edge; the second part is neutral and reads from the end. Names and percentages are in the monospaced font, and the two percentages always add up to 100. The split stops where a part would get too narrow for its name and percentage, so both stay readable at any width; when the slider is too narrow for both names, it keeps the percentages and drops the names. The stop applies to dragging and the keys; a value you set yourself is drawn where it fits and left as it is until someone moves it.
+
+Dragging snaps to `step` (one percent by default) and the call returns true when the value changed. `height` (52 by default), `width` and `disabled` do what they say. In a right-to-left interface the first part sits on the right.
+
+Keyboard: Tab focuses the bar. Left and Right move it a step (Shift: ten steps), in the direction they point, and Home and End go to the limits.
+
+### Gradient slider
+
+A slider whose track is the value itself, with a thumb filled with the color under it.
+
+```c
+cui_gradient_slider(ui, "Hue", &hue, 0, 360, .swatch = true, .color_out = &picked);
+if (cui_gradient_slider(ui, "White balance", &kelvin, 2500, 10000, .track = CUI_GRADIENT_TEMPERATURE, .step = 100,
+                        .tool = CUI_ICON_TARGET, .tool_tooltip = "Pick from image", .tool_on = picking) & CUI_WELL_ACTION)
+    picking = !picking;
+cui_gradient_slider(ui, "Opacity", &alpha, 0, 1, .track = CUI_GRADIENT_OPACITY, .color = brush);
+```
+
+`track` picks a built-in track: the hue wheel (the default), a white balance from cool blue to warm amber, or an opacity that fades `color` in over a checkerboard (the accent when unset). `stops` and `stop_count` draw your own track instead, with the same `cui_gradient_stop` the gradient editor uses; stops with transparency get the checkerboard too. The track's colors are the value's colors in every theme, so they are not theme colors. `color_out` receives the color under the thumb, the same color `cui_gradient_eval` gives for your stops.
+
+The value at the right of the label follows the track: degrees for the hue, kelvin for the temperature, a percent of the range for the opacity. `format` and `value` replace it. `step` snaps the value, `swatch` adds a dot in the current color after the track, and `tool` adds an icon button whose click returns `CUI_WELL_ACTION`; `tool_on` shows it pressed while its mode is on. The call returns `CUI_WELL_CHANGED` when the value changed. Right to left, the track runs from the right.
+
+Keyboard: as the slider. Tab focuses the track, the arrow keys move one percent of the range or one step (Shift: ten), Home and End go to the ends, and Tab moves on to the tool button.
+
+### Step slider
+
+A slider with a few discrete stops marked with dots; the thumb snaps to each and glides between them.
+
+```c
+static int n = 3;
+if (cui_step_slider(ui, "Variations", &n, 1, 4, .tool = CUI_ICON_REFRESH_CW, .tool_tooltip = "Generate") & CUI_WELL_ACTION)
+    generate(n);
+static const char *const quality[] = { "Draft", "Good", "Best" };
+cui_step_slider(ui, "Quality", &q, 0, 2, .labels = quality);
+```
+
+Every whole number from `min` to `max` is a stop. The pointer and the keys only ever choose a stop: a click or a drag goes to the nearest one, and the thumb springs there. The value at the right of the label is the number (`format`, "%d" by default), the stop's name from `labels`, or your `value`. `tool`, `tool_tooltip` and `tool_on` add an action button as on the gradient slider. The call returns `CUI_WELL_CHANGED` and `CUI_WELL_ACTION` flags.
+
+Keyboard: Tab focuses the track, the arrow keys move one stop, Home and End go to the first and last.
+
+### Palette strip
+
+A joined row of color swatches with a lock on each and a shuffle button for the rest.
+
+```c
+static cui_color colors[5] = { ... };
+static bool locked[5];
+static uint32_t seed = 7;
+cui_palette_strip(ui, "Color palette", colors, locked, 5, .seed = &seed, .value = "Click a swatch to lock it");
+```
+
+A click on a swatch locks or unlocks it, and a lock glyph marks the locked ones. The swatch under the pointer or the keyboard focus widens and shows its hex code, in dark or light ink, whichever reads on it. Up to 16 swatches; you own the colors and the locks, and `locked` may be `NULL` for a strip without locks.
+
+With `seed`, shuffle recolors every unlocked swatch itself: the colors come from a small generator that keeps near one hue, sometimes takes its opposite, and keeps the chroma moderate, and the seed moves on with each shuffle, so the same seed gives the same palettes in the same order. Without a seed, shuffle only reports the press and you choose the colors. The call returns `CUI_WELL_CHANGED` when a lock or a color changed and `CUI_WELL_ACTION` when shuffle was pressed. `no_shuffle` hides the button and `height` sets the strip's height (32 by default).
+
+Keyboard: Tab reaches the swatches. Left and Right move between them, in the direction they point, and Space or Enter locks or unlocks the focused one. Tab moves on to the shuffle button.
+
+### Aspect ratio picker
+
+A row of aspect ratios, each drawn as a rectangle of its own proportions with the ratio under it.
+
+```c
+static int pick = 1;
+cui_aspect_picker(ui, "Aspect ratio", &pick, .custom = true);   /* 1:1, 4:5, 3:2, 16:9, 9:16, 21:9 */
+static const cui_aspect print[] = { { 3, 2, NULL }, { 7, 5, "5×7" }, { 4, 3, NULL } };
+cui_aspect_picker(ui, "Print", &size, .ratios = print, .count = 3);
+```
+
+Without `ratios` the picker offers the photo set 1:1, 4:5, 3:2, 16:9, 9:16 and 21:9. Your own `ratios` are `cui_aspect` values with a width, a height and an optional `label` (it shows "w:h" without one). Every shape fits a 22 point box by its longer side, so the choices can be told apart without reading. `custom` adds a dashed "Custom" after a divider (`custom_label` renames it); `*index` equal to the number of ratios selects it, and what custom means is up to you.
+
+The value at the right of the label is the size in pixels with the short side `base` pixels long (1080 by default), "1080 × 1350" for 4:5; a negative `base` hides it, and `value` replaces it. The call returns true when the choice changed.
+
+Keyboard: Tab reaches the choices. Left and Right move to the neighbouring choice and select it, in the direction they point.
+
+### Option field with action
+
+A compact segmented choice and the icon button of the action it feeds.
+
+```c
+static const char *const formats[] = { "png", "jpg", "webp" };
+if (cui_option_action(ui, "Save as", formats, 3, &fmt, CUI_ICON_DOWNLOAD, .tooltip = "Download") & CUI_WELL_ACTION)
+    save(fmt);
+```
+
+The choice is the [segmented control](components.md#segmented-control) in its small size, filling the row, and the button is a ghost icon button named by `tooltip`. The call returns `CUI_WELL_CHANGED` when the choice changed and `CUI_WELL_ACTION` when the button was pressed. `action_on` shows the button pressed, `action_disabled` turns it off, and `value` puts text at the right of the label, such as the file size of the chosen format.
+
+Keyboard: Tab reaches the choice, then the button. Left and Right move the choice, Enter or Space presses the button.
+
+### Seed field
+
+A random seed in the monospaced font, with a dice that rolls a new one and a lock that keeps it.
+
+```c
+static uint32_t seed = 1234567890;
+static bool fixed;
+if (cui_seed_field(ui, "Seed", &seed, &fixed, .value = fixed ? "Same image every run" : "Random each run") & CUI_WELL_CHANGED)
+    regenerate(seed);
+```
+
+The dice rolls a new ten digit seed and its digits roll into place, each on its own wheel and the later ones a little longer; with reduced motion the new seed simply appears. A roll is deterministic: from the same seed, the dice gives the same sequence. The lock fixes the seed, and while it is locked the dice is off. Pass `NULL` for `locked` to leave the lock out.
+
+The field shows "random" or "fixed" (`random_text` and `fixed_text` change them) and `value` puts text at the right of the label. The call returns `CUI_WELL_CHANGED` when the seed or the lock changed and `CUI_WELL_ACTION` when the dice rolled. The digits read left to right in every reading direction.
+
+Keyboard: Tab reaches the dice, then the lock; Enter or Space presses the focused one.
+
+## Canvas and bars
+
+Pieces for editors with a canvas: bars that float over the content, other people's pointers, zoom controls, a picture with its actions, and a bar for what is selected. The gallery page *Canvas and bars* shows them together.
+
+### Grouped toolbar
+
+A toolbar whose items sit in raised groups inside one pill, with an inset set of modes and a filled primary action at the end.
+
+```c
+static bool numbers = true, bold, italic;
+static int mode;
+static const char *const modes[] = { CUI_ICON_MOVE, CUI_ICON_SQUARE_PEN, CUI_ICON_TYPE };
+static const char *const names[] = { "Move", "Draw", "Text" };
+cui_toolbar(ui, "tools", .style = CUI_TOOLBAR_GROUPED) {
+    cui_toolbar_group(ui) {
+        cui_toolbar_button(ui, CUI_ICON_UNDO_2, .tooltip = "Undo", .shortcut = "Ctrl Z");
+        cui_toolbar_button(ui, CUI_ICON_REDO_2, .tooltip = "Redo");
+    }
+    cui_toolbar_group(ui) {
+        cui_toolbar_button(ui, NULL, .label = "123", .tooltip = "Numbers", .toggle = &numbers);
+        cui_toolbar_button(ui, CUI_ICON_BOLD, .tooltip = "Bold", .toggle = &bold);
+        cui_toolbar_radio(ui, "mode", modes, 3, &mode, .labels = names);
+    }
+    if (cui_toolbar_primary(ui, CUI_ICON_SPARKLES, .tooltip = "Generate")) generate();
+}
+```
+
+It is the [toolbar](#toolbar) with `style = CUI_TOOLBAR_GROUPED`, so its buttons, toggles, separators and overflow work as they do there. `cui_toolbar_group` puts the items between its begin and end on a raised well; in the plain and floating styles a group is set apart by separators instead. `cui_toolbar_radio` is a set of icons of which one is on, drawn like a segmented control inset in the group; it returns true when `*index` changed, and `labels` name the icons in the overflow menu. `cui_toolbar_primary` is a larger button filled with the text color, for the one action the bar exists for; it takes the same options as a toolbar button.
+
+The style `CUI_TOOLBAR_FLOATING` is one bordered pill, for a bar that sits over content (the [format bar](#format-bar) and the actions under a [result card](#result-card) are built on it). Its separators run the full height of the bar. Both styles are as wide as their items rather than as wide as the parent; they measure the room the parent gives them, and items that do not fit fold, from the end, into the "more" menu, where a radio set becomes one checked item per icon.
+
+Two pieces work in every style: `cui_toolbar_cycle` is a small picker that steps through its choices on each click (`"1x"`, `"2x"`, `"4x"`), and `.flyout = true` on a button, or `cui_flyout_mark` after any button, adds a small triangle in its end-side corner that says it opens more options. `.tone` colors a button's icon: always for a plain button (`CUI_TONE_DANGER` for delete), only while on for a toggle. In a right-to-left interface the groups, the radio set and the corner marks mirror.
+
+Keyboard: Tab moves through the items as in any toolbar, and Enter or Space presses the focused one. In a radio set Left and Right move the choice. On the "more" button Down opens the menu.
+
+### Format bar
+
+A floating bar that edits the format of a text selection: color, bold, underline, link, the text style, alignment, lists and delete.
+
+```c
+static cui_text_format f = { .color = CUI_TONE_ROSE, .bold = true, .style = 0, .size = 44 };
+int r = cui_format_bar(ui, "format", &f);
+if (r & CUI_FORMAT_CHANGED) apply_to_selection(&f);
+if (r & CUI_FORMAT_LINK) edit_link();
+if (r & CUI_FORMAT_DELETE) delete_selection();
+```
+
+You pass one `cui_text_format` and the bar edits it in place; the result has `CUI_FORMAT_CHANGED` on the frame any field changed. The color swatch opens a grid of colors given as tones, so a color follows the theme and the accent; `CUI_TONE_NEUTRAL` is the text color, and `colors` replaces the grid. Bold and underline are toggles. Link only reports a click (`CUI_FORMAT_LINK`) and shows pressed while `link` is set, since what a link edit looks like is yours. The size readout shows `size`.
+
+The style menu shows each style's name at its own size and font, with a check on the current one and a muted footer with keycaps (`footer`, `footer_keys`; the keys are a hint, the shortcut is yours). Choosing a style sets `style` and copies the style's `size`. `styles` replaces the four defaults: Header, Title, Subtitle and Normal text at 44, 56, 28 and 16. The alignment button opens a row of the four alignments and shows the current one; the list button opens bulleted, numbered and checklist, and picking the current kind again turns the list off. Both carry the corner mark of a button with a flyout. Delete asks first, in a small tip in the text color with a Delete button (`delete_question` changes its text); only that second step returns `CUI_FORMAT_DELETE`. The "..." button returns `CUI_FORMAT_MORE`. `no_delete` and `no_more` leave those out.
+
+The bar is a [floating toolbar](#grouped-toolbar), so at a phone's width its end folds into the toolbar's "more" menu; picked from there, alignment and list step to the next choice, and delete, already a second step, deletes. In a right-to-left interface the groups and the corner marks mirror.
+
+Keyboard: Tab moves through the bar's controls, and Enter or Space presses the focused one. Down or Enter on the color swatch, the style, alignment or list opens it: the arrows move through the colors (Up and Down by a row) or the alignments, Up and Down through the styles and lists, Enter picks and Esc closes, and focus returns to the button. On delete, Enter opens the question with focus on its Delete button, a second Enter deletes and Esc cancels.
+
+### Live cursors
+
+Other people's pointers over a canvas, each an arrow in their color with a name flag and an optional chat bubble, gliding to each new position; with a presence pill and a selection ring.
+
+```c
+static cui_live_user people[3] = {
+    { .name = "Paul", .tone = CUI_TONE_WARNING, .speaking = true },
+    { .name = "Kate", .tone = CUI_TONE_INFO, .says = "Bumping steps to 40?" },
+    { .name = "Mario", .tone = CUI_TONE_ROSE },
+};
+/* when a position arrives from the network: people[k].x = x; people[k].y = y; */
+if (cui_node_editor_begin(ui, "graph", &view)) {
+    /* ...nodes; after the selected one: */
+    cui_selection_ring(ui, cui_color_of(ui, CUI_COLOR_WARNING), .name = "Paul");
+    cui_node_editor_end(ui);
+}
+cui_live_cursors(ui, "people", people, 3, .view = &view);
+cui_presence_pill(ui, "here", people, 3);
+```
+
+`cui_live_cursors` draws over the previous component, clipped to it. Each `x`, `y` is in points from that component's top-left corner, or in canvas points under `view` (the node editor's pan and zoom), so the cursors stay on what people point at while you pan. Set a new position whenever one arrives; the cursor glides there with a spring, at the same speed at any frame rate, and jumps with `no_glide` or under reduced motion. A person's `name` is also what keeps their cursor gliding from frame to frame, so keep it stable. `away` fades the pointer out. The color is `color`, or a `tone` of the theme, or a tone chosen from the name; the flag's text is light or dark, whichever reads on it.
+
+`cui_presence_pill` takes the same array: overlapping avatars in each person's color (or their `avatar` picture), up to `max_visible` and then "+n". Whoever is `speaking` gets a ring, and the pill adds moving level bars and their name; the bars ask for frames only while someone speaks and stand still under reduced motion. `cui_selection_ring` draws a ring in someone's color around the previous component, with an optional name flag on its end-side corner, for "Paul has this selected"; after `cui_node_end` the previous component is that node's card.
+
+Cursors keep the canvas's own left-to-right coordinates in a right-to-left interface, while the pill and the ring's flag follow the reading direction.
+
+Keyboard: none. Cursors, the pill and the ring only draw and take no focus.
+
+### Canvas controls
+
+A floating rail of zoom controls over a canvas: zoom in, the zoom as a percentage that resets to 100%, zoom out, fit, and toggles of your own.
+
+```c
+static cui_node_view view;          /* the node editor's pan and zoom */
+static bool grid = true, layers;
+cui_canvas_toggle toggles[] = { { CUI_ICON_EYE, "Show grid", &grid }, { CUI_ICON_LAYERS, "Layers", &layers } };
+if (cui_node_editor_begin(ui, "graph", &view, .no_grid = !grid)) { /* ... */ cui_node_editor_end(ui); }
+int r = cui_canvas_controls(ui, "zoom", &view, .content = graph_bounds, .toggles = toggles, .toggle_count = 2);
+```
+
+The rail floats over the previous component, centered at its end edge (`start_side` moves it to the start edge; in a right-to-left interface the end is the left). It drives a `cui_node_view`, the same struct the [node editor](#node-editor) pans and zooms, so the two share one view: the wheel in the editor and the rail's buttons change the same zoom, and the rail follows a zoom changed elsewhere. Any canvas of your own can use the struct too: `x` and `y` are where the canvas origin sits from the component's corner, and `zoom` is its scale (0 means 1).
+
+Zoom in and out step through presets, 25% to 400% unless `steps` gives your own, and stop at the ends. A click on the percentage resets to 100%. Fit scales `content` (in canvas points) to fill nine tenths of the component and centers it; with no `content` it only reports `CUI_CANVAS_FIT` so you can fit yourself. Zooming keeps the canvas point at the middle where it is and eases there in about a quarter of a second, or jumps under reduced motion. Toggles flip their `bool` and show pressed while on. The result has `CUI_CANVAS_ZOOMED`, `CUI_CANVAS_FIT` and `CUI_CANVAS_TOGGLED` on the frame each happened.
+
+The [image viewer](#image-viewer-and-cropper) keeps its own zoom, with buttons in its corner, and the [dependency graph](#dependency-graph) keeps its zoom inside the component, so the rail is for the node editor and canvases of your own.
+
+Keyboard: Tab moves through the rail's buttons, and Enter or Space presses the focused one.
+
+### Result card
+
+A picture with rounded corners, a status chip, and a title and caption on a fade at the bottom, with its actions in a floating toolbar under it.
+
+```c
+static const char *const scales[] = { "1x", "2x", "4x" }, *const types[] = { "PNG", "JPG", "WEBP" };
+static int scale = 1, type;
+static bool saved;
+if (cui_result_card(ui, "render", tex, "Final result", .caption = prompt, .badge = "Done in 4.2 s",
+                    .image_w = 1024, .image_h = 1280, .width = CUI_PX(290)))
+    open_large(tex);
+cui_toolbar(ui, "render-actions", .style = CUI_TOOLBAR_FLOATING) {
+    cui_toolbar_button(ui, CUI_ICON_MAXIMIZE_2, .tooltip = "Expand");
+    cui_toolbar_button(ui, CUI_ICON_BOOKMARK, .tooltip = "Save", .toggle = &saved, .tone = CUI_TONE_WARNING);
+    cui_toolbar_button(ui, CUI_ICON_COPY, .tooltip = "Copy");
+    cui_toolbar_separator(ui);
+    cui_toolbar_cycle(ui, "scale", scales, 3, &scale, .tooltip = "Scale");
+    cui_toolbar_cycle(ui, "type", types, 3, &type, .tooltip = "Format");
+    cui_toolbar_separator(ui);
+    if (cui_toolbar_button(ui, CUI_ICON_DOWNLOAD, .tooltip = "Download")) download(scale, type);
+}
+```
+
+The picture fills the card and is cropped to it, centered, when you give its size in `image_w` and `image_h`; without them it is stretched. The card is `width` wide (by default the width it gets, up to 320) and `aspect` times as tall (1.25 by default). The fade and the text on it stay dark and light in both themes, since they sit on the picture rather than on the page. `badge` puts a chip with a dot in the top corner; `badge_tone` colors the dot (success by default). With no texture the card shows a muted surface. The card is focusable and returns true when it is clicked or activated, to open the picture large.
+
+The actions are a [floating toolbar](#grouped-toolbar), so they keep the toolbar's keyboard model and fold into its "more" menu when the space is narrow; the cycle pickers step through their choices.
+
+Keyboard: Tab focuses the card, and Enter or Space opens it. In the actions, Tab moves through the buttons and Enter or Space presses the focused one.
+
+### Selection bar
+
+A floating bar that slides up under a list while something in it is selected, with the count, a clear button and labeled actions.
+
+```c
+static bool picked[5];
+static const cui_selection_action actions[] = {
+    { CUI_ICON_MOVE, "Move" }, { CUI_ICON_COPY, "Copy" }, { CUI_ICON_TRASH_2, "Delete", CUI_TONE_DANGER },
+};
+cui_column(ui, .id = "files") { /* rows with cui_checkbox(ui, "##pick", &picked[k]) */ }
+int a = cui_selection_bar(ui, "bulk", 0, actions, 3, .selected = picked, .item_count = 5, .anchor = cui_make_id(ui, "files"));
+if (a == 2) delete_picked();
+```
+
+The bar appears while the count is above zero and slides away when it drops to zero. Give it your array of flags in `selected` (with `item_count`) and it counts them and clears them itself; or pass `count` from your own model (a table's or a data grid's selection) and clear it when the bar returns `CUI_SELECTION_CLEARED`. It returns the index of an action on the frame it is picked, `CUI_SELECTION_CLEARED` when the clear button or Esc cleared the selection, and `CUI_SELECTION_NONE` otherwise; an action leaves the selection as it is. `count_format` changes "%d selected", and a `tone` colors an action (`CUI_TONE_DANGER` for delete).
+
+The bar floats under the component it belongs to: `anchor`, or the previous component. It sits over the page, below popovers and dialogs, and an open popover takes Esc before it does; `no_escape` leaves Esc alone. In a right-to-left interface its parts mirror.
+
+Keyboard: Esc clears the selection while the bar shows. Tab reaches the clear button and the actions after the list's own controls, and Enter or Space presses the focused one.
+
+## Voice
+
+A voice drawn as fine dots, and the three places it is used: recording a voice message in the composer, playing one back, and talking with an assistant. None of them record or play audio. Your app owns the microphone and the player, and passes levels, positions and states on every frame; the components draw them and report what the user did. The *Voice* page in the gallery has them all working together, with a pretend microphone.
+
+### Voice waveform
+
+A strip of fine dots that shows a voice, newest level at the right, or a whole clip with its played part.
+
+```c
+static float levels[600];                        /* 0..1, newest last */
+static int n;
+if (have_new_level) levels[n++] = mic_level;     /* when you measure it, 20 times a second or so */
+cui_voice_wave(ui, "mic", levels, n);
+
+cui_voice_wave(ui, "reply", reply_levels, rn, .owner = CUI_VOICE_REPLY);
+
+static float played;                             /* 0..1 */
+if (cui_voice_wave(ui, "clip", clip, clip_n, .progress = &played)) seek(played * length);
+```
+
+The dots sit on a 3.6 point grid (`pitch`), 13 rows mirrored around a center line, so the strip is 14 pitches tall, about 50 points; it fills its width unless `width` says otherwise. Each level from 0 to 1 is one column. A dot lights in proportion to how much of it the level covers, so the shape has smooth edges rather than steps, and a level of 0 still lights the center dot faintly: the voice is there, just quiet. A level below zero, `CUI_VOICE_SILENT`, means no audio at all, silence or an assistant thinking: only the faint, unlit center line shows there, and the strip never makes up a wave.
+
+By default the strip scrolls: the newest `count` levels fill it from the right and the oldest fade out at the left edge. It moves only when you push a level, so nothing animates on its own. With `clip` the whole buffer is resampled to the columns that fit, each column taking the loudest level of its stretch. With `progress` (a pointer to the played fraction, which implies `clip`) the played columns take the accent, the rest gray, and a thin playhead marks the position; clicking or dragging seeks, and the call returns true on the frames it changed `*progress`. `cui_voice_resample(levels, count, out, columns)` resamples the same way, for keeping a short waveform with a message.
+
+Your voice is drawn in the foreground color and a reply in the accent: set `owner` for the whole strip, or pass `owners`, one `CUI_VOICE_YOU` or `CUI_VOICE_REPLY` per level, to put two voices on one timeline. Under the neutral accent, where the accent is the foreground, your voice turns gray beside the reply. `color` replaces both. Time runs left to right in every reading direction, like the other waveforms.
+
+Keyboard: with `progress`, Tab focuses the strip, Left and Right seek by `step` (5% of the clip), and Home and End go to the start and the end. Without it the strip only displays.
+
+### Voice recorder
+
+The chat composer turned into a recorder: a recording dot, the time, your microphone level scrolling by, Cancel and Send.
+
+```c
+static bool recording;
+int ev = cui_chat_composer(ui, "composer", draft, sizeof draft, .mic = true, .recording = recording,
+                           .levels = take, .level_count = take_n, .record_seconds = take_n / 20.0f);
+if (ev & CUI_COMPOSER_RECORD) { open_microphone(); take_n = 0; recording = true; }
+if (ev & CUI_COMPOSER_CANCEL) { close_microphone(); recording = false; }           /* throw the take away */
+if (ev & CUI_COMPOSER_VOICE)  { close_microphone(); send_voice(take, take_n); recording = false; }
+```
+
+`mic` puts a microphone button beside send; a click returns `CUI_COMPOSER_RECORD`. While you set `recording`, the text and toolbar give way to one row at their height, so nothing around the composer moves: Cancel (`CUI_COMPOSER_CANCEL`), a recording dot with the time from `record_seconds`, the levels you pass in `levels` as a scrolling [voice waveform](#voice-waveform), and Send (`CUI_COMPOSER_VOICE`, not `CUI_COMPOSER_SEND`, so a take is never mistaken for the draft). The draft and the attachments stay as they were. The dot blinks slowly, the only motion that no level drives, and holds still under reduced motion.
+
+The composer starts and stops nothing: set `recording` when it asks to record and clear it on cancel or send, as with `busy`.
+
+Keyboard: Enter or Space on the microphone starts a take and moves focus to Send; Enter on Send sends it, and Escape (while Cancel or Send has focus) or Cancel throws it away. Focus then goes back to the microphone.
+
+### Voice note
+
+A recorded message in a bubble, with play and pause, its waveform as the seek bar, the time and a speed chip.
+
+```c
+static cui_voice_note note = { levels, 64, 0, 12.4f, 1, false };   /* levels, count, position, duration, speed, playing */
+note.position = player_position();                                  /* every frame, from your player */
+int ev = cui_voice_note(ui, "note", &note);
+if (ev & CUI_PLAYER_TOGGLE) note.playing ? player_play() : player_pause();
+if (ev & CUI_PLAYER_SEEK)   player_seek(note.position);
+if (ev & CUI_PLAYER_SPEED)  player_rate(note.speed);
+
+cui_voice_note(ui, "sent", &sent, .mine = true);
+```
+
+The play button flips `playing` and returns `CUI_PLAYER_TOGGLE`. The clip's `levels` are resampled to fit, played part in the accent, the rest gray, with a playhead once it has started; clicking or dragging on it writes `position` (in seconds, from `duration`) and returns `CUI_PLAYER_SEEK`. The time reads played over length, "0:04 / 0:12". The chip shows `speed` (0 reads as 1) and moves it to the next of 1, 1.5 and 2, returning `CUI_PLAYER_SPEED`. It plays nothing itself: you pass the position every frame, and only a user's seek changes it.
+
+The bubble is 330 points wide (`width`), narrower in a narrow container. `mine` tints it with the accent, as your own message, and places it at the end of the row; the play button then takes the accent too. In a right-to-left interface the row mirrors, while the waveform still runs left to right.
+
+Keyboard: Tab moves through the play button, the waveform and the speed chip. Enter or Space plays, pauses or changes the speed; on the waveform, Left and Right step a second, and Home and End go to the start and the end.
+
+### Voice session
+
+A spoken conversation with an assistant: both voices on one scrolling timeline, what is happening, the live transcript, and Mute and End.
+
+```c
+/* each time you measure: one level and whose it is */
+levels[n] = assistant_speaking ? output_level : thinking ? CUI_VOICE_SILENT : mic_level;
+owners[n++] = assistant_speaking || thinking ? CUI_VOICE_REPLY : CUI_VOICE_YOU;
+
+static bool muted;
+int ev = cui_voice_session(ui, "call", state, levels, n, .owners = owners, .muted = &muted,
+                           .transcript = said, .upcoming = still_to_say, .speaker = CUI_VOICE_REPLY);
+if (ev & CUI_VOICE_SESSION_MUTE) set_microphone(!muted);
+if (ev & CUI_VOICE_SESSION_END)  hang_up();
+```
+
+The timeline is a scrolling [voice waveform](#voice-waveform) with `owners`: you in the foreground color, the assistant in the accent. The label says what is happening from the `state` you pass, `CUI_VOICE_LISTENING` ("Listening"), `CUI_VOICE_THINKING` ("Thinking…"), `CUI_VOICE_SPEAKING` ("Speaking", in the accent), `CUI_VOICE_MUTED` ("Muted") or `CUI_VOICE_IDLE` ("Waiting"); `label` replaces the text. While the assistant thinks there is no sound, so push `CUI_VOICE_SILENT`: the strip shows a flat gap rather than a made-up wave. A legend names the two colors (`you` and `assistant`, "You" and "Assistant" by default).
+
+Under the strip, the transcript of the current turn names its `speaker`, then shows `transcript`, the words already spoken, followed by `upcoming`, the rest of the turn, dimmed. It keeps room for two lines so the buttons stay put as a turn grows. Mute flips `*muted`, reads Unmute while it is set and returns `CUI_VOICE_SESSION_MUTE`; leave `muted` unset to leave the button out. End returns `CUI_VOICE_SESSION_END`; `no_end` leaves it out.
+
+Keyboard: Tab moves to Mute and End, and Enter or Space presses them. The timeline only displays.

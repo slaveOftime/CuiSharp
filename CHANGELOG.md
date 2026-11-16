@@ -4,9 +4,28 @@ Every user-visible change, newest first. Pre-1.0 the minor number carries new su
 carries fixes. The section for a tag is what the GitHub release publishes, so the two cannot say
 different things.
 
-## [Unreleased]
+## [0.4.3] — unreleased
 
 ### Added
+
+- **CUI is now at `6e6b353`, 148 commits past 1.4.0**: 36 new functions, 32 new structs, and the new
+  Creative controls header section; the existing Voice section gains its widgets. Every function has a decided status in
+  `bindings/coverage.txt`: 532 functions, 0 pending.
+- **The creative controls** (gallery page *Creative controls*): `ui.StatusTag` with the eight states,
+  `ui.RatioSlider`, `ui.GradientSlider` (hue, white balance, opacity, and a `ref Color` under the
+  thumb), `ui.StepSlider`, `ui.PaletteStrip`, `ui.AspectPicker`, `ui.OptionAction`, `ui.SeedField`
+  and `ui.PatternMeter`. `ui.SkeletonGroup` takes a body, `ui.Veil` opens and closes around one.
+- **Live collaboration** (gallery page *Collaboration*): `ui.PresencePill`, `ui.LiveCursors`,
+  `ui.SelectionRing`, `ui.SelectionBar`, `ui.ResultCard`, `ui.CanvasControls` and `ui.FormatBar`,
+  built on `LiveUser`, `SelectionAction`, `NodeView` and `TextFormat`.
+- **Voice** (gallery page *Voice*): `ui.VoiceWave` (with `ref float progress` for a clip you can
+  seek), `ui.VoiceNote` over a `VoiceNoteState`, `ui.VoiceSession`, `ui.TypingIndicator`,
+  `ui.StatusSpinner`, and `CuiVoice.Resample(levels, columns)` for keeping a short waveform without
+  a frame. `CuiVoice.Silent` is CUI's "no audio at all" level.
+- **`ui.SetClipboard(text)` and `ui.GetClipboard()`** wrap the platform clipboard CUI added: the
+  text is copied out of frame memory, so it stays valid after the frame.
+- **Seven new data records**: `Aspect`, `MeterPart`, `SelectionAction`, `LiveUser`, `TextStyle`,
+  `TextFormat` and `VoiceNoteState`. A widget that writes its state back takes that record `ref`.
 
 - **`dotnet cui session --script <file>`** names the command file instead of relying on `<` input
   redirection, which Windows PowerShell does not have. Stdin still works in a POSIX shell.
@@ -28,6 +47,27 @@ different things.
 
 ### Changed
 
+- **`ui.Treemap` gains `ref int selected`**, with a null-pointer overload preserving display-only
+  calls. `ui.Sankey` gains one optional node color per node.
+- **`ui.CanvasControls`, `ui.PaletteStrip` and `ui.SelectionBar` are hand-written** to own and copy
+  back the per-item flags. Palette colors and lock flags must have equal lengths; without a seed,
+  Shuffle reports the press but leaves colors unchanged. Selection clear returns -2, no action -1.
+- **CUI adds `cui_spinner_ex` but retains `cui_spinner`**: `ui.Spinner(size)` still compiles, with
+  styles available in `SpinnerOpts`. `GanttTask` gained `State`, `GaugeBand` gained `Name`.
+- **Short option arrays throw before native can read past them.** This covers toolbar labels,
+  step labels, voice owners and sankey node colors. The step range is normalized as in CUI before
+  checking labels, and an overflowing native stop count is rejected even without labels.
+- **Native flag results are typed**: `WellEvents`, `FormatEvents`, `CanvasEvents`,
+  `VoiceSessionEvents`, and the voice note's shared `PlayerEvents`.
+- **Record write-back preserves caller-owned const arrays**, including a voice note's waveform.
+  `CuiVoice.Resample` rejects overlapping input/output rather than corrupting unread samples.
+- **The API-diff helper compares complete header snapshots**, so a moved declaration is not a new
+  function and a reformatted typedef is not a removed/new struct. Parenthesized compatibility
+  declarations such as `(cui_spinner)` remain visible.
+- **Measured budgets move explicitly**: gallery AOT 3 177 984 B (ceiling 3.20 MB), real-time chart
+  0.94 ms mean with 0 B/frame (ceiling 1.00 ms). Alternating runs against an isolated old-pin build
+  confirm a roughly 14% frame regression; its cause is not yet profiled, not dismissed as noise.
+  The three new gallery pages are independently tested at 0 B/frame.
 - **`HttpMethod` is now `HttpVerb`.** The old name collided with `System.Net.Http.HttpMethod` in
   every app that also made an HTTP request. `RequestBar` and `CuiHttp.MethodName` take `HttpVerb`;
   the generated C binding is unchanged.

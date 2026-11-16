@@ -403,7 +403,7 @@ sealed record ArrayParamOverride(string Why);
 /// An option array whose length is one of the widget's own parameters. The wrapper
 /// checks the length before the call, so a short array cannot be over-read.
 /// </summary>
-sealed record OptionArrayCheck(string AtLeast, string Why);
+sealed record OptionArrayCheck(string AtLeast, string Why, string[]? Prepare = null);
 
 /// <summary>
 /// A record array the widget edits in place. <c>ChangedWhen</c> is the condition the widget reports
@@ -1529,6 +1529,7 @@ sealed class Idiomatic
         "Test explorer", "Stack trace", "HTTP request bar", "Uptime bars", "Time histogram",
         "Coverage", "Blame", "Feature flags", "API explorer",
         "Instruments: dot-matrix chart, event track, readout, dot-matrix display",
+        "Voice", "Creative controls",
     ];
 
     public Idiomatic(Api api, Overrides overrides)
@@ -1664,11 +1665,13 @@ sealed class Idiomatic
             RequireReason(key, value.Why);
             int dot = key.LastIndexOf('.');
             string function = key[..dot], param = key[(dot + 1)..];
-            if (!_api.Functions.Any(f => f.CName == function))
-                throw new InvalidOperationException($"Unknown function for optional injected parameter: {key}");
-            // The key names the parameter the wrapper emits, not the C field: an injection that
-            // renames (`param`) or whose record camels differently is matched by that name.
-            if (!_overrides.InjectedFields.Any(e => ComponentParamName(e.Key, e.Value) == param))
+            var target = _api.Functions.SingleOrDefault(f => f.CName == function)
+                ?? throw new InvalidOperationException($"Unknown function for optional injected parameter: {key}");
+            // A matching name on some other widget is not an injection this signature owns.
+            bool UsesOption(string fieldKey) => target.Params.Any(p => p.Type.Element is { } element
+                && Trim(element.Spelling) == fieldKey[..fieldKey.IndexOf('.')]);
+            if (!_overrides.InjectedFields.Any(e => UsesOption(e.Key) && ComponentParamName(e.Key, e.Value) == param)
+                && !IsOptionPointerParam(target, param))
                 throw new InvalidOperationException($"Optional injected parameter needs a matching injected field: {key}");
         }
         foreach (var (key, value) in _overrides.ParameterDefaults)
@@ -1866,6 +1869,23 @@ sealed class Idiomatic
         }
     }
 
+    /// <summary>
+    /// Whether an `optionPointers` field emits a wrapper parameter spelled `param`. The key names
+    /// an option field (`struct.field`), the optional-injection key names a function's parameter,
+    /// so the two are matched on the name the field becomes.
+    /// </summary>
+    private bool IsOptionPointerParam(FunctionModel function, string param) =>
+        _overrides.OptionPointers.Keys.Any(key =>
+        {
+            int dot = key.LastIndexOf('.');
+            if (dot < 0 || !function.Params.Any(p => p.Type.Element is { } element
+                && Trim(element.Spelling) == key[..dot])) return false;
+            StructModel? str = _api.Structs.FirstOrDefault(s => s.CName == key[..dot]);
+            FieldModel? field = str?.Fields.FirstOrDefault(f => f.CName == key[(dot + 1)..]);
+            string name = _overrides.OptionFieldNames.TryGetValue(key, out var rename) ? rename.Name : field?.CsName ?? "";
+            return field is not null && Names.Escape(Names.Camel(name)) == param;
+        });
+
     private void RequireField(string key)
     {
         if (!_api.Structs.Any(s => s.Fields.Any(f => s.CName + "." + f.CName == key)))
@@ -1978,12 +1998,17 @@ sealed class Idiomatic
         if (f.Type.Kind == "Pointer" && f.Type.Element?.IsConst == true
             && _records.TryGetValue(Trim(f.Type.Element.Spelling), out var element))
             return ($"{element.Name}[]?", $"{element.Name}.ToFrameArray({fieldName})");
-        if (IsStringArray(f.Type) || IsFloatArray(f.Type) || IsDoubleArray(f.Type))
+        if (IsStringArray(f.Type) || IsFloatArray(f.Type) || IsDoubleArray(f.Type) || IsByteArray(f.Type))
             return IsStringArray(f.Type)
                 ? ("string[]?", $"UiMarshal.Strings({fieldName})")
                 : IsDoubleArray(f.Type)
                     ? ("double[]?", $"UiMarshal.Values<double>({fieldName})")
-                    : ("float[]?", $"UiMarshal.Values<float>({fieldName})");
+                    : IsByteArray(f.Type)
+                        ? ("byte[]?", $"UiMarshal.Values<byte>({fieldName})")
+                        : ("float[]?", $"UiMarshal.Values<float>({fieldName})");
+        if (IsColorArray(f.Type)) return ("Color[]?", $"UiMarshal.Colors({fieldName})");
+        if (FriendlyEnumElement(f.Type) is { } enumName)
+            return ($"{enumName}[]?", $"UiMarshal.Values<{enumName}>({fieldName})");
         if (f.Type.Kind is "Pointer" or "ConstantArray"
             || f.CsType.StartsWith("Native", StringComparison.Ordinal) && type == f.CsType)
             throw new NotSupportedException($"{f.CName}: {f.CType} needs explicit ownership/length semantics");
@@ -2018,12 +2043,8 @@ sealed class Idiomatic
         }
         // Read-back needs the value to survive the call: a field backed by a C pointer is
         // CUI's memory, while a fixed buffer belongs to the record the caller handed over.
-        bool canReadBack = fields.All(f => f.Type switch
-        {
-            "string[]?" or "float[]?" => false,
-            "string?" => f.Native.IsFixedBuffer,
-            _ => true,
-        });
+        bool canReadBack = fields.All(f => !(f.Native.Type.Kind == "Pointer" && IsArrayField(f.Native.Type))
+            && (f.Type != "string?" || f.Native.IsFixedBuffer));
         return new(str, name, [.. fields], canReadBack);
     }
 
@@ -2115,7 +2136,7 @@ sealed class Idiomatic
                     "bool[]?" => $"UiMarshal.ReadBooleans(n.{f.Native.CsName}, {f.Native.ArrayLength})",
                     "int[]?" or "float[]?" when f.Native.IsFixedBuffer =>
                         $"UiMarshal.ReadValues(n.{f.Native.CsName}, {f.Native.ArrayLength})",
-                    "string[]?" or "float[]?" => "null",
+                    _ when f.Native.Type.Kind == "Pointer" && IsArrayField(f.Native.Type) => "null",
                     "Size" or "Color" or "Date" or "RectF" => $"UiMarshal.FromNative(n.{f.Native.CsName})",
                     _ => f.Native.Type.Kind != "Pointer" && _records.TryGetValue(Trim(f.Native.Type.Spelling), out var nestedField)
                         ? $"{nestedField.Name}.FromNative(n.{f.Native.CsName})"
@@ -2140,9 +2161,26 @@ sealed class Idiomatic
     private static bool IsDoubleArray(CType t) => t.Kind == "Pointer" && t.Element is { Kind: "Double" };
     private static bool IsIntArray(CType t) => t.Kind == "Pointer" && t.Element is { Kind: "Int", IsConst: true };
 
-    /// <summary>An option field the wrapper turns into an array: strings, floats, doubles, or records.</summary>
+    /// <summary>
+    /// A `const cui_color *` is an array of colors, and `cui_color` is not a data record: it is the
+    /// managed <c>Color</c> with a native layout, so the elements convert one at a time.
+    /// </summary>
+    private static bool IsColorArray(CType t) =>
+        t.Kind == "Pointer" && t.Element is { Kind: "Record", IsConst: true } && Trim(t.Element.Spelling) == "cui_color";
+
+    /// <summary>The friendly name of an enum an array points at, when it points at one.</summary>
+    private string? FriendlyEnumElement(CType t)
+    {
+        if (t.Kind != "Pointer" || t.Element is not { Kind: "Enum", IsConst: true }) return null;
+        string spelling = Trim(t.Element.Spelling);
+        foreach (EnumModel model in _api.Enums) if (model.CName == spelling) return model.CsName;
+        return null;
+    }
+
+    /// <summary>An option field the wrapper turns into an array: strings, floats, doubles, bytes, colors, enums, or records.</summary>
     private bool IsArrayField(CType t) =>
-        IsStringArray(t) || IsFloatArray(t) || IsDoubleArray(t) || IsRecordArray(t);
+        IsStringArray(t) || IsFloatArray(t) || IsDoubleArray(t) || IsByteArray(t)
+        || IsColorArray(t) || FriendlyEnumElement(t) is not null || IsRecordArray(t);
 
     /// <summary>An array of records the wrapper converts into the frame arena, like `cui_chart_annotation`.</summary>
     private bool IsRecordArray(CType t) =>
@@ -2469,18 +2507,20 @@ sealed class Idiomatic
                         continue;
                     }
 
-                    if (IsPrimitiveName(field.InjectedType!) || field.InjectedType == "Date" || _overrides.OptionPointers.ContainsKey(option.Native.CName + "." + field.Native.CName))
+                    if (IsPrimitiveName(field.InjectedType!) || field.InjectedType is "Date" or "Color" || _overrides.OptionPointers.ContainsKey(option.Native.CName + "." + field.Native.CName))
                     {
                         // Named after the option field it fills, so the call reads like the API.
                         string primitiveParam = Names.Escape(Names.Camel(field.Name));
                         string nativeLocal = $"__{primitiveParam}";
                         bool isDate = field.InjectedType == "Date";
+                        bool isColor = field.InjectedType == "Color";
                         // A field declared in `optionPointers` with a type that is not a primitive
                         // is an enum: the caller hands over `ref Mods`, and the storage the widget
                         // writes through is that enum itself, whose layout is the C int.
-                        bool isEnum = !isDate && !IsPrimitiveName(field.InjectedType!);
+                        bool isEnum = !isDate && !isColor && !IsPrimitiveName(field.InjectedType!);
                         string nativeType = isEnum ? field.InjectedType!
-                            : isDate ? "NativeDate" : field.Native.Type.Element!.Kind switch
+                            : isDate ? "NativeDate"
+                            : isColor ? "NativeColor" : field.Native.Type.Element!.Kind switch
                         {
                             "Bool" => "byte",
                             "Float" => "float",
@@ -2488,13 +2528,13 @@ sealed class Idiomatic
                             _ => "int",
                         };
                         bool isFlag = nativeType == "byte";
-                        prepare.Add(isDate
+                        prepare.Add(isDate || isColor
                             ? $"{nativeType} {nativeLocal} = UiMarshal.ToNative({primitiveParam});"
                             : isEnum
                                 ? $"{nativeType} {nativeLocal} = {primitiveParam};"
                                 : $"{nativeType} {nativeLocal} = ({nativeType})({primitiveParam}{(isFlag ? " ? 1 : 0" : "")});");
                         nativeArgs.Add($"(nint)(&{nativeLocal})");
-                        readBack.Add(isDate
+                        readBack.Add(isDate || isColor
                             ? $"{primitiveParam} = UiMarshal.FromNative({nativeLocal});"
                             : isEnum
                                 ? $"{primitiveParam} = {nativeLocal};"
@@ -2528,9 +2568,11 @@ sealed class Idiomatic
                     _overrides.OptionArrayChecks.ContainsKey(option.Native.CName + "." + f.Native.CName)))
                 {
                     var check = _overrides.OptionArrayChecks[option.Native.CName + "." + checkedArray.Native.CName];
+                    if (check.Prepare is { } prelude) prepare.AddRange(prelude);
                     prepare.Add($"if (o.{checkedArray.Name} is {{ }} __{Names.Camel(checkedArray.Name)} && __{Names.Camel(checkedArray.Name)}.Length < {check.AtLeast})");
-                    prepare.Add($"    throw new ArgumentException(\"{checkedArray.Name} needs at least {check.AtLeast} entries.\", nameof(o));");
-                }                foreach (string array in stringArrays)
+                    prepare.Add($"    throw new ArgumentException($\"{checkedArray.Name} needs at least {{{check.AtLeast}}} entries.\", nameof(o));");
+                }
+                foreach (string array in stringArrays)
                 {
                     var icons = option.Fields.SingleOrDefault(f => !f.Hidden && f.Native.CName == "icons");
                     if (icons is not null)
@@ -2737,9 +2779,21 @@ sealed class Idiomatic
                             : $"var __{name} = UiMarshal.ToNative({name});");
                         arguments.Add((mode == "in " ? "in " : "ref ") + "__" + name);
                         if (mode != "in ")
-                            writeBack.Add($"{name} = " + (record
-                                ? $"{_records[Trim(p.Type.Element!.Spelling)].Name}.FromNative(__{name});"
-                                : $"UiMarshal.FromNative(__{name});"));
+                        {
+                            var plan = record ? _records[Trim(p.Type.Element!.Spelling)] : null;
+                            var borrowed = plan?.Fields.Where(f => !f.Hidden && f.Native.Type.Kind == "Pointer"
+                                && f.Native.Type.Element?.IsConst == true && IsArrayField(f.Native.Type)).ToArray() ?? [];
+                            string converted = record ? $"{plan!.Name}.FromNative(__{name})" : $"UiMarshal.FromNative(__{name})";
+                            if (borrowed.Length == 0) writeBack.Add($"{name} = {converted};");
+                            else
+                            {
+                                // Const arrays are caller-owned input, not output state. FromNative
+                                // cannot recover their managed identity from an arena address.
+                                writeBack.Add($"var __updated{name} = {converted};");
+                                foreach (var field in borrowed) writeBack.Add($"__updated{name}.{field.Name} = {name}.{field.Name};");
+                                writeBack.Add($"{name} = __updated{name};");
+                            }
+                        }
                     }
                     else
                     {
@@ -2891,7 +2945,7 @@ sealed class Idiomatic
         return hash;
     }
 
-    private string? NoteLine(WidgetPlan widget)
+    private string? NoteLine(WidgetPlan widget, string[]? skip = null)
     {
         // A container records itself through the scope it returns, which knows where it ends.
         if (widget.End is not null) return null;
@@ -2918,13 +2972,16 @@ sealed class Idiomatic
             target = $"string.IsNullOrEmpty({options.Name}.Tooltip) ? {namer.Name} : (UiText){options.Name}.Tooltip";
         }
 
+        WidgetParam? Pick(Func<WidgetParam, bool> predicate) =>
+            widget.Params.Where(p => skip is null || !skip.Contains(p.Name, StringComparer.Ordinal)).FirstOrDefault(predicate);
+
         // A widget that edits a value can say what it holds without allocating in the frame:
         // the recorder stores the text or the number and formats it after the draw. A bool
         // ref is also the state (checked/selected/expanded), so a checkbox reads as more than
         // its label without a second API.
-        WidgetParam? textValue = widget.Params.FirstOrDefault(p => p.Mode == "ref " && p.Type == "string");
-        WidgetParam? boolValue = widget.Params.FirstOrDefault(p => p.Mode == "ref " && p.Type == "bool");
-        WidgetParam? numberValue = widget.Params.FirstOrDefault(p =>
+        WidgetParam? textValue = Pick(p => p.Mode == "ref " && p.Type == "string");
+        WidgetParam? boolValue = Pick(p => p.Mode == "ref " && p.Type == "bool");
+        WidgetParam? numberValue = Pick(p =>
             p.Mode == "ref " && p.Type is "float" or "double" or "int" && IsValueName(p.Name));
 
         string state = boolValue is { } boolean ? StateFor(boolean.Name, boolean: true) : "";
@@ -3072,7 +3129,7 @@ sealed class Idiomatic
                     foreach (string line in reducedWriteBack) sb.AppendLine("            " + line);
                     // The optional overload draws the same widget, so it has to be as findable as
                     // the full one: a test that clicks it must see the id it was drawn with.
-                    if (NoteLine(w) is { } reducedNote) sb.AppendLine("            " + reducedNote);
+                    if (NoteLine(w, optional.Select(i => i.Param).ToArray()) is { } reducedNote) sb.AppendLine("            " + reducedNote);
                     if (w.End is not null)
                         sb.AppendLine($"            return {ScopeNew(w, "__result", w.Return)};");
                     else if (w.ReturnStatement is { } reducedStatement) sb.AppendLine("            " + reducedStatement);
@@ -3516,6 +3573,12 @@ static class BindgenChecks
         var notInjected = Clone(overrides);
         notInjected.OptionalInjectedParams["cui_table_begin_ex.missing"] = new("Synthetic negative test.");
         Check("optional injected state must name a real injection", Rejects(() => new Idiomatic(api, notInjected)));
+        var wrongWidget = Clone(overrides);
+        wrongWidget.OptionalInjectedParams["cui_button_ex.selected"] = new("Synthetic negative test.");
+        Check("optional scalar state belongs to this widget", Rejects(() => new Idiomatic(api, wrongWidget)));
+        wrongWidget = Clone(overrides);
+        wrongWidget.OptionalInjectedParams["cui_button_ex.sort"] = new("Synthetic negative test.");
+        Check("optional record state belongs to this widget", Rejects(() => new Idiomatic(api, wrongWidget)));
 
         Console.WriteLine($"bindgen self-test: {checks} passed (no files written)");
     }

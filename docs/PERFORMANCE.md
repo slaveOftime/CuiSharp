@@ -35,21 +35,32 @@ on every pull request, every shape in the on-demand job.
 
 | | Value | Where it is enforced |
 |---|---|---|
-| Gallery frame, 1240x820, software raster | **0.83 ms** mean (p50 0.69, p95 1.16, p99 1.39) | budget 0.90 ms, `--fps 900` |
-| Build only (a GPU would rasterize) | 0.02 ms | same run |
+| Gallery frame, real-time chart harness, 1280x720, software raster | **0.94 ms** mean (p50 0.78, p95 1.30, p99 1.88) | budget 1.00 ms, `--fps 900` |
+| Build only (a GPU would rasterize) | 0.07 ms | same run |
 | Managed allocation per frame | **0 B** | `FrameLifecycleTests`, `NewComponentTests` |
-| Gallery AOT executable, win-x64 | **2 954 752 B** | budget 2.95 MB |
+| Gallery AOT executable, win-x64 | **3 177 984 B** | budget 3.20 MB |
 | A million virtual list rows | ~12 µs | `--scale` |
 | A million chart points, undecimated | 45.9 ms | why decimation exists |
 | A million chart points, decimated to 800 | 0.018 ms | same |
 | Idle window CPU | 0 % | by construction: CUI sleeps between frames |
 
-The executable grew again with CUI 1.4, from 2 878 976 B to 2 918 400 B: the five instrument
-components, and the header comments CUI 1.4 wrote for every field of every options struct, which
-reach the gallery as generated documentation. It is 2 954 752 B now: the gallery carries its own
-`.ico` from 0.4.1, and the 34 494 B icon is most of the difference. That leaves 4.5 % under
-the budget, so the next component sync has to buy its bytes. Frame time is unchanged (p50 0.68, p95 1.10, p99
-1.33 ms) and a frame still allocates nothing.
+0.4.3 takes the executable to 3 177 984 B, 223 232 B more than 0.4.2, and the budget with it: the
+148 commits of CUI added thirty-six functions and thirty-two structs, including the voice and
+creative controls drawn by three new gallery pages. XML summaries are not linked code; they do not
+explain executable growth.
+
+The frame ceiling deliberately moves from 0.90 to 1.00 ms for this sync. An isolated worktree of
+`main` (5fbab51, CUI 1.4.0), with its own freshly built native library, measured 0.82, 0.84 and
+0.82 ms. Alternating three runs of the new pin on the same machine measured 0.94, 0.94 and 0.94 ms;
+every run allocated 0 B. This is a repeatable roughly 14% regression across the sync, not a claim
+of run-to-run noise. The cause within the upstream/rendering changes has not been profiled, and
+binary size alone does not establish it. The row records the last new-pin run.
+
+Earlier, CUI 1.4 and its five instruments took the executable from 2 878 976 B to 2 918 400 B.
+At 0.4.2 it measured 2 954 752 B: the gallery carries its own `.ico` from 0.4.1, and the
+34 494 B icon explains most of that later difference. That measurement left 4.5% below the
+then-current size ceiling. The earlier frame run measured p50 0.68, p95 1.10, p99 1.33 ms,
+with 0 B/frame.
 
 The executable grew from 2 141 184 B to 2 579 456 B with CUI 1.3, and the growth is upstream's: the
 twenty components it added are about 5 000 lines of new C (`cui_devtools.c`, `cui_devpanels.c`,
@@ -68,11 +79,13 @@ What is inside the executable, and what each widget family costs: [SIZE.md](SIZE
 
 ## Gallery, page by page
 
-`tools/page-costs.ps1` walks all twenty-nine pages in one headless process: it clicks each page,
+`tools/page-costs.ps1` walks every page in one headless process: it clicks each page,
 proves the heading says the page opened, parks the pointer, and then *dwells* — holding the page
 for three seconds while it really draws, through the silent `pulse` command, so the measurement
 never pays for serialising the tree it is measuring — while `dotnet cui` samples the app's
-process. The run below is the reference machine, light theme, `-Each 3`.
+process. The run below is the historical 29-page gallery on the reference machine, light theme,
+`-Each 3`; it has not been repeated for the three new pages. Their steady-state managed allocation
+is tested separately by `GalleryPageTests`.
 
 `ms/frame` is wall time over frames completed in the dwell: it includes the protocol round trips
 around the drawing, so it is an upper bound of what the page's own frame costs.

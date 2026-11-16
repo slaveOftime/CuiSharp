@@ -122,7 +122,7 @@ lost.
 dotnet build  CuiSharp.slnx -c Release -warnaserror
 dotnet test   CuiSharp.slnx -c Release
 dotnet format CuiSharp.slnx --verify-no-changes
-pwsh tools/regen.ps1 -NoNative -NoDiff          # + the generator's 15 contract checks
+pwsh tools/regen.ps1 -NoNative -NoDiff          # + the generator's 17 contract checks
 pwsh tools/api-surface.ps1                      # then the set difference in step 4
 pwsh tools/verify-template.ps1                  # pack -> new -> build -> test -> AOT -> dotnet cui
 dotnet publish samples/CuiSharp.Gallery -c Release -r win-x64    # zero IL2xxx/IL3xxx

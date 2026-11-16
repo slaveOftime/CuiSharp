@@ -20,4 +20,4 @@ protected override void Draw(Ui ui)
 public bool QueryBuilder(UiText id, ReadOnlySpan<QueryField> fields, Span<QueryNode> nodes, ref int count, QueryOpts o = default)
 ```
 
-cui_query_builder_ex
+Read-only and disabled builders preserve the input rules and count.

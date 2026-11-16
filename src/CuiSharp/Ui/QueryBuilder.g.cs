@@ -13,7 +13,7 @@ public static unsafe class QueryBuilderUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_query_builder_ex</summary>
+        /// <summary>Read-only and disabled builders preserve the input rules and count.</summary>
         public bool QueryBuilder(UiText id, ReadOnlySpan<QueryField> fields, Span<QueryNode> nodes, ref int count, QueryOpts o = default)
         {
             var __fields = Utf8.AllocFrame<NativeQueryField>(fields.Length);

@@ -24,7 +24,7 @@ public static unsafe class MoreInputsUiExtensions
             return __result;
         }
 
-        /// <summary>Scrub field: drag sideways anywhere on it to change the value (Shift for fine steps), or click to type a number. Arrow keys step when focused.</summary>
+        /// <summary>Edit a bounded scrub value and accept only a complete, finite numeric draft.</summary>
         public bool Scrub(UiText label, ref float value, float min, float max, ScrubOpts o = default)
         {
             var __opts = o.ToNative();
@@ -33,7 +33,7 @@ public static unsafe class MoreInputsUiExtensions
             return __result != 0;
         }
 
-        /// <summary>Money field: shows the amount with thousands separators, edits as plain digits, keeps a fixed number of decimals.</summary>
+        /// <summary>Edit an amount only if its grouped display can represent the result.</summary>
         public bool MoneyInput(UiText id, ref double value, MoneyOpts o = default)
         {
             var __opts = o.ToNative();

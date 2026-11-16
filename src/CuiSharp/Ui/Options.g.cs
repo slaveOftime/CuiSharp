@@ -415,7 +415,7 @@ public partial struct InputOpts
     public string? Hint;
     /// <summary>error text below (red)</summary>
     public string? Error;
-    /// <summary>shows dots instead of the text, with an eye button that reveals it</summary>
+    /// <summary>shows dots instead of the text, with an eye button that reveals it (inactive when disabled)</summary>
     public bool Password;
     /// <summary>_Bool disabled</summary>
     public bool Disabled;
@@ -664,6 +664,10 @@ public partial struct MenuItemOpts
     public bool Disabled;
     /// <summary>a check mark at the right edge of the item</summary>
     public bool Checked;
+    /// <summary>the label&apos;s font, default CUI_FONT_BODY: a style menu shows each style in its own</summary>
+    public Font Font;
+    /// <summary>the label&apos;s size in points, default the body size; the item grows to fit it</summary>
+    public float TextSize;
 
     internal readonly NativeMenuItemOpts ToNative() => new()
     {
@@ -673,6 +677,8 @@ public partial struct MenuItemOpts
         Danger = (byte)(Danger ? 1 : 0),
         Disabled = (byte)(Disabled ? 1 : 0),
         Checked = (byte)(Checked ? 1 : 0),
+        Font = Font,
+        TextSize = TextSize,
     };
 }
 
@@ -687,6 +693,10 @@ public partial struct DialogOpts
     public bool NoCloseButton;
     /// <summary>clicking outside or Esc does not close</summary>
     public bool Persistent;
+    /// <summary>the header moves the dialog; it stays inside the window</summary>
+    public bool Draggable;
+    /// <summary>the edges and corners resize it, down to a minimum size; the content is clipped when it no longer fits</summary>
+    public bool Resizable;
 
     internal readonly NativeDialogOpts ToNative() => new()
     {
@@ -695,6 +705,8 @@ public partial struct DialogOpts
         Width = Width,
         NoCloseButton = (byte)(NoCloseButton ? 1 : 0),
         Persistent = (byte)(Persistent ? 1 : 0),
+        Draggable = (byte)(Draggable ? 1 : 0),
+        Resizable = (byte)(Resizable ? 1 : 0),
     };
 }
 
@@ -767,18 +779,20 @@ public partial struct AlertOpts
 /// <summary>cui_progress_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct ProgressOpts
 {
-    /// <summary>_Bool indeterminate</summary>
+    /// <summary>no value: a segment (or with `dither`, a soft band of dots) travels the track</summary>
     public bool Indeterminate;
     /// <summary>cui_tone tone</summary>
     public Tone Tone;
-    /// <summary>float height</summary>
+    /// <summary>points, default 6 (8 with `dither`)</summary>
     public float Height;
-    /// <summary>const char * label</summary>
+    /// <summary>a row above the bar with this name</summary>
     public string? Label;
-    /// <summary>_Bool show_value</summary>
+    /// <summary>a whole percentage at the end of that row</summary>
     public bool ShowValue;
     /// <summary>cui_size width</summary>
     public Size Width;
+    /// <summary>drawn in dots: the fill dissolves over 60 points past its edge, and the pattern drifts forward while the bar is not full; reduced motion holds it still</summary>
+    public bool Dither;
 
     internal readonly NativeProgressOpts ToNative() => new()
     {
@@ -789,6 +803,45 @@ public partial struct ProgressOpts
         Label = Utf8.Get(Label),
         ShowValue = (byte)(ShowValue ? 1 : 0),
         Width = UiMarshal.ToNative(Width),
+        Dither = (byte)(Dither ? 1 : 0),
+    };
+}
+
+/// <summary>cui_spinner_opts. All fields are optional; zero selects the native default.</summary>
+public partial struct SpinnerOpts
+{
+    /// <summary>cui_spinner_style style</summary>
+    public SpinnerStyle Style;
+    /// <summary>default the secondary text color for the ring, the text color for dots</summary>
+    public Color Color;
+    /// <summary>the dots&apos; base (a comet&apos;s ring, a dot matrix&apos;s dots), default `color` at 12%</summary>
+    public Color Track;
+
+    internal readonly NativeSpinnerOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Style = Style,
+        Color = UiMarshal.ToNative(Color),
+        Track = UiMarshal.ToNative(Track),
+    };
+}
+
+/// <summary>Skeleton group: placeholders for content that is loading, built inside it with cui_skeleton (in rows and columns as the content will be), share one shine that passes over them together. With `dither` they are drawn in dots and a band of brighter dots travels over them, asking for 20 frames a second while on screen; reduced motion holds the band still. Groups nest. All fields are optional; zero selects the native default.</summary>
+public partial struct SkeletonGroupOpts
+{
+    /// <summary>in dots, with a band of brighter dots passing over them</summary>
+    public bool Dither;
+    /// <summary>default: fill</summary>
+    public Size Width;
+    /// <summary>between what is built inside, default 8</summary>
+    public float Gap;
+
+    internal readonly NativeSkeletonGroupOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Dither = (byte)(Dither ? 1 : 0),
+        Width = UiMarshal.ToNative(Width),
+        Gap = Gap,
     };
 }
 
@@ -969,7 +1022,7 @@ public partial struct ChartOpts
     public bool NoGrid;
     /// <summary>_Bool no_legend</summary>
     public bool NoLegend;
-    /// <summary>bar chart</summary>
+    /// <summary>bars stack in one column; lines stack on the series before them</summary>
     public bool Stacked;
     /// <summary>curved lines</summary>
     public bool Smooth;
@@ -981,6 +1034,8 @@ public partial struct ChartOpts
     public float Max;
     /// <summary>lines and points drawn over the chart (line and bar charts)</summary>
     public ChartAnnotation[]? Annotations;
+    /// <summary>line chart: every series filled with dots that thin out from its line to the bottom of its band (implies `area`); with `stacked`, bands never mix colors</summary>
+    public bool Dither;
     /// <summary>C# only: Upper bound on drawn points. 0 derives twice the viewport width; longer series are min/max decimated into the frame arena.</summary>
     public int MaxPoints;
     /// <summary>C# only: Scale each series against its own first finite nonzero sample so series of different magnitudes compare by shape; see ChartNormalizer.</summary>
@@ -1003,6 +1058,44 @@ public partial struct ChartOpts
         Max = Max,
         Annotations = ChartAnnotation.ToFrameArray(Annotations),
         AnnotationCount = Annotations?.Length ?? 0,
+        Dither = (byte)(Dither ? 1 : 0),
+    };
+}
+
+/// <summary>Pattern meter: a stacked usage bar (storage, budgets, quotas) whose parts differ in color and in the density of their dots, so it still reads in grayscale, in print and without telling hues apart. One dot of space parts the parts, and the rest of `total` is free space in the track color. Hovering a part, or its legend entry, steps the others back and shows its name, value and share above the bar; the keyboard does the same with Left and Right. Returns the part shown, or -1. All fields are optional; zero selects the native default.</summary>
+public partial struct PatternMeterOpts
+{
+    /// <summary>the whole bar; 0 means the sum of the parts (no free space)</summary>
+    public float Total;
+    /// <summary>the title over the bar, e.g. &quot;Storage&quot;</summary>
+    public string? Label;
+    /// <summary>after every value, e.g. &quot;GB&quot;</summary>
+    public string? Unit;
+    /// <summary>printf format of a value, default &quot;%g&quot;</summary>
+    public string? Format;
+    /// <summary>the legend entry of the free space, default &quot;Free&quot;; &quot;&quot; leaves it out</summary>
+    public string? FreeLabel;
+    /// <summary>every part in the foreground color, told apart by density alone</summary>
+    public bool Grayscale;
+    /// <summary>_Bool no_legend</summary>
+    public bool NoLegend;
+    /// <summary>points, default 18</summary>
+    public float Height;
+    /// <summary>default: fill</summary>
+    public Size Width;
+
+    internal readonly NativePatternMeterOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Total = Total,
+        Label = Utf8.Get(Label),
+        Unit = Utf8.Get(Unit),
+        Format = Utf8.Get(Format),
+        FreeLabel = Utf8.Get(FreeLabel),
+        Grayscale = (byte)(Grayscale ? 1 : 0),
+        NoLegend = (byte)(NoLegend ? 1 : 0),
+        Height = Height,
+        Width = UiMarshal.ToNative(Width),
     };
 }
 
@@ -1182,7 +1275,7 @@ public partial struct SplitButtonOpts
     };
 }
 
-/// <summary>Toggle group: a row of toggles (bold, italic...). values[i] is toggled when item i is clicked; with exclusive set exactly one stays on. Labels become tooltips when icon_only is set. Returns true when a value changed. All fields are optional; zero selects the native default.</summary>
+/// <summary>Toggle group: a row of toggles (bold, italic...). values[i] is toggled when item i is clicked; with exclusive set exactly one stays on. Labels become tooltips when icon_only is set. Left and Right move focus one item. Returns true when a value changed. All fields are optional; zero selects the native default.</summary>
 public partial struct ToggleGroupOpts
 {
     /// <summary>const char *const * icons</summary>
@@ -1257,7 +1350,26 @@ public partial struct StatusButtonOpts
     };
 }
 
-/// <summary>Speed dial: a round floating action button that fans out related actions. Returns the chosen action index, or -1. All fields are optional; zero selects the native default.</summary>
+/// <summary>Status spinner: a dither ring while the status is busy that resolves when the work ends: it fills to a disc in the success color with a check, or the danger color with a cross, holds it for a moment and dissolves away. It keeps its space throughout. Returns true while it shows something, so an app can stop calling it after a result. All fields are optional; zero selects the native default.</summary>
+public partial struct StatusSpinnerOpts
+{
+    /// <summary>points, default 20</summary>
+    public float Size;
+    /// <summary>the ring while busy, default the text color</summary>
+    public Color Color;
+    /// <summary>the check or cross stays instead of dissolving away</summary>
+    public bool Keep;
+
+    internal readonly NativeStatusSpinnerOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Size = Size,
+        Color = UiMarshal.ToNative(Color),
+        Keep = (byte)(Keep ? 1 : 0),
+    };
+}
+
+/// <summary>cui_speed_dial_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct SpeedDialOpts
 {
     /// <summary>const char * icon</summary>
@@ -1463,10 +1575,10 @@ public partial struct FilePickerOpts
     };
 }
 
-/// <summary>Code block with syntax highlighting (lang: &quot;c&quot;, &quot;cpp&quot;, &quot;js&quot;, &quot;ts&quot;, &quot;python&quot;, &quot;rust&quot;, &quot;go&quot;, &quot;json&quot;, &quot;shell&quot;, or &quot;text&quot; for none), line numbers, a title bar and a copy button. Long lines scroll sideways. All fields are optional; zero selects the native default.</summary>
+/// <summary>Code block with syntax highlighting (lang: &quot;c&quot;, &quot;cpp&quot;, &quot;js&quot;, &quot;ts&quot;, &quot;python&quot;, &quot;rust&quot;, &quot;go&quot;, &quot;json&quot;, &quot;shell&quot;, &quot;sql&quot;, or &quot;text&quot; for none), line numbers, a title bar and a copy button. Long lines scroll sideways. All fields are optional; zero selects the native default.</summary>
 public partial struct CodeOpts
 {
-    /// <summary>&quot;c&quot;, &quot;cpp&quot;, &quot;js&quot;, &quot;ts&quot;, &quot;python&quot;, &quot;rust&quot;, &quot;go&quot;, &quot;json&quot;, &quot;shell&quot; or &quot;text&quot; (no colors); shown in the title bar</summary>
+    /// <summary>&quot;c&quot;, &quot;cpp&quot;, &quot;js&quot;, &quot;ts&quot;, &quot;python&quot;, &quot;rust&quot;, &quot;go&quot;, &quot;json&quot;, &quot;shell&quot;, &quot;sql&quot; or &quot;text&quot; (no colors); shown in the title bar</summary>
     public string? Lang;
     /// <summary>e.g. a file name</summary>
     public string? Title;
@@ -1547,7 +1659,7 @@ public partial struct MarkdownOpts
 /// <summary>cui_code_editor_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct CodeEditorOpts
 {
-    /// <summary>as cui_code_block: &quot;c&quot;, &quot;cpp&quot;, &quot;js&quot;, &quot;ts&quot;, &quot;python&quot;, &quot;rust&quot;, &quot;go&quot;, &quot;json&quot;, &quot;shell&quot;; &quot;text&quot; for none</summary>
+    /// <summary>as cui_code_block: &quot;c&quot;, &quot;cpp&quot;, &quot;js&quot;, &quot;ts&quot;, &quot;python&quot;, &quot;rust&quot;, &quot;go&quot;, &quot;json&quot;, &quot;shell&quot;, &quot;sql&quot;; &quot;text&quot; for none</summary>
     public string? Lang;
     /// <summary>default fill</summary>
     public Size Width;
@@ -1804,7 +1916,7 @@ public partial struct TickerOpts
     };
 }
 
-/// <summary>Heatmap: a rows x cols matrix (values[row * cols + col]) on one hue, light to dark, with a scale below. All fields are optional; zero selects the native default.</summary>
+/// <summary>Heatmap: a rows x cols matrix (values[row * cols + col]) in five steps from the empty surface to the accent, with the range and a Less / More key below. All fields are optional; zero selects the native default.</summary>
 public partial struct HeatmapOpts
 {
     /// <summary>one label per row, left of the grid; `NULL` for none</summary>
@@ -1817,7 +1929,7 @@ public partial struct HeatmapOpts
     public float Min;
     /// <summary>value range, default the data&apos;s</summary>
     public float Max;
-    /// <summary>hue of the scale, default the accent</summary>
+    /// <summary>the top step, default the accent; the steps mix toward it from the empty surface</summary>
     public Color Color;
     /// <summary>const char * format</summary>
     public string? Format;
@@ -1843,7 +1955,7 @@ public partial struct CalendarHeatmapOpts
 {
     /// <summary>size of a day&apos;s square in points, default 11</summary>
     public float Cell;
-    /// <summary>cui_color color</summary>
+    /// <summary>the top step, default the accent</summary>
     public Color Color;
     /// <summary>const char * format</summary>
     public string? Format;
@@ -1865,21 +1977,22 @@ public partial struct TreemapOpts
 {
     /// <summary>cui_size width</summary>
     public Size Width;
-    /// <summary>float height</summary>
+    /// <summary>default 300</summary>
     public float Height;
-    /// <summary>const char * format</summary>
+    /// <summary>the values, e.g. &quot;%.0f KB&quot;</summary>
     public string? Format;
 
-    internal readonly NativeTreemapOpts ToNative() => new()
+    internal readonly NativeTreemapOpts ToNative(nint selected) => new()
     {
         Sentinel = 0,
         Width = UiMarshal.ToNative(Width),
         Height = Height,
         Format = Utf8.Get(Format),
+        Selected = selected,
     };
 }
 
-/// <summary>Radar chart: series over shared axes (series[i].values[axis]). All fields are optional; zero selects the native default.</summary>
+/// <summary>Radar chart: series over shared axes (series[i].values[axis]), light fills with crisp outlines on hairline rings. The last series shows its points, or the one nearest the pointer, with a chip of the hovered value. All fields are optional; zero selects the native default.</summary>
 public partial struct RadarOpts
 {
     /// <summary>float size</summary>
@@ -1923,7 +2036,7 @@ public partial struct FunnelOpts
     };
 }
 
-/// <summary>Sankey: flows between nodes; columns follow the links from the sources. All fields are optional; zero selects the native default.</summary>
+/// <summary>cui_sankey_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct SankeyOpts
 {
     /// <summary>cui_size width</summary>
@@ -1932,8 +2045,10 @@ public partial struct SankeyOpts
     public float Height;
     /// <summary>const char * format</summary>
     public string? Format;
-    /// <summary>width of the node bars in points, default 12</summary>
+    /// <summary>width of the node bars in points, default 6</summary>
     public float NodeWidth;
+    /// <summary>one per node, colored by meaning; `NULL`, or an unset entry, falls back to the palette for outcomes and neutral gray for sources and steps</summary>
+    public Color[]? NodeColors;
 
     internal readonly NativeSankeyOpts ToNative() => new()
     {
@@ -1942,6 +2057,7 @@ public partial struct SankeyOpts
         Height = Height,
         Format = Utf8.Get(Format),
         NodeWidth = NodeWidth,
+        NodeColors = UiMarshal.Colors(NodeColors),
     };
 }
 
@@ -2075,24 +2191,30 @@ public partial struct RadialGaugeOpts
 {
     /// <summary>under the value</summary>
     public string? Label;
-    /// <summary>the value and the tick labels, default &quot;%.0f&quot;</summary>
+    /// <summary>the value, the ends and the target, default whole numbers with large ones shortened (1.8k)</summary>
     public string? Format;
-    /// <summary>after the value, smaller</summary>
+    /// <summary>after the value, smaller and muted</summary>
     public string? Unit;
     /// <summary>width, default 200; the height follows the sweep</summary>
     public float Size;
-    /// <summary>degrees of arc, default 240 (90 to 300)</summary>
+    /// <summary>degrees of arc, default 270 (90 to 300); the ring is always a full turn</summary>
     public float Sweep;
     /// <summary>colored stretches of the arc, each from the one before up to its `to`; at most 16</summary>
     public GaugeBand[]? Bands;
-    /// <summary>labelled divisions, default 5; -1 hides the ticks</summary>
+    /// <summary>-1 hides the min and max labels at the ends of the arc</summary>
     public int Ticks;
     /// <summary>a marker on the arc, when show_target is set</summary>
     public float Target;
-    /// <summary>draws the marker at `target`</summary>
+    /// <summary>draws the marker at `target`, labelled with its value (arc style)</summary>
     public bool ShowTarget;
-    /// <summary>a thick arc filled to the value instead of a needle</summary>
+    /// <summary>kept for older code; no style has a needle</summary>
     public bool NoNeedle;
+    /// <summary>CUI_GAUGE_AUTO picks segments with `bands`, else the arc</summary>
+    public GaugeStyle Style;
+    /// <summary>a muted line under the gauge, e.g. &quot;190 of 500 GB&quot;; `NULL` for none</summary>
+    public string? Detail;
+    /// <summary>the value&apos;s color; unset: the band the value is in, else the accent (the ring: the first series color)</summary>
+    public Color Color;
 
     internal readonly NativeRadialGaugeOpts ToNative() => new()
     {
@@ -2108,6 +2230,9 @@ public partial struct RadialGaugeOpts
         Target = Target,
         ShowTarget = (byte)(ShowTarget ? 1 : 0),
         NoNeedle = (byte)(NoNeedle ? 1 : 0),
+        Style = Style,
+        Detail = Utf8.Get(Detail),
+        Color = UiMarshal.ToNative(Color),
     };
 }
 
@@ -2293,7 +2418,7 @@ public partial struct DockItemOpts
     };
 }
 
-/// <summary>Bottom tab bar for compact layouts, with a pill that glides to the selection. All fields are optional; zero selects the native default.</summary>
+/// <summary>cui_tab_bar_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct TabBarOpts
 {
     /// <summary>cui_size width</summary>
@@ -2422,7 +2547,7 @@ public partial struct ToolCallOpts
     };
 }
 
-/// <summary>Agent plan: steps with their status on a connected rail, and progress. All fields are optional; zero selects the native default.</summary>
+/// <summary>Agent plan: steps with their status on a connected rail, and progress. Reduced motion holds the running glyph still, including in tool calls. All fields are optional; zero selects the native default.</summary>
 public partial struct AgentPlanOpts
 {
     /// <summary>heading of the plan, default &quot;Plan&quot;</summary>
@@ -2535,6 +2660,14 @@ public partial struct ComposerOpts
     public int MaxLines;
     /// <summary>cui_size width</summary>
     public Size Width;
+    /// <summary>a microphone button beside send, which returns `CUI_COMPOSER_RECORD`</summary>
+    public bool Mic;
+    /// <summary>shows the recorder instead of the text: set it on `CUI_COMPOSER_RECORD`, clear it on cancel or send</summary>
+    public bool Recording;
+    /// <summary>the microphone&apos;s levels while recording (0..1, newest last), drawn as a scrolling voice waveform</summary>
+    public float[]? Levels;
+    /// <summary>how long the take is so far, shown beside the recording dot</summary>
+    public float RecordSeconds;
 
     internal readonly NativeComposerOpts ToNative(nint removed, nint model) => new()
     {
@@ -2549,10 +2682,15 @@ public partial struct ComposerOpts
         Model = model,
         MaxLines = MaxLines,
         Width = UiMarshal.ToNative(Width),
+        Mic = (byte)(Mic ? 1 : 0),
+        Recording = (byte)(Recording ? 1 : 0),
+        Levels = UiMarshal.Values<float>(Levels),
+        LevelCount = Levels?.Length ?? 0,
+        RecordSeconds = RecordSeconds,
     };
 }
 
-/// <summary>cui_voice_orb_opts. All fields are optional; zero selects the native default.</summary>
+/// <summary>Deprecated: use the voice session (cui_voice_session), the voice waveform (cui_voice_wave) or the composer&apos;s recorder instead. Kept so existing code builds; it gets no new features. Voice orb: a living shape for voice modes. level is the input or output loudness (0..1). Returns true when clicked. All fields are optional; zero selects the native default.</summary>
 public partial struct VoiceOrbOpts
 {
     /// <summary>float size</summary>
@@ -2565,6 +2703,92 @@ public partial struct VoiceOrbOpts
         Sentinel = 0,
         Size = Size,
         Color = UiMarshal.ToNative(Color),
+    };
+}
+
+/// <summary>cui_voice_wave_opts. All fields are optional; zero selects the native default.</summary>
+public partial struct VoiceWaveOpts
+{
+    /// <summary>the whole clip resampled to the width, instead of the newest levels scrolling in</summary>
+    public bool Clip;
+    /// <summary>one per level, `CUI_VOICE_YOU` or `CUI_VOICE_REPLY`, for two voices on one timeline; `NULL`: all `owner`</summary>
+    public byte[]? Owners;
+    /// <summary>whose voice it is: you in the foreground color, the reply in the accent</summary>
+    public VoiceOwner Owner;
+    /// <summary>lit dots in this color instead of the owner&apos;s</summary>
+    public Color Color;
+    /// <summary>distance between dot centers in points, default 3.6; the strip is 14 pitches tall</summary>
+    public float Pitch;
+    /// <summary>how far an arrow key seeks, as a fraction of the clip, default 0.05</summary>
+    public float Step;
+    /// <summary>default fill</summary>
+    public Size Width;
+
+    internal readonly NativeVoiceWaveOpts ToNative(nint progress) => new()
+    {
+        Sentinel = 0,
+        Clip = (byte)(Clip ? 1 : 0),
+        Progress = progress,
+        Owners = UiMarshal.Values<byte>(Owners),
+        Owner = Owner,
+        Color = UiMarshal.ToNative(Color),
+        Pitch = Pitch,
+        Step = Step,
+        Width = UiMarshal.ToNative(Width),
+    };
+}
+
+/// <summary>Voice note: a recorded message in a bubble, with play and pause, its voice waveform as the seek bar (click or drag; the arrow keys step), the time played and the length, and a speed chip that cycles 1x, 1.5x and 2x. It plays nothing itself: you play the audio and pass the position on every frame. Returns CUI_PLAYER_TOGGLE, CUI_PLAYER_SEEK and CUI_PLAYER_SPEED. All fields are optional; zero selects the native default.</summary>
+public partial struct VoiceNoteOpts
+{
+    /// <summary>a message you sent: tinted with the accent and placed at the end of the row</summary>
+    public bool Mine;
+    /// <summary>default 330 points, narrower in a narrower container</summary>
+    public Size Width;
+
+    internal readonly NativeVoiceNoteOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Mine = (byte)(Mine ? 1 : 0),
+        Width = UiMarshal.ToNative(Width),
+    };
+}
+
+/// <summary>cui_voice_session_opts. All fields are optional; zero selects the native default.</summary>
+public partial struct VoiceSessionOpts
+{
+    /// <summary>one per level: `CUI_VOICE_YOU` or `CUI_VOICE_REPLY`; `NULL`: all yours</summary>
+    public byte[]? Owners;
+    /// <summary>text for the state instead of &quot;Listening&quot;, &quot;Thinking...&quot;, &quot;Speaking&quot;, &quot;Muted&quot; or &quot;Waiting&quot;</summary>
+    public string? Label;
+    /// <summary>the words of the current turn spoken so far, under the strip; `NULL` for none</summary>
+    public string? Transcript;
+    /// <summary>the rest of the turn, not spoken yet: dimmed after `transcript`</summary>
+    public string? Upcoming;
+    /// <summary>whose turn the transcript is, named before it</summary>
+    public VoiceOwner Speaker;
+    /// <summary>your name in the legend and the transcript, default &quot;You&quot;</summary>
+    public string? You;
+    /// <summary>the assistant&apos;s name, default &quot;Assistant&quot;</summary>
+    public string? Assistant;
+    /// <summary>leaves the End button out</summary>
+    public bool NoEnd;
+    /// <summary>default fill</summary>
+    public Size Width;
+
+    internal readonly NativeVoiceSessionOpts ToNative(nint muted) => new()
+    {
+        Sentinel = 0,
+        Owners = UiMarshal.Values<byte>(Owners),
+        Label = Utf8.Get(Label),
+        Transcript = Utf8.Get(Transcript),
+        Upcoming = Utf8.Get(Upcoming),
+        Speaker = Speaker,
+        You = Utf8.Get(You),
+        Assistant = Utf8.Get(Assistant),
+        Muted = muted,
+        NoEnd = (byte)(NoEnd ? 1 : 0),
+        Width = UiMarshal.ToNative(Width),
     };
 }
 
@@ -2587,7 +2811,7 @@ public partial struct KanbanColumnOpts
     };
 }
 
-/// <summary>Week calendar: seven day columns on an hour grid. Drag an event to move it (15 minute steps), drag its bottom edge to resize it. Returns the index of a clicked event, or -1. All fields are optional; zero selects the native default.</summary>
+/// <summary>cui_week_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct WeekOpts
 {
     /// <summary>first hour shown, default 7; set together with `end_hour`</summary>
@@ -2641,7 +2865,7 @@ public partial struct MonthOpts
     };
 }
 
-/// <summary>Gantt chart: a task list beside a timeline of bars. Drag a bar to move it, its ends to resize it. Dependencies are drawn as elbow arrows. Returns the index of a clicked task, or -1. All fields are optional; zero selects the native default.</summary>
+/// <summary>cui_gantt_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct GanttOpts
 {
     /// <summary>points per day, default 30</summary>
@@ -2650,7 +2874,7 @@ public partial struct GanttOpts
     public float RowHeight;
     /// <summary>cui_size height</summary>
     public Size Height;
-    /// <summary>day to mark as today, counted from `origin`; 0 marks none</summary>
+    /// <summary>day to mark as today, counted from `origin`, with an accent line and a &quot;Today&quot; chip; 0 marks none</summary>
     public int Today;
     /// <summary>_Bool read_only</summary>
     public bool ReadOnly;
@@ -2685,7 +2909,7 @@ public partial struct HoverCardOpts
     };
 }
 
-/// <summary>Confirm popover: a small question anchored to the previous component. Open it with cui_popover_open(ui, id). Returns true when confirmed. All fields are optional; zero selects the native default.</summary>
+/// <summary>Confirm popover: a small question anchored to the previous component. Open it with cui_popover_open(ui, id). A new Enter press can confirm it. Returns true when confirmed. All fields are optional; zero selects the native default.</summary>
 public partial struct ConfirmPopoverOpts
 {
     /// <summary>the question, in medium weight at the top, e.g. &quot;Delete this file?&quot;</summary>
@@ -2808,6 +3032,34 @@ public partial struct ChecklistOpts
         Sentinel = 0,
         Title = Utf8.Get(Title),
         Description = Utf8.Get(Description),
+    };
+}
+
+/// <summary>Veil: covers what is built inside it (a picture, a secret such as an API key, a spoiler) with a slowly moving dither in muted tones that keeps its space. A click, or Enter or Space, reveals it: the veil dissolves dot by dot in about a quarter of a second, and comes back the same way when *revealed is set to false again. While covered, the content takes no clicks and no keyboard focus. Reduced motion holds the noise still and reveals at once. All fields are optional; zero selects the native default.</summary>
+public partial struct VeilOpts
+{
+    /// <summary>a line in the middle of the veil, e.g. &quot;Sensitive image&quot;; `NULL` for none</summary>
+    public string? Label;
+    /// <summary>a smaller line under it, e.g. &quot;Click to show&quot;</summary>
+    public string? Hint;
+    /// <summary>a click on the revealed content covers it again</summary>
+    public bool Toggle;
+    /// <summary>corners of the veil, default 0</summary>
+    public float Radius;
+    /// <summary>the veil&apos;s ground, default the muted surface; its dots are a step toward the text color</summary>
+    public Color Color;
+    /// <summary>default: the content&apos;s width</summary>
+    public Size Width;
+
+    internal readonly NativeVeilOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Label = Utf8.Get(Label),
+        Hint = Utf8.Get(Hint),
+        Toggle = (byte)(Toggle ? 1 : 0),
+        Radius = Radius,
+        Color = UiMarshal.ToNative(Color),
+        Width = UiMarshal.ToNative(Width),
     };
 }
 
@@ -3221,7 +3473,7 @@ public partial struct ShortcutRecorderOpts
     };
 }
 
-/// <summary>Node editor: nodes with input and output pins on a canvas that pans and zooms, joined by curved links. You own the nodes, pins and links; the editor moves the node positions you pass and reports what the user did: All fields are optional; zero selects the native default.</summary>
+/// <summary>cui_node_editor_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct NodeEditorOpts
 {
     /// <summary>default: fill the width, 440 tall</summary>
@@ -3310,16 +3562,19 @@ public partial struct MenuBarMenuOpts
     };
 }
 
-/// <summary>Toolbar: a row of compact icon buttons, toggles, separators and small text buttons. Icon only buttons show their tooltip as their name. Items that do not fit collapse, from the end, into a &quot;more&quot; menu; an item chosen there returns true on the next frame. All fields are optional; zero selects the native default.</summary>
+/// <summary>Toolbar: a row of compact icon buttons, toggles, separators and small text buttons. Icon only buttons show their tooltip as their name. Items that do not fit collapse, from the end, into a &quot;more&quot; menu; an item chosen there returns true on the next frame. Tab moves through the items. All fields are optional; zero selects the native default.</summary>
 public partial struct ToolbarOpts
 {
-    /// <summary>_Bool no_border</summary>
+    /// <summary>plain style: no hairline under the strip</summary>
     public bool NoBorder;
+    /// <summary>cui_toolbar_style style</summary>
+    public ToolbarStyle Style;
 
     internal readonly NativeToolbarOpts ToNative() => new()
     {
         Sentinel = 0,
         NoBorder = (byte)(NoBorder ? 1 : 0),
+        Style = Style,
     };
 }
 
@@ -3334,6 +3589,10 @@ public partial struct ToolOpts
     public string? Shortcut;
     /// <summary>_Bool disabled</summary>
     public bool Disabled;
+    /// <summary>icon and label color: always on a plain button (CUI_TONE_DANGER for delete), only while on for a toggle</summary>
+    public Tone Tone;
+    /// <summary>the corner mark that says the button opens more options (cui_flyout_mark)</summary>
+    public bool Flyout;
 
     internal readonly NativeToolOpts ToNative(nint toggle) => new()
     {
@@ -3343,6 +3602,21 @@ public partial struct ToolOpts
         Shortcut = Utf8.Get(Shortcut),
         Toggle = toggle,
         Disabled = (byte)(Disabled ? 1 : 0),
+        Tone = Tone,
+        Flyout = (byte)(Flyout ? 1 : 0),
+    };
+}
+
+/// <summary>An inset set of icons of which one is on, like a segmented control. Left and Right move the choice. Returns true when *index changed. In the overflow menu each icon is an item named by its label. All fields are optional; zero selects the native default.</summary>
+public partial struct ToolbarRadioOpts
+{
+    /// <summary>a name for each icon, for the overflow menu; `NULL` leaves them unnamed</summary>
+    public string[]? Labels;
+
+    internal readonly NativeToolbarRadioOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Labels = UiMarshal.Strings(Labels),
     };
 }
 
@@ -3734,6 +4008,237 @@ public partial struct GradientOpts
     };
 }
 
+/// <summary>cui_status_tag_opts. All fields are optional; zero selects the native default.</summary>
+public partial struct StatusTagOpts
+{
+    /// <summary>CUI_SIZE_SM is 24 points high, for tables and tag groups; default 30</summary>
+    public ControlSize Size;
+    /// <summary>the tag becomes a button that shows an x on hover: the call returns true when it is clicked, or on Enter, Delete or Backspace</summary>
+    public bool Removable;
+    /// <summary>instead of the state&apos;s icon</summary>
+    public string? Icon;
+    /// <summary>instead of the state&apos;s color; 0 keeps it (gray for CUI_TAG_CUSTOM)</summary>
+    public Tone Tone;
+    /// <summary>identity of a removable tag when two share a label</summary>
+    public string? Id;
+
+    internal readonly NativeStatusTagOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Size = Size,
+        Removable = (byte)(Removable ? 1 : 0),
+        Icon = Utf8.Get(Icon),
+        Tone = Tone,
+        Id = Utf8.Get(Id),
+    };
+}
+
+/// <summary>Ratio slider: a whole split into two named parts, with a bar between them to drag. *ratio is the first part&apos;s share, 0..1. Both names and percentages stay readable: the split stops where a part would get too narrow for them. Arrows move one step (Shift: ten), Home and End go to the limits. All fields are optional; zero selects the native default.</summary>
+public partial struct RatioSliderOpts
+{
+    /// <summary>color of the first part; 0 uses the accent</summary>
+    public Tone Tone;
+    /// <summary>arrow key step as a share, default 0.01 (one percent)</summary>
+    public float Step;
+    /// <summary>default 52</summary>
+    public float Height;
+    /// <summary>default fill</summary>
+    public Size Width;
+    /// <summary>_Bool disabled</summary>
+    public bool Disabled;
+
+    internal readonly NativeRatioSliderOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Tone = Tone,
+        Step = Step,
+        Height = Height,
+        Width = UiMarshal.ToNative(Width),
+        Disabled = (byte)(Disabled ? 1 : 0),
+    };
+}
+
+/// <summary>cui_gradient_slider_opts. All fields are optional; zero selects the native default.</summary>
+public partial struct GradientSliderOpts
+{
+    /// <summary>the built-in track, default the hue wheel; ignored when `stops` is set</summary>
+    public GradientTrack Track;
+    /// <summary>your own track, positions 0..1</summary>
+    public GradientStop[]? Stops;
+    /// <summary>CUI_GRADIENT_OPACITY: the color it fades in; unset: the accent</summary>
+    public Color Color;
+    /// <summary>snap to multiples of step from min; 0 = continuous</summary>
+    public float Step;
+    /// <summary>printf format for the value; default &quot;%.0f°&quot; for hue, &quot;%.0f K&quot; for temperature, a percent of the range for opacity, &quot;%.0f&quot; for stops</summary>
+    public string? Format;
+    /// <summary>text at the right of the label instead of the formatted value</summary>
+    public string? Value;
+    /// <summary>a dot in the color under the thumb after the track</summary>
+    public bool Swatch;
+    /// <summary>icon of a button after the track, e.g. a picker; a click returns CUI_WELL_ACTION</summary>
+    public string? Tool;
+    /// <summary>names the tool button</summary>
+    public string? ToolTooltip;
+    /// <summary>shows the tool button pressed, e.g. while picking</summary>
+    public bool ToolOn;
+    /// <summary>no well around it</summary>
+    public bool Plain;
+    /// <summary>_Bool disabled</summary>
+    public bool Disabled;
+
+    internal readonly NativeGradientSliderOpts ToNative(nint colorOut) => new()
+    {
+        Sentinel = 0,
+        Track = Track,
+        Stops = GradientStop.ToFrameArray(Stops),
+        StopCount = Stops?.Length ?? 0,
+        Color = UiMarshal.ToNative(Color),
+        ColorOut = colorOut,
+        Step = Step,
+        Format = Utf8.Get(Format),
+        Value = Utf8.Get(Value),
+        Swatch = (byte)(Swatch ? 1 : 0),
+        Tool = Utf8.Get(Tool),
+        ToolTooltip = Utf8.Get(ToolTooltip),
+        ToolOn = (byte)(ToolOn ? 1 : 0),
+        Plain = (byte)(Plain ? 1 : 0),
+        Disabled = (byte)(Disabled ? 1 : 0),
+    };
+}
+
+/// <summary>Step slider: a few discrete stops marked with dots; the thumb snaps to each and glides between them. Arrows move one stop, Home and End go to the ends. Returns CUI_WELL_* flags. All fields are optional; zero selects the native default.</summary>
+public partial struct StepSliderOpts
+{
+    /// <summary>a name for each stop, shown as the value: labels[*value - min]</summary>
+    public string[]? Labels;
+    /// <summary>printf format for the value, default &quot;%d&quot;</summary>
+    public string? Format;
+    /// <summary>text at the right of the label instead</summary>
+    public string? Value;
+    /// <summary>icon of a button after the track; a click returns CUI_WELL_ACTION</summary>
+    public string? Tool;
+    /// <summary>const char * tool_tooltip</summary>
+    public string? ToolTooltip;
+    /// <summary>_Bool tool_on</summary>
+    public bool ToolOn;
+    /// <summary>_Bool plain</summary>
+    public bool Plain;
+    /// <summary>_Bool disabled</summary>
+    public bool Disabled;
+
+    internal readonly NativeStepSliderOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Labels = UiMarshal.Strings(Labels),
+        Format = Utf8.Get(Format),
+        Value = Utf8.Get(Value),
+        Tool = Utf8.Get(Tool),
+        ToolTooltip = Utf8.Get(ToolTooltip),
+        ToolOn = (byte)(ToolOn ? 1 : 0),
+        Plain = (byte)(Plain ? 1 : 0),
+        Disabled = (byte)(Disabled ? 1 : 0),
+    };
+}
+
+/// <summary>Palette strip: a joined row of color swatches (up to 16). A click on a swatch locks or unlocks it, and the shuffle button after the row recolors the unlocked ones. The swatch under the pointer widens and shows its hex code. Tab reaches the swatches, Left and Right move between them, Space or Enter locks. Returns CUI_WELL_CHANGED when a lock or a color changed and CUI_WELL_ACTION when shuffle was pressed. All fields are optional; zero selects the native default.</summary>
+public partial struct PaletteStripOpts
+{
+    /// <summary>text at the right of the label, e.g. &quot;Click a swatch to lock it&quot;</summary>
+    public string? Value;
+    /// <summary>no shuffle button</summary>
+    public bool NoShuffle;
+    /// <summary>default 32</summary>
+    public float Height;
+    /// <summary>_Bool plain</summary>
+    public bool Plain;
+
+    internal readonly NativePaletteStripOpts ToNative(nint seed) => new()
+    {
+        Sentinel = 0,
+        Seed = seed,
+        Value = Utf8.Get(Value),
+        NoShuffle = (byte)(NoShuffle ? 1 : 0),
+        Height = Height,
+        Plain = (byte)(Plain ? 1 : 0),
+    };
+}
+
+/// <summary>cui_aspect_picker_opts. All fields are optional; zero selects the native default.</summary>
+public partial struct AspectPickerOpts
+{
+    /// <summary>your choices; NULL: 1:1, 4:5, 3:2, 16:9, 9:16 and 21:9</summary>
+    public Aspect[]? Ratios;
+    /// <summary>adds a &quot;Custom&quot; choice after a divider; *index == the count of choices selects it</summary>
+    public bool Custom;
+    /// <summary>default &quot;Custom&quot;</summary>
+    public string? CustomLabel;
+    /// <summary>the short side in pixels, for the size at the right of the label; default 1080, negative hides the size</summary>
+    public int Base;
+    /// <summary>text at the right of the label instead of the size</summary>
+    public string? Value;
+    /// <summary>_Bool plain</summary>
+    public bool Plain;
+
+    internal readonly NativeAspectPickerOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Ratios = Aspect.ToFrameArray(Ratios),
+        Count = Ratios?.Length ?? 0,
+        Custom = (byte)(Custom ? 1 : 0),
+        CustomLabel = Utf8.Get(CustomLabel),
+        Base = Base,
+        Value = Utf8.Get(Value),
+        Plain = (byte)(Plain ? 1 : 0),
+    };
+}
+
+/// <summary>Option field with action: a compact segmented choice and the icon button of the action it feeds (save as png, jpg or webp, then download). Returns CUI_WELL_* flags. All fields are optional; zero selects the native default.</summary>
+public partial struct OptionActionOpts
+{
+    /// <summary>names the action button</summary>
+    public string? Tooltip;
+    /// <summary>shows the action button pressed</summary>
+    public bool ActionOn;
+    /// <summary>_Bool action_disabled</summary>
+    public bool ActionDisabled;
+    /// <summary>text at the right of the label</summary>
+    public string? Value;
+    /// <summary>_Bool plain</summary>
+    public bool Plain;
+
+    internal readonly NativeOptionActionOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Tooltip = Utf8.Get(Tooltip),
+        ActionOn = (byte)(ActionOn ? 1 : 0),
+        ActionDisabled = (byte)(ActionDisabled ? 1 : 0),
+        Value = Utf8.Get(Value),
+        Plain = (byte)(Plain ? 1 : 0),
+    };
+}
+
+/// <summary>Seed field: a random seed in the monospaced font. The dice rolls a new one, its digits rolling into place, and the lock keeps it fixed (the dice is off while locked). Returns CUI_WELL_CHANGED when the seed or the lock changed and CUI_WELL_ACTION on a roll. All fields are optional; zero selects the native default.</summary>
+public partial struct SeedFieldOpts
+{
+    /// <summary>text at the right of the label</summary>
+    public string? Value;
+    /// <summary>the mode word in the field while unlocked, default &quot;random&quot;</summary>
+    public string? RandomText;
+    /// <summary>and while locked, default &quot;fixed&quot;</summary>
+    public string? FixedText;
+    /// <summary>_Bool plain</summary>
+    public bool Plain;
+
+    internal readonly NativeSeedFieldOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Value = Utf8.Get(Value),
+        RandomText = Utf8.Get(RandomText),
+        FixedText = Utf8.Get(FixedText),
+        Plain = (byte)(Plain ? 1 : 0),
+    };
+}
+
 /// <summary>cui_timeline_editor_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct TimelineEditorOpts
 {
@@ -3962,7 +4467,7 @@ public partial struct WaterfallOpts
     };
 }
 
-/// <summary>A tracing timeline: one lane per thread, process or service, each with its nested spans, on one time ruler, with markers (frames, GC pauses, deploys) drawn across every lane. Wheel zooms around the pointer, Shift+wheel or a drag pans, click selects a span, Shift+drag measures a time range. A lane&apos;s name folds it. Keys: Left and Right step through the selected span&apos;s lane, + and - zoom, F fits, Esc clears. Spans must be sorted by track, depth and start (cui_trace_sort), with no overlap within a depth of a track. Like the flame graph, only what is in view is visited. All fields are optional; zero selects the native default.</summary>
+/// <summary>cui_trace_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct TraceOpts
 {
     /// <summary>cui_size width</summary>
@@ -4075,7 +4580,7 @@ public partial struct UptimeOpts
     };
 }
 
-/// <summary>Event counts over time, stacked by series (log levels, status classes), as above a log search. Drag across it to select a time range, click to clear. Hover a bar for its time and counts. Times are Unix seconds. All fields are optional; zero selects the native default.</summary>
+/// <summary>cui_time_histogram_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct TimeHistogramOpts
 {
     /// <summary>cui_size width</summary>
@@ -4327,6 +4832,162 @@ public partial struct DotDisplayOpts
         Marquee = (byte)(Marquee ? 1 : 0),
         Align = Align,
         Width = UiMarshal.ToNative(Width),
+    };
+}
+
+/// <summary>cui_format_bar_opts. All fields are optional; zero selects the native default.</summary>
+public partial struct FormatBarOpts
+{
+    /// <summary>`NULL`: Header, Title, Subtitle and Normal text</summary>
+    public TextStyle[]? Styles;
+    /// <summary>the color grid; `NULL`: eight tones, the text color first</summary>
+    public Tone[]? Colors;
+    /// <summary>a muted line under the styles, default &quot;Text options&quot;; &quot;&quot; leaves it out</summary>
+    public string? Footer;
+    /// <summary>keycaps beside it, default &quot;Ctrl Alt 0&quot; (&quot;&quot; for none); a hint, the shortcut is yours</summary>
+    public string? FooterKeys;
+    /// <summary>default &quot;Delete this text?&quot;</summary>
+    public string? DeleteQuestion;
+    /// <summary>leaves out the delete button</summary>
+    public bool NoDelete;
+    /// <summary>leaves out the &quot;...&quot; button</summary>
+    public bool NoMore;
+
+    internal readonly NativeFormatBarOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Styles = TextStyle.ToFrameArray(Styles),
+        StyleCount = Styles?.Length ?? 0,
+        Colors = UiMarshal.Values<Tone>(Colors),
+        ColorCount = Colors?.Length ?? 0,
+        Footer = Utf8.Get(Footer),
+        FooterKeys = Utf8.Get(FooterKeys),
+        DeleteQuestion = Utf8.Get(DeleteQuestion),
+        NoDelete = (byte)(NoDelete ? 1 : 0),
+        NoMore = (byte)(NoMore ? 1 : 0),
+    };
+}
+
+/// <summary>cui_live_cursors_opts. All fields are optional; zero selects the native default.</summary>
+public partial struct LiveCursorsOpts
+{
+    /// <summary>jump to each new position</summary>
+    public bool NoGlide;
+
+    internal readonly NativeLiveCursorsOpts ToNative(nint view) => new()
+    {
+        Sentinel = 0,
+        View = view,
+        NoGlide = (byte)(NoGlide ? 1 : 0),
+    };
+}
+
+/// <summary>Presence pill: who is here, as overlapping avatars in their colors. Whoever is speaking gets a ring, and the pill shows moving level bars and their name. All fields are optional; zero selects the native default.</summary>
+public partial struct PresencePillOpts
+{
+    /// <summary>avatar size, default 26</summary>
+    public float Size;
+    /// <summary>default 5; the rest become &quot;+n&quot;</summary>
+    public int MaxVisible;
+
+    internal readonly NativePresencePillOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Size = Size,
+        MaxVisible = MaxVisible,
+    };
+}
+
+/// <summary>Selection ring: a ring in someone&apos;s color around the previous component, for &quot;this item is selected by Kate&quot;, with an optional name flag on its corner. All fields are optional; zero selects the native default.</summary>
+public partial struct SelectionRingOpts
+{
+    /// <summary>a small flag at the top end corner; `NULL` for none</summary>
+    public string? Name;
+    /// <summary>the ring&apos;s corner radius; 0 follows the component&apos;s corners</summary>
+    public float Radius;
+
+    internal readonly NativeSelectionRingOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Name = Utf8.Get(Name),
+        Radius = Radius,
+    };
+}
+
+/// <summary>cui_canvas_controls_opts. All fields are optional; zero selects the native default.</summary>
+public partial struct CanvasControlsOpts
+{
+    /// <summary>zoom presets, ascending; `NULL`: 0.25 0.33 0.5 0.67 0.8 1 1.25 1.5 2 3 4</summary>
+    public float[]? Steps;
+    /// <summary>the content&apos;s bounds in canvas points, for fit; empty: fit is only reported</summary>
+    public RectF Content;
+    /// <summary>leaves out the fit button</summary>
+    public bool NoFit;
+    /// <summary>the rail sits at the start edge (left, or right in a right-to-left interface)</summary>
+    public bool StartSide;
+
+    internal readonly NativeCanvasControlsOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Steps = UiMarshal.Values<float>(Steps),
+        StepCount = Steps?.Length ?? 0,
+        Content = UiMarshal.ToNative(Content),
+        Toggles = default,
+        ToggleCount = default,
+        NoFit = (byte)(NoFit ? 1 : 0),
+        StartSide = (byte)(StartSide ? 1 : 0),
+    };
+}
+
+/// <summary>Result card: a picture with rounded corners, an optional status chip in the top corner, and a title and caption on a soft fade at the bottom, for a render, an export or a generated image. Put its actions under it in a floating toolbar (cui_toolbar with CUI_TOOLBAR_FLOATING, cycle pickers for choices like 2x or PNG). The picture fills the card and is cropped to it. The card is focusable; a click, Enter or Space returns true (open it large). All fields are optional; zero selects the native default.</summary>
+public partial struct ResultCardOpts
+{
+    /// <summary>under the title, wraps</summary>
+    public string? Caption;
+    /// <summary>the status chip, e.g. &quot;Done in 4.2 s&quot;; `NULL` for none</summary>
+    public string? Badge;
+    /// <summary>the chip&apos;s dot, default success</summary>
+    public Tone BadgeTone;
+    /// <summary>the picture&apos;s size in pixels, to crop it without stretching; 0: stretched</summary>
+    public int ImageW;
+    /// <summary>the picture&apos;s size in pixels, to crop it without stretching; 0: stretched</summary>
+    public int ImageH;
+    /// <summary>default fill, up to 320</summary>
+    public Size Width;
+    /// <summary>height over width, default 1.25</summary>
+    public float Aspect;
+
+    internal readonly NativeResultCardOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Caption = Utf8.Get(Caption),
+        Badge = Utf8.Get(Badge),
+        BadgeTone = BadgeTone,
+        ImageW = ImageW,
+        ImageH = ImageH,
+        Width = UiMarshal.ToNative(Width),
+        Aspect = Aspect,
+    };
+}
+
+/// <summary>cui_selection_bar_opts. All fields are optional; zero selects the native default.</summary>
+public partial struct SelectionBarOpts
+{
+    /// <summary>default &quot;%d selected&quot;</summary>
+    public string? CountFormat;
+    /// <summary>the component it sits under; 0: the previous component</summary>
+    public uint Anchor;
+    /// <summary>Esc does not clear</summary>
+    public bool NoEscape;
+
+    internal readonly NativeSelectionBarOpts ToNative() => new()
+    {
+        Sentinel = 0,
+        Selected = default,
+        ItemCount = default,
+        CountFormat = Utf8.Get(CountFormat),
+        Anchor = Anchor,
+        NoEscape = (byte)(NoEscape ? 1 : 0),
     };
 }
 

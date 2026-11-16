@@ -21,9 +21,12 @@ internal static class CuiFlags
     internal const int CUI_REGEX_ICASE = 1;
     internal const int CUI_REGEX_MULTILINE = 2;
     internal const int CUI_REGEX_DOTALL = 4;
+    internal const int CUI_SELECTION_NONE = -1;
+    internal const int CUI_SELECTION_CLEARED = -2;
     internal const int CUI_SHADE_TEXT = 0;
     internal const int CUI_SHADE_RRECT = 1;
     internal const int CUI_SHADE_SHADOW = 2;
     internal const int CUI_SHADE_IMAGE = 3;
     internal const int CUI_SHADE_SOLID = 4;
+    internal const int CUI_SHADE_DITHER = 5;
 }

@@ -20,6 +20,13 @@ public static unsafe class FeedbackAndDisplayUiExtensions
             Native.Progress(ui.Handle, value, in __opts);
         }
 
+        /// <summary>most styles are square; upload and download are 25/32 as wide as tall, transfer 50/32, bounce 40/28, scan 28/32</summary>
+        public void Spinner(float size, SpinnerOpts o = default)
+        {
+            var __opts = o.ToNative();
+            Native.SpinnerEx(ui.Handle, size, in __opts);
+        }
+
         /// <summary>cui_spinner</summary>
         public void Spinner(float size = 16)
         {
@@ -30,6 +37,14 @@ public static unsafe class FeedbackAndDisplayUiExtensions
         public void Skeleton(Size width, float height)
         {
             Native.Skeleton(ui.Handle, UiMarshal.ToNative(width), height);
+        }
+
+        /// <summary>Skeleton group: placeholders for content that is loading, built inside it with cui_skeleton (in rows and columns as the content will be), share one shine that passes over them together. With `dither` they are drawn in dots and a band of brighter dots travels over them, asking for 20 frames a second while on screen; reduced motion holds the band still. Groups nest.</summary>
+        public LayoutScope SkeletonGroup(SkeletonGroupOpts o = default)
+        {
+            var __opts = o.ToNative();
+            Native.SkeletonGroupBegin(ui.Handle, in __opts);
+            return new LayoutScope(ui.Handle, &Native.SkeletonGroupEnd, "SkeletonGroup", null);
         }
 
         /// <summary>cui_badge_ex</summary>

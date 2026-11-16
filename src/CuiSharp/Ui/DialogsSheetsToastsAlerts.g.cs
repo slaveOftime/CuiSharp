@@ -13,7 +13,7 @@ public static unsafe class DialogsSheetsToastsAlertsUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>Modal dialog. Shown while *open is true; closing sets it to false.</summary>
+        /// <summary>Modal dialog. Shown while *open is true; closing sets it to false. Escape leaves a focused text field before it can dismiss the dialog.</summary>
         public OpenScope Dialog(UiText title, ref bool open, DialogOpts o = default)
         {
             byte __open = (byte)(open ? 1 : 0);
@@ -56,7 +56,7 @@ public static unsafe class DialogsSheetsToastsAlertsUiExtensions
             if (scope) body(ui);
         }
 
-        /// <summary>Queue a toast. Returns a handle; cui_toast_action_clicked(handle) tells whether its action button was pressed.</summary>
+        /// <summary>Queue a toast. Returns a handle; cui_toast_action_clicked(handle) tells whether its action button was pressed before the toast started closing.</summary>
         public int Toast(UiText title, ToastOpts o = default)
         {
             var __opts = o.ToNative();

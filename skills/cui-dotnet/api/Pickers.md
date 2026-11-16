@@ -68,7 +68,7 @@ One or two months side by side; click a start and an end.
 public bool RulerSlider(UiText label, ref float value, float min, float max, RulerOpts o = default)
 ```
 
-Ruler slider: a tape measure that slides under a fixed marker, with momentum and snapping to step.
+Build a ruler slider: it takes vertical wheel input before the enclosing view and keeps every rounded value in range.
 
 ## `TimeDial`
 
@@ -92,4 +92,4 @@ Time picker: a field that opens hour and minute columns. hour is 0..23.
 public bool WheelPicker(UiText id, ReadOnlySpan<string> items, ref int index, WheelOpts o = default)
 ```
 
-Wheel picker: a drum of options that you drag, scroll or arrow through. Several side by side make a date or time reel. join_left / join_right square off the selection band so wheels placed side by side share one continuous band.
+Build a wheel picker, apply input routed to its drum, and draw its focus ring with its rows.

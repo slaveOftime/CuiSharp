@@ -13,7 +13,7 @@ public static unsafe class TimeHistogramUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>Event counts over time, stacked by series (log levels, status classes), as above a log search. Drag across it to select a time range, click to clear. Hover a bar for its time and counts. Times are Unix seconds.</summary>
+        /// <summary>Draw a time histogram and cancel a pending selection when it becomes disabled.</summary>
         public TimeHistogramResult TimeHistogram(UiText id, double start, double bucketSeconds, int buckets, ReadOnlySpan<HistogramSeries> series, ref double selStart, ref double selEnd, TimeHistogramOpts o = default)
         {
             var __series = Utf8.AllocFrame<NativeHistogramSeries>(series.Length);

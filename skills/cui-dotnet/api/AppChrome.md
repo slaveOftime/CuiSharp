@@ -22,6 +22,14 @@ public DocTabsResult DocTabs(UiText id, ReadOnlySpan<DocTab> tabs, ref int selec
 
 Document tabs: editor style tabs. Clicking selects (*selected is updated), the x or a middle click asks to close, dragging reorders, and the strip scrolls sideways when the tabs do not fit. A dirty tab shows a dot that turns into the close button under the pointer. The selected tab is filled with the surface color so it joins the content below; the strip itself has no fill, like the other bars. Tabs keep their state by title, so give two tabs with the same name a key: "main.c##src". The component never removes or moves your tabs itself: it reports a close or a move in the result and you apply it (selection already follows a move). With keyboard focus on the strip, Left and Right select, Home and End jump, Shift+Left/Right move the tab and Delete closes it. With `shortcuts` set it also answers Ctrl+Tab, Ctrl+Shift+Tab, Ctrl+PageUp/Down and Ctrl+W (Cmd+W on macOS) from anywhere in the window.
 
+## `FlyoutMark`
+
+```csharp
+public void FlyoutMark()
+```
+
+A small triangle in the corner of the previous component (at the end side) that says it opens a flyout or a menu. Any button can take it.
+
 ## `MenuBar`
 
 ```csharp
@@ -84,7 +92,7 @@ A message; `tone` colors its icon.
 public LayoutScope Toolbar(UiText id, ToolbarOpts o = default)
 ```
 
-Toolbar: a row of compact icon buttons, toggles, separators and small text buttons. Icon only buttons show their tooltip as their name. Items that do not fit collapse, from the end, into a "more" menu; an item chosen there returns true on the next frame.
+Toolbar: a row of compact icon buttons, toggles, separators and small text buttons. Icon only buttons show their tooltip as their name. Items that do not fit collapse, from the end, into a "more" menu; an item chosen there returns true on the next frame. Tab moves through the items.
 
 ## `ToolbarButton`
 
@@ -93,6 +101,38 @@ public bool ToolbarButton(UiText icon, ref bool toggle, ToolOpts o = default)
 ```
 
 cui_toolbar_button_ex
+
+## `ToolbarCycle`
+
+```csharp
+public bool ToolbarCycle(UiText id, ReadOnlySpan<string> items, ref int index, ref bool toggle, ToolOpts o = default)
+```
+
+A small picker that steps through its choices on each click ("1x", "2x", "4x"). Returns true when *index changed.
+
+## `ToolbarGroup`
+
+```csharp
+public LayoutScope ToolbarGroup()
+```
+
+A group of items: a raised well in the grouped style, set apart by separators in the others.
+
+## `ToolbarPrimary`
+
+```csharp
+public bool ToolbarPrimary(UiText icon, ref bool toggle, ToolOpts o = default)
+```
+
+The main action at the end of a grouped toolbar: a larger button filled with the text color.
+
+## `ToolbarRadio`
+
+```csharp
+public bool ToolbarRadio(UiText id, ReadOnlySpan<string> icons, ref int index, ToolbarRadioOpts o = default)
+```
+
+An inset set of icons of which one is on, like a segmented control. Left and Right move the choice. Returns true when *index changed. In the overflow menu each icon is an item named by its label.
 
 ## `ToolbarSeparator`
 

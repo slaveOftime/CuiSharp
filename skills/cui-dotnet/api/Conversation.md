@@ -52,4 +52,4 @@ Presence: who is here now. Overlapping avatars with a colored ring each, that sp
 public void TypingIndicator(UiText name)
 ```
 
-bouncing dots
+bouncing dots, still with reduced motion

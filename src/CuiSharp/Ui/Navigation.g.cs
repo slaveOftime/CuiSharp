@@ -39,14 +39,14 @@ public static unsafe class NavigationUiExtensions
             WidgetRecorder.Note(ui.Handle, "NavSection", title);
         }
 
-        /// <summary>returns clicked index or -1</summary>
+        /// <summary>Ancestor links, which show keyboard focus. Returns the clicked index or -1.</summary>
         public int Breadcrumb(ReadOnlySpan<string> items)
         {
             var __result = Native.Breadcrumb(ui.Handle, UiMarshal.Strings(items), (int)(items.Length));
             return __result;
         }
 
-        /// <summary>page is 0 based</summary>
+        /// <summary>Page buttons, which show keyboard focus; page is 0 based. The compact layout is chosen from the parent&apos;s inner width.</summary>
         public bool Pagination(UiText id, ref int page, int pageCount)
         {
             var __result = Native.Pagination(ui.Handle, Utf8.Get(id), ref page, pageCount);
@@ -54,7 +54,7 @@ public static unsafe class NavigationUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_stepper</summary>
+        /// <summary>Process steps; labels collapse to fit the width of their own row.</summary>
         public void Stepper(ReadOnlySpan<string> steps, int current)
         {
             Native.Stepper(ui.Handle, UiMarshal.Strings(steps), (int)(steps.Length), current);

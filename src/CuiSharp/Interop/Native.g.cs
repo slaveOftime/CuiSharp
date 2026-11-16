@@ -36,7 +36,7 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_dpi_scale")]
     public static partial float DpiScale(nint ui);
 
-    /// <summary>dt is the time since the previous frame in seconds.</summary>
+    /// <summary>dt is the elapsed time since the previous frame in seconds. Timers use the full interval (up to an hour). Animation steps are capped after idle.</summary>
     [LibraryImport("cui", EntryPoint = "cui_begin_frame")]
     public static partial void BeginFrame(nint ui, float dt);
 
@@ -127,6 +127,14 @@ public static unsafe partial class Native
     /// <summary>cui_get_cursor</summary>
     [LibraryImport("cui", EntryPoint = "cui_get_cursor")]
     public static partial Cursor GetCursor(nint ui);
+
+    /// <summary>The system clipboard, for a menu or status bar item that copies or pastes (&quot;Copy path&quot;). They go through the platform&apos;s clipboard hooks, as the copy button and text fields do: without a hook, setting does nothing and getting returns &quot;&quot;. The returned text stays valid until the next call.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_set_clipboard_text")]
+    public static partial void SetClipboardText(nint ui, nint text);
+
+    /// <summary>cui_get_clipboard_text</summary>
+    [LibraryImport("cui", EntryPoint = "cui_get_clipboard_text")]
+    public static partial nint GetClipboardText(nint ui);
 
     /// <summary>Queries, useful for app level shortcuts.</summary>
     [LibraryImport("cui", EntryPoint = "cui_key_pressed")]
@@ -288,7 +296,7 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_scroll_to")]
     public static partial void ScrollTo(nint ui, nint scrollId, float y);
 
-    /// <summary>cui_split_begin</summary>
+    /// <summary>Open a split with pane minimums that can fit the available main axis.</summary>
     [LibraryImport("cui", EntryPoint = "cui_split_begin")]
     public static partial void SplitBegin(nint ui, nint id, ref float ratio, in NativeSplitOpts opts);
 
@@ -412,7 +420,7 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_slider_ex")]
     public static partial byte Slider(nint ui, nint label, ref float value, float min, float max, in NativeSliderOpts opts);
 
-    /// <summary>cui_range_slider</summary>
+    /// <summary>Range slider with two non-crossing thumbs. Tab focuses the range, Space selects the other thumb, and the slider keys adjust the focused thumb.</summary>
     [LibraryImport("cui", EntryPoint = "cui_range_slider")]
     public static partial byte RangeSlider(nint ui, nint label, ref float lo, ref float hi, float min, float max);
 
@@ -428,7 +436,7 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_input_ex")]
     public static partial int Input(nint ui, nint id, nint buf, nuint cap, in NativeInputOpts opts);
 
-    /// <summary>Multi-line text area with word wrap.</summary>
+    /// <summary>Multi-line text area with word wrap. The wheel scrolls the text first and goes to the enclosing scroll view at the text area&apos;s edges.</summary>
     [LibraryImport("cui", EntryPoint = "cui_textarea_ex")]
     public static partial int Textarea(nint ui, nint id, nint buf, nuint cap, in NativeInputOpts opts);
 
@@ -436,11 +444,11 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_search_ex")]
     public static partial int Search(nint ui, nint id, nint buf, nuint cap, in NativeInputOpts opts);
 
-    /// <summary>cui_number_ex</summary>
+    /// <summary>A bounded number field. Only complete finite drafts update the value. Enter or loss of focus shows the accepted value using opts.decimals.</summary>
     [LibraryImport("cui", EntryPoint = "cui_number_ex")]
     public static partial byte Number(nint ui, nint id, ref double value, double min, double max, in NativeNumberOpts opts);
 
-    /// <summary>cui_select_ex</summary>
+    /// <summary>Enter opens the list or picks the highlighted item. A searchable select returns focus to its trigger when its list closes.</summary>
     [LibraryImport("cui", EntryPoint = "cui_select_ex")]
     public static partial byte Select(nint ui, nint id, nint items, int count, ref int index, in NativeSelectOpts opts);
 
@@ -452,11 +460,11 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_calendar")]
     public static partial byte Calendar(nint ui, nint id, ref NativeDate value);
 
-    /// <summary>cui_date_picker_ex</summary>
+    /// <summary>Draw the date trigger with a focus ring when reached by keyboard.</summary>
     [LibraryImport("cui", EntryPoint = "cui_date_picker_ex")]
     public static partial byte DatePicker(nint ui, nint id, ref NativeDate value, in NativeDateOpts opts);
 
-    /// <summary>cui_color_picker</summary>
+    /// <summary>Draw the color trigger and reconcile its HSV controls with the caller&apos;s RGB.</summary>
     [LibraryImport("cui", EntryPoint = "cui_color_picker")]
     public static partial byte ColorPicker(nint ui, nint id, ref NativeColor value);
 
@@ -472,15 +480,15 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_nav_section")]
     public static partial void NavSection(nint ui, nint title);
 
-    /// <summary>returns clicked index or -1</summary>
+    /// <summary>Ancestor links, which show keyboard focus. Returns the clicked index or -1.</summary>
     [LibraryImport("cui", EntryPoint = "cui_breadcrumb")]
     public static partial int Breadcrumb(nint ui, nint items, int count);
 
-    /// <summary>page is 0 based</summary>
+    /// <summary>Page buttons, which show keyboard focus; page is 0 based. The compact layout is chosen from the parent&apos;s inner width.</summary>
     [LibraryImport("cui", EntryPoint = "cui_pagination")]
     public static partial byte Pagination(nint ui, nint id, ref int page, int pageCount);
 
-    /// <summary>cui_stepper</summary>
+    /// <summary>Process steps; labels collapse to fit the width of their own row.</summary>
     [LibraryImport("cui", EntryPoint = "cui_stepper")]
     public static partial void Stepper(nint ui, nint steps, int count, int current);
 
@@ -540,11 +548,11 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_menu_label")]
     public static partial void MenuLabel(nint ui, nint text);
 
-    /// <summary>Tooltip for the previous component, shown after a short hover delay.</summary>
+    /// <summary>Tooltip for the previous component. The first hover waits for the delay, measured in elapsed time even when the app sleeps between frames.</summary>
     [LibraryImport("cui", EntryPoint = "cui_tooltip")]
     public static partial void Tooltip(nint ui, nint text);
 
-    /// <summary>Modal dialog. Shown while *open is true; closing sets it to false.</summary>
+    /// <summary>Modal dialog. Shown while *open is true; closing sets it to false. Escape leaves a focused text field before it can dismiss the dialog.</summary>
     [LibraryImport("cui", EntryPoint = "cui_dialog_begin")]
     public static partial byte DialogBegin(nint ui, nint title, nint open, in NativeDialogOpts opts);
 
@@ -568,7 +576,7 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_sheet_end")]
     public static partial void SheetEnd(nint ui);
 
-    /// <summary>Queue a toast. Returns a handle; cui_toast_action_clicked(handle) tells whether its action button was pressed.</summary>
+    /// <summary>Queue a toast. Returns a handle; cui_toast_action_clicked(handle) tells whether its action button was pressed before the toast started closing.</summary>
     [LibraryImport("cui", EntryPoint = "cui_toast_ex")]
     public static partial int Toast(nint ui, nint title, in NativeToastOpts opts);
 
@@ -588,6 +596,10 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_progress_ex")]
     public static partial void Progress(nint ui, float value, in NativeProgressOpts opts);
 
+    /// <summary>most styles are square; upload and download are 25/32 as wide as tall, transfer 50/32, bounce 40/28, scan 28/32</summary>
+    [LibraryImport("cui", EntryPoint = "cui_spinner_ex")]
+    public static partial void SpinnerEx(nint ui, float size, in NativeSpinnerOpts opts);
+
     /// <summary>cui_spinner</summary>
     [LibraryImport("cui", EntryPoint = "cui_spinner")]
     public static partial void Spinner(nint ui, float size);
@@ -595,6 +607,14 @@ public static unsafe partial class Native
     /// <summary>cui_skeleton</summary>
     [LibraryImport("cui", EntryPoint = "cui_skeleton")]
     public static partial void Skeleton(nint ui, NativeSize width, float height);
+
+    /// <summary>cui_skeleton_group_begin_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_skeleton_group_begin_ex")]
+    public static partial void SkeletonGroupBegin(nint ui, in NativeSkeletonGroupOpts opts);
+
+    /// <summary>cui_skeleton_group_end</summary>
+    [LibraryImport("cui", EntryPoint = "cui_skeleton_group_end")]
+    public static partial void SkeletonGroupEnd(nint ui);
 
     /// <summary>cui_badge_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_badge_ex")]
@@ -644,7 +664,7 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_list_item_ex")]
     public static partial byte ListItem(nint ui, nint title, in NativeListItemOpts opts);
 
-    /// <summary>Virtual list: only the visible rows are built, so lists with a million rows stay fast. Fills first/last with the visible range.</summary>
+    /// <summary>Virtual list: only the visible rows are built, so lists with a million rows stay fast. Fills first/last with the visible range for this row count.</summary>
     [LibraryImport("cui", EntryPoint = "cui_virtual_list_begin")]
     public static partial void VirtualListBegin(nint ui, nint id, int count, float rowHeight, NativeSize height, ref int first, ref int last);
 
@@ -652,7 +672,7 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_virtual_list_end")]
     public static partial void VirtualListEnd(nint ui);
 
-    /// <summary>cui_table_begin_ex</summary>
+    /// <summary>Begin a table with keyboard focus indicators for its sortable headers.</summary>
     [LibraryImport("cui", EntryPoint = "cui_table_begin_ex")]
     public static partial byte TableBegin(nint ui, nint id, nint columns, int columnCount, in NativeTableOpts opts);
 
@@ -692,11 +712,15 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_gauge")]
     public static partial void Gauge(nint ui, nint label, float value, float size);
 
+    /// <summary>cui_pattern_meter_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_pattern_meter_ex")]
+    public static partial int PatternMeter(nint ui, nint id, nint parts, int count, in NativePatternMeterOpts opts);
+
     /// <summary>Images</summary>
     [LibraryImport("cui", EntryPoint = "cui_image_create")]
     public static partial nuint ImageCreate(nint ui, int w, int h, nint rgba);
 
-    /// <summary>PNG/JPEG via stb_image</summary>
+    /// <summary>UTF-8 path, PNG/JPEG via stb_image</summary>
     [LibraryImport("cui", EntryPoint = "cui_image_load")]
     public static partial nuint ImageLoad(nint ui, nint path, ref int w, ref int h);
 
@@ -724,11 +748,11 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_radio_cards_ex")]
     public static partial byte RadioCards(nint ui, nint id, nint choices, int count, ref int index, in NativeRadioCardsOpts opts);
 
-    /// <summary>cui_tag_input_ex</summary>
+    /// <summary>max_tags applies to every tag, including a batch separated by commas.</summary>
     [LibraryImport("cui", EntryPoint = "cui_tag_input_ex")]
     public static partial byte TagInput(nint ui, nint id, nint buf, nuint cap, in NativeTagOpts opts);
 
-    /// <summary>One time code input: `length` boxes; code must hold length + 1 bytes. Returns true when all boxes are filled (once per change).</summary>
+    /// <summary>One time code input: `length` boxes; code must hold length + 1 bytes. Returns true when all boxes are filled, including when a paste replaces one complete code with a different complete code.</summary>
     [LibraryImport("cui", EntryPoint = "cui_otp_input")]
     public static partial byte OtpInput(nint ui, nint id, nint code, int length);
 
@@ -780,7 +804,7 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_split_button_ex")]
     public static partial int SplitButton(nint ui, nint label, nint items, int count, in NativeSplitButtonOpts opts);
 
-    /// <summary>cui_toggle_group_ex</summary>
+    /// <summary>Move focus once per arrow press unless a later control took focus.</summary>
     [LibraryImport("cui", EntryPoint = "cui_toggle_group_ex")]
     public static partial byte ToggleGroup(nint ui, nint id, nint labels, int count, nint values, in NativeToggleGroupOpts opts);
 
@@ -792,11 +816,15 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_status_button_ex")]
     public static partial byte StatusButton(nint ui, nint label, Status status, in NativeStatusButtonOpts opts);
 
+    /// <summary>cui_status_spinner_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_status_spinner_ex")]
+    public static partial byte StatusSpinner(nint ui, nint id, Status status, in NativeStatusSpinnerOpts opts);
+
     /// <summary>cui_reactions</summary>
     [LibraryImport("cui", EntryPoint = "cui_reactions")]
     public static partial int Reactions(nint ui, nint id, nint items, int count);
 
-    /// <summary>cui_speed_dial_ex</summary>
+    /// <summary>Balance the action scope even if an action closes the dial during the build.</summary>
     [LibraryImport("cui", EntryPoint = "cui_speed_dial_ex")]
     public static partial int SpeedDial(nint ui, nint id, nint actions, int count, in NativeSpeedDialOpts opts);
 
@@ -824,7 +852,7 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_swipe_item_end")]
     public static partial int SwipeItemEnd(nint ui);
 
-    /// <summary>cui_data_grid_begin_ex</summary>
+    /// <summary>Returns a visible range for the current row count, even after the grid shrinks.</summary>
     [LibraryImport("cui", EntryPoint = "cui_data_grid_begin_ex")]
     public static partial byte DataGridBegin(nint ui, nint id, nint columns, int columnCount, int rowCount, ref int first, ref int last, in NativeGridOpts opts);
 
@@ -856,7 +884,7 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_tree_cell")]
     public static partial byte TreeCell(nint ui, nint label, int depth, byte hasChildren, nint open, nint icon);
 
-    /// <summary>cui_filter_bar</summary>
+    /// <summary>Draw filter chips and open the new chip&apos;s value list when a field is added.</summary>
     [LibraryImport("cui", EntryPoint = "cui_filter_bar")]
     public static partial byte FilterBar(nint ui, nint id, nint fields, int count, ref uint selected, nint search, nuint searchCap);
 
@@ -964,7 +992,7 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_chat_divider")]
     public static partial void ChatDivider(nint ui, nint label);
 
-    /// <summary>bouncing dots</summary>
+    /// <summary>bouncing dots, still with reduced motion</summary>
     [LibraryImport("cui", EntryPoint = "cui_typing_indicator")]
     public static partial void TypingIndicator(nint ui, nint name);
 
@@ -1040,7 +1068,7 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_funnel_ex")]
     public static partial int Funnel(nint ui, nint id, nint stages, int count, in NativeFunnelOpts opts);
 
-    /// <summary>cui_sankey_ex</summary>
+    /// <summary>Returns the clicked node index, node_count + the clicked input link index, or -1.</summary>
     [LibraryImport("cui", EntryPoint = "cui_sankey_ex")]
     public static partial int Sankey(nint ui, nint id, nint nodes, int nodeCount, nint links, int linkCount, in NativeSankeyOpts opts);
 
@@ -1124,7 +1152,7 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_dock_end")]
     public static partial void DockEnd(nint ui);
 
-    /// <summary>cui_tab_bar_ex</summary>
+    /// <summary>Move one tab per arrow press, keeping the move tied to the original focus.</summary>
     [LibraryImport("cui", EntryPoint = "cui_tab_bar_ex")]
     public static partial byte TabBar(nint ui, nint id, nint items, int count, ref int selected, in NativeTabBarOpts opts);
 
@@ -1192,6 +1220,22 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_voice_orb_ex")]
     public static partial byte VoiceOrb(nint ui, nint id, VoiceState state, float level, in NativeVoiceOrbOpts opts);
 
+    /// <summary>cui_voice_wave_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_voice_wave_ex")]
+    public static partial byte VoiceWave(nint ui, nint id, nint levels, int count, in NativeVoiceWaveOpts opts);
+
+    /// <summary>Resamples a clip to `columns` levels the way the clip strip does (the loudest level of each stretch; a stretch with no audio stays CUI_VOICE_SILENT), for keeping a short waveform with a message. Returns the number written.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_voice_resample")]
+    public static partial int VoiceResample(nint levels, int count, ref float @out, int columns);
+
+    /// <summary>cui_voice_note_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_voice_note_ex")]
+    public static partial int VoiceNote(nint ui, nint id, ref NativeVoiceNote note, in NativeVoiceNoteOpts opts);
+
+    /// <summary>cui_voice_session_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_voice_session_ex")]
+    public static partial int VoiceSession(nint ui, nint id, VoiceState state, nint levels, int count, in NativeVoiceSessionOpts opts);
+
     /// <summary>cui_kanban_begin</summary>
     [LibraryImport("cui", EntryPoint = "cui_kanban_begin")]
     public static partial void KanbanBegin(nint ui, nint id);
@@ -1216,7 +1260,7 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_kanban_end")]
     public static partial byte KanbanEnd(nint ui, ref NativeKanbanMove move);
 
-    /// <summary>cui_week_calendar_ex</summary>
+    /// <summary>Returns the activated event index or -1. Read-only events still activate.</summary>
     [LibraryImport("cui", EntryPoint = "cui_week_calendar_ex")]
     public static partial int WeekCalendar(nint ui, nint id, NativeDate weekStart, nint events, int count, in NativeWeekOpts opts);
 
@@ -1224,11 +1268,11 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_month_calendar_ex")]
     public static partial NativeMonthResult MonthCalendar(nint ui, nint id, ref NativeDate month, nint events, int count, in NativeMonthOpts opts);
 
-    /// <summary>cui_gantt_ex</summary>
+    /// <summary>Returns the activated task index or -1. Read-only tasks still activate.</summary>
     [LibraryImport("cui", EntryPoint = "cui_gantt_ex")]
     public static partial int Gantt(nint ui, nint id, nint tasks, int count, NativeDate origin, int days, in NativeGanttOpts opts);
 
-    /// <summary>cui_hover_card_begin</summary>
+    /// <summary>Keep a dismissed card closed until the pointer leaves its anchor.</summary>
     [LibraryImport("cui", EntryPoint = "cui_hover_card_begin")]
     public static partial byte HoverCardBegin(nint ui, nint id, in NativeHoverCardOpts opts);
 
@@ -1236,11 +1280,11 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_hover_card_end")]
     public static partial void HoverCardEnd(nint ui);
 
-    /// <summary>cui_confirm_popover_ex</summary>
+    /// <summary>Require a fresh Enter when an activation opens the question in this frame.</summary>
     [LibraryImport("cui", EntryPoint = "cui_confirm_popover_ex")]
     public static partial byte ConfirmPopover(nint ui, nint id, in NativeConfirmPopoverOpts opts);
 
-    /// <summary>cui_expandable_text_ex</summary>
+    /// <summary>Draw expandable text with a toggle that keeps its identity when its label changes.</summary>
     [LibraryImport("cui", EntryPoint = "cui_expandable_text_ex")]
     public static partial byte ExpandableText(nint ui, nint id, nint text, in NativeExpandableTextOpts opts);
 
@@ -1272,6 +1316,14 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_checklist_ex")]
     public static partial int Checklist(nint ui, nint id, nint steps, int count, in NativeChecklistOpts opts);
 
+    /// <summary>Draw the cover while leaving hit testing to other widgets when it is disabled.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_veil_begin_ex")]
+    public static partial byte VeilBegin(nint ui, nint id, nint revealed, in NativeVeilOpts opts);
+
+    /// <summary>cui_veil_end</summary>
+    [LibraryImport("cui", EntryPoint = "cui_veil_end")]
+    public static partial void VeilEnd(nint ui);
+
     /// <summary>cui_multi_select_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_multi_select_ex")]
     public static partial byte MultiSelect(nint ui, nint id, nint items, int count, nint selected, in NativeMultiSelectOpts opts);
@@ -1296,7 +1348,7 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_time_picker_ex")]
     public static partial byte TimePicker(nint ui, nint id, ref int hour, ref int minute, in NativeTimeOpts opts);
 
-    /// <summary>cui_wheel_picker_ex</summary>
+    /// <summary>Build a wheel picker, apply input routed to its drum, and draw its focus ring with its rows.</summary>
     [LibraryImport("cui", EntryPoint = "cui_wheel_picker_ex")]
     public static partial byte WheelPicker(nint ui, nint id, nint items, int count, ref int index, in NativeWheelOpts opts);
 
@@ -1304,7 +1356,7 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_time_dial")]
     public static partial byte TimeDial(nint ui, nint id, ref int hour, ref int minute, float size);
 
-    /// <summary>cui_ruler_slider_ex</summary>
+    /// <summary>Build a ruler slider: it takes vertical wheel input before the enclosing view and keeps every rounded value in range.</summary>
     [LibraryImport("cui", EntryPoint = "cui_ruler_slider_ex")]
     public static partial byte RulerSlider(nint ui, nint label, ref float value, float min, float max, in NativeRulerOpts opts);
 
@@ -1336,7 +1388,7 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_signature_clear")]
     public static partial void SignatureClear(nint ui, nint id);
 
-    /// <summary>cui_dropzone_ex</summary>
+    /// <summary>Build a dropzone and show drag feedback only while it can accept a drop.</summary>
     [LibraryImport("cui", EntryPoint = "cui_dropzone_ex")]
     public static partial int Dropzone(nint ui, nint id, in NativeDropzoneOpts opts);
 
@@ -1352,11 +1404,11 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_inline_edit_ex")]
     public static partial int InlineEdit(nint ui, nint id, nint buf, nuint cap, in NativeInlineEditOpts opts);
 
-    /// <summary>cui_scrub_ex</summary>
+    /// <summary>Edit a bounded scrub value and accept only a complete, finite numeric draft.</summary>
     [LibraryImport("cui", EntryPoint = "cui_scrub_ex")]
     public static partial byte Scrub(nint ui, nint label, ref float value, float min, float max, in NativeScrubOpts opts);
 
-    /// <summary>cui_money_input_ex</summary>
+    /// <summary>Edit an amount only if its grouped display can represent the result.</summary>
     [LibraryImport("cui", EntryPoint = "cui_money_input_ex")]
     public static partial byte MoneyInput(nint ui, nint id, ref double value, in NativeMoneyOpts opts);
 
@@ -1372,7 +1424,7 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_key_name")]
     public static partial nint KeyName(Key key);
 
-    /// <summary>cui_node_editor_begin_ex</summary>
+    /// <summary>Build the editor canvas and process gestures while it is enabled.</summary>
     [LibraryImport("cui", EntryPoint = "cui_node_editor_begin_ex")]
     public static partial byte NodeEditorBegin(nint ui, nint id, ref NativeNodeView view, in NativeNodeEditorOpts opts);
 
@@ -1455,6 +1507,30 @@ public static unsafe partial class Native
     /// <summary>pushes the following items to the right</summary>
     [LibraryImport("cui", EntryPoint = "cui_toolbar_spacer")]
     public static partial void ToolbarSpacer(nint ui);
+
+    /// <summary>A group of items: a raised well in the grouped style, set apart by separators in the others.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_toolbar_group_begin")]
+    public static partial void ToolbarGroupBegin(nint ui);
+
+    /// <summary>cui_toolbar_group_end</summary>
+    [LibraryImport("cui", EntryPoint = "cui_toolbar_group_end")]
+    public static partial void ToolbarGroupEnd(nint ui);
+
+    /// <summary>cui_toolbar_radio_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_toolbar_radio_ex")]
+    public static partial byte ToolbarRadio(nint ui, nint id, nint icons, int count, ref int index, in NativeToolbarRadioOpts opts);
+
+    /// <summary>The main action at the end of a grouped toolbar: a larger button filled with the text color.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_toolbar_primary_ex")]
+    public static partial byte ToolbarPrimary(nint ui, nint icon, in NativeToolOpts opts);
+
+    /// <summary>A small picker that steps through its choices on each click (&quot;1x&quot;, &quot;2x&quot;, &quot;4x&quot;). Returns true when *index changed.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_toolbar_cycle_ex")]
+    public static partial byte ToolbarCycle(nint ui, nint id, nint items, int count, ref int index, in NativeToolOpts opts);
+
+    /// <summary>A small triangle in the corner of the previous component (at the end side) that says it opens a flyout or a menu. Any button can take it.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_flyout_mark")]
+    public static partial void FlyoutMark(nint ui);
 
     /// <summary>cui_status_bar_begin</summary>
     [LibraryImport("cui", EntryPoint = "cui_status_bar_begin")]
@@ -1652,6 +1728,38 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_gradient_eval")]
     public static partial NativeColor GradientEval(nint stops, int count, float t);
 
+    /// <summary>cui_status_tag_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_status_tag_ex")]
+    public static partial byte StatusTag(nint ui, nint label, TagStatus status, in NativeStatusTagOpts opts);
+
+    /// <summary>cui_ratio_slider_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_ratio_slider_ex")]
+    public static partial byte RatioSlider(nint ui, nint first, nint second, ref float ratio, in NativeRatioSliderOpts opts);
+
+    /// <summary>Edit a gradient slider without snapping a passive model value or an endpoint.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_gradient_slider_ex")]
+    public static partial int GradientSlider(nint ui, nint label, ref float value, float min, float max, in NativeGradientSliderOpts opts);
+
+    /// <summary>cui_step_slider_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_step_slider_ex")]
+    public static partial int StepSlider(nint ui, nint label, ref int value, int min, int max, in NativeStepSliderOpts opts);
+
+    /// <summary>cui_palette_strip_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_palette_strip_ex")]
+    public static partial int PaletteStrip(nint ui, nint label, nint colors, nint locked, int count, in NativePaletteStripOpts opts);
+
+    /// <summary>cui_aspect_picker_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_aspect_picker_ex")]
+    public static partial byte AspectPicker(nint ui, nint label, ref int index, in NativeAspectPickerOpts opts);
+
+    /// <summary>cui_option_action_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_option_action_ex")]
+    public static partial int OptionAction(nint ui, nint label, nint items, int count, ref int index, nint icon, in NativeOptionActionOpts opts);
+
+    /// <summary>cui_seed_field_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_seed_field_ex")]
+    public static partial int SeedField(nint ui, nint label, ref uint seed, nint locked, in NativeSeedFieldOpts opts);
+
     /// <summary>time: the playhead in seconds (may be NULL).</summary>
     [LibraryImport("cui", EntryPoint = "cui_timeline_editor_ex")]
     public static partial NativeTimelineEditorResult TimelineEditor(nint ui, nint id, nint tracks, int count, ref float time, in NativeTimelineEditorOpts opts);
@@ -1668,7 +1776,7 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_pipeline_ex")]
     public static partial NativePipelineResult Pipeline(nint ui, nint id, nint stages, int stageCount, nint jobs, int jobCount, in NativePipelineOpts opts);
 
-    /// <summary>cui_query_builder_ex</summary>
+    /// <summary>Read-only and disabled builders preserve the input rules and count.</summary>
     [LibraryImport("cui", EntryPoint = "cui_query_builder_ex")]
     public static partial byte QueryBuilder(nint ui, nint id, nint fields, int fieldCount, nint nodes, ref int count, int capacity, in NativeQueryOpts opts);
 
@@ -1712,7 +1820,7 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_waterfall_ex")]
     public static partial NativeWaterfallResult Waterfall(nint ui, nint id, nint requests, int count, in NativeWaterfallOpts opts);
 
-    /// <summary>cui_trace_view_ex</summary>
+    /// <summary>Draw the trace and report changes to its range, scroll position, or measurement.</summary>
     [LibraryImport("cui", EntryPoint = "cui_trace_view_ex")]
     public static partial NativeTraceResult TraceView(nint ui, nint id, nint tracks, int trackCount, nint spans, int spanCount, ref NativeTraceView view, ref int selected, in NativeTraceOpts opts);
 
@@ -1764,7 +1872,7 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_uptime_ex")]
     public static partial NativeUptimeResult Uptime(nint ui, nint id, nint services, int count, in NativeUptimeOpts opts);
 
-    /// <summary>cui_time_histogram_ex</summary>
+    /// <summary>Draw a time histogram and cancel a pending selection when it becomes disabled.</summary>
     [LibraryImport("cui", EntryPoint = "cui_time_histogram_ex")]
     public static partial NativeTimeHistogramResult TimeHistogram(nint ui, nint id, double start, double bucketSeconds, int buckets, nint series, int seriesCount, ref double selStart, ref double selEnd, in NativeTimeHistogramOpts opts);
 
@@ -1784,7 +1892,7 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_api_explorer_ex")]
     public static partial NativeApiExplorerResult ApiExplorer(nint ui, nint id, nint endpoints, int count, in NativeApiExplorerOpts opts);
 
-    /// <summary>cui_dot_chart_ex</summary>
+    /// <summary>Draw a dot chart and report activation at the current sample or pointer position.</summary>
     [LibraryImport("cui", EntryPoint = "cui_dot_chart_ex")]
     public static partial NativeDotChartResult DotChart(nint ui, nint id, nint series, int seriesCount, int count, in NativeDotChartOpts opts);
 
@@ -1799,6 +1907,34 @@ public static unsafe partial class Native
     /// <summary>cui_dot_display_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_dot_display_ex")]
     public static partial void DotDisplay(nint ui, nint text, in NativeDotDisplayOpts opts);
+
+    /// <summary>Returns CUI_FORMAT_* flags.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_format_bar_ex")]
+    public static partial int FormatBar(nint ui, nint id, ref NativeTextFormat format, in NativeFormatBarOpts opts);
+
+    /// <summary>cui_live_cursors_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_live_cursors_ex")]
+    public static partial void LiveCursors(nint ui, nint id, nint users, int count, in NativeLiveCursorsOpts opts);
+
+    /// <summary>cui_presence_pill_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_presence_pill_ex")]
+    public static partial void PresencePill(nint ui, nint id, nint users, int count, in NativePresencePillOpts opts);
+
+    /// <summary>cui_selection_ring_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_selection_ring_ex")]
+    public static partial void SelectionRing(nint ui, NativeColor color, in NativeSelectionRingOpts opts);
+
+    /// <summary>Returns CUI_CANVAS_* flags.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_canvas_controls_ex")]
+    public static partial int CanvasControls(nint ui, nint id, ref NativeNodeView view, in NativeCanvasControlsOpts opts);
+
+    /// <summary>cui_result_card_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_result_card_ex")]
+    public static partial byte ResultCard(nint ui, nint id, nuint image, nint title, in NativeResultCardOpts opts);
+
+    /// <summary>Returns the action picked, CUI_SELECTION_CLEARED when the clear button or Esc cleared the selection, or CUI_SELECTION_NONE.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_selection_bar_ex")]
+    public static partial int SelectionBar(nint ui, nint id, int count, nint actions, int actionCount, in NativeSelectionBarOpts opts);
 
     /// <summary>cui_draw_rect</summary>
     [LibraryImport("cui", EntryPoint = "cui_draw_rect")]
@@ -1915,6 +2051,14 @@ public static unsafe partial class Native
     /// <summary>cui_app_size</summary>
     [LibraryImport("cui", EntryPoint = "cui_app_size")]
     public static partial NativeVec2 AppSize(nint app);
+
+    /// <summary>Maximizes the window on its display, as the title bar&apos;s maximize button does. NULL means the running app, so a cui_app_run callback can call it on its first frame; with the loop form it is fine right after cui_app_create. Nothing happens for a fixed-size window or where the window manager does not support it (an X11 window manager without EWMH).</summary>
+    [LibraryImport("cui", EntryPoint = "cui_app_maximize")]
+    public static partial void AppMaximize(nint app);
+
+    /// <summary>Starts or stops following the OS light/dark setting, as cui_app_desc.follow_system_theme does at creation, for a theme switcher with Light, Dark and System. Starting applies the OS setting at once, where the platform reports one. Stopping keeps the current theme, so a cui_set_theme after it lasts. Later OS changes are followed on Windows and macOS.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_app_follow_system_theme")]
+    public static partial void AppFollowSystemTheme(nint app, byte follow);
 
     /// <summary>True when the software renderer is drawing (no usable OpenGL, or it was asked for).</summary>
     [LibraryImport("cui", EntryPoint = "cui_app_is_software")]

@@ -120,7 +120,7 @@ if ([int]$functions -gt 0) { Note "entries     $total for $functions C functions
 # numbers out of the sentence and compare them with coverage.txt: a stale sync is then a failed
 # command, not a claim someone notices a release later.
 $checks = @(
-    @{ File = 'README.md'; Pattern = '(\d+) CUI [\d.]+ functions'; Value = $functions; What = 'C functions' },
+    @{ File = 'README.md'; Pattern = '(\d+) CUI (?:[\d.]+ )?functions'; Value = $functions; What = 'C functions' },
     @{ File = 'README.md'; Pattern = '(\d+) option'; Value = $options; What = 'options' },
     @{ File = 'README.md'; Pattern = '(\d+) records'; Value = $records; What = 'records' },
     @{ File = 'README.md'; Pattern = '(\d+) generated wrappers'; Value = $wrappers; What = 'generated wrappers' },

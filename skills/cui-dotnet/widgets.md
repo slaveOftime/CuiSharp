@@ -157,7 +157,9 @@ cui_range_slider(ui, "Price", &lo, &hi, 0, 500);
 
 Drag past either end and the track stretches like rubber, then springs back on release. Clicking the track glides the thumb to the spot. Options: `step`, `show_value`, `format`, `disabled`, `width`. Keyboard: arrows step (Shift for 10 steps), Home and End.
 
-Both return true on a frame the value changes. `volume` is your `float`. The slider writes it while it is dragged and keeps it between the minimum and the maximum, so a value set outside the range is pulled back in. `format` is a `printf` format for one `double` and defaults to "%.0f". The label is also the identity: two sliders with the same label in one scope need a key, as in `"Volume##left"`. `cui_range_slider` takes two floats and no options; its thumbs cannot cross and are moved with the pointer only.
+Both return true on a frame the value changes. `volume` is your `float`. The slider writes it while it is dragged and keeps it between the minimum and the maximum, so a value set outside the range is pulled back in. `format` is a `printf` format for one `double` and defaults to "%.0f". The label is also the identity: two sliders with the same label in one scope need a key, as in `"Volume##left"`. `cui_range_slider` takes two floats and no options. Its thumbs cannot cross.
+
+Tab focuses the range slider. Space switches the focused thumb. An arrow moves it by one percent of the range, or ten percent with Shift. Home and End move it as far as it can go without crossing the other thumb. When the thumbs overlap, a chevron points toward the selected end of the track.
 
 ## Chips and rating
 
@@ -198,7 +200,7 @@ You own the buffer; CUI never writes past `cap`. Returns flags: `CUI_CHANGED`, `
 |---|---|
 | `label`, `placeholder`, `hint`, `error` | |
 | `icon` | Leading icon |
-| `password` | Masks the text and adds a show/hide button |
+| `password` | Masks the text and adds a show/hide button that honors `disabled` |
 | `clearable` | Adds a clear button when not empty (always on for `cui_search`). Hidden for `read_only` fields; `Ctrl+Z` restores the cleared text |
 | `autofocus`, `read_only`, `disabled`, `size`, `width` | |
 
@@ -214,7 +216,7 @@ cui_textarea(ui, "bio", bio, sizeof bio, .label = "Bio", .height = 120);
 cui_textarea(ui, "body", body, sizeof body, .height = -1);   /* fill the available height */
 ```
 
-Word wraps, scrolls with the wheel, Up and Down move between visual lines. Enter inserts a newline; Ctrl+Enter submits.
+Text wraps and scrolls with the wheel. When the text reaches the edge in the wheel's direction, the next wheel event can scroll the enclosing view. With mixed trackpad input, the text can scroll vertically while the enclosing view scrolls horizontally. Shift-wheel uses the enclosing scroll view. Up and Down move between visual lines. Enter inserts a newline and Ctrl+Enter submits.
 
 Returns the same flags as the text field: `CUI_CHANGED` on a frame the text changes, `CUI_SUBMITTED` when it is submitted, and `CUI_FOCUSED` and `CUI_BLURRED` on the frames it gains and loses the focus. `bio` is your buffer and the next argument its size in bytes, the terminating zero included. The library edits it in place, never writes past it, and drops what does not fit without cutting a UTF-8 character in half. Lines are separated by `\n`. `height` is in points and defaults to 96, and a negative value fills the height left in the container. It takes the options of the text field. For source code, use the code editor.
 
@@ -229,7 +231,7 @@ cui_select(ui, "country", items, 5, &country, .label = "Country");
 cui_select(ui, "lang", languages, n, &lang, .searchable = true, .placeholder = "Pick a language");
 ```
 
-`searchable` adds a filter field at the top of the list (a combobox). Options: `label`, `placeholder`, `icons`, `searchable`, `disabled`, `width`. Keyboard: Up/Down open the list and move the highlight, Enter chooses, Esc closes.
+`searchable` adds a filter field at the top of the list (a combobox). Options: `label`, `placeholder`, `icons`, `searchable`, `disabled`, `width`. Up/Down open the list and move the highlight. Enter opens the list or chooses the highlighted item. Esc closes the list, and in a searchable select returns focus from the search field to the trigger.
 
 Returns true on the frame the choice changes. `country` is your `int`, the index of the chosen item. A value outside 0 to `count` - 1, such as -1, means nothing is chosen, and the field then shows `placeholder`, or "Select". Choosing an item closes the list, which scrolls once it is taller than 300 points. The search keeps the items that contain the typed text, whatever the case. For several choices use the multi-select, and for two to five options that should stay visible use a segmented control.
 
@@ -246,9 +248,11 @@ cui_date today = cui_date_today();
 
 Weeks start on Monday. Today has a ring, the selected day is filled.
 
-Both return true on the frame a day is clicked. `due` is your `cui_date`: a year, a month from 1 to 12 and a day. A year of 0 means no date: the picker then shows `placeholder`, or "Pick a date", and the calendar opens on the current month. The picker writes the date and closes. The library keeps only the month in view, under `id`. It starts at the month of the value and after that follows the month buttons, so changing the value from code does not turn the page. `cui_date_today` takes no context and reads the local date from the system clock. For a start and an end, use the date range picker.
+The title opens the months of the year, and the year at the top of the months opens twelve years at a time, so a distant date takes a few clicks: the year, the month, then the day. The arrows turn a month, a year or twelve years, whichever is shown. Choosing a year shows its months, choosing a month shows its days, and the calendar keeps its size throughout.
 
-Keyboard: Enter or Space on the field opens the calendar and Esc closes it. Inside, Tab moves through the month buttons and the days, and Enter picks the focused day.
+Both return true on the frame a day is clicked. `due` is your `cui_date`: a year, a month from 1 to 12 and a day. A year of 0 means no date: the picker then shows `placeholder`, or "Pick a date", and the calendar opens on the current month. The picker writes the date and closes. The library keeps only the month in view and whether days, months or years are shown, under `id`. It starts at the month of the value and after that follows the buttons, so changing the value from code does not turn the page. A calendar that was hidden, such as the picker's when it closes, opens on the days again. `cui_date_today` takes no context and reads the local date from the system clock. For a start and an end, use the date range picker.
+
+Keyboard: Enter or Space on the field opens the calendar and Esc closes it. Inside, Tab moves through the title, the arrows and the days, months or years, and Enter picks the focused one. After a month or a year is chosen, the focus is on the title.
 
 ## Number field
 
@@ -262,7 +266,7 @@ cui_number(ui, "price", &price, 0, 1e6, .decimals = 2, .suffix = "USD");
 
 Type a value, use the minus and plus buttons, or Up/Down (Shift for 10 steps). Values are clamped to the range.
 
-Returns true on a frame the value changes, which while typing is every keystroke that reads as a different number. `seats` is your `double`. The field shows a value you set from code as soon as it is not focused, and pulls a value outside the range back in on every frame. `step` is what the buttons and the keys add or take away, 1 when not set. `decimals` is how many places are shown, 0 when not set. It does not round the value: 2.5 typed into a field with no decimals stays 2.5 in your variable.
+Returns true on a frame the value changes. During typing, only a complete finite number can change your `double`. Enter or loss of focus restores the accepted value to the field, clamped to the range and formatted with `decimals`. A value set from code appears when the field is unfocused, and out-of-range values are clamped each frame. `step` is the increment for the buttons and keys and defaults to 1. `decimals` defaults to 0 and only affects display, so typing 2.5 still stores 2.5 in your variable.
 
 ## Color picker
 
@@ -324,11 +328,11 @@ cui_stepper(ui, steps, 4, current);
 
 `cui_breadcrumb` returns the index of the item that was clicked, or -1. The last item is the current page: it is not a link and is never returned. Each item is told apart by its text, so two levels with the same name need a key, as in `"Docs##2"`.
 
-`cui_pagination` returns true on the frame the page changes. `page` is your `int`, counted from 0 while the buttons show numbers from 1, and it is kept between 0 and `page_count` - 1. With seven pages or fewer, all are shown. Beyond that the first, the last and the pages around the current one stay, with an ellipsis for each gap.
+`cui_pagination` returns true on the frame the page changes. `page` is your `int`, counted from 0 while the buttons show numbers from 1, and it is kept between 0 and `page_count` - 1. With seven pages or fewer, all are shown. Beyond that the first, the last and the pages around the current one stay, with an ellipsis for each gap. A narrow parent leaves room for just the first, current and last page.
 
-`cui_stepper` returns nothing. `current` is the index of the step in progress, from 0: the steps before it are marked done, and passing the number of steps marks them all done. In a narrow row only the current step keeps its label.
+`cui_stepper` returns nothing. `current` is the index of the step in progress, from 0: the steps before it are marked done, and passing the number of steps marks them all done. Each stepper adapts to the width of its own row. In a narrow row only the current step keeps its label.
 
-Keyboard: Tab moves through the breadcrumb's links and the pagination's page buttons, and Enter or Space follows or presses the focused one. The stepper only displays.
+Tab moves through the breadcrumb links and page buttons, with a ring around the focused control. Enter or Space activates it. The stepper only displays.
 
 ## Dropdown and context menu
 
@@ -382,6 +386,8 @@ Appears after a short delay. Moving on to a neighbour while it is open, it glide
 
 `cui_tooltip` returns nothing and takes no `id`: call it on every frame, right after the component it belongs to. That component must be one that reacts to the pointer, such as a button, a link or a hoverable card. Plain text, a badge and an avatar do not, so a tooltip placed after one of them attaches to whatever interactive component came before. The delay is 0.55 seconds, and none when another tooltip was showing less than 0.4 seconds ago. The text is copied, up to 255 bytes. For a card with its own layout, use a hover card.
 
+The hover delay is measured in elapsed time, including when the app sleeps between frames.
+
 Keyboard: a tooltip takes no focus. It belongs to the control before it, which keeps its own keys.
 
 ## Dialog
@@ -398,7 +404,15 @@ cui_dialog(ui, "Edit profile", &open, .description = "Changes are visible to you
 }
 ```
 
-Modal: the scrim blocks everything behind it. Esc, the close button or a click on the scrim close it, unless `persistent`. Options: `description`, `width` (440), `no_close_button`, `persistent`. Opens with a fade and a scale from 0.96, closes faster than it opens.
+Modal: the scrim blocks everything behind it. Esc, the close button or a click on the scrim close it, unless `persistent`. Options: `description`, `width` (440), `no_close_button`, `persistent`, `draggable`, `resizable`. Opens with a fade and a scale from 0.96, closes faster than it opens.
+
+`draggable` lets the user move the dialog by its header, and `resizable` lets them resize it by its edges and corners. Both keep the dialog inside the window; a resized dialog stops at 240 by 120 points and clips its content when that no longer fits. A grab that ends outside the panel is not a click on the scrim, so the dialog stays open. The position and size belong to the dialog, not to your code: it opens centred at its own size every time. The corners use the horizontal resize cursor, since CUI has no diagonal one. Moving and resizing take the pointer; the keyboard does not move or resize a dialog.
+
+```c
+cui_dialog(ui, "Edit profile", &open, .draggable = true, .resizable = true) { /* ... */ }
+```
+
+Escape first clears a text selection or leaves the focused editor. Once focus leaves the editor, the next Escape can close the dialog.
 
 ## Sheet
 
@@ -429,7 +443,7 @@ if (cui_toast_action_clicked(ui, t)) undo();
 
 Toasts stack in the bottom right corner. Older toasts tuck behind the newest one; hovering expands the stack and pauses the timers. Drag a toast right to dismiss it: a fling or a long drag carries its speed off the screen, a short one springs back, and dragging left meets rubbery resistance. Options: `description`, `tone`, `duration` (seconds, default 4, negative to keep), `action`. Use toasts for background events; for the result of a button press, change the button instead.
 
-Keyboard: a toast's action button takes Tab, and Enter or Space presses it. Toasts never take the focus by themselves.
+Tab reaches a visible toast's action button, and Enter or Space activates it until dismissal begins. Toasts never take focus by themselves.
 
 ## Command palette
 
@@ -476,7 +490,52 @@ cui_skeleton(ui, CUI_PCT(60), 12);             /* shimmering placeholder */
 cui_gauge(ui, "CPU", 0.42f, 130);
 ```
 
-None of these returns anything or takes the pointer. `cui_progress` takes a fraction from 0 to 1, clamped, and glides to a new value. With `indeterminate` the value is ignored and a short segment travels along the track. Options: `label` and `show_value`, which add a row above the bar with the name and a whole percentage, `tone`, `height` in points (6) and `width`. `cui_meter` takes an amount, a limit and a unit as text, prints them as "18.4 / 20 GB", and turns amber above 75% and red above 90% of the limit. `cui_spinner` takes its size in points, and 0 means 20. `cui_skeleton` takes a width and a height in points (14 when 0). `cui_gauge` takes a label, a fraction from 0 to 1 and a size in points (140 when 0).
+None of these returns anything or takes the pointer. `cui_progress` takes a fraction from 0 to 1, clamped, and glides to a new value. With `indeterminate` the value is ignored and a short segment travels along the track. Options: `label` and `show_value`, which add a row above the bar with the name and a whole percentage, `tone`, `height` in points (6) and `width`. `cui_meter` takes an amount, a limit and a unit as text, prints them as "18.4 / 20 GB", and turns amber above 75% and red above 90% of the limit. `cui_spinner` takes its size in points, and 0 means 20; its `style` option draws it in dots instead (see [Dither spinners](#dither-spinners)) and `color` sets the ring's color. `cui_skeleton` takes a width and a height in points (14 when 0). `cui_gauge` takes a label, a fraction from 0 to 1 and a size in points (140 when 0).
+
+With reduced motion, the plain ring's arc stays visible and still without requesting another frame. Pipeline jobs and the test explorer use this same ring for running items.
+
+With `dither` the bar is drawn in dots on an 8×8 ordered dither: solid up to the value, then thinning out over the 60 points past its edge, the pattern drifting slowly forward so the edge looks alive. Indeterminate, a soft band of dots sweeps the track instead of a segment. The dots take the emphasis color (the accent, or the text color under the neutral accent) unless a `tone` is set, and the default height is 8 points. The drift moves a whole dot at a time and asks for a frame only then, ten times a second; it stops when the bar is empty or full, and reduced motion holds it still and parks the indeterminate band in the middle.
+
+```c
+cui_progress(ui, 0.62f, .label = "Exporting clip.mp4", .show_value = true, .dither = true);
+cui_progress(ui, 0, .label = "Syncing library", .indeterminate = true, .dither = true);
+```
+
+## Pattern meter
+
+A stacked usage bar for storage, budgets and quotas. Every part has a color and its own density of dots, so the bar still reads in grayscale, in print and for people who cannot tell the hues apart.
+
+```c
+static const cui_meter_part parts[] = { { "Photos", 81 }, { "Video", 58 }, { "Apps", 41 }, { "Docs", 32 } };
+int shown = cui_pattern_meter(ui, "storage", parts, 4, .total = 256, .label = "Storage", .unit = "GB");
+cui_pattern_meter(ui, "print", parts, 4, .total = 256, .label = "Storage", .unit = "GB", .grayscale = true);
+```
+
+Parts follow each other from the start of the bar, parted by one dot of the surface behind it, and what is left of `total` is free space in the track color. Each `cui_meter_part` is a name, a value in the meter's units, a `color` (the series palette in order when unset) and a `density` from 0 to 1; 0 takes the next step of 1, 0.66, 0.42, 0.24, 0.14 and 0.08. The header shows `label` and the amount used ("212 / 256 GB"); hovering a part or its legend entry steps the other parts back, thinner and closer to the track, and the header shows that part's name, value and share ("Video · 58 GB · 23%"). The legend under the bar repeats each part's dither as a swatch, then the free space, named by `free_label` ("Free"; an empty string leaves it out). `grayscale` draws every part in the text color, told apart by density alone. Other options: `format` for the values (`"%g"`), `no_legend`, `height` (18 points) and `width`. With `total` 0 the parts fill the bar.
+
+Returns the part being shown, hovered or chosen with the keys, or -1. Up to 32 parts are drawn.
+
+Keyboard: Tab focuses the bar. Left and Right step through the parts (mirrored right to left), Home and End go to the first and last, and Escape clears the choice.
+
+## Dither spinners
+
+Spinners drawn in dots on an 8×8 ordered dither, each shaped for a kind of wait: a ring for anything, a radar for searching, chevrons for transfers, a page being read for an import. They take the theme's text color on whatever is behind them, so they sit as well in a primary button or a status chip as on a page.
+
+```c
+cui_spinner(ui, 56, .style = CUI_SPINNER_COMET);
+cui_spinner(ui, 64, .style = CUI_SPINNER_RADAR);
+cui_spinner(ui, 32, .style = CUI_SPINNER_UPLOAD, .color = CUI_COLOR_ACCENT);
+cui_row(ui, .gap = 8, .align = CUI_ALIGN_CENTER, .pad_x = 14, .pad_y = 8, .radius = 10, .bg = CUI_COLOR_FOREGROUND) {
+    cui_spinner(ui, 14, .style = CUI_SPINNER_COMET, .color = CUI_COLOR_BACKGROUND);   /* inline, in dark ink */
+    cui_text(ui, "Saving…", .color = CUI_COLOR_BACKGROUND);
+}
+```
+
+`cui_spinner` takes its height in points (20 when 0) and the same options as the plain ring. The styles: `CUI_SPINNER_COMET`, a ring with a head and a tail that thins out dot by dot; `CUI_SPINNER_DOT_MATRIX`, a 5×5 grid with a wave running through it; `CUI_SPINNER_FILL_DRAIN`, a tile that fills from the bottom and dissolves, for the steps of a job; `CUI_SPINNER_RADAR`, a sweep round a dial that lights up points as it passes; `CUI_SPINNER_RIPPLE`, rings spreading from a dot, for connecting or waiting on the other side; `CUI_SPINNER_UPLOAD` and `CUI_SPINNER_DOWNLOAD`, chevrons streaming up or down, and `CUI_SPINNER_TRANSFER`, both side by side; `CUI_SPINNER_ORBIT`, two dots circling with trails; `CUI_SPINNER_BOUNCE`, three bouncing dots with short trails, for typing and chat replies; `CUI_SPINNER_SCAN`, a scan line reading a page; `CUI_SPINNER_PULSE`, a soft disc breathing in density, for recording or live; `CUI_SPINNER_SPIRAL`, three arms turning, for a long calm wait; and `CUI_SPINNER_PLASMA`, slow noise in a tile, for generating an image or audio.
+
+Most styles are square. Upload and download are 25/32 as wide as they are tall, transfer 50/32, bounce 40/28 and scan 28/32. Under 32 points tall a dot is one point, so a 14 point spinner in a button or a chip stays sharp; from 32 points it is two. `color` sets the dots (the text color by default), and `track` the faint base some styles draw under them (a comet's ring, a dot matrix's dots, a plasma's tile), by default `color` at 12%. Transfer's second lane, and the edges of fill and drain and of the scanned page, are steps of `color` too.
+
+A dither spinner keeps no state and asks for a frame only when its dots move: 30 times a second for comet, orbit and bounce, 24 for radar, 20 for fill and drain and spiral, 15 for dot matrix, the transfers, scan and pulse, and 12 for ripple and plasma. A spinner that is scrolled away or covered paints nothing and asks for nothing. Trails are worked out from where the dots were over the last half second, so they look the same at any frame rate. Reduced motion holds each style on a still frame that still reads as busy: the comet's head at the top right, the fill half full, the scan line mid page.
 
 ## Badge, avatar and keycap
 
@@ -552,7 +611,7 @@ cui_table(ui, "orders", cols, 3, .sort = &sort, .selectable = true, .height = CU
 
 Cells hold any components. Clicking a sortable header updates `sort` (column and direction); you sort your data. With `height` the body scrolls under a fixed header. When the container is narrower than the fixed columns plus 96 points for each flexible one, the table scrolls sideways instead of squeezing cells. Options: `sort`, `height`, `striped`, `compact`, `selectable`.
 
-Keyboard: Tab reaches the headers of sortable columns, and Enter or Space sorts by the focused one. Rows are selected with the pointer; for arrow keys through rows use the [data grid](#data-grid-and-filter-bar).
+Keyboard: Tab reaches sortable headers and selectable rows, with a ring on the focused item. Enter or Space sorts by the focused header. For arrow keys through rows use the [data grid](components-more.md#data-grid-and-filter-bar).
 
 ## List and tree
 
@@ -606,7 +665,14 @@ cui_donut_chart(ui, "share", values, labels, 4, .format = "%.0f%%");
 cui_sparkline(ui, values, 12, CUI_PX(120), 32, CUI_COLOR_SERIES(0));
 ```
 
-Charts draw in once, pick nice axis ticks, show a crosshair that glides between points and a tooltip with every series on hover. Colors come from the theme's series palette, which starts at the accent hue. Options: `width`, `height`, `labels`, `label_count`, `area`, `smooth`, `stacked`, `no_grid`, `no_legend`, `format`, `min`, `max`. With `area` and several series, only the first is filled, so fills never tint each other into a third color.
+Charts draw in once and pick nice axis ticks. Gridlines are faint dashed hairlines over a solid zero line, and the axis labels are small and muted, so the data leads. The line chart shows a crosshair that glides between points and a tooltip with every series on hover. Bars are slim, with rounded tops and a small gap inside a group; hovering a column lays a soft band behind it, brings its label forward and shows a compact chip over it with each series' value (the full tooltip when the chip would not fit). The donut is a thin ring whose segments are parted by real gaps, with the leading or hovered share in the middle; its legend puts a thin bar under each name that shows the share's size against the largest. Colors come from the theme's series palette, which starts at the accent hue. Options: `width`, `height`, `labels`, `label_count`, `area`, `smooth`, `stacked`, `dither`, `no_grid`, `no_legend`, `format`, `min`, `max`. With `area` and several series, only the first is filled, so fills never tint each other into a third color. `stacked` stacks a bar chart's series in one column and a line chart's series on the ones before them; the tooltip still shows each series' own value.
+
+`dither` fills every series of a line chart with dots, about half lit at its line and a tenth at the bottom of its band (the base, or with `stacked` the series under it), so each band fades within itself and bands meet without mixing into a third color. The dots are drawn whole, never blended, and the lines stay crisp on top.
+
+```c
+cui_series s[] = { { "API", api, 12, CUI_COLOR_SERIES(3) }, { "Web", web, 12, CUI_COLOR_SERIES(0) } };
+cui_line_chart(ui, "requests", s, 2, .labels = hours, .label_count = 12, .dither = true, .stacked = true, .smooth = true, .format = "%.0fk");
+```
 
 ## Image
 
@@ -622,7 +688,7 @@ cui_image_destroy(ui, tex);
 
 `cui_image_load` returns a `cui_texture`, or 0 when the file cannot be read or decoded. Call it once, not on every frame, keep the texture for as long as you draw it, and free it with `cui_image_destroy`. `cui_image_create` takes `w * h` pixels of four bytes each, red, green, blue and alpha, and copies them. `cui_image` returns nothing and stretches the texture over the box given by `width` and `height`, 64 by 64 points when they are not set, so work the height out from the pixel size to keep the proportions.
 
-PNG and JPEG are decoded out of the box. Configure with `-DCUI_IMAGE_ALL_FORMATS=ON` to add BMP, GIF and TGA, or `-DCUI_STB_IMAGE=OFF` to leave decoding out and upload your own pixels with `cui_image_create`.
+PNG and JPEG are decoded out of the box. Image paths are UTF-8, including on Windows. Configure with `-DCUI_IMAGE_ALL_FORMATS=ON` to add BMP, GIF and TGA, or `-DCUI_STB_IMAGE=OFF` to leave decoding out and upload your own pixels with `cui_image_create`.
 
 ## Radio cards
 
@@ -651,7 +717,7 @@ static char tags[256] = "design, c99";
 cui_tag_input(ui, "topics", tags, sizeof tags, .label = "Topics", .max_tags = 8);
 ```
 
-Tags live in your buffer as a comma separated list. Enter or a comma adds the typed tag, the x on a chip removes it, Backspace in an empty field removes the last one.
+Tags live in your buffer as a comma separated list. Enter or a comma adds the typed tag, the x on a chip removes it, and Backspace in an empty field removes the last one. A batch of comma-separated tags fills at most the remaining `max_tags` slots.
 
 Returns true on the frame a tag is added or removed. `tags` is your buffer and the next argument its size in bytes. The library rewrites it as `"design, c99"`, tags joined by a comma and a space. To read the tags, split the text at the commas and trim the spaces. A tag that no longer fits in the buffer is not added. The word being typed is kept by the library and is not in your buffer until it becomes a tag.
 
@@ -666,7 +732,7 @@ if (cui_otp_input(ui, "code", code, 6)) verify(code);   /* true once when comple
 
 Type or paste: letters and digits fill the boxes in order, anything else is ignored. Backspace removes the last character.
 
-Returns true once, on the frame the last box is filled, and again only after a character was removed and the code completed anew. `code` is your buffer of `length` + 1 bytes, zero terminated; start it empty, as a `static` array is. The library writes the characters as they were typed, without changing their case. To clear the boxes after a wrong code, set `code[0] = 0`. `length` is the number of boxes, at most 12, and codes of six or more get a gap in the middle. The boxes are 44 points wide and shrink to 30 in a narrow container.
+Returns true on the frame the last box is filled or a paste replaces the complete code with a different one. `code` is your zero-terminated buffer of `length` + 1 bytes. Start it empty, as a `static` array is. The library preserves the case of the typed characters. To clear the boxes after a wrong code, set `code[0] = 0`. `length` is the number of boxes, at most 12, and codes of six or more get a gap in the middle. The boxes are 44 points wide and shrink to 30 in a narrow container.
 
 Keyboard: Tab focuses the boxes as one field. Backspace removes the last character and Esc leaves the field.
 
@@ -697,7 +763,7 @@ if (cui_hold_button(ui, "Hold to delete", .icon = CUI_ICON_TRASH_2)) delete_ever
 
 The hold button fills while pressed (or while Space is held with keyboard focus) and fires once when full; let go early and it springs back. Options: `duration` (1.2 s), `icon`, `variant` (danger by default).
 
-`cui_button_group` is a scope that takes no options and returns nothing: each button inside still returns its own click. Buttons in a group are ghost buttons unless they set a `variant`, and share one outline. `cui_copy_button` returns true on the frame it is clicked, after it has put the text on the clipboard; its `id` keeps the check that shows for 1.6 seconds afterwards. `cui_hold_button` returns true once, on the frame the fill completes, and not again until the button is let go. Its label is also its identity, and `duration` is in seconds. Use the hold button where a slip would cost something, and a confirm button where a second click is enough.
+`cui_button_group` is a scope that takes no options and returns nothing: each button inside still returns its own click. Buttons in a group are ghost buttons unless they set a `variant`, and share one outline. `cui_copy_button` returns true on the frame it is clicked, after it has put the text on the clipboard; its `id` keeps the check that shows for 1.6 seconds afterwards. To copy from a menu item or a status bar instead, call `cui_set_clipboard_text(ui, text)`; `cui_get_clipboard_text(ui)` reads the clipboard for a Paste item. `cui_hold_button` returns true once, on the frame the fill completes, and not again until the button is let go. Its label is also its identity, and `duration` is in seconds. Use the hold button where a slip would cost something, and a confirm button where a second click is enough.
 
 Keyboard: Tab moves through the buttons. Enter or Space presses a button in a group or the copy button, and holding either key fills the hold button. The copy button keeps keyboard focus when the check appears and when it goes away.
 

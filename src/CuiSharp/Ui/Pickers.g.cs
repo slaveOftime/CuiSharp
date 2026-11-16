@@ -43,7 +43,7 @@ public static unsafe class PickersUiExtensions
             return __result != 0;
         }
 
-        /// <summary>Wheel picker: a drum of options that you drag, scroll or arrow through. Several side by side make a date or time reel. join_left / join_right square off the selection band so wheels placed side by side share one continuous band.</summary>
+        /// <summary>Build a wheel picker, apply input routed to its drum, and draw its focus ring with its rows.</summary>
         public bool WheelPicker(UiText id, ReadOnlySpan<string> items, ref int index, WheelOpts o = default)
         {
             var __opts = o.ToNative();
@@ -60,7 +60,7 @@ public static unsafe class PickersUiExtensions
             return __result != 0;
         }
 
-        /// <summary>Ruler slider: a tape measure that slides under a fixed marker, with momentum and snapping to step.</summary>
+        /// <summary>Build a ruler slider: it takes vertical wheel input before the enclosing view and keeps every rounded value in range.</summary>
         public bool RulerSlider(UiText label, ref float value, float min, float max, RulerOpts o = default)
         {
             var __opts = o.ToNative();

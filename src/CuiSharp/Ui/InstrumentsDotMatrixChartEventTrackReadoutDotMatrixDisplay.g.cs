@@ -45,5 +45,54 @@ public static unsafe class InstrumentsDotMatrixChartEventTrackReadoutDotMatrixDi
             WidgetRecorder.Note(ui.Handle, "DotDisplay", text);
         }
 
+        /// <summary>Returns CUI_FORMAT_* flags.</summary>
+        public FormatEvents FormatBar(UiText id, ref TextFormat format, FormatBarOpts o = default)
+        {
+            var __format = format.ToNative();
+            var __opts = o.ToNative();
+            var __result = Native.FormatBar(ui.Handle, Utf8.Get(id), ref __format, in __opts);
+            format = TextFormat.FromNative(__format);
+            WidgetRecorder.Note(ui.Handle, "FormatBar", id);
+            return (FormatEvents)__result;
+        }
+
+        /// <summary>cui_live_cursors_ex</summary>
+        public void LiveCursors(UiText id, ReadOnlySpan<LiveUser> users, ref NodeView nodeview, LiveCursorsOpts o = default)
+        {
+            var __users = Utf8.AllocFrame<NativeLiveUser>(users.Length);
+            for (int i = 0; i < users.Length; i++) __users[i] = users[i].ToNative();
+            var __nodeview = nodeview.ToNative();
+            var __opts = o.ToNative((nint)(&__nodeview));
+            Native.LiveCursors(ui.Handle, Utf8.Get(id), (nint)__users, (int)(users.Length), in __opts);
+            nodeview = NodeView.FromNative(__nodeview);
+            WidgetRecorder.Note(ui.Handle, "LiveCursors", id);
+        }
+
+        /// <summary>Presence pill: who is here, as overlapping avatars in their colors. Whoever is speaking gets a ring, and the pill shows moving level bars and their name.</summary>
+        public void PresencePill(UiText id, ReadOnlySpan<LiveUser> users, PresencePillOpts o = default)
+        {
+            var __users = Utf8.AllocFrame<NativeLiveUser>(users.Length);
+            for (int i = 0; i < users.Length; i++) __users[i] = users[i].ToNative();
+            var __opts = o.ToNative();
+            Native.PresencePill(ui.Handle, Utf8.Get(id), (nint)__users, (int)(users.Length), in __opts);
+            WidgetRecorder.Note(ui.Handle, "PresencePill", id);
+        }
+
+        /// <summary>Selection ring: a ring in someone&apos;s color around the previous component, for &quot;this item is selected by Kate&quot;, with an optional name flag on its corner.</summary>
+        public void SelectionRing(Color color, SelectionRingOpts o = default)
+        {
+            var __opts = o.ToNative();
+            Native.SelectionRing(ui.Handle, UiMarshal.ToNative(color), in __opts);
+        }
+
+        /// <summary>Result card: a picture with rounded corners, an optional status chip in the top corner, and a title and caption on a soft fade at the bottom, for a render, an export or a generated image. Put its actions under it in a floating toolbar (cui_toolbar with CUI_TOOLBAR_FLOATING, cycle pickers for choices like 2x or PNG). The picture fills the card and is cropped to it. The card is focusable; a click, Enter or Space returns true (open it large).</summary>
+        public bool ResultCard(UiText id, ulong image, UiText title, ResultCardOpts o = default)
+        {
+            var __opts = o.ToNative();
+            var __result = Native.ResultCard(ui.Handle, Utf8.Get(id), (nuint)(image), Utf8.Get(title), in __opts);
+            WidgetRecorder.Note(ui.Handle, "ResultCard", id);
+            return __result != 0;
+        }
+
     }
 }

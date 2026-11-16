@@ -36,7 +36,7 @@ Reactions: icon pills with counts. Clicking toggles `active` and adjusts the cou
 public int SpeedDial(UiText id, ReadOnlySpan<SpeedAction> actions, SpeedDialOpts o = default)
 ```
 
-Speed dial: a round floating action button that fans out related actions. Returns the chosen action index, or -1.
+Balance the action scope even if an action closes the dial during the build.
 
 ## `SplitButton`
 
@@ -53,6 +53,14 @@ public bool StatusButton(UiText label, Status status, StatusButtonOpts o = defau
 ```
 
 cui_status_button_ex
+
+## `StatusSpinner`
+
+```csharp
+public bool StatusSpinner(UiText id, Status status, StatusSpinnerOpts o = default)
+```
+
+Status spinner: a dither ring while the status is busy that resolves when the work ends: it fills to a disc in the success color with a check, or the danger color with a cross, holds it for a moment and dissolves away. It keeps its space throughout. Returns true while it shows something, so an app can stop calling it after a result.
 
 ## `SwipeItem`
 

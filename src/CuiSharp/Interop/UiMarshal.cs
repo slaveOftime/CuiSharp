@@ -23,6 +23,18 @@ internal static unsafe class UiMarshal
 
     internal static Interop.NativeSize ToNative(Size value) => new() { Kind = value.Kind, Value = value.Value };
     internal static Interop.NativeColor ToNative(Color value) => new() { R = value.R, G = value.G, B = value.B, A = value.A };
+
+    /// <summary>
+    /// Colors as native entries: `Color` and `cui_color` are different structs, so an array of them
+    /// converts one element at a time into the frame arena rather than being copied as bytes.
+    /// </summary>
+    internal static nint Colors(ReadOnlySpan<Color> values)
+    {
+        if (values.IsEmpty) return 0;
+        Interop.NativeColor* target = Utf8.AllocFrame<Interop.NativeColor>(values.Length);
+        for (int i = 0; i < values.Length; i++) target[i] = ToNative(values[i]);
+        return (nint)target;
+    }
     internal static Interop.NativeDate ToNative(Date value) => new() { Year = value.Year, Month = value.Month, Day = value.Day };
     internal static Interop.NativeRect ToNative(RectF value) => new() { X = value.X, Y = value.Y, W = value.W, H = value.H };
     internal static Date FromNative(Interop.NativeDate value) => new(value.Year, value.Month, value.Day);
@@ -56,5 +68,11 @@ internal static unsafe class UiMarshal
         var result = new bool[capacity];
         for (int i = 0; i < capacity; i++) result[i] = source[i] != 0;
         return result;
+    }
+
+    /// <summary>Copies native colors back into the caller's span, up to its length.</summary>
+    internal static void ReadColors(Interop.NativeColor* source, Span<Color> destination)
+    {
+        for (int i = 0; i < destination.Length; i++) destination[i] = FromNative(source[i]);
     }
 }

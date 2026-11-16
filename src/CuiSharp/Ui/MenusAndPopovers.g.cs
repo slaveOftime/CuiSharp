@@ -122,7 +122,7 @@ public static unsafe class MenusAndPopoversUiExtensions
             WidgetRecorder.Note(ui.Handle, "MenuLabel", text);
         }
 
-        /// <summary>Tooltip for the previous component, shown after a short hover delay.</summary>
+        /// <summary>Tooltip for the previous component. The first hover waits for the delay, measured in elapsed time even when the app sleeps between frames.</summary>
         public void Tooltip(UiText text)
         {
             Native.Tooltip(ui.Handle, Utf8.Get(text));

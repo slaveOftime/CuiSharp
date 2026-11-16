@@ -100,7 +100,7 @@ Spotlight card: a soft light follows the pointer across the card and lights the 
 public bool TabBar(UiText id, ReadOnlySpan<TabBarItem> items, ref int selected, TabBarOpts o = default)
 ```
 
-Bottom tab bar for compact layouts, with a pill that glides to the selection.
+Move one tab per arrow press, keeping the move tied to the original focus.
 
 ## `TextReveal`
 

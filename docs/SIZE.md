@@ -2,8 +2,9 @@
 
 A CuiSharp app publishes as one NativeAOT executable. This page says what is inside it, which
 lever moves the size, and what the package now does about it. Every number is measured by
-`tools/size-report.ps1` on one Windows machine (win-x64, .NET SDK 10.0.14, CUI 1.3.1, stripped);
-treat absolute values as indicative and the shape of the differences as the finding.
+`tools/size-report.ps1` on one Windows machine (win-x64, stripped). The historical profile study
+used CUI 1.3.1; the 0.4.3 snapshot below uses CUI `6e6b353`. Treat absolute values as indicative,
+and do not attribute a difference across revisions to a single build switch.
 
 ```sh
 pwsh tools/size-report.ps1 -All              # every shape, both widths
@@ -12,19 +13,11 @@ pwsh tools/size-report.ps1 -All -Csv .tmp/size.csv
 
 ## Where the bytes go
 
-A minimal app — a column, a heading, a button, a line of text — publishes at **1 165 312 B**:
+A minimal app — a column, a heading, a button, a line of text — publishes at **1 176 064 B**:
 
-| Part | Bytes | Share of the executable |
-|---|---|---|
-| CUI native, linked out of `cui.lib` | ~280 000 | 24% |
-| CuiSharp's own managed code | ~42 000 | 3.6% |
-| .NET runtime and framework | ~845 000 | 72% |
-
-The last row is the one that decides everything else: a hello world with no CuiSharp reference at
-all is **870 912 B**, so the runtime you already pay for is most of a small app and CUI's whole
-contribution is about 295 KB on top of it. Half of that is native, half is framework code the
-library's shape drags in — the headless channel's IO stack, number and string formatting, enum
-reflection.
+A hello world with no CuiSharp reference is **870 912 B**, roughly 74% of that size. The
+remaining **305 152 B** is the incremental cost of this app over that floor, not a linker-derived
+split between native and managed code. The historical native-section study below predates this pin.
 
 ## What the package ships
 
@@ -59,6 +52,19 @@ way:
 | `dotnet new cui-app`, published | — | 2 282 496 |
 | `dotnet new cui-mini`, published | — | 1 198 080 |
 
+Those are historical profile measurements, not a same-library comparison with 0.4.3.
+The current shipped snapshot is:
+
+| App | 0.4.3, shipped |
+|---|---|
+| minimal app | 1 176 064 B |
+| gallery, 32 pages | 3 177 984 B |
+| `dotnet new cui-app`, published | 2 306 048 B |
+| `dotnet new cui-mini`, published | 1 201 664 B |
+
+The gallery adds 223 232 B over 0.4.2 with thirty-six new C functions, thirty-two structs and
+three new pages. That cross-revision growth does not measure the size profile's effectiveness.
+
 Nearly all of it is the headless channel: `System.IO`, `Console`, `Encoding` and the reflection
 over an enum the command lexer reads arrive with it, and a switch only removes them when the
 trimmer knows the answer at build time. The rest is `StackTraceSupport` and
@@ -83,9 +89,9 @@ Difference from the minimal app on the shipped width — the same frame plus one
 | Added | Cost |
 |---|---|
 | a table with eight rows | +7 168 B (0.6%) |
-| a line chart, 200 points | +30 720 B (2.6%) |
-| an inline edit, a checkbox, a slider | +33 792 B (2.9%) |
-| Markdown and a code block | +61 440 B (5.3%) |
+| a line chart, 200 points | +56 320 B (4.8%) |
+| an inline edit, a checkbox, a slider | +35 840 B (3.0%) |
+| Markdown and a code block | +65 024 B (5.5%) |
 
 **A feature costs tens of kilobytes, not hundreds.** An app that uses a table and a chart pays about
 3% over one that does not, which is why the work in this release was about the floor and not about
@@ -93,7 +99,7 @@ widgets.
 
 ## And what the native library costs
 
-The archive is 1 372 KB of sections across 58 translation units; the biggest are the embedded font
+In the historical CUI 1.3.1 section study, the archive was 1 372 KB across 58 translation units; the biggest are the embedded font
 blob (94 KB of `.rdata`), then `cui_viz` 83, `cui_pickers` 56, `cui_emoji` 56, `cui_image` 49,
 `cui_devtools` 49, `cui_flame` 44, `cui_text` 44.
 

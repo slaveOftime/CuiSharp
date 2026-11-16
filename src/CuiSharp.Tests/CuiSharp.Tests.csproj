@@ -25,6 +25,7 @@
     <ProjectReference Include="..\CuiSharp.Testing\CuiSharp.Testing.csproj" />
     <ProjectReference Include="..\CuiSharp.Tools\CuiSharp.Tools.csproj" />
     <ProjectReference Include="..\CuiSharp.CodeFixes\CuiSharp.CodeFixes.csproj" />
+    <ProjectReference Include="..\..\samples\CuiSharp.Gallery\CuiSharp.Gallery.csproj" />
     <!-- The analyzer tests run the rules over source strings; the analyzer is not itself loaded as one. -->
     <ProjectReference Include="..\CuiSharp.Analyzers\CuiSharp.Analyzers.csproj" ReferenceOutputAssembly="true" OutputItemType="Default" />
   </ItemGroup>

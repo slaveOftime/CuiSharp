@@ -100,7 +100,7 @@ public static unsafe class MotionAndTextEffectsUiExtensions
             Native.DockSeparator(ui.Handle);
         }
 
-        /// <summary>Bottom tab bar for compact layouts, with a pill that glides to the selection.</summary>
+        /// <summary>Move one tab per arrow press, keeping the move tied to the original focus.</summary>
         public bool TabBar(UiText id, ReadOnlySpan<TabBarItem> items, ref int selected, TabBarOpts o = default)
         {
             var __items = Utf8.AllocFrame<NativeTabBarItem>(items.Length);

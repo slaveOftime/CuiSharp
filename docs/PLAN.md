@@ -12,6 +12,11 @@ in [ARCHITECTURE.md](ARCHITECTURE.md). Every item here passes the same gates as 
   do not depend on Workspaces. Still needed: safe rewrites for the remaining rules and sequential
   fix-all for overlapping scope bodies. Nested loops and ambiguous row keys remain manual.
 
+- **Profile the real-time chart regression across the latest CUI sync.** Alternating isolated old-
+  and new-pin builds measured 0.82–0.84 ms versus 0.94 ms at 1280x720, with 0 B/frame throughout.
+  The frame ceiling moved to 1.00 ms explicitly; identify the cost before claiming a cause or
+  dismissing it as noise. Native fixes still belong upstream.
+
 ## 2. Where upstream has to move first
 
 `native/CUI` is pristine (D2). These are its work, not ours:
@@ -20,7 +25,7 @@ in [ARCHITECTURE.md](ARCHITECTURE.md). Every item here passes the same gates as 
   painting a sample and comparing pixels, because a missing glyph still reports a `.notdef` advance.
 - **A window icon** on all three platforms, and `_NET_WM_ICON` on X11. The handle is now reachable
   (`CuiWindow.NativeWindow`), so an app can P/Invoke its own on Windows today.
-- **Documentation on the declaration.** 94 wrapped functions still say nothing but the C name.
+- **Documentation on the declaration.** 91 wrapped functions still say nothing but the C name.
   Everything CUI writes now reaches the wrapper (above the declaration, beside it, above the
   definition, the component's paragraph wherever upstream attached it, and every field and constant
   comment), so what is left is what upstream has not written: `ui.Button`, `ui.Text`, `ui.Card` and

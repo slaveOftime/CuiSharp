@@ -63,7 +63,7 @@ public static unsafe class PlanningUiExtensions
             return new LayoutScope(ui.Handle, &Native.KanbanCardEnd, "KanbanCard", null);
         }
 
-        /// <summary>Week calendar: seven day columns on an hour grid. Drag an event to move it (15 minute steps), drag its bottom edge to resize it. Returns the index of a clicked event, or -1.</summary>
+        /// <summary>Returns the activated event index or -1. Read-only events still activate.</summary>
         public int WeekCalendar(UiText id, Date weekStart, Span<CalendarEvent> events, WeekOpts o = default)
         {
             var __events = Utf8.AllocFrame<NativeCalEvent>(events.Length);
@@ -86,9 +86,9 @@ public static unsafe class PlanningUiExtensions
             for (int i = 0; i < events.Length; i++) __events[i] = events[i].ToNative();
             NativeDate __selected = UiMarshal.ToNative(selected);
             if (o.MonthNames is { } __monthnames && __monthnames.Length < 12)
-                throw new ArgumentException("MonthNames needs at least 12 entries.", nameof(o));
+                throw new ArgumentException($"MonthNames needs at least {12} entries.", nameof(o));
             if (o.DayNames is { } __daynames && __daynames.Length < 7)
-                throw new ArgumentException("DayNames needs at least 7 entries.", nameof(o));
+                throw new ArgumentException($"DayNames needs at least {7} entries.", nameof(o));
             var __opts = o.ToNative((nint)(&__selected));
             var __result = Native.MonthCalendar(ui.Handle, Utf8.Get(id), ref __month, (nint)__events, (int)(events.Length), in __opts);
             month = UiMarshal.FromNative(__month);
@@ -97,7 +97,7 @@ public static unsafe class PlanningUiExtensions
             return MonthResult.FromNative(__result);
         }
 
-        /// <summary>Gantt chart: a task list beside a timeline of bars. Drag a bar to move it, its ends to resize it. Dependencies are drawn as elbow arrows. Returns the index of a clicked task, or -1.</summary>
+        /// <summary>Returns the activated task index or -1. Read-only tasks still activate.</summary>
         public int Gantt(UiText id, Span<GanttTask> tasks, Date origin, int days, GanttOpts o = default)
         {
             var __tasks = Utf8.AllocFrame<NativeGanttTask>(tasks.Length);
