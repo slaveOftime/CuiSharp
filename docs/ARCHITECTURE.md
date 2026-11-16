@@ -163,6 +163,11 @@ Forwarding managed fields or stack locals at begin would leave native with dangl
   changed, decode only on the frames the native widget reports a change.
 - Charts decimate over `ChartOpts.MaxPoints` (default: chart width × 2) into the arena;
   `SeriesDecimator` is public for custom canvases.
+- System-font fallback searches belong to `UiFrameState` for the native context's lifetime, not
+  to a component's startup flag or a process-wide native-pointer cache. Both helpers reuse loaded
+  files and cache misses; an unconditional call in Draw is a no-op after initialization. Pixel
+  probes use isolated native contexts and an arena scope, never a nested managed frame: resetting
+  the caller's arena or retiring its callbacks while Draw is running would invalidate live data.
 - `[assembly: DisableRuntimeMarshalling]`, `IsAotCompatible`, `IsTrimmable`.
 - `[SuppressGCTransition]` only on the reviewed allowlist in `overrides.json` — leaf functions that
   cannot call managed code and cannot block.

@@ -27,6 +27,9 @@ internal sealed class UiFrameState
     /// <summary>Per-id UTF-8 buffers for the pooled <c>ref string</c> text inputs.</summary>
     internal readonly TextFieldPool Text = new();
 
+    // Context-owned, not frame-local: both successful and unsuccessful font searches are memoized.
+    internal SystemFontFallbackState? SystemFontFallbacks;
+
     /// <summary>
     /// Whether the frame drawing right now has called <c>Ui.MarkReady</c>. Cleared at every
     /// <see cref="Reset"/>, so a frame that goes back to loading is not ready on the strength of
@@ -115,6 +118,7 @@ internal sealed class UiFrameState
         _localizationClear = false;
         FrameReady = false;
         LastFrameReady = false;
+        SystemFontFallbacks = null;
         FreeRetired();
     }
 

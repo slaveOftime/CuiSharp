@@ -4,6 +4,25 @@ Every user-visible change, newest first. Pre-1.0 the minor number carries new su
 carries fixes. The section for a tag is what the GitHub release publishes, so the two cannot say
 different things.
 
+## [Unreleased]
+
+### Added
+
+- **`ui.UseSystemFontFallbacks()`** installs this machine's faces for CJK, Cyrillic, Greek, Arabic,
+  Hebrew, Thai, Devanagari and emoji in one call, so a folder name, a download name or a music tag
+  written in another script draws instead of disappearing. A script the bundled Latin faces already
+  cover is left alone, and `ui.UseSystemFontFallback("中文")` remains the single-sample form.
+  Both helpers cache results per UI context: call directly in Draw, without a startup flag or
+  per-frame IO, font loading or managed allocation. Candidate lists and script samples are best
+  effort, not a guarantee of language coverage.
+
+### Fixed
+
+- Loading a font that fails no longer reports a fallback: `UseSystemFontFallback` and the pixel
+  probe now treat a failed load as nothing to install instead of treating the error id as a face.
+- Font probes preserve the active frame's arena, callbacks and statistics, reject partial sample
+  coverage, and never borrow glyphs from bundled faces when checking a candidate file.
+
 ## [0.4.3] — 2026-11-16
 
 ### Added

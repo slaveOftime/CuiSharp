@@ -1,4 +1,6 @@
+using System.Globalization;
 using System.IO;
+using System.Text;
 using CuiSharp.Interop;
 
 namespace CuiSharp;
@@ -12,7 +14,7 @@ public static unsafe class FontUiExtensions
     extension(Ui ui)
     {
         /// <summary>Loads a font file (TTF/OTF) and returns a handle for <see cref="SetFont"/>.</summary>
-        /// <remarks>Returns 0 when the file cannot be read, which leaves the theme's face in place.</remarks>
+        /// <remarks>Returns -1 when the file cannot be loaded. Do not pass a failed handle to <see cref="SetFont"/>.</remarks>
         public Font LoadFont(UiText path) => Native.FontLoadFile(ui.Handle, Utf8.Get(path));
 
         /// <summary>
@@ -66,44 +68,77 @@ public static unsafe class FontUiExtensions
         /// </para>
         /// <para>
         /// The probes are the faces each OS ships for its own languages (Microsoft YaHei, PingFang,
-        /// Noto CJK, …). Call it once at startup, not per frame: it reads a short list of paths,
-        /// paints one sample for each face that is there, and loads the first that draws.
+        /// Noto CJK, …). The first call for a sample probes files and loads a face; subsequent
+        /// calls on the same UI context reuse the result (including 0), without IO or allocation.
+        /// Call it directly in Draw before text that needs it. The probe checks visible Unicode
+        /// scalars, not shaping or complete language coverage.
         /// </para>
         /// </remarks>
         /// <returns>
-        /// The face it installed, or 0 when there was nothing to do: the theme's own face already
-        /// draws the sample, or no face on this machine does.
+        /// The installed or reused face, or 0 when the bundled faces already draw the sample,
+        /// the sample has no visible scalars, or no candidate face draws it. The result is cached
+        /// for this context's lifetime, so newly installed OS fonts need a new context.
         /// </returns>
         public Font UseSystemFontFallback(string sample)
         {
-            // Nothing to do when the theme's own face already draws it — which is the common case,
-            // and the reason this is safe to call unconditionally at startup.
-            if (FontProbe.PaintsThemeFace(sample)) return 0;
-
-            foreach (string path in SystemFonts.Probes)
-            {
-                if (!File.Exists(path) || !FontProbe.Paints(path, sample)) continue;
-
-                Font face = ui.LoadFont(path);
-                if (face == Font.Body) continue;
-
-                foreach (Font role in SystemFonts.Roles) ui.AddFontFallback(role, face);
-                return face;
-            }
-
-            return 0;
+            ArgumentNullException.ThrowIfNull(sample);
+            return ui.SystemFontFallbacks.Ensure(ui, sample);
         }
+
+        /// <summary>
+        /// Installs the faces this machine has for the scripts a file name, a folder or a tag can be
+        /// written in — CJK, Cyrillic, Greek, Arabic, Hebrew, Thai, Devanagari and emoji — so text
+        /// from another OS or another locale draws instead of disappearing.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The bundled faces are Latin. A glyph no loaded face has draws nothing at all, with no box
+        /// and no warning, and a folder, a download or a music tag is exactly the kind of text that
+        /// arrives in a script the app was not built for. Call this directly in Draw before text:
+        /// it initializes once per UI context, then returns the cached result with no IO, font
+        /// loading or managed allocation. Searches that find no usable face are cached too.
+        /// </para>
+        /// <para>
+        /// A sample the bundled faces already paint is left alone, and so is a sample no face on
+        /// this machine paints. The fallback chain holds four faces, so any further face is reached
+        /// by CUI's own scan of every loaded face; that is slower, not invisible.
+        /// </para>
+        /// </remarks>
+        /// <returns>
+        /// The number of system faces installed by these helpers on this context, stable on repeated
+        /// calls. 0 means no suitable additional face was found. This is not a coverage guarantee.
+        /// </returns>
+        public int UseSystemFontFallbacks() => ui.SystemFontFallbacks.EnsureAll(ui);
     }
 }
 
 /// <summary>
-/// Where each OS keeps the faces that cover the scripts its own UI is written in. Ordered by how
-/// likely the file is to be there, not by preference: the first one that measures wins.
+/// Where each OS keeps the faces that cover the scripts its own UI is written in and the ones a
+/// file name, a folder or a tag can arrive in. Ordered by how likely the file is to be there, not
+/// by preference: the first one that paints every visible scalar wins.
 /// </summary>
 internal static class SystemFonts
 {
     /// <summary>The roles a fallback is worth registering for: everything but the icon face.</summary>
     internal static readonly Font[] Roles = [Font.Body, Font.Medium, Font.Display, Font.Mono];
+
+    /// <summary>
+    /// One string per script a file name, a folder or a tag is likely to be written in. Latin is
+    /// left out: the bundled faces cover it, so the probe has nothing to load for it.
+    /// </summary>
+    internal static readonly string[] Samples =
+    [
+        "中文",       // Chinese
+        "日本語",     // Japanese
+        "한국어",     // Korean
+        "Русский",    // Cyrillic
+        "Ελληνικά",   // Greek
+        "العربية",    // Arabic
+        "עברית",      // Hebrew
+        "ไทย",        // Thai
+        "हिन्दी",      // Devanagari
+        "😀",         // emoji
+    ];
 
     /// <summary>Candidate font files, most likely first, for the OS this build runs on.</summary>
     internal static IEnumerable<string> Probes => Probes_();
@@ -118,6 +153,10 @@ internal static class SystemFonts
                 "msyh.ttc", "msyh.ttf", "simsun.ttc", "simhei.ttf",       // Chinese
                 "YuGothR.ttc", "meiryo.ttc", "msgothic.ttc",              // Japanese
                 "malgun.ttf", "gulim.ttc",                                // Korean
+                "Nirmala.ttc", "Nirmala.ttf",                             // Devanagari
+                "LeelawUI.ttf", "leelawad.ttf",                           // Thai
+                "segoeui.ttf", "tahoma.ttf",                              // Arabic, Hebrew, Thai, Greek, Cyrillic
+                "seguiemj.ttf",                                           // emoji, with outlines behind its colour
                 "seguisym.ttf", "arial.ttf",                              // symbols, and a last resort
             ])
             {
@@ -131,11 +170,18 @@ internal static class SystemFonts
         {
             foreach (string path in (string[])
             [
-                "/System/Library/Fonts/PingFang.ttc",
+                "/System/Library/Fonts/PingFang.ttc",                     // Chinese
                 "/System/Library/Fonts/Hiragino Sans GB.ttc",
-                "/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc",
-                "/System/Library/Fonts/AppleSDGothicNeo.ttc",
-                "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+                "/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc",          // Japanese
+                "/System/Library/Fonts/AppleSDGothicNeo.ttc",             // Korean
+                "/System/Library/Fonts/Apple Color Emoji.ttc",            // emoji
+                "/System/Library/Fonts/Supplemental/GeezaPro.ttc",        // Arabic
+                "/System/Library/Fonts/Supplemental/Arial Hebrew.ttf",    // Hebrew
+                "/System/Library/Fonts/Supplemental/Thonburi.ttc",        // Thai
+                "/System/Library/Fonts/Supplemental/Devanagari Sangam MN.ttc",
+                "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",   // one file that covers many
+                "/Library/Fonts/Arial Unicode.ttf",                       // older macOS location
+                "/System/Library/Fonts/Supplemental/Arial.ttf",           // a last resort
             ])
             {
                 yield return path;
@@ -144,83 +190,121 @@ internal static class SystemFonts
             yield break;
         }
 
-        // Linux has no fixed answer, so the usual distributions' package layouts are probed.
-        foreach (string directory in (string[])
+        // Linux has no fixed answer, so the common distributions' package layouts are probed.
+        string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        foreach (string path in (string[])
         [
-            "/usr/share/fonts",
-            "/usr/local/share/fonts",
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/.local/share/fonts",
-            "/usr/share/fonts/truetype",
-            "/usr/share/fonts/opentype",
+            "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",     // Debian, Ubuntu
+            "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/noto/NotoSansCJK-Regular.ttc",              // Arch
+            "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/google-noto-cjk/NotoSansCJK-Regular.ttc",   // Fedora
+            "/usr/local/share/fonts/NotoSansCJK-Regular.ttc",
+            home + "/.local/share/fonts/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
+            "/usr/share/fonts/wqy-zenhei/wqy-zenhei.ttc",
+            "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
+            "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf",
+            "/usr/share/fonts/truetype/noto/NotoSansArabic-Regular.ttf",
+            "/usr/share/fonts/google-noto/NotoSansArabic-Regular.ttf",
+            "/usr/share/fonts/truetype/noto/NotoSansHebrew-Regular.ttf",
+            "/usr/share/fonts/google-noto/NotoSansHebrew-Regular.ttf",
+            "/usr/share/fonts/truetype/noto/NotoSansThai-Regular.ttf",
+            "/usr/share/fonts/google-noto/NotoSansThai-Regular.ttf",
+            "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf",
+            "/usr/share/fonts/google-noto/NotoSansDevanagari-Regular.ttf",
+            "/usr/share/fonts/truetype/noto/NotoEmoji-Regular.ttf",       // monochrome, so text can use it
+            "/usr/share/fonts/noto/NotoEmoji-Regular.ttf",
+            "/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf",          // colour, for the emoji picker
+            "/usr/share/fonts/noto/NotoColorEmoji.ttf",
+            "/usr/share/fonts/google-noto-emoji/NotoColorEmoji.ttf",
+            "/usr/share/fonts/noto-emoji/NotoColorEmoji.ttf",
+            "/usr/local/share/fonts/NotoColorEmoji.ttf",
+            home + "/.local/share/fonts/NotoColorEmoji.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",            // last resort for many scripts
+            "/usr/share/fonts/dejavu/DejaVuSans.ttf",
+            "/usr/share/fonts/TTF/DejaVuSans.ttf",
         ])
         {
-            foreach (string name in (string[])
-            [
-                "noto/NotoSansCJK-Regular.ttc",
-                "opentype/noto/NotoSansCJK-Regular.ttc",
-                "noto-cjk/NotoSansCJK-Regular.ttc",
-                "truetype/noto/NotoSansCJK-Regular.ttc",
-                "wqy-zenhei/wqy-zenhei.ttc",
-                "truetype/wqy/wqy-zenhei.ttc",
-                "truetype/wqy/wqy-microhei.ttc",
-                "droid/DroidSansFallbackFull.ttf",
-                "truetype/droid/DroidSansFallbackFull.ttf",
-                "dejavu/DejaVuSans.ttf",
-            ])
-            {
-                yield return Path.Combine(directory, name);
-            }
+            yield return path;
         }
     }
 }
 
 /// <summary>
-/// Asks a font file whether it can actually draw something. A face without the glyph still reports
-/// its <c>.notdef</c> advance, so measuring text cannot answer this; painting it can.
+/// Checks visible scalars in isolation. A face without the glyph still reports its <c>.notdef</c>
+/// advance, so measuring text cannot answer this; painting it can. This is not a shaping test.
 /// </summary>
-internal static class FontProbe
+internal static unsafe class FontProbe
 {
-    /// <summary>
-    /// True when the theme's own face — the bundled Latin one, unless the app replaced it — puts
-    /// pixels on the screen for <paramref name="sample"/>.
-    /// </summary>
+    /// <summary>Checks the bundled faces, not a caller's remapped roles.</summary>
     internal static bool PaintsThemeFace(string sample) => Paints(path: null, sample);
 
-    /// <summary>True when <paramref name="path"/> puts pixels on the screen for <paramref name="sample"/>.</summary>
-    internal static bool Paints(string? path, string sample)
+    internal static bool HasVisibleScalars(string sample)
     {
-        if (string.IsNullOrEmpty(sample)) return false;
-
-        // Two throwaway surfaces, the same in every way except the string: whatever the background
-        // paints is subtracted, so only the glyphs are being compared.
-        byte[] with = Render(path, sample);
-        byte[] without = Render(path, " ");
-        if (with.Length == 0 || without.Length == 0) return false;
-
-        for (int i = 0; i < with.Length; i++)
-        {
-            if (with[i] != without[i]) return true;
-        }
-
+        foreach (Rune rune in sample.EnumerateRunes())
+            if (IsVisible(rune)) return true;
         return false;
     }
 
-    private static byte[] Render(string? path, string text)
+    private static bool IsVisible(Rune rune) => !Rune.IsWhiteSpace(rune)
+        && Rune.GetUnicodeCategory(rune) is not (UnicodeCategory.Control or UnicodeCategory.Format);
+
+    /// <summary>True only when every visible scalar paints, without borrowing another face's glyphs.</summary>
+    internal static bool Paints(string? path, string sample)
     {
-        using CuiSurface probe = CuiSurface.Create(128, 48);
-        if (path is not null)
+        if (string.IsNullOrEmpty(sample) || !HasVisibleScalars(sample)) return false;
+        if (path is not null && !File.Exists(path)) return false;
+
+        // Do not use CuiSurface.BeginFrame here: this helper runs inside Draw, and a nested managed
+        // frame would reset the caller's arena, free its callbacks, drain work and skew FrameStats.
+        // A file probe also must not borrow glyphs from the bundled faces via CUI's global scan.
+        using var scope = Utf8.Scope();
+        nint sw = Native.SwCreate();
+        if (sw == 0) throw new InvalidOperationException("cui_sw_create failed.");
+        nint ctx = 0;
+        try
         {
-            Font face = probe.Ui.LoadFont(path);
-            if (face == Font.Body) return [];
-            probe.Ui.SetFont(Font.Body, face);
+            var desc = new NativeCtxDesc { Renderer = Native.SwIface(sw), NoDefaultFonts = (byte)(path is null ? 0 : 1) };
+            ctx = Native.Create(in desc);
+            if (ctx == 0) throw new InvalidOperationException("cui_create failed.");
+            Native.SetViewport(ctx, 128, 96, 1);
+
+            if (path is not null)
+            {
+                Font face = Native.FontLoadFile(ctx, Utf8.Get(path));
+                if ((int)face <= (int)Font.Icons) return false;
+                Native.FontSetRole(ctx, Font.Body, face);
+            }
+
+            byte[] blank = new byte[128 * 96 * 4];
+            byte[] painted = new byte[blank.Length];
+            Render(ctx, sw, null, blank);
+            foreach (Rune rune in sample.EnumerateRunes())
+            {
+                if (!IsVisible(rune)) continue;
+                Render(ctx, sw, rune.ToString(), painted);
+                if (painted.AsSpan().SequenceEqual(blank)) return false;
+            }
+
+            return true;
         }
+        finally
+        {
+            if (ctx != 0) Native.Destroy(ctx);
+            Native.SwDestroy(sw);
+        }
+    }
 
-        probe.BeginFrame();
-        probe.Ui.Label(text);
-        probe.EndFrame();
+    private static void Render(nint ctx, nint sw, string? text, byte[] pixels)
+    {
+        using var scope = Utf8.Scope();
+        Native.BeginFrame(ctx, 1f / 60f);
+        Native.Label(ctx, Utf8.Get(text ?? " "));
+        Native.EndFrame(ctx);
 
-        byte[] pixels = new byte[probe.PixelWidth * probe.PixelHeight * 4];
-        probe.Render(pixels, PixelFormat.Rgba);
-        return pixels;
+        var drawData = (NativeDrawData*)Native.GetDrawData(ctx);
+        fixed (byte* p = pixels)
+            Native.SwRender(sw, in *drawData, (nint)p, 128, 96, 128 * 4, SwFormat.Rgba);
     }
 }

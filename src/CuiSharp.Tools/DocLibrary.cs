@@ -887,10 +887,15 @@ internal static class BundledTopics
             ["SKILL#theming", "SKILL#colours-come-from-the-theme", "SKILL#design-rules"],
             "Next: `dotnet cui api ThemeStyle` for every writable token."),
 
+        ("fonts",
+            "the bundled Latin faces, a fallback for every script, and emoji",
+            ["SKILL#fonts-and-scripts"],
+            "A missing glyph draws nothing: call `ui.UseSystemFontFallbacks()` directly in Draw (cached per context)."),
+
         ("translation",
             "the one name table the date widgets read, and how a surface owns it",
             ["SKILL#translating-the-date-names"],
-            "Text your font does not cover draws nothing: check `UseSystemFontFallback` on the same page."),
+            "Text your font does not cover draws nothing: `dotnet cui docs read fonts`."),
 
         ("publishing",
             "one AOT executable, the four size switches, and what each gate keeps",
