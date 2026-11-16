@@ -105,7 +105,7 @@ public static class SemanticRoles
         "Inspector" or "InspectorGroup" or "Accordion" or "ExpandableCard" or "Reasoning" or
         "Toolbar" or "StatusBar" or "DialogFooter" or "Panel" or "Header" or "Footer" or "Page" => SemanticRole.Container,
 
-        "Button" or "IconButton" or "SplitButton" or "ConfirmButton" or "StatusButton" or
+        "Button" or "IconButton" or "MenuButton" or "SplitButton" or "ConfirmButton" or "StatusButton" or
         "HoldButton" or "CopyButton" or "ToolbarButton" or "SpeedDial" or "ControlTile" or "Chip" => SemanticRole.Button,
         "Link" or "TocAnchor" => SemanticRole.Link,
         "Checkbox" or "Checklist" or "ToggleGroup" or "PropBool" => SemanticRole.CheckBox,

@@ -261,6 +261,138 @@ public class SemanticTreeTests
     }
 
     /// <summary>
+    /// A menu draws the button that opens it, so the trigger is the one control a closed menu
+    /// shows. It used to record nothing: the trigger had no node, so a scripted session could not
+    /// name it and every action behind the menu was unreachable.
+    /// </summary>
+    private sealed class EffectPicker : Component
+    {
+        public string Effect = "Bars";
+
+        protected override void Draw(Ui ui)
+        {
+            // The music sample's effect picker: an icon-only trigger named by its tooltip.
+            using var menu = ui.Menu(Effect, new MenuOpts
+            {
+                Icon = Icons.Sparkles,
+                IconOnly = true,
+                Variant = ButtonVariant.Ghost,
+            });
+
+            if (!menu) return;
+            foreach (string name in (string[])["Bars", "Scope"])
+            {
+                if (ui.MenuItem(name, new MenuItemOpts { Checked = name == Effect })) Effect = name;
+            }
+        }
+    }
+
+    [Fact]
+    public void AMenusTriggerIsAControlWhileTheMenuIsClosed()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        using var app = TestApp.Start(new EffectPicker(), 420, 220);
+
+        // Closed, the frame still names the button that opens the menu - and shows nothing else,
+        // because the items are not drawn yet.
+        Assert.Equal(
+            """
+            Frame
+              MenuButton "Bars"
+            """.ReplaceLineEndings("\n"),
+            app.Print().ReplaceLineEndings("\n"));
+
+        SemanticNode trigger = app.Find("MenuButton", "Bars").Node;
+        Assert.Equal(SemanticRole.Button, trigger.Role);
+        Assert.True(trigger.IsEnabled);
+        Assert.Equal(SemanticState.None, trigger.State & SemanticState.Expanded);
+        Assert.True(trigger.HasOwnRect);
+        Assert.False(trigger.Detached);
+        Assert.True(trigger.Rect.W > 0 && trigger.Rect.H > 0);
+    }
+
+    [Fact]
+    public void ClickingAMenusTriggerOpensItsItemsAndAnItemPicks()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        var page = new EffectPicker();
+        using var app = TestApp.Start(page, 420, 220);
+
+        // The trigger's id is the id the button builder left as last_id, so the click lands on
+        // the button itself and native opens the menu it was refusing to open for a script.
+        app.FindUnique("Bars").ClickAndFrame();
+        Assert.Equal(
+            """
+            Frame
+              MenuButton "Bars"
+              Menu "Bars"
+                MenuItem "Bars"
+                MenuItem "Scope"
+            """.ReplaceLineEndings("\n"),
+            app.Print().ReplaceLineEndings("\n"));
+        Assert.Equal(SemanticState.Expanded, app.Find("MenuButton", "Bars").Node.State & SemanticState.Expanded);
+
+        // The path "Bars > Bars" walks the Menu container and lands on its MenuItem, not back
+        // on the container that shares the item's label.
+        Assert.Equal("MenuItem", app.FindUnique("Bars > Bars").Node.Kind);
+
+        // ...and the item behind it is a control like any other.
+        app.FindUnique("Scope").ClickAndFrame();
+        Assert.Equal("Scope", page.Effect);
+    }
+
+    [Fact]
+    public void TwoMenusWithTheSameItemLabelKeepTheirOwnItemIdentitiesAndTriggerStates()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        int fileDuplicates = 0, editDuplicates = 0;
+        using var app = TestApp.Start(ui =>
+        {
+            using (ui.Row(new() { Gap = 8 }))
+            {
+                using (var file = ui.Menu("File"))
+                {
+                    if (file && ui.MenuItem("Duplicate")) fileDuplicates++;
+                }
+
+                using (var edit = ui.Menu("Edit"))
+                {
+                    if (edit && ui.MenuItem("Duplicate")) editDuplicates++;
+                }
+            }
+        }, 420, 220);
+
+        app.FindUnique("Edit").ClickAndFrame();
+
+        // While "Edit" is open, both MenuButton "Edit" and Menu "Edit" are in the tree with
+        // the same label; an unprefixed query still resolves uniquely to the actionable trigger.
+        SemanticNode openTrigger = app.FindUnique("Edit").Node;
+        Assert.Equal("MenuButton", openTrigger.Kind);
+        Assert.True(openTrigger.IsEnabled);
+        Assert.Equal(SemanticState.Expanded, openTrigger.State & SemanticState.Expanded);
+
+        // The item's id is derived while the popup's id is on the native id stack, so its rect
+        // is the item's own (not the trigger's) and clicking it fires Edit's item, not File's.
+        SemanticNode item = app.FindUnique("Duplicate").Node;
+        Assert.NotEqual(openTrigger.Id, item.Id);
+        Assert.NotEqual(openTrigger.Rect, item.Rect);
+
+        app.FindUnique("Duplicate").ClickAndFrame();
+        Assert.Equal(0, fileDuplicates);
+        Assert.Equal(1, editDuplicates);
+
+        // On the frame right after choosing an item the popup is animating out with disabled
+        // pushed for its fading body; the trigger itself sits in the flow and stays enabled
+        // while dropping Expanded immediately.
+        SemanticNode closingTrigger = app.FindUnique("Edit").Node;
+        Assert.True(closingTrigger.IsEnabled);
+        Assert.Equal(SemanticState.None, closingTrigger.State & SemanticState.Expanded);
+    }
+
+    /// <summary>
     /// A named box, row, column or scroll area must be recorded under the id CUI laid it out
     /// under. A begin that reports no last_id used to leave the container borrowing the previous
     /// widget's id, which made it claim someone else's rectangle.

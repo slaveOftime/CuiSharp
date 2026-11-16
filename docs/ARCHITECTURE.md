@@ -274,6 +274,19 @@ A container is a node when the app named it — a `Card`/`Box`/`Scroll` with an 
 returns, so the record knows where the container ends. Unnamed containers are not nodes, but their
 children still nest under the nearest named one and `Depth` reports the real depth.
 
+A menu is the one container that also draws a control of its own: `cui_menu_begin` paints the
+trigger button before it returns, so the wrapper records that trigger as a widget — `MenuButton
+"Effects"`, named by the menu's title or by the tooltip an icon-only trigger shows — and the scope
+then records the body. The trigger sits in the flow and the body is a floating layer, which is why
+they are two kinds. `Popover`, `ContextMenu` and `HoverCard` draw no trigger at all: they anchor to
+the widget drawn before them, which already records itself, so they record nothing until they open.
+
+A menu item is recorded under an id CUI derives rather than publishes: `cui_menu_item_ex` creates
+its node under `cui_make_id(label)` and never writes `last_id`, so the recorder recomputes that hash
+with native's own `cui_make_id` while the popup's id is still the seed on the id stack. Without it
+an item carried the trigger's id and claimed the trigger's rectangle, and a click on the item went
+to whatever drew before the menu.
+
 A widget that draws one control per item — a tab strip, a segmented control — records the strip as
 a container and each item as a control (`Tab "Markets"`, `Segment "Dark"`), because the item is what
 a click lands on. CUI derives an item's id from its index and the widget's id

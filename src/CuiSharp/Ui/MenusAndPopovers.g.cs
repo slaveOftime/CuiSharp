@@ -73,7 +73,9 @@ public static unsafe class MenusAndPopoversUiExtensions
         public OpenScope Menu(UiText label, MenuOpts o = default)
         {
             var __opts = o.ToNative();
+            var __enabled = WidgetRecorder.IsEnabled(ui.Handle);
             var __result = Native.MenuBegin(ui.Handle, Utf8.Get(label), in __opts);
+            WidgetRecorder.NoteTrigger(ui.Handle, "MenuButton", label, __enabled, __result != 0);
             return new OpenScope(ui.Handle, &Native.MenuEnd, "Menu", label, __result != 0);
         }
 

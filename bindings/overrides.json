@@ -2039,5 +2039,11 @@
       "index": "index",
       "why": "Each tab is its own control: a test clicks 'Markets', not the middle of the strip."
     }
+  },
+  "triggers": {
+    "cui_menu_begin": {
+      "kind": "MenuButton",
+      "why": "A menu draws its own trigger - cui_button_ex for a label, cui_icon_button_ex when icon_only - and that builder ends with ui->last_id = the trigger's id; cui__popup_begin (cui_overlay.c) never writes last_id, so a note taken right after the call names and locates the trigger whether or not the popup drew. The kind is MenuButton, not Menu: the body is the floating layer, and the trigger sits in the flow."
+    }
   }
 }
