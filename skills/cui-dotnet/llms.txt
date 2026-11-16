@@ -454,6 +454,7 @@ Hand-written, because the wrapper needs state a C call cannot carry; they are pa
 - `ui.TreeTable(...)` — hand-written in `Ui/Ui.TreeTable.cs`
 - `ui.TreeTableRow(...)` — hand-written in `Ui/Ui.TreeTable.cs`
 - `ui.UseSystemFontFallback(...)` — hand-written in `Ui/Ui.Fonts.cs`
+- `ui.UseSystemFontFallbacks(...)` — hand-written in `Ui/Ui.Fonts.cs`
 - [Widgets](widgets.md) and [more widgets](widgets-more.md): what each component does, and what it does with the keyboard.
 - [Native ABI](native-abi.md): the RIDs the package carries, and the glibc floor.
 - [Guide](SKILL.md): the authoring rules, the pitfalls, the component list.

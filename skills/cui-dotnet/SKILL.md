@@ -505,6 +505,20 @@ Everything here participates in the frame's budget: reading and writing tokens a
 it is safe to do it every frame (`TextBody = MathF.Round(13 * Scale)` for a slider) and just as safe
 to do it once at startup.
 
+### Fonts and scripts
+
+The bundled faces are Latin, Latin-1, Latin Extended-A and common symbols. A file name, a folder or
+a tag from another machine can be written in any script, and a glyph no loaded face has draws
+nothing at all — no box, no warning. Call `ui.UseSystemFontFallbacks()` once at startup: it installs
+the faces this machine has for CJK, Cyrillic, Greek, Arabic, Hebrew, Thai, Devanagari and emoji, and
+leaves alone the ones the theme already draws. `ui.UseSystemFontFallback("中文")` is the same search
+for one sample, for an app that knows which script it needs.
+
+A loaded face costs memory for the life of the window, so call this once, not per frame. Text that
+needs colour emoji still goes through `ui.Emoji` or the emoji picker; a colour emoji font that
+carries outlines (Segoe UI Emoji) also lets an emoji inside a name paint as text, and one that does
+not (bitmap fonts) leaves that glyph to the emoji APIs.
+
 ## Translating the date names
 
 The date picker, the calendars, the gantt and the file browser read their month, weekday and
@@ -693,8 +707,9 @@ not in the app's folder.
 - The app's own output — `Console.WriteLine`, a logger, a stack trace — reaches your stderr, so stdout
   is exactly the answer you asked for.
 - Text in a script the bundled Latin faces do not cover draws nothing at all, with no box and no
-  warning. `ui.UseSystemFontFallback("中文")` finds the face this machine has for it and registers it
-  as a fallback; call it once at startup, and check the language you ship.
+  warning. `ui.UseSystemFontFallbacks()` installs this machine's faces for CJK, Cyrillic, Greek,
+  Arabic, Hebrew, Thai, Devanagari and emoji; call it once at startup and check the scripts you ship.
+  `ui.UseSystemFontFallback("中文")` is the single-sample form.
 - The app serves this itself (`CUISHARP_HEADLESS=1`), so any app works — `dotnet cui` passes
   `-p:CuiSharpHeadless=true` to the builds it runs. A **published** app carries the channel only when
   it was published for it, because the package compiles it out of a self-contained AOT publish to

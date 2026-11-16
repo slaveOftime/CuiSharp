@@ -1398,12 +1398,14 @@ class CuiSharp.FontUiExtensions
   static Font LoadFont(Ui, ReadOnlySpan<Byte>, Boolean)
   static Font LoadFont(Ui, UiText)
   static Font UseSystemFontFallback(Ui, String)
+  static Int32 UseSystemFontFallbacks(Ui)
   static Void AddFontFallback(Ui, Font, Font)
   static Void SetFont(Ui, Font, Font)
 class CuiSharp.FontUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
   Font LoadFont(ReadOnlySpan<Byte>, Boolean)
   Font LoadFont(UiText)
   Font UseSystemFontFallback(String)
+  Int32 UseSystemFontFallbacks()
   Void AddFontFallback(Font, Font)
   Void SetFont(Font, Font)
 class CuiSharp.FontUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4+<M>$D152016828D0F2CB0A8B78500F4F70D3
