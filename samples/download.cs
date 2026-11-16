@@ -41,16 +41,16 @@ using MonoTorrent.Client;
 // with its real progress, peers and speed.
 //
 //   run      dotnet run download.cs                     the window
-//   ship     dotnet publish download.cs -c Release -o . one download.exe, no runtime needed
+//   ship     dotnet publish download.cs -c Release -o . one native executable, no runtime needed
 //            (add -p:CuiSharpHeadless=true to publish a build `dotnet cui` can drive)
 //
-//   iterate  CUISHARP_HEADLESS=1 ./download.exe         no window; serves the tool's protocol
+//   iterate  CUISHARP_HEADLESS=1 ./download            no window; serves the tool's protocol
 //            dotnet cui tree                            the controls the last frame drew
 //            dotnet cui click Pause                     click one, print the frame it produced
 //            dotnet cui png shot.png                    that frame as a PNG
 //            dotnet cui docs read live-debugging        the guide, offline
 //            dotnet cui api ProgressOpts                one exact declaration
-//            dotnet cui session < steps.txt             many clicks against one app instance
+//            dotnet cui session --script steps.txt      many clicks against one app instance
 //
 // The BitTorrent half is MonoTorrent: trackers, DHT, magnet metadata, fast
 // resume and multi-peer downloading are its job. HTTP files are fetched with
@@ -2117,15 +2117,23 @@ internal sealed class SavedItem
 
 internal static class StateStore
 {
-    private static readonly string Folder = Environment.GetEnvironmentVariable("CUIDOWNLOAD_HOME") is
-    { Length: > 0 } custom
-        ? Format.FullPath(custom) ?? custom
-        : Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CuiDownload");
+    private static readonly string Folder = StateFolder();
 
     private static readonly string StatePath = Path.Combine(Folder, "state.json");
 
     public static string Home => Folder;
+
+    private static string StateFolder()
+    {
+        if (Environment.GetEnvironmentVariable("CUIDOWNLOAD_HOME") is { Length: > 0 } custom)
+            return Format.FullPath(custom) ?? custom;
+
+        if (Environment.GetEnvironmentVariable("CUISHARP_STATE_HOME") is { Length: > 0 } root)
+            return Path.Combine(root, "CuiDownload");
+
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CuiDownload");
+    }
 
     public static string DefaultDestination()
     {
@@ -2475,28 +2483,65 @@ internal static class Shell
         {
             if (path.Length == 0) return;
 
-            if (Directory.Exists(path))
+            if (OperatingSystem.IsWindows())
             {
-                Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+                RevealOnWindows(path);
                 return;
             }
 
-            if (File.Exists(path))
+            if (OperatingSystem.IsMacOS())
             {
-                Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{path}\"")
+                if (Directory.Exists(path))
                 {
-                    UseShellExecute = true,
-                });
+                    Start("open", path);
+                }
+                else if (File.Exists(path))
+                {
+                    Start("open", "-R", path);
+                }
+                else if (Path.GetDirectoryName(path) is { Length: > 0 } parent && Directory.Exists(parent))
+                {
+                    Start("open", parent);
+                }
+
                 return;
             }
 
-            var folder = Path.GetDirectoryName(path);
-            if (folder is { Length: > 0 } && Directory.Exists(folder))
-                Process.Start(new ProcessStartInfo(folder) { UseShellExecute = true });
+            // Linux and the BSDs: xdg-open cannot select a file, so reveal its folder.
+            string? folder = Directory.Exists(path) ? path : Path.GetDirectoryName(path);
+            if (folder is { Length: > 0 } && Directory.Exists(folder)) Start("xdg-open", folder);
         }
         catch
         {
-            // Explorer refusing to open is not a download failure.
+            // The desktop refusing to open a folder is not a download failure.
         }
+    }
+
+    private static void RevealOnWindows(string path)
+    {
+        if (Directory.Exists(path))
+        {
+            Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+            return;
+        }
+
+        if (File.Exists(path))
+        {
+            Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{path}\"")
+            {
+                UseShellExecute = true,
+            });
+            return;
+        }
+
+        if (Path.GetDirectoryName(path) is { Length: > 0 } folder && Directory.Exists(folder))
+            Process.Start(new ProcessStartInfo(folder) { UseShellExecute = true });
+    }
+
+    private static void Start(string program, params string[] arguments)
+    {
+        var info = new ProcessStartInfo(program) { UseShellExecute = false };
+        foreach (string argument in arguments) info.ArgumentList.Add(argument);
+        Process.Start(info);
     }
 }

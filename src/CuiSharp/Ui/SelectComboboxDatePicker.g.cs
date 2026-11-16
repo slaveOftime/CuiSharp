@@ -19,7 +19,7 @@ public static unsafe class SelectComboboxDatePickerUiExtensions
             if (o.Icons is { } __icons && __icons.Length < items.Length) throw new ArgumentException("Icons must contain at least one entry per item.", nameof(o));
             var __opts = o.ToNative();
             var __result = Native.Select(ui.Handle, Utf8.Get(id), UiMarshal.Strings(items), (int)(items.Length), ref index, in __opts);
-            WidgetRecorder.Note(ui.Handle, "Select", id);
+            WidgetRecorder.NoteValue(ui.Handle, "Select", id, (double)index);
             return __result != 0;
         }
 

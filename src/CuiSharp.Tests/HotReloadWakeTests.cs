@@ -10,6 +10,7 @@ namespace CuiSharp.Tests;
 /// the notification is delivered through <see cref="HotReloadWake.UpdateApplication"/>, the method
 /// the runtime itself calls.
 /// </summary>
+[Collection("ProcessWindowState")]
 public class HotReloadWakeTests
 {
     private static bool CanOpenWindow => OperatingSystem.IsWindows();

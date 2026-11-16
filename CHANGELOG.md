@@ -4,6 +4,45 @@ Every user-visible change, newest first. Pre-1.0 the minor number carries new su
 carries fixes. The section for a tag is what the GitHub release publishes, so the two cannot say
 different things.
 
+## [Unreleased]
+
+### Added
+
+- **`dotnet cui session --script <file>`** names the command file instead of relying on `<` input
+  redirection, which Windows PowerShell does not have. Stdin still works in a POSIX shell.
+- **`dotnet cui doctor`** checks this tool's version and API catalog against the CuiSharp version
+  the app resolved, reports a floating `#:package CuiSharp@*`, a missing `ApplicationIcon`, and
+  whether NativeAOT is configured. `--json` is machine-readable, `--strict` fails on warnings, and
+  `--aot` performs the Release publish of an app that enables `PublishAot` and reports its
+  IL2xxx/IL3xxx warnings.
+- **`png --size` / `--sizes`, `--env` / `--state` and strict `find` / `click`** from the earlier
+  headless workflow pass: one viewport or a png matrix, an isolated app state root, extra
+  environment, and a refusal to guess between equally good matches. `CUISHARP_VIEWPORT` makes a
+  headless frame the requested size; `ui.MarkReady()` and `--wait ready` replace frame counting for
+  async data.
+- **Semantic roles, values, state and automation ids.** Every recorded node now exposes `Role`,
+  `Name`, `Value`, `SemanticState` and `AutomationId`; `ui.Id` and `ui.Automation` name a control
+  independently of its label, and `SemanticNode.ToAccessibility()` is the projection a platform
+  accessibility adapter will consume. `dotnet cui tree --details` prints the metadata, and
+  `find`/`click` accept `--role`, `--value` and `--id` as well as the existing query text.
+
+### Changed
+
+- **`HttpMethod` is now `HttpVerb`.** The old name collided with `System.Net.Http.HttpMethod` in
+  every app that also made an HTTP request. `RequestBar` and `CuiHttp.MethodName` take `HttpVerb`;
+  the generated C binding is unchanged.
+- **`Color.WithAlpha` on a theme token returns the token unchanged.** A token has no channels to fade
+  until a frame resolves it, so the old call silently did nothing useful; the guide now shows
+  `ui.TokenColor(Token.Accent).WithAlpha(0.14f)` for a translucent tint. `Color.IsToken` now checks
+  the whole token marker, including alpha, so a raw color that happens to share G/B is not a token.
+- **The samples and headless workflow are platform-neutral.** `stock.cs` uses `SocketsHttpHandler`,
+  `download.cs` reveals with `explorer`, `open -R` or `xdg-open`, and the generated binaries are
+  named for the host. `music.cs` remains Windows-only because its player is WinRT `MediaPlayer`.
+- **`Size` can be inspected**: `IsFit`, `IsFill`, `IsFixed`, `IsPercent`, `TryGetPoints` and
+  `TryGetPercent`, with a readable `ToString`. The guide also spells out when to use `Card` instead
+  of `Box`, and warns that the OS file dialog (`CuiWindow.PickFile`) is modal and must not run from a
+  component's `Draw`; `ui.FilePicker` is the in-frame picker.
+
 ## [0.4.2] — 2026-11-13
 
 ### Added

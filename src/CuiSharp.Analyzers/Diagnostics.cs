@@ -110,6 +110,7 @@ internal sealed class KnownTypes
         OpenScope = compilation.GetTypeByMetadataName("CuiSharp.OpenScope");
         GridScope = compilation.GetTypeByMetadataName("CuiSharp.GridScope");
         IdScope = compilation.GetTypeByMetadataName("CuiSharp.IdScope");
+        AutomationScope = compilation.GetTypeByMetadataName("CuiSharp.AutomationScope");
         UiText = compilation.GetTypeByMetadataName("CuiSharp.UiText");
         KeyedScopeDefinition = compilation.GetTypeByMetadataName("CuiSharp.KeyedScope`1");
     }
@@ -120,12 +121,14 @@ internal sealed class KnownTypes
     internal INamedTypeSymbol? OpenScope { get; }
     internal INamedTypeSymbol? GridScope { get; }
     internal INamedTypeSymbol? IdScope { get; }
+    internal INamedTypeSymbol? AutomationScope { get; }
     internal INamedTypeSymbol? UiText { get; }
     internal INamedTypeSymbol? KeyedScopeDefinition { get; }
 
     /// <summary>True when the type is one the caller has to dispose: a scope the frame stack owns.</summary>
     internal bool IsScope(ITypeSymbol? type) => type is not null && (
-        SymbolEquals(type, LayoutScope) || SymbolEquals(type, OpenScope) || SymbolEquals(type, GridScope) || SymbolEquals(type, IdScope) ||
+        SymbolEquals(type, LayoutScope) || SymbolEquals(type, OpenScope) || SymbolEquals(type, GridScope) ||
+        SymbolEquals(type, IdScope) || SymbolEquals(type, AutomationScope) ||
         (KeyedScopeDefinition is not null && type is INamedTypeSymbol { IsGenericType: true } named &&
          SymbolEquals(named.ConstructedFrom, KeyedScopeDefinition)));
 

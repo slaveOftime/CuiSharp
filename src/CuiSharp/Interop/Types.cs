@@ -1,3 +1,4 @@
+using System.Globalization;
 using CuiSharp.Interop;
 
 // Hand-written value types. Enums, structs, functions and icons are generated:
@@ -73,10 +74,20 @@ public readonly struct Color : IEquatable<Color>
         UiMarshal.FromNative(Native.Mix(UiMarshal.ToNative(a), UiMarshal.ToNative(b), t));
 
     /// <summary>Multiplies the color's alpha, for a disabled or washed-out variant.</summary>
+    /// <remarks>
+    /// A theme token has no channels to multiply until CUI resolves it, so a token is returned
+    /// unchanged. Resolve it in a frame first when the tint itself has to be translucent:
+    /// <c>ui.TokenColor(Token.Accent).WithAlpha(0.14f)</c>.
+    /// </remarks>
     public Color WithAlpha(float multiplier) =>
-        UiMarshal.FromNative(Native.Alpha(UiMarshal.ToNative(this), multiplier));
+        IsToken ? this : UiMarshal.FromNative(Native.Alpha(UiMarshal.ToNative(this), multiplier));
 
-    public bool IsToken => G == 0xC5 && B == 0x1D;
+    /// <summary>
+    /// Whether this is a semantic token rather than four channels. CUI marks tokens with an alpha
+    /// of zero and a fixed G/B pair, so the whole marker is checked; the RGB it will draw is
+    /// known only while a frame is drawing.
+    /// </summary>
+    public bool IsToken => A == 0 && G == 0xC5 && B == 0x1D && R != 0;
 
     /// <summary>
     /// The same four channels, or the same token. A token compares equal to itself and not to the
@@ -102,7 +113,10 @@ public readonly struct Color : IEquatable<Color>
             : A == 255 ? $"#{R:x2}{G:x2}{B:x2}" : $"#{R:x2}{G:x2}{B:x2}{A:x2}";
 }
 
-/// <summary>cui_size: FIT, FILL, a fixed size in points, or a percentage of the parent.</summary>
+/// <summary>
+/// <c>cui_size</c>: fit the content, grow into the space available, a fixed size in points, or a
+/// percentage of the parent.
+/// </summary>
 public readonly struct Size
 {
     internal readonly SizeKind Kind;
@@ -110,11 +124,49 @@ public readonly struct Size
 
     private Size(SizeKind kind, float value) { Kind = kind; Value = value; }
 
+    /// <summary>As large as the content needs.</summary>
     public static readonly Size Fit = new(SizeKind.Fit, 0);
+
+    /// <summary>Grow to fill the space available, sharing it with other growing siblings.</summary>
     public static readonly Size Fill = new(SizeKind.Grow, 1);
-    public static Size Grow(float w) => new(SizeKind.Grow, w);
-    public static Size Px(float v) => new(SizeKind.Fixed, v);
-    public static Size Percent(float p) => new(SizeKind.Percent, p);
+
+    /// <summary>Grow to fill, with this share of the available space among growing siblings.</summary>
+    public static Size Grow(float weight) => new(SizeKind.Grow, weight);
+
+    /// <summary>A fixed size in points.</summary>
+    public static Size Px(float points) => new(SizeKind.Fixed, points);
+
+    /// <summary><paramref name="percent"/> of the parent's size, from 0 to 100.</summary>
+    public static Size Percent(float percent) => new(SizeKind.Percent, percent);
+
+    /// <summary>Whether this is <see cref="Fit"/>.</summary>
+    public bool IsFit => Kind == SizeKind.Fit;
+
+    /// <summary>
+    /// Whether this grows into the available space: true for <see cref="Fill"/> and for every
+    /// <see cref="Grow"/> weight.
+    /// </summary>
+    public bool IsFill => Kind == SizeKind.Grow;
+
+    /// <summary>Whether this is a fixed number of points.</summary>
+    public bool IsFixed => Kind == SizeKind.Fixed;
+
+    /// <summary>Whether this is a percentage of the parent.</summary>
+    public bool IsPercent => Kind == SizeKind.Percent;
+
+    /// <summary>The fixed size, when <see cref="IsFixed"/> is true.</summary>
+    public bool TryGetPoints(out float points)
+    {
+        points = IsFixed ? Value : 0;
+        return IsFixed;
+    }
+
+    /// <summary>The percentage of the parent, when <see cref="IsPercent"/> is true.</summary>
+    public bool TryGetPercent(out float percent)
+    {
+        percent = IsPercent ? Value : 0;
+        return IsPercent;
+    }
 
     /// <summary>
     /// A bare number is a fixed size in points, so <c>Width = 240</c> reads like
@@ -124,6 +176,16 @@ public readonly struct Size
     public static implicit operator Size(float points) => Px(points);
 
     internal static Size FromParts(SizeKind kind, float value) => new(kind, value);
+
+    /// <summary><c>Fit</c>, <c>Fill</c>, <c>240px</c> or <c>50%</c> — what a debugger should show.</summary>
+    public override string ToString() => Kind switch
+    {
+        SizeKind.Fit => "Fit",
+        SizeKind.Grow => Value == 1 ? "Fill" : $"Grow({Value.ToString("0.###", CultureInfo.InvariantCulture)})",
+        SizeKind.Fixed => $"{Value.ToString("0.###", CultureInfo.InvariantCulture)}px",
+        SizeKind.Percent => $"{Value.ToString("0.###", CultureInfo.InvariantCulture)}%",
+        _ => $"{Kind} {Value.ToString("0.###", CultureInfo.InvariantCulture)}",
+    };
 }
 
 

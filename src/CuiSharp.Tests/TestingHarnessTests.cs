@@ -263,10 +263,18 @@ public class TestingHarnessTests
         Assert.Equal(2, surface.Widgets.Count);
         Assert.Equal(["one", "two"], surface.Widgets.Select(w => w.Text));
 
-        // Steady state with recording on still allocates nothing per frame beyond the records.
+        // Steady state with recording off allocates nothing per frame; use the median of five
+        // batches so a one-off tiered-JIT promotion on the test thread does not masquerade as
+        // a per-frame allocation.
         surface.RecordWidgets = false;
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        for (int i = 0; i < 10; i++) surface.Draw(draw, pixels);
-        Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
+        var batches = new long[5];
+        for (int b = 0; b < batches.Length; b++)
+        {
+            long before = GC.GetAllocatedBytesForCurrentThread();
+            for (int i = 0; i < 10; i++) surface.Draw(draw, pixels);
+            batches[b] = GC.GetAllocatedBytesForCurrentThread() - before;
+        }
+
+        Assert.Equal(0, batches.Median());
     }
 }

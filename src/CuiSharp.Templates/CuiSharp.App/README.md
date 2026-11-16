@@ -21,10 +21,12 @@ Release build of your own — `dotnet build` alone produces Debug.
 
 ```sh
 dotnet cui tree -p CuiSharp.App # the frame's controls, nested
+dotnet cui tree --details -p CuiSharp.App # …with role, automation id, value and state
 dotnet cui click 'Tab "Markets"' -p CuiSharp.App # click one, print the frame that reacted
 dotnet cui png shot.png -p CuiSharp.App # the frame as an image
 dotnet cui layout -p CuiSharp.App # rectangles, and anything that overflowed
-dotnet cui session -p CuiSharp.App < steps.txt # many commands, one process
+dotnet cui session -p CuiSharp.App --script steps.txt # many commands, one process
+dotnet cui doctor -p CuiSharp.App # check tool/package version, icon and AOT setup
 dotnet cui docs # the framework guide, offline
 ```
 
@@ -33,10 +35,11 @@ dotnet cui docs # the framework guide, offline
   `png` inside a session photographs the page the earlier lines reached.
 - Session lines are protocol commands: `click Tab "Markets"`, then `png shot.png`. Quotes are literal; a
   line that fails stops the rest of the session, so read the top of its output first.
-- Disambiguate by kind (`Tab "Markets"`) or by container path when kinds also match:
-  `dotnet cui click 'theme > Segment "Dark"' -p CuiSharp.App`. Only the final path step names a kind.
-- `-a` drives a window that is already open, which `LiveAttach` in `Program.cs` enables in Debug:
-  start the app (or pass `--live` in Release), then `dotnet cui click 'theme > Dark' -a`.
+- Disambiguate by kind (`Tab "Markets"`), role (`--role button Save`), value (`--value Milk`),
+  id (`--id draft`), or container path (`dotnet cui click 'theme > Segment "Dark"' -p CuiSharp.App`).
+  Only the final path step names a kind.
+- `-a` drives a window that is already open, which `LiveAttach` in `Program.cs` enables:
+  start the app, then `dotnet cui click 'theme > Dark' -a`.
   Live commands preserve its state and leave
   it open; `dotnet cui quit -a` closes it. A headless run has no window to attach to.
 - A published exe keeps neither channel unless it was published for it — a Release publish strips

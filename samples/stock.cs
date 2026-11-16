@@ -1,5 +1,4 @@
 #:package CuiSharp@*
-#:package System.Net.Http.WinHttpHandler@11.0.0
 
 // The properties below are what make `dotnet publish stock.cs -c Release -o .`
 // leave one small native executable beside this file, with no .NET on the target.
@@ -17,8 +16,6 @@
 #:property StackTraceSupport=false
 #:property MetricsSupport=false
 
-#pragma warning disable CA1416 // WinHttpHandler is the Windows HTTP stack; this app publishes for Windows.
-
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net;
@@ -30,16 +27,16 @@ using CuiSharp;
 // Global Market Cap — a native CuiSharp dashboard over Tencent + Eastmoney data.
 //
 //   run      dotnet run stock.cs                        the window
-//   ship     dotnet publish stock.cs -c Release -o .    one stock.exe, no runtime needed
+//   ship     dotnet publish stock.cs -c Release -o .    one native executable, no runtime needed
 //            (add -p:CuiSharpHeadless=true to publish a build `dotnet cui` can drive)
 //
-//   iterate  CUISHARP_HEADLESS=1 ./stock.exe            no window; serves the tool's protocol
+//   iterate  CUISHARP_HEADLESS=1 ./stock               no window; serves the tool's protocol
 //            dotnet cui tree                            the controls the last frame drew
 //            dotnet cui click Refresh                   click one, print the frame it produced
 //            dotnet cui png shot.png                    that frame as a PNG
 //            dotnet cui docs read live-debugging        the guide, offline
 //            dotnet cui api ChartOpts                   one exact declaration
-//            dotnet cui session < steps.txt             many clicks against one app instance
+//            dotnet cui session --script steps.txt      many clicks against one app instance
 //
 // Below: Dashboard and its sections, then the model, the feeds, the tracker and
 // the cache.
@@ -898,10 +895,9 @@ internal sealed class Snapshot
 // ---------------------------------------------------------------------------
 // Transport. One client, eight requests at a time, two attempts each.
 //
-// WinHttpHandler borrows the HTTP/TLS stack Windows already ships instead of
-// linking the managed one. That is most of the difference between a 1 MB
-// CuiSharp binary and this one: the managed stack adds about 3.5 MB, the
-// Windows one about 1.5 MB. The app therefore publishes for Windows.
+// The managed HTTP stack keeps the sample cross-platform: WinHttpHandler was
+// smaller on Windows, but it tied this app to one OS. SocketsHttpHandler is
+// built into .NET and publishes under Native AOT without a package.
 // ---------------------------------------------------------------------------
 
 [SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable",
@@ -946,9 +942,11 @@ internal sealed class HttpText
 
     private static HttpClient Create()
     {
-        var handler = new WinHttpHandler
+        var handler = new SocketsHttpHandler
         {
             AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+            PooledConnectionLifetime = TimeSpan.FromMinutes(5),
+            MaxConnectionsPerServer = 8,
         };
 
         var http = new HttpClient(handler)
@@ -1725,10 +1723,12 @@ internal static class Cache
 {
     private const int Version = 1;
 
-    private static readonly string FilePath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "GlobalMarketCap",
-        "snapshot.json");
+    private static readonly string FilePath = Path.Combine(StateRoot(), "GlobalMarketCap", "snapshot.json");
+
+    private static string StateRoot() =>
+        Environment.GetEnvironmentVariable("CUISHARP_STATE_HOME") is { Length: > 0 } root
+            ? root
+            : Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
 
     private static readonly Dictionary<string, Company> ByKey =
         Data.Companies.ToDictionary(static company => company.Key, StringComparer.Ordinal);

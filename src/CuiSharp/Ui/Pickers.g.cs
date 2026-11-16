@@ -48,7 +48,7 @@ public static unsafe class PickersUiExtensions
         {
             var __opts = o.ToNative();
             var __result = Native.WheelPicker(ui.Handle, Utf8.Get(id), UiMarshal.Strings(items), (int)(items.Length), ref index, in __opts);
-            WidgetRecorder.Note(ui.Handle, "WheelPicker", id);
+            WidgetRecorder.NoteValue(ui.Handle, "WheelPicker", id, (double)index);
             return __result != 0;
         }
 
@@ -65,7 +65,7 @@ public static unsafe class PickersUiExtensions
         {
             var __opts = o.ToNative();
             var __result = Native.RulerSlider(ui.Handle, Utf8.Get(label), ref value, min, max, in __opts);
-            WidgetRecorder.Note(ui.Handle, "RulerSlider", label);
+            WidgetRecorder.NoteValue(ui.Handle, "RulerSlider", label, (double)value);
             return __result != 0;
         }
 
@@ -83,7 +83,7 @@ public static unsafe class PickersUiExtensions
         {
             var __opts = o.ToNative();
             var __result = Native.Knob(ui.Handle, Utf8.Get(id), ref value, min, max, in __opts);
-            WidgetRecorder.Note(ui.Handle, "Knob", id);
+            WidgetRecorder.NoteValue(ui.Handle, "Knob", id, (double)value);
             return __result != 0;
         }
 
@@ -92,7 +92,7 @@ public static unsafe class PickersUiExtensions
         {
             var __opts = o.ToNative();
             var __result = Native.Fader(ui.Handle, Utf8.Get(id), ref value, min, max, in __opts);
-            WidgetRecorder.Note(ui.Handle, "Fader", id);
+            WidgetRecorder.NoteValue(ui.Handle, "Fader", id, (double)value);
             return __result != 0;
         }
 

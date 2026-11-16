@@ -24,7 +24,7 @@ public static unsafe class RegularExpressionsAndTheRegexTesterUiExtensions
             if (Ui.TextChanged(__patternSlot)) pattern = Ui.DecodeText(__patternSlot);
             if (Ui.TextChanged(__textSlot)) text = Ui.DecodeText(__textSlot);
             flags = __flags;
-            WidgetRecorder.Note(ui.Handle, "RegexTester", id);
+            WidgetRecorder.NoteValue(ui.Handle, "RegexTester", id, pattern);
             return RegexTesterResult.FromNative(__result);
         }
 

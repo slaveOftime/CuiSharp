@@ -20,7 +20,7 @@ public static unsafe class SchedulePickerUiExtensions
             var __opts = o.ToNative();
             var __result = Native.SchedulePicker(ui.Handle, Utf8.Get(id), (nint)__cronSlot.Buffer, (nuint)__cronSlot.Capacity, in __opts);
             if (Ui.TextChanged(__cronSlot)) cron = Ui.DecodeText(__cronSlot);
-            WidgetRecorder.Note(ui.Handle, "SchedulePicker", id);
+            WidgetRecorder.NoteValue(ui.Handle, "SchedulePicker", id, cron);
             return ScheduleResult.FromNative(__result);
         }
 

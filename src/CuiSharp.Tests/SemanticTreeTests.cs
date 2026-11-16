@@ -234,6 +234,9 @@ public class SemanticTreeTests
             """,
             app.Print().ReplaceLineEndings("\n"));
 
+        Assert.True((app.Find("Tab", "Todos").Node.State & SemanticState.Selected) != 0);
+        Assert.True((app.Find("Tab", "Markets").Node.State & SemanticState.Selected) == 0);
+
         app.Find("Tab", "Markets").ClickAndFrame();
         Assert.Equal(1, page.Page);
     }
@@ -467,6 +470,172 @@ public class SemanticTreeTests
         Assert.Equal(unicode, scroll.Id);
         Assert.Equal(hidden, row.Id);
         Assert.True(scroll.Rect.W > 0 && row.Rect.W > 0);
+    }
+
+    [Fact]
+    public void ANodeCarriesWhatAnAccessibilityTreeNeeds()
+    {
+        var page = new Editor { Draft = "Milk" };
+        using var app = TestApp.Start(page, 600, 400);
+
+        SemanticNode input = app.Tree.Find("Input \"draft\"");
+        Assert.Equal(SemanticRole.TextBox, input.Role);
+        Assert.Equal("draft", input.Name);
+        Assert.Equal("Milk", input.Value);
+        Assert.True(input.IsEnabled);
+
+        SemanticNode save = app.Tree.Find("Button \"Save\"");
+        Assert.Equal(SemanticRole.Button, save.Role);
+        Assert.Equal("Save", save.Name);
+        Assert.Contains("role=button", save.Describe(), StringComparison.Ordinal);
+
+        SemanticAccessibilityNode accessible = app.Tree.ToAccessibility();
+        Assert.Equal(SemanticRole.Frame, accessible.Role);
+        Assert.Contains(Flatten(accessible), child => child.Role == SemanticRole.TextBox);
+
+        static IEnumerable<SemanticAccessibilityNode> Flatten(SemanticAccessibilityNode node)
+        {
+            foreach (SemanticAccessibilityNode child in node.Children)
+            {
+                yield return child;
+                foreach (SemanticAccessibilityNode deeper in Flatten(child)) yield return deeper;
+            }
+        }
+    }
+
+    [Fact]
+    public void AnAutomationScopeNamesTheWidgetAndSurvivesATranslation()
+    {
+        var clicks = 0;
+        using var app = TestApp.Start(ui =>
+        {
+            using (ui.Automation("save:1"))
+                if (ui.Button("Save")) clicks++;
+            using (ui.Id("row:7"))
+                ui.Button("Row");
+        }, 300, 160);
+
+        SemanticNode save = app.Find("id:save:1").Node;
+        Assert.Equal("Save", save.Text);
+        Assert.Equal("save:1", save.AutomationId);
+        Assert.Equal("Save", app.Find("role:button Save").Node.Text);
+
+        // `ui.Id` seeds native state and automation with the same stable key.
+        Assert.Equal("row:7", app.Find("id:row:7").Node.AutomationId);
+
+        // The explicit id is not a label, so a translated button can still be clicked.
+        app.Find("id:save:1").ClickAndFrame();
+        Assert.Equal(1, clicks);
+    }
+
+    [Fact]
+    public void AnIdScopePrefersTheActionableControlAndRefusesTwoEqualOnes()
+    {
+        using var row = TestApp.Start(ui =>
+        {
+            ui.Label("save:1");
+            using (ui.Id("save:1"))
+            using (ui.Card(new() { Id = "card:1" }))
+            {
+                ui.Label("Row label");
+                ui.Button("Delete");
+            }
+        }, 300, 180);
+
+        Assert.Equal("Button", row.FindById("save:1").Kind);
+        Assert.Equal("Delete", row.FindUnique("id:save:1").Text);
+        Assert.Equal("Delete", row.FindUnique("role:button card:1 > Delete").Text);
+        Assert.Equal("Delete", row.FindUnique("save:1 > Button \"Delete\"").Text);
+
+        using var duplicate = TestApp.Start(ui =>
+        {
+            using (ui.Id("row:2"))
+            {
+                ui.Button("Edit");
+                ui.Button("Delete");
+            }
+        }, 300, 180);
+
+        Assert.Throws<InvalidOperationException>(() => duplicate.FindUnique("id:row:2"));
+    }
+
+    [Fact]
+    public void ReadOnlyInputsAndHandWrittenTextControlsRecordTheirValuesAndStates()
+    {
+        string ro = "line 1\nline 2";
+        string tags = "ui,aot";
+        string otp = "42";
+        using var app = TestApp.Start(ui =>
+        {
+            ui.Input("ro", ref ro, new InputOpts { ReadOnly = true });
+            ui.TagInput("tags", ref tags);
+            ui.OtpInput("otp", ref otp, 6);
+        }, 400, 260);
+
+        SemanticNode readOnly = app.Tree.Find("Input \"ro\"");
+        Assert.True((readOnly.State & SemanticState.ReadOnly) != 0);
+        Assert.Contains("state=enabled, read-only", readOnly.Describe(), StringComparison.Ordinal);
+        Assert.Contains("value=\"line 1\\nline 2\"", readOnly.Describe(), StringComparison.Ordinal);
+
+        SemanticNode tagNode = app.Tree.Find("TagInput \"tags\"");
+        Assert.Equal(SemanticRole.TextBox, tagNode.Role);
+        Assert.Equal("ui,aot", tagNode.Value);
+
+        SemanticNode otpNode = app.Tree.Find("OtpInput \"otp\"");
+        Assert.Equal(SemanticRole.TextBox, otpNode.Role);
+        Assert.Equal("42", otpNode.Value);
+    }
+
+    [Fact]
+    public void AValueQueryFindsTheFieldEvenWhenItsLabelIsNotTheValue()
+    {
+        var page = new Editor { Draft = "Milk" };
+        using var app = TestApp.Start(page, 600, 400);
+
+        Assert.Equal("Input", app.Find("value:Milk").Node.Kind);
+        Assert.Equal("Input", app.Find("role:textbox value:Milk").Node.Kind);
+        Assert.Equal("Save", app.Find("role:button Save").Node.Text);
+    }
+
+    [Fact]
+    public void TreeDetailsAddsRoleValueAndStateWithoutChangingThePlainTree()
+    {
+        var page = new Editor { Draft = "Milk" };
+        using var app = TestApp.Start(page, 600, 400);
+
+        string plain = app.Print();
+        Assert.DoesNotContain("role=", plain, StringComparison.Ordinal);
+
+        string details = app.Print(details: true);
+        Assert.Contains("Input \"draft\" role=textbox", details, StringComparison.Ordinal);
+        Assert.Contains("value=\"Milk\"", details, StringComparison.Ordinal);
+        Assert.Contains("state=enabled", details, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ADisabledScopeClearsTheEnabledState()
+    {
+        using var app = TestApp.Start(ui =>
+        {
+            using (ui.Disabled(true)) ui.Button("Off");
+        }, 300, 160);
+
+        SemanticNode off = app.Tree.Find("Off");
+        Assert.False(off.IsEnabled);
+        Assert.DoesNotContain("enabled", SemanticStates.Format(off.State), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ACheckboxRecordsItsValueAndCheckedState()
+    {
+        var on = true;
+        using var app = TestApp.Start(ui => ui.Checkbox("Enable notifications", ref on), 400, 200);
+
+        SemanticNode checkbox = app.Tree.Find("Enable notifications");
+        Assert.Equal(SemanticRole.CheckBox, checkbox.Role);
+        Assert.Equal("true", checkbox.Value);
+        Assert.True((checkbox.State & SemanticState.Checked) != 0);
+        Assert.True(checkbox.IsEnabled);
     }
 
     [Fact]

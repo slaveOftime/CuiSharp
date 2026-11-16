@@ -22,7 +22,7 @@ public static unsafe class PipelineUiExtensions
             var __opts = o.ToNative((nint)(&__selected));
             var __result = Native.Pipeline(ui.Handle, Utf8.Get(id), UiMarshal.Strings(stages), (int)(stages.Length), (nint)__jobs, (int)(jobs.Length), in __opts);
             selected = __selected;
-            WidgetRecorder.Note(ui.Handle, "Pipeline", id);
+            WidgetRecorder.NoteValue(ui.Handle, "Pipeline", id, (double)selected);
             return PipelineResult.FromNative(__result);
         }
 

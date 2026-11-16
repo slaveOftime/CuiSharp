@@ -22,7 +22,7 @@ public static unsafe class ApiExplorerUiExtensions
             var __opts = o.ToNative((nint)(&__selected));
             var __result = Native.ApiExplorer(ui.Handle, Utf8.Get(id), (nint)__endpoints, (int)(endpoints.Length), in __opts);
             selected = __selected;
-            WidgetRecorder.Note(ui.Handle, "ApiExplorer", id);
+            WidgetRecorder.NoteValue(ui.Handle, "ApiExplorer", id, (double)selected);
             return ApiExplorerResult.FromNative(__result);
         }
 

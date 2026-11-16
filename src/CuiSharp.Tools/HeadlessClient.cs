@@ -90,7 +90,8 @@ internal sealed class HeadlessClient : IDisposable
         string host,
         IReadOnlyList<string> arguments,
         Action<string>? echo = null,
-        CancellationToken cancellation = default)
+        CancellationToken cancellation = default,
+        IReadOnlyDictionary<string, string>? environment = null)
     {
         var info = new ProcessStartInfo(host)
         {
@@ -105,6 +106,8 @@ internal sealed class HeadlessClient : IDisposable
             StandardErrorEncoding = new UTF8Encoding(false),
         };
         foreach (string argument in arguments) info.ArgumentList.Add(argument);
+        foreach ((string key, string value) in environment ?? new Dictionary<string, string>())
+            info.Environment[key] = value;
         info.Environment[CuiSharpEnvironmentVariable] = "1";
 
         Process process;

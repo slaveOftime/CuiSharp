@@ -35,7 +35,7 @@ dotnet publish demo1.cs -c Release -o .    # one native binary beside it, no .NE
 folder; replace the .ico with your own to change the exe and window icon. Add `-o <folder>`
 only when you want a separate output directory. The generated file carries the properties that make
 that publish one file of about 1.2 MB, and says so at the top. It starts with
-`#:package CuiSharp@*`, resolving the latest stable package; use `--CuiSharpVersion 0.3.3` when
+`#:package CuiSharp@*`, resolving the latest stable package; use `--CuiSharpVersion <version>` when
 generating to pin a version. Its counter and theme switch use the same frame API as a full app;
 `CUISHARP_HEADLESS=1` runs it without a window for automation.
 
@@ -181,9 +181,9 @@ Then this is the whole of what a project's `AGENTS.md` has to say about CuiSharp
 > project, not in a shell history.
 
 `dotnet cui docs` answers from the guide, the reference and the behaviour pages **inside the tool**:
-no repository, no NuGet cache, no network, nothing built and nothing started. Fourteen topics cover
+no repository, no NuGet cache, no network, nothing built and nothing started. Fifteen topics cover
 the tasks an assistant arrives with — `getting-started`, `writing-ui`, `custom-controls`, `hosting`,
-`testing`, `debugging`, `layout`, `live-debugging`, `performance`, `theming`, `translation`,
+`testing`, `debugging`, `layout`, `live-debugging`, `headless`, `performance`, `theming`, `translation`,
 `publishing`, `signatures`, `widgets` — and each one is a named set of sections of the shipped pages,
 so the tool cannot say anything the documentation does not.
 
@@ -220,13 +220,20 @@ Assert.True(app.PaintedAnything());
 
 ```sh
 dotnet cui tree                          # the controls of the last frame, nested
+dotnet cui tree --details                # …with role, automation id, value and state
+dotnet cui find --role button Save       # find by semantic role and label
+dotnet cui find --value Milk             # find by the value a field holds
 dotnet cui click Save                    # click a control, print the frame it produced
 dotnet cui click "Button Save"           # …when a heading says the same word
 dotnet cui click "editor > Save"         # …or the path to the control
 dotnet cui type Milk                     # type into the focused field
 dotnet cui png shot.png                  # the frame as a PNG, for a person or a model
+dotnet cui png shot.png --size 420x720   # a viewport without editing the app
+dotnet cui png shot.png --sizes 420x720,1180x820   # one png per viewport
+dotnet cui tree --state artifacts/cui-run        # isolated app state
 dotnet cui tree -a 15036                 # the same, on a live window a person is watching
-dotnet cui session < script.txt          # many commands, one build, one app
+dotnet cui session --script script.txt   # many commands, one build, one app
+dotnet cui doctor                        # check the tool against the app before a bug report
 ```
 
 The query is **one quoted argument** — `click "Button Save"`, not `click Button Save` — because the
@@ -272,7 +279,7 @@ dotnet tool install -g CuiSharp.Tools    # exposes `dotnet cui`
 ```
 
 ```sh
-dotnet publish -c Release -r win-x64      # one executable, from ~1.2 MB up, nothing beside it
+dotnet publish -c Release -r win-x64      # or linux-x64 / osx-arm64; one executable, nothing beside it
 ```
 
 `cui.lib` is linked statically through the package's targets, so there is no `cui.dll` in the output.
@@ -300,7 +307,8 @@ The browser-hosted gallery and GitHub Pages build are documented in
 [`samples/CuiSharp.Gallery.Browser/README.md`](samples/CuiSharp.Gallery.Browser/README.md).
 
 The four file-based apps in [`samples/`](samples/README.md) — Disk Usage, Global Market Cap, Music
-and Downloads — are one `.cs` file each, with the same run / publish / headless header.
+and Downloads — are one `.cs` file each, with the same run / publish / headless header. Music is
+Windows-only because it uses the WinRT `MediaPlayer`; the other three publish for the current platform.
 
 ```
 src/CuiSharp/            the library: Interop (generated), Ui, Runtime, Semantics, Hosting, Charting

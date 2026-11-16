@@ -64,6 +64,50 @@ public class ToolArgumentTests
     }
 
     [Fact]
+    public void RoleValueAndIdAreOnePortableQuery()
+    {
+        Grammar.Parsed byRole = Grammar.Parse(["find", "--role", "button", "Save"]);
+        Assert.Empty(byRole.Errors);
+        Assert.Equal("find role:button Save", byRole.Options!.Line);
+
+        Grammar.Parsed byValue = Grammar.Parse(["find", "--role", "textbox", "--value", "Milk"]);
+        Assert.Empty(byValue.Errors);
+        Assert.Equal("find role:textbox value:Milk", byValue.Options!.Line);
+
+        Grammar.Parsed byId = Grammar.Parse(["click", "--id", "pause:42"]);
+        Assert.Empty(byId.Errors);
+        Assert.Equal("click id:pause:42", byId.Options!.Line);
+    }
+
+    [Fact]
+    public void AQueryWithNoTextOrFilterIsAUsageError()
+    {
+        Grammar.Parsed empty = Grammar.Parse(["find"]);
+        Assert.NotEmpty(empty.Errors);
+        Assert.Contains("--role", string.Join(" ", empty.Errors), StringComparison.Ordinal);
+
+        Grammar.Parsed blank = Grammar.Parse(["find", ""]);
+        Assert.NotEmpty(blank.Errors);
+
+        Grammar.Parsed blankId = Grammar.Parse(["click", "--id", "   "]);
+        Assert.NotEmpty(blankId.Errors);
+
+        Grammar.Parsed both = Grammar.Parse(["find", "Save", "--value", "Milk"]);
+        Assert.NotEmpty(both.Errors);
+        Assert.Contains("--value", string.Join(" ", both.Errors), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TreeDetailsRidesOnTheTreeCommand()
+    {
+        Grammar.Parsed parsed = Grammar.Parse(["tree", "--details"]);
+
+        Assert.Empty(parsed.Errors);
+        Assert.Equal("tree", parsed.Options!.Command);
+        Assert.Equal("tree details", parsed.Options.Line);
+    }
+
+    [Fact]
     public void AFlagTheToolDoesNotKnowIsReportedRatherThanForwarded()
     {
         Grammar.Parsed parsed = Grammar.Parse(["tree", "--pgae=2"]);
@@ -174,7 +218,14 @@ public class ToolArgumentTests
                 foreach (string spelling in new[] { option.Name }.Concat(option.Aliases))
                 {
                     var argv = new List<string> { command.Name };
-                    foreach (CliArgument argument in command.Arguments) argv.Add(SampleArgument(argument));
+                    // A value or an exact id is the whole query; adding the sample label would
+                    // ask for two different searches at once, which the grammar refuses.
+                    bool queryOnly = command.Name is "find" or "click" && spelling is "--value" or "--id";
+                    if (!queryOnly)
+                    {
+                        foreach (CliArgument argument in command.Arguments) argv.Add(SampleArgument(argument));
+                    }
+
                     argv.Add(spelling);
                     if (option.ValueType != typeof(bool)) argv.Add(SampleOption(option));
                     // A timeout bounds a wait, so it is only legal beside one.
@@ -200,6 +251,9 @@ public class ToolArgumentTests
     private static string SampleOption(CliOption option) => option.Name switch
     {
         "--wait" => "ready",
+        "--size" => "420x720",
+        "--sizes" => "420x720,1180x820",
+        "--env" => "KEY=VALUE",
         _ => option.ValueType == typeof(string) ? "x" : "2",
     };
 
@@ -246,7 +300,7 @@ public class ToolArgumentTests
         Assert.Equal(0, Cli.Run(["click", "--help"], output, error));
 
         string help = output.ToString();
-        Assert.Contains("click <text>", help, StringComparison.Ordinal);
+        Assert.Contains("click [<text>]", help, StringComparison.Ordinal);
         Assert.Contains("--attach", help, StringComparison.Ordinal);
         Assert.Equal("", error.ToString());
     }
@@ -262,6 +316,60 @@ public class ToolArgumentTests
         Assert.Equal("png out.png", parsed.Options!.Line);
         Assert.Equal("wait 10", parsed.Options.WaitLine);
         Assert.Equal(Cli.Options.DefaultWaitSeconds, parsed.Options.WaitSeconds);
+    }
+
+    [Fact]
+    public void AViewportSizeIsParsedOnceAndKeepsItsForm()
+    {
+        Grammar.Parsed parsed = Grammar.Parse(["tree", "--size", "420x720"]);
+
+        Assert.Empty(parsed.Errors);
+        Assert.Equal(new Viewport(420, 720), parsed.Options!.Viewport);
+        Assert.Equal("420x720", parsed.Options.Viewport.ToString());
+    }
+
+    [Theory]
+    [InlineData("420")]
+    [InlineData("0x720")]
+    [InlineData("420x0")]
+    [InlineData("widex720")]
+    [InlineData("420x720x1080")]
+    public void AMalformedViewportIsAUsageError(string value)
+    {
+        Assert.NotEmpty(Grammar.Parse(["tree", "--size", value]).Errors);
+    }
+
+    [Fact]
+    public void SizesAreACommaSeparatedPngMatrix()
+    {
+        Grammar.Parsed parsed = Grammar.Parse(["png", "shot.png", "--sizes", "420x720,1180x820"]);
+
+        Assert.Empty(parsed.Errors);
+        Assert.Equal(["420x720", "1180x820"], parsed.Options!.Viewports.Select(static viewport => viewport.ToString()));
+        Assert.NotEmpty(Grammar.Parse(["tree", "--sizes", "420x720,1180x820"]).Errors);
+    }
+
+    [Fact]
+    public void EnvironmentPairsAndAStateRootReachTheOptions()
+    {
+        Grammar.Parsed parsed = Grammar.Parse(
+            ["tree", "--env", "CUI_STATE_HOME=C:\\scratch", "--env", "LANG=zh-CN", "--env", "EMPTY=", "--state", "C:\\state"]);
+
+        Assert.Empty(parsed.Errors);
+        Assert.Equal("C:\\scratch", parsed.Options!.Environment["CUI_STATE_HOME"]);
+        Assert.Equal("zh-CN", parsed.Options.Environment["LANG"]);
+        Assert.Equal("", parsed.Options.Environment["EMPTY"]);
+        Assert.Equal("C:\\state", parsed.Options.State);
+    }
+
+    [Theory]
+    [InlineData("missing-equals")]
+    [InlineData("=value")]
+    [InlineData("BAD-KEY=value")]
+    [InlineData("1BAD=value")]
+    public void AMalformedEnvironmentPairIsAUsageError(string value)
+    {
+        Assert.NotEmpty(Grammar.Parse(["tree", "--env", value]).Errors);
     }
 
     [Fact]
@@ -300,6 +408,57 @@ public class ToolArgumentTests
         // The gate passes before any stdin line is relayed, and stdin carries the commands: no
         // protocol line is invented for the session itself.
         Assert.Equal("wait 10", parsed.Options.WaitLine);
+    }
+
+    [Fact]
+    public void ASessionCanNameItsScriptInsteadOfNeedingShellRedirection()
+    {
+        // Windows PowerShell has no `<`, so a portable session has to be able to name its file.
+        Grammar.Parsed parsed = Grammar.Parse(["session", "--script", "steps.txt", "--project", "App.cs"]);
+
+        Assert.Empty(parsed.Errors);
+        Assert.Equal("session", parsed.Options!.Command);
+        Assert.Equal("steps.txt", parsed.Options.Script);
+        Assert.Equal("App.cs", parsed.Options.Project);
+    }
+
+    [Fact]
+    public void ASessionScriptIsReadInOrderBeforeTheAppStarts()
+    {
+        string project = Path.Combine(TestPaths.RepositoryRoot, "src", "CuiSharp.Tests", "TestApps", "ReadyProbe");
+        string script = Path.Combine(Path.GetTempPath(), $"cui-script-{Guid.NewGuid():N}.txt");
+        File.WriteAllText(script, "tree\nframe 2\ntree\n");
+
+        try
+        {
+            var output = new StringWriter();
+            var error = new StringWriter();
+            int exit = Cli.Run(
+                ["session", "--script", script, "--project", project, "--wait", "ready", "--wait-timeout", "20", "--", "--ready-after", "3"],
+                output,
+                error);
+
+            Assert.True(exit == 0, $"the script should relay all three answers: {error}");
+            Assert.Equal(3, output.ToString().Split("Frame", StringSplitOptions.None).Length - 1);
+        }
+        finally
+        {
+            File.Delete(script);
+        }
+    }
+
+    [Fact]
+    public void AMissingSessionScriptNamesTheFileAndStartsNoApp()
+    {
+        string missing = Path.Combine(Path.GetTempPath(), $"cui-missing-{Guid.NewGuid():N}.txt");
+        var output = new StringWriter();
+        var error = new StringWriter();
+
+        int exit = Cli.Run(["session", "--script", missing, "--project", "nothing-here"], output, error);
+
+        Assert.Equal(1, exit);
+        Assert.Contains(missing, error.ToString(), StringComparison.Ordinal);
+        Assert.Contains("session script", error.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -440,6 +599,56 @@ public class ToolArgumentTests
         {
             if (File.Exists(png)) File.Delete(png);
             if (File.Exists(late)) File.Delete(late);
+        }
+    }
+
+    [Fact]
+    public void AHeadlessRunCanOverrideItsViewportAndState()
+    {
+        string project = Path.Combine(TestPaths.RepositoryRoot, "src", "CuiSharp.Tests", "TestApps", "ReadyProbe");
+        string root = Directory.CreateTempSubdirectory("cui-viewport-").FullName;
+
+        try
+        {
+            var output = new StringWriter();
+            var error = new StringWriter();
+            int sized = Cli.Run(["tree", "--project", project, "--size", "420x720"], output, error);
+
+            Assert.True(sized == 0, $"the app should start at the requested size: {error}");
+            Assert.Contains("loading", output.ToString(), StringComparison.Ordinal);
+
+            var envOutput = new StringWriter();
+            var envError = new StringWriter();
+            int env = Cli.Run(
+                ["tree", "--project", project, "--no-build", "--env", "P0_ENV=ok", "--", "--label-env", "P0_ENV"],
+                envOutput,
+                envError);
+
+            Assert.True(env == 0, $"the environment should reach the app: {envError}");
+            Assert.Contains("ok", envOutput.ToString(), StringComparison.Ordinal);
+
+            string state = Path.Combine(root, "state");
+            var stateError = new StringWriter();
+            int restored = Cli.Run(
+                ["tree", "--project", project, "--no-build", "--state", state], new StringWriter(), stateError);
+
+            Assert.True(restored == 0, $"the state directory should be accepted: {stateError}");
+            Assert.True(Directory.Exists(state), "--state should create the app state root");
+
+            string shot = Path.Combine(root, "shot.png");
+            var matrixError = new StringWriter();
+            int matrix = Cli.Run(
+                ["png", shot, "--project", project, "--no-build", "--sizes", "320x200,400x300"],
+                new StringWriter(),
+                matrixError);
+
+            Assert.True(matrix == 0, $"the size matrix should screenshot both viewports: {matrixError}");
+            Assert.True(File.Exists(Path.Combine(root, "shot-320x200.png")));
+            Assert.True(File.Exists(Path.Combine(root, "shot-400x300.png")));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
         }
     }
 

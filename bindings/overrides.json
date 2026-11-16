@@ -6,7 +6,8 @@
     "cui_renderer_kind": "Renderer",
     "cui_sw_format": "SwFormat",
     "cui_token": "Token",
-    "cui_task_status": "CuiTaskStatus"
+    "cui_task_status": "CuiTaskStatus",
+    "cui_http_method": "HttpVerb"
   },
   "memberRenames": {
     "CUI_RENDERER_OPENGL": "OpenGL"
@@ -233,8 +234,8 @@
     },
     "cui_request_bar_ex.method": {
       "storage": "enum",
-      "type": "HttpMethod",
-      "why": "CUI takes an int* the method menu writes: the wrapper keeps the caller's HttpMethod and hands over the int behind it."
+      "type": "HttpVerb",
+      "why": "CUI takes an int* the method menu writes: the wrapper keeps the caller's HttpVerb and hands over the int behind it. HttpVerb, not HttpMethod, so it cannot be confused with System.Net.Http.HttpMethod."
     }
   },
   "capacityParams": {

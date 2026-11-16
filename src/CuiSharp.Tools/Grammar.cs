@@ -36,8 +36,8 @@ internal static class Grammar
         ("faults", [], "what the app threw while drawing, if anything", []),
         ("quit", [], "close the app, or a live attached window", []),
 
-        ("find", [], "one control: kind, label and rectangle", [Text("text", "the label, text or id to find")]),
-        ("click", [], "click a control, then print the frame it produced", [Text("text", "the label, text or id to click")]),
+        ("find", [], "one control: kind, label and rectangle", [OptionalText("text", "the label, text or id to find")]),
+        ("click", [], "click a control, then print the frame it produced", [OptionalText("text", "the label, text or id to click")]),
         ("type", [], "type into the focused control, then print the frame", [Text("text", "the text to type")]),
         ("key", [], "press a key by the name a person would use", [Text("name", "the key: Tab, Enter, Escape, F1, PageDown")]),
 
@@ -95,6 +95,78 @@ internal static class Grammar
                 + "the value is its pid or title, or leave it out when only one window is open",
             HelpName = "pid|title",
             Arity = ArgumentArity.ZeroOrOne,
+        };
+
+        // ---- the environment the app starts in -----------------------------------------------
+
+        internal Option<string?> Size = new("--size")
+        {
+            Description = "headless viewport as WxH, e.g. 420x720",
+            HelpName = "WxH",
+        };
+
+        internal Option<string?> Sizes = new("--sizes")
+        {
+            Description = "comma-separated viewports for `png`, e.g. 420x720,1180x820",
+            HelpName = "WxH,...",
+        };
+
+        internal Option<string[]> Env = new("--env")
+        {
+            Description = "set KEY=VALUE for the app; repeat it for several variables",
+            HelpName = "KEY=VALUE",
+            Arity = ArgumentArity.ZeroOrMore,
+        };
+
+        internal Option<string?> State = new("--state")
+        {
+            Description = "app state root; sets CUISHARP_STATE_HOME for this run",
+            HelpName = "dir",
+        };
+
+        // Windows PowerShell has no `<` input redirection, so a session has to be able to name
+        // its script instead of needing a POSIX shell in front of it.
+        internal Option<string?> Script = new("--script")
+        {
+            Description = "read the session's protocol commands from this file instead of stdin",
+            HelpName = "file",
+        };
+
+        // ---- doctor checks -------------------------------------------------------------------
+
+        internal Option<bool> Aot = new("--aot")
+        {
+            Description = "publish an app that enables NativeAOT and report IL2xxx/IL3xxx warnings (slow)",
+        };
+
+        internal Option<bool> Strict = new("--strict")
+        {
+            Description = "exit 1 when a check warns, not only when it fails",
+        };
+
+        // ---- what to find --------------------------------------------------------------------
+
+        internal Option<string?> Role = new("--role")
+        {
+            Description = "find by semantic role: button, textbox, checkbox, tab, menuitem, …",
+            HelpName = "role",
+        };
+
+        internal Option<string?> Value = new("--value")
+        {
+            Description = "find by the value a control holds: an input's text, a slider's number",
+            HelpName = "text",
+        };
+
+        internal Option<string?> Id = new("--id")
+        {
+            Description = "find by an explicit automation id (`ui.Id` or `ui.Automation`)",
+            HelpName = "id",
+        };
+
+        internal Option<bool> Details = new("--details")
+        {
+            Description = "include role, automation id, value and state in the tree",
         };
 
         // ---- what has to be true before the command runs ------------------------------------
@@ -157,11 +229,48 @@ internal static class Grammar
         /// what to drive, what to draw first, then how loud to be.
         /// </summary>
         internal Option[] AppOptions =>
-            [Project, App, Framework, NoBuild, Attach, Frames, Wait, WaitText, WaitTimeout, Quiet];
+            [Project, App, Framework, NoBuild, Attach, Size, Env, State, Frames, Wait, WaitText, WaitTimeout, Quiet];
 
         internal void Validate()
         {
             Wait.AcceptOnlyFromAmong("ready");
+
+            Size.Validators.Add(result =>
+            {
+                if (result.GetValueOrDefault<string?>() is { Length: > 0 } value
+                    && !Viewport.TryParse(value, out _))
+                {
+                    result.AddError("--size needs a positive WxH size, e.g. 420x720");
+                }
+            });
+
+            Sizes.Validators.Add(result =>
+            {
+                if (result.GetValueOrDefault<string?>() is { Length: > 0 } value
+                    && !Viewport.TryParseList(value, out _))
+                {
+                    result.AddError("--sizes needs comma-separated positive WxH sizes, e.g. 420x720,1180x820");
+                }
+            });
+
+            Env.Validators.Add(result =>
+            {
+                string[]? values = result.GetValueOrDefault<string[]?>();
+                if (result is OptionResult { Implicit: false } && (values is null || values.Length == 0))
+                {
+                    result.AddError("--env needs KEY=VALUE");
+                    return;
+                }
+
+                foreach (string value in values ?? [])
+                {
+                    if (!EnvironmentText.TryParse(value, out _, out _))
+                    {
+                        result.AddError($"--env needs KEY=VALUE, not \"{value}\"");
+                        return;
+                    }
+                }
+            });
 
             Frames.Validators.Add(result =>
             {
@@ -230,22 +339,46 @@ internal static class Grammar
             foreach (string alias in aliases) command.Aliases.Add(alias);
             foreach (Argument argument in arguments) command.Arguments.Add(argument);
             foreach (Option option in symbols.AppOptions) command.Options.Add(option);
+            if (name == "png") command.Options.Add(symbols.Sizes);
+            if (name is "find" or "click")
+            {
+                command.Options.Add(symbols.Role);
+                command.Options.Add(symbols.Value);
+                command.Options.Add(symbols.Id);
+            }
+
+            if (name == "tree") command.Options.Add(symbols.Details);
             root.Subcommands.Add(command);
         }
 
         var session = new Command(
             "session",
-            "read one protocol command per line from stdin, against one build and one app: "
-                + "`dotnet cui session < commands.txt`");
+            "read one protocol command per line from stdin or --script, against one build and one app: "
+                + "`dotnet cui session --script commands.txt`");
         foreach (Option option in symbols.AppOptions) session.Options.Add(option);
+        session.Options.Add(symbols.Script);
         root.Subcommands.Add(session);
 
         root.Subcommands.Add(Ps(symbols));
         root.Subcommands.Add(Api(symbols));
         root.Subcommands.Add(Icons(symbols));
         root.Subcommands.Add(Docs(symbols));
+        root.Subcommands.Add(Doctor(symbols));
 
         return (symbols, root);
+    }
+
+    private static Command Doctor(Symbols symbols)
+    {
+        var doctor = new Command(
+            "doctor",
+            "check this tool against the app's CuiSharp reference, icon and NativeAOT setup");
+        doctor.Options.Add(symbols.Project);
+        doctor.Options.Add(symbols.Framework);
+        doctor.Options.Add(symbols.Json());
+        doctor.Options.Add(symbols.Aot);
+        doctor.Options.Add(symbols.Strict);
+        return doctor;
     }
 
     private static Command Ps(Symbols symbols)
@@ -376,7 +509,13 @@ internal static class Grammar
 
         var errors = new List<string>();
         foreach (ParseError parseError in result.Errors) errors.Add(Cli.Humanize(parseError.Message));
-        if (errors.Count == 0 && !TryCheckCombinations(result, out string conflict)) errors.Add(conflict);
+        // The help page describes a command that has not supplied its arguments yet, so the
+        // cross-option rules must not turn `click --help` into a usage error.
+        if (errors.Count == 0 && result.Action is not HelpAction
+            && !TryCheckCombinations(result, out string conflict))
+        {
+            errors.Add(conflict);
+        }
         if (errors.Count > 0 && Hint(result, grammarArgs) is { } hint) errors = [errors[0], hint];
         if (errors.Count > 0) return new Parsed(false, false, false, null, errors, result);
 
@@ -535,6 +674,35 @@ internal static class Grammar
             return false;
         }
 
+        bool size = result.GetResult(S.Size) is not null;
+        bool sizes = result.GetResult(S.Sizes) is not null;
+        if (size && sizes)
+        {
+            message = "choose one size source: --size WxH or --sizes WxH,WxH";
+            return false;
+        }
+
+        if (result.GetResult(S.Attach) is not null
+            && (result.GetResult(S.Size) is not null
+                || result.GetResult(S.Sizes) is not null
+                || result.GetResult(S.Env) is not null
+                || result.GetResult(S.State) is not null))
+        {
+            message = "--size, --sizes, --env and --state start a headless app; "
+                + "a live --attach window is already running";
+            return false;
+        }
+
+        if (result.GetResult(S.Sizes) is { } sizesResult
+            && sizesResult.GetValueOrDefault<string?>() is { Length: > 0 } sizesText
+            && Viewport.TryParseList(sizesText, out Viewport[] views)
+            && views.Length > 1
+            && result.CommandResult.Command.Name != "png")
+        {
+            message = "--sizes with more than one viewport is for `png`; run another command once per --size";
+            return false;
+        }
+
         bool published = result.GetResult(S.App) is not null;
         bool attached = result.GetResult(S.Attach) is not null;
         bool project = result.GetResult(S.Project) is not null;
@@ -561,6 +729,37 @@ internal static class Grammar
             return false;
         }
 
+        if (result.CommandResult.Command.Name is "find" or "click")
+        {
+            bool text = result.CommandResult.Command.Arguments.Count > 0
+                && result.GetResult(result.CommandResult.Command.Arguments[0]) is { } textResult
+                && !string.IsNullOrWhiteSpace(textResult.GetValueOrDefault<string?>());
+            string? role = result.GetValue(S.Role);
+            string? value = result.GetValue(S.Value);
+            string? id = result.GetValue(S.Id);
+
+            if (!text
+                && string.IsNullOrWhiteSpace(role)
+                && string.IsNullOrWhiteSpace(value)
+                && string.IsNullOrWhiteSpace(id))
+            {
+                message = $"{result.CommandResult.Command.Name} needs a label, --role, --value or --id";
+                return false;
+            }
+
+            if (id is not null && (text || role is not null || value is not null))
+            {
+                message = "--id is exact: it cannot be combined with a label, --role or --value";
+                return false;
+            }
+
+            if (value is not null && text)
+            {
+                message = "choose --value or a label, not both";
+                return false;
+            }
+        }
+
         message = "";
         return true;
     }
@@ -584,6 +783,8 @@ internal static class Grammar
         // `Join` is "" for a command with no arguments, so one line covers every command: the
         // offline ones take a name or words, the app verbs take their protocol slots.
         string argument = name.Length == 0 ? "" : Join(result, matched);
+        if (name is "find" or "click") argument = BuildQuery(result, argument);
+        if (name == "tree" && result.GetValue(S.Details)) argument = "details";
 
         bool waiting = result.GetResult(S.Wait) is not null || result.GetResult(S.WaitText) is not null;
         double waitSeconds = result.GetValue(S.WaitTimeout) ?? Cli.Options.DefaultWaitSeconds;
@@ -597,6 +798,7 @@ internal static class Grammar
         }
 
         OptionResult? attach = result.GetResult(S.Attach);
+        (Viewport? singleViewport, Viewport[] viewports) = ReadViewports(result);
         return new Cli.Options
         {
             Command = command,
@@ -611,10 +813,53 @@ internal static class Grammar
             Host = result.GetValue(S.App),
             Framework = result.GetValue(S.Framework),
             AppArgs = appArguments,
+            Viewport = singleViewport,
+            Viewports = viewports,
+            Environment = ReadEnvironment(result.GetValue(S.Env)),
+            State = result.GetValue(S.State),
+            Script = result.GetValue(S.Script),
+            Aot = result.GetValue(S.Aot),
+            Strict = result.GetValue(S.Strict),
             Seconds = command == "dwell" ? double.Parse(argument, CultureInfo.InvariantCulture) : 0,
             WaitSeconds = waiting ? waitSeconds : 0,
             WaitLine = waitLine,
         };
+    }
+
+    /// <summary>
+    /// The viewport a command was given: one <c>--size</c>, or the comma-separated
+    /// <c>--sizes</c> its help advertises. Parsing has already rejected malformed values, so an
+    /// unreadable value here is simply no viewport.
+    /// </summary>
+    private static (Viewport? Single, Viewport[] Matrix) ReadViewports(ParseResult result)
+    {
+        OptionResult? size = result.GetResult(S.Size);
+        if (size?.GetValueOrDefault<string?>() is { Length: > 0 } one
+            && Viewport.TryParse(one, out Viewport viewport))
+        {
+            return (viewport, []);
+        }
+
+        OptionResult? sizes = result.GetResult(S.Sizes);
+        if (sizes?.GetValueOrDefault<string?>() is { Length: > 0 } many
+            && Viewport.TryParseList(many, out Viewport[] views))
+        {
+            return (views[0], views);
+        }
+
+        return (null, []);
+    }
+
+    private static IReadOnlyDictionary<string, string> ReadEnvironment(string[]? pairs)
+    {
+        var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (string pair in pairs ?? [])
+        {
+            if (EnvironmentText.TryParse(pair, out string key, out string value))
+                values[key] = value;
+        }
+
+        return values;
     }
 
     /// <summary>
@@ -624,6 +869,31 @@ internal static class Grammar
     /// </summary>
     private static bool JsonRequested(ParseResult result, CommandResult matched) =>
         matched.Command.Options.Any(option => option is Option<bool> { Name: "--json" } flag && result.GetValue(flag));
+
+    /// <summary>
+    /// A find/click query from its label and the semantic filters. The app parses the same
+    /// <c>role:</c>, <c>value:</c> and <c>id:</c> vocabulary as a person typing the query, so the
+    /// tool only has to serialise the options into that one line.
+    /// </summary>
+    private static string BuildQuery(ParseResult result, string text)
+    {
+        string? role = result.GetValue(S.Role);
+        string? value = result.GetValue(S.Value);
+        string? id = result.GetValue(S.Id);
+
+        var parts = new List<string>(4);
+        if (id is { Length: > 0 }) parts.Add("id:" + id);
+        if (role is { Length: > 0 }) parts.Add("role:" + role);
+        if (value is { Length: > 0 })
+        {
+            parts.Add("value:" + (value.Any(static ch => char.IsWhiteSpace(ch) || ch == '"')
+                ? $"\"{value.Replace("\"", "\\\"", StringComparison.Ordinal)}\""
+                : value));
+        }
+
+        if (text.Length > 0) parts.Add(text);
+        return string.Join(' ', parts);
+    }
 
     /// <summary>
     /// One protocol line from a command's arguments, in declaration order: the wire protocol is a

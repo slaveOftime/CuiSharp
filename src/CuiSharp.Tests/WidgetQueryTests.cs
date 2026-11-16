@@ -57,4 +57,33 @@ public class WidgetQueryTests
         Assert.Equal("Button \"Save\"", WidgetQuery.Parse("Button \"Save\"").ToString());
         Assert.Equal("editor > Save", WidgetQuery.Parse("editor > Save").ToString());
     }
+
+    [Fact]
+    public void RoleAndValueAreFiltersInFrontOfTheLabel()
+    {
+        WidgetQuery role = WidgetQuery.Parse("role:button Save");
+        Assert.Equal(SemanticRole.Button, role.Role);
+        Assert.Equal("Save", role.Text);
+
+        WidgetQuery value = WidgetQuery.Parse("value:\"Milk and honey\"");
+        Assert.Equal("Milk and honey", value.Value);
+        Assert.Equal("", value.Text);
+
+        WidgetQuery both = WidgetQuery.Parse("role:checkbox value:true");
+        Assert.Equal(SemanticRole.CheckBox, both.Role);
+        Assert.Equal("true", both.Value);
+    }
+
+    [Fact]
+    public void AnUnknownRoleStaysALabelInsteadOfBecomingAMatchNothing()
+    {
+        WidgetQuery query = WidgetQuery.Parse("role:not-a-role");
+
+        Assert.Null(query.Role);
+        Assert.Equal("role:not-a-role", query.Text);
+
+        WidgetQuery none = WidgetQuery.Parse("role:none");
+        Assert.Null(none.Role);
+        Assert.Equal("role:none", none.Text);
+    }
 }

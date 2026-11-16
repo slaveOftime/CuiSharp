@@ -9,6 +9,7 @@ namespace CuiSharp.Tests;
 /// The protocol a tool drives an app with. These tests speak it the way a client does — write a
 /// line, read a framed answer — so the wire format is what is under test, not an internal call.
 /// </summary>
+[Collection("ProcessWindowState")]
 public class HeadlessLoopTests
 {
     private sealed class Counter : Component
@@ -109,6 +110,28 @@ public class HeadlessLoopTests
         // round trip per action rather than two.
         Assert.Contains("Label \"clicks 1\"", Wire(app, "click Add"), StringComparison.Ordinal);
         Assert.Equal(1, page.Clicks);
+    }
+
+    [Fact]
+    public void TreeDetailsAndSemanticQueriesSpeakTheSameProtocol()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        var page = new Counter();
+        using var app = TestApp.Start(page, 400, 300);
+
+        string details = Wire(app, "tree details");
+        Assert.Contains("Button \"Add\" role=button", details, StringComparison.Ordinal);
+        Assert.Contains("Input \"name\" role=textbox", details, StringComparison.Ordinal);
+        Assert.Contains("state=enabled", details, StringComparison.Ordinal);
+
+        string found = Wire(app, "find role:button Add");
+        Assert.Contains("Button \"Add\" role=button", found, StringComparison.Ordinal);
+        Assert.Contains(" at ", found, StringComparison.Ordinal);
+
+        // The existing plain tree is unchanged: a reader that does not ask for details pays
+        // neither the extra words nor the extra native calls to read them.
+        Assert.Equal("Frame\n  Label \"clicks 0\"\n  Button \"Add\"\n  Input \"name\"", Wire(app, "tree"));
     }
 
     [Fact]
@@ -261,6 +284,55 @@ public class HeadlessLoopTests
 
         // Naming the kind is how a caller is specific when the ranking is not enough.
         Assert.StartsWith("Heading", Wire(app, "find Heading \"Save\""), StringComparison.Ordinal);
+    }
+
+    /// <summary>Two identical controls: a click must not pick one silently.</summary>
+    private sealed class TwoSaves : Component
+    {
+        public int Saves;
+
+        protected override void Draw(Ui ui)
+        {
+            if (ui.Button("Save")) Saves++;
+            if (ui.Button("Save")) Saves++;
+        }
+    }
+
+    [Fact]
+    public void ClickRefusesTwoEquallyGoodMatches()
+    {
+        var page = new TwoSaves();
+        using var app = TestApp.Start(page, 400, 300);
+
+        string error = ErrorWire(app, "click Save");
+        Assert.Contains("matches 2 controls", error, StringComparison.Ordinal);
+        Assert.Contains("id:", error, StringComparison.Ordinal);
+        Assert.Equal(0, page.Saves);
+
+        // A kind is not enough when both controls share it; an id or a path is.
+        Assert.Contains("matches 2 controls", ErrorWire(app, "find Button \"Save\""), StringComparison.Ordinal);
+    }
+
+    /// <summary>An icon-only control with no label but a tooltip.</summary>
+    private sealed class IconPage : Component
+    {
+        public int Clicks;
+
+        protected override void Draw(Ui ui)
+        {
+            if (ui.IconButton(Icons.Pause, new ButtonOpts { Tooltip = "Pause" })) Clicks++;
+        }
+    }
+
+    [Fact]
+    public void AnIconButtonIsFoundAndClickedByItsTooltip()
+    {
+        var page = new IconPage();
+        using var app = TestApp.Start(page, 400, 300);
+
+        Assert.StartsWith("IconButton \"Pause\"", Wire(app, "find Pause"), StringComparison.Ordinal);
+        Wire(app, "click Pause");
+        Assert.Equal(1, page.Clicks);
     }
 
     /// <summary>A page whose frames mark ready and draw a label only once a flag flips.</summary>

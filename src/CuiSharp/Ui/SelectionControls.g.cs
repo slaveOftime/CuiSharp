@@ -20,7 +20,7 @@ public static unsafe class SelectionControlsUiExtensions
             var __opts = o.ToNative();
             var __result = Native.Checkbox(ui.Handle, Utf8.Get(label), (nint)(&__value), in __opts);
             value = __value != 0;
-            WidgetRecorder.Note(ui.Handle, "Checkbox", label);
+            WidgetRecorder.NoteValue(ui.Handle, "Checkbox", label, value, value ? SemanticState.Checked : SemanticState.None);
             return __result != 0;
         }
 
@@ -31,7 +31,7 @@ public static unsafe class SelectionControlsUiExtensions
             var __opts = o.ToNative();
             var __result = Native.Switch(ui.Handle, Utf8.Get(label), (nint)(&__value), in __opts);
             value = __value != 0;
-            WidgetRecorder.Note(ui.Handle, "Switch", label);
+            WidgetRecorder.NoteValue(ui.Handle, "Switch", label, value, value ? SemanticState.Checked : SemanticState.None);
             return __result != 0;
         }
 
@@ -40,7 +40,7 @@ public static unsafe class SelectionControlsUiExtensions
         {
             var __opts = o.ToNative();
             var __result = Native.Radio(ui.Handle, Utf8.Get(label), ref value, option, in __opts);
-            WidgetRecorder.Note(ui.Handle, "Radio", label);
+            WidgetRecorder.NoteValue(ui.Handle, "Radio", label, (double)value);
             return __result != 0;
         }
 
@@ -48,7 +48,7 @@ public static unsafe class SelectionControlsUiExtensions
         public bool RadioGroup(UiText id, ReadOnlySpan<string> items, ref int index)
         {
             var __result = Native.RadioGroup(ui.Handle, Utf8.Get(id), UiMarshal.Strings(items), (int)(items.Length), ref index);
-            WidgetRecorder.Note(ui.Handle, "RadioGroup", id);
+            WidgetRecorder.NoteValue(ui.Handle, "RadioGroup", id, (double)index);
             return __result != 0;
         }
 
@@ -57,7 +57,7 @@ public static unsafe class SelectionControlsUiExtensions
         {
             var __opts = o.ToNative();
             var __result = Native.Slider(ui.Handle, Utf8.Get(label), ref value, min, max, in __opts);
-            WidgetRecorder.Note(ui.Handle, "Slider", label);
+            WidgetRecorder.NoteValue(ui.Handle, "Slider", label, (double)value);
             return __result != 0;
         }
 
@@ -73,7 +73,7 @@ public static unsafe class SelectionControlsUiExtensions
         public bool Rating(UiText id, ref int value, int max = 5)
         {
             var __result = Native.Rating(ui.Handle, Utf8.Get(id), ref value, max);
-            WidgetRecorder.Note(ui.Handle, "Rating", id);
+            WidgetRecorder.NoteValue(ui.Handle, "Rating", id, (double)value);
             return __result != 0;
         }
 
@@ -84,7 +84,7 @@ public static unsafe class SelectionControlsUiExtensions
             var __opts = o.ToNative();
             var __result = Native.Chip(ui.Handle, Utf8.Get(label), (nint)(&__selected), in __opts);
             selected = __selected != 0;
-            WidgetRecorder.Note(ui.Handle, "Chip", label);
+            WidgetRecorder.NoteValue(ui.Handle, "Chip", label, selected, selected ? SemanticState.Selected : SemanticState.None);
             return __result != 0;
         }
 

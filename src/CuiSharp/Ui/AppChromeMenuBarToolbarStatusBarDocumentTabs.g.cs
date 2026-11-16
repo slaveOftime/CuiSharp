@@ -52,7 +52,7 @@ public static unsafe class AppChromeMenuBarToolbarStatusBarDocumentTabsUiExtensi
             var __opts = o.ToNative((nint)(&__toggle));
             var __result = Native.ToolbarButton(ui.Handle, Utf8.Get(icon), in __opts);
             toggle = __toggle != 0;
-            WidgetRecorder.Note(ui.Handle, "ToolbarButton", icon);
+            WidgetRecorder.NoteValue(ui.Handle, "ToolbarButton", icon, toggle);
             return __result != 0;
         }
 
@@ -113,7 +113,7 @@ public static unsafe class AppChromeMenuBarToolbarStatusBarDocumentTabsUiExtensi
             for (int i = 0; i < tabs.Length; i++) __tabs[i] = tabs[i].ToNative();
             var __opts = o.ToNative();
             var __result = Native.DocTabs(ui.Handle, Utf8.Get(id), (nint)__tabs, (int)(tabs.Length), ref selected, in __opts);
-            WidgetRecorder.Note(ui.Handle, "DocTabs", id);
+            WidgetRecorder.NoteValue(ui.Handle, "DocTabs", id, (double)selected);
             return DocTabsResult.FromNative(__result);
         }
 

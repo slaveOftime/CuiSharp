@@ -17,13 +17,16 @@ a UI that needs an accessibility tree (CUI publishes none).
 1. [The one rule](#the-one-rule) · [A whole app](#a-whole-app) · [Cheat sheet](#cheat-sheet)
 2. [Frame-local types](#frame-local-types-and-text) · [Containers](#containers-are-using-scopes) ·
    [Sizing](#sizing) · [Options](#options-are-structs-of-fields) · [Colours](#colours-come-from-the-theme)
-3. [State in `ref`](#state-goes-in-ref) · [Conditional containers](#containers-that-may-be-closed) ·
-   [Custom controls](#custom-controls) · [Long series](#long-series-and-live-data)
+3. [State in `ref`](#state-goes-in-ref) · [Grid state](#grid-state-and-value-selection) ·
+   [Conditional containers](#containers-that-may-be-closed) · [Custom controls](#custom-controls) ·
+   [Long series](#long-series-and-live-data)
 4. [Pitfalls](#pitfalls) · [Async work](#async-work) · [Renderer](#where-it-renders) · [Keyboard](#keyboard) ·
    [Theming](#theming) · [Translation](#translating-the-date-names) · [Design rules](#design-rules)
 5. [How to work on a UI](#how-to-work-on-a-ui) · [Testing](#testing-without-a-window) ·
-   [Driving a real app](#driving-a-running-app) · [Publishing for size](#publishing-for-size) ·
-   [Widget behaviour](#widget-behaviour) · [Files](#files)
+   [Frame numbers](#frame-numbers) · [Driving a real app](#driving-a-running-app) ·
+   [Roles and ids](#roles-values-and-stable-automation-ids) ·
+   [Headless viewports and readiness](#headless-viewports-state-and-readiness) ·
+   [Publishing for size](#publishing-for-size) · [Widget behaviour](#widget-behaviour) · [Files](#files)
 
 ## The one rule
 
@@ -131,17 +134,50 @@ using (ui.Row(new Box { Gap = 8 }))
 `Border`, `Radius`, `Dir`, `Columns` + `MinColumnWidth`, `ScrollX`/`ScrollY`, `Clip`, `Opacity`,
 `Elevation`.
 
+**`Card` or `Box`?** They are two different jobs, not two spellings of one:
+
+| Use | When |
+|---|---|
+| `Box`, `Row`, `Column` | layout only: direction, size, padding, gap, scrolling, clipping, custom background/border/radius |
+| `Card` | a themed surface at a real content boundary: surface colour, padding, gap, radius and elevation come from the theme; `Hoverable` lifts it and reports a click, `Selected` gives it the accent border, `Muted` drops the border |
+
+`Card` deliberately has no `ScrollX`/`ScrollY`, `Clip`, `Bg`, `Border`, `Radius` or `Elevation`;
+when a card has to scroll, put a `Scroll` (or a `Box` with `ScrollY`) inside it. Do not put a card
+inside a card; use a `Box` with a hairline for the inner grouping.
+
+```csharp
+using (var card = ui.Card(new(pad: 16, gap: 12, width: Size.Fill), out bool clicked))
+{
+    ui.Heading("Deploy", 2);
+    ui.Text("Production, two regions");
+    if (clicked) Open();
+}
+```
+
 ## Sizing
 
 ```csharp
-new Box { Width = Size.Px(240) }        // fixed
+new Box { Width = Size.Px(240) }        // fixed, in points
 new Box { Width = Size.Fill }           // fill the parent
-new Box { Width = Size.Percent(50) }    // share of the parent
+new Box { Width = Size.Percent(50) }    // 0..100 of the parent
+new Box { Width = Size.Fit }            // as wide as the content
+new Box { Width = Size.Grow(2) }        // fill, with twice the share of Grow(1)
 ```
 
 A component that sizes itself (`Button`, `Badge`, `Heading`) takes no size. A component that fills
 space (`Table`, `Chart`, `VirtualList`, `Canvas`) needs one: `Height = Size.Px(300)` or
 `Size.Fill`.
+
+A `Size` can be inspected without reaching into CUI:
+
+```csharp
+size.IsFit      size.IsFill     size.IsFixed    size.IsPercent
+size.TryGetPoints(out float points)
+size.TryGetPercent(out float percent)
+```
+
+`IsFill` is true for `Fill` and every `Grow(weight)`; `TryGetPoints` succeeds only for a fixed size,
+and `TryGetPercent` only for a percentage. `ToString()` prints `Fit`, `Fill`, `240px` or `50%`.
 
 ## Options are structs of fields
 
@@ -163,6 +199,20 @@ Color.Background, Surface, SurfaceMuted, Foreground, TextSecondary, TextMuted, B
 Color.Series(n)        // the six chart colours
 Color.Rgb(0x7747ff)    // only for a user-chosen colour
 ```
+
+A theme colour like `Color.Accent` is a **token**, not the RGB it will resolve to: CUI decides that
+when it draws, so light, dark, accent changes and a `ThemeStyle` override all keep working.
+`Color.IsToken` says which kind you have.
+
+`WithAlpha` only changes a real colour. A token cannot be made translucent before it is resolved,
+so `Color.Accent.WithAlpha(0.14f)` is still `Color.Accent`; resolve it in a frame first:
+
+```csharp
+Color tint = ui.TokenColor(Token.Accent).WithAlpha(0.14f);
+using (ui.Box(new Box { Bg = tint })) { }
+```
+
+Outside a frame there is no theme to resolve against, so keep tokens opaque and let CUI draw them.
 
 ## State goes in `ref`
 
@@ -321,9 +371,20 @@ million-sample feed holds 144 fps with 0 B of managed allocation per frame.
 | Focus and scroll jump between rows | the id came from the row position | `using (ui.Id(item.Id))` or `ui.Keyed(items, key)` (CUI004) |
 | The window stops updating | the page changes on its own but never asks for frames | `WantsFrames => true`, or `ui.RequestRedraw()` |
 | The UI freezes on a button press | something blocked in the frame | no `.Result`, `.Wait()`, `Thread.Sleep` in `Draw` (CUI001) |
+| The window freezes when a file button is pressed | an OS file dialog ran inside `Draw` | call `window.PickFile` from a click and let that frame pause, or use `ui.FilePicker` inside the frame |
 | Frame rate sags | allocation per frame: LINQ, `new`, string concat | interpolate into a widget; hoist arrays with `static readonly` (CUI007) |
 | An async handler deadlocks or the app crashes at shutdown | `ConfigureAwait(false)` or `async void` in a component | await normally in `Mutation`/`Run` (CUI005, CUI006) |
 | A tour never advances, or Done leaves the card on screen | the widget's return was assigned to the `ref` it also writes | `ui.Tour(…, ref step)` writes the step; its `TourAction` result is what the user pressed |
+
+**`ui.FilePicker` is the picker that belongs in `Draw`.** It is CUI's own dialog, drawn like every
+other component, so it keeps the frame loop running and needs no platform dialog. The OS picker
+(`window.PickFile`, or `CuiAppOptions.FileDialog`) is modal and blocking on every platform: it can
+only run from a click, and the frame that opened it does not finish until the user answers. Never
+call it from a component's `Draw` body unless that body is the click branch and pausing there is
+acceptable. In a bare `CuiApp.Run`, capture the window once with
+`WindowCreated = window => _window = window`; a hosted `CuiApplication` has `Window`. Tests replace
+`FileDialog` with an `IFileDialogProvider`, which is also how a picker flow is checked headlessly;
+`ui.FilePicker` needs no replacement because it is just a frame.
 
 IDE quick fixes are available for scope disposal (`CUI002`), conditional-body guards (`CUI003`),
 repeated-widget keys (`CUI004`) and an awaited BCL `ConfigureAwait` (`CUI005`). Scope/id fixes are
@@ -584,24 +645,38 @@ speaks one command per line. No window, no code added to the app.
 
 ```sh
 dotnet cui tree                     # the controls of the last frame, nested
+dotnet cui tree --details           # …with role, automation id, value and state
 dotnet cui find Save                # one control: kind, label, rectangle
 dotnet cui find id:draft            # or by the id the app gave it, in any language
+dotnet cui find --role button Save  # by semantic role, with an optional label
+dotnet cui find --value Milk        # by the value a field or slider holds
 dotnet cui click Save               # click it, print the frame that reacted
 dotnet cui click "Button Save type"  # be specific when a label is ambiguous
 dotnet cui click "editor > Save"     # or the path to the control, containers bare
+dotnet cui click --id pause:42       # a stable automation id, independent of the label
 dotnet cui type Milk                # type into the focused control
 dotnet cui key Tab                  # a key by name
 dotnet cui png frame.png            # the frame as a PNG, to look at
-dotnet cui session < commands.txt   # many commands against one build, in order
+dotnet cui session --script commands.txt   # many commands against one build, in order
+dotnet cui doctor                   # tool/app version, icon and NativeAOT setup
 ```
 
 `session` is the cheapest way to explore an app you have not read: one build, one startup, a page of
 answers. State carries across the commands because it is one process — but a run leaves nothing
-behind, so anything that should be checked twice belongs in a test instead.
+behind, so anything that should be checked twice belongs in a test instead. `--script` names the
+command file, so the same command works in Windows PowerShell, where `<` is not input redirection;
+`dotnet cui session < commands.txt` still works in a POSIX shell.
+
+`doctor` checks the things a bug report should establish first: this tool's version against the
+CuiSharp package the app resolves, a floating `#:package CuiSharp@*`, an `ApplicationIcon` that names
+no file, and whether a NativeAOT publish is configured. `--json` makes it machine-readable;
+`--aot` performs the Release publish of an app that enables `PublishAot` and reports its
+IL2xxx/IL3xxx warnings, which ordinary builds never show. Use `--project path` when the terminal is
+not in the app's folder.
 
 - `click` answers with the frame *after* the click; a transition may need `frame N` first.
-- `--frames N` draws N frames before the command; `--app bin/App.exe` inspects a published build;
-  `--no-build` reuses the last build; `--` passes the rest to the app.
+- `--frames N` draws N frames before the command; `--app bin/App` inspects a published build
+  (`.exe` on Windows); `--no-build` reuses the last build; `--` passes the rest to the app.
 - To drive a **live window** while a human watches it (`dotnet watch run -- --live`, `CUISHARP_LIVE=1`,
   or `CuiAppOptions { LiveAttach = true }`), run `dotnet cui ps` to list active windows and
   pass `-a <pid|title>` to any command, or a bare `-a` when only one window is open
@@ -626,9 +701,93 @@ behind, so anything that should be checked twice belongs in a test instead.
   save about 180 KB (`docs/SIZE.md`): publish with `-p:CuiSharpHeadless=true` before pointing
   `--app` at it.
 
+### Roles, values and stable automation ids
+
+Every recorded node has a `Role` (`button`, `textbox`, `checkbox`, `tab`, `menuitem`, `dialog`, …),
+a `Name`, an optional `Value`, `SemanticState` flags and an optional `AutomationId`. The plain tree
+keeps its short `Button "Save"` form; `tree --details` adds the rest:
+
+```sh
+dotnet cui tree --details
+dotnet cui find --role button Save
+dotnet cui find --value Milk
+dotnet cui find --id pause:42
+```
+
+`ui.Id` gives the native state and the automation id the same stable key. When the label is
+translated but the native identity must not change, use the smaller scope:
+
+```csharp
+using (ui.Automation("pause:42"))
+    ui.IconButton(Icons.Pause, new ButtonOpts { Tooltip = "Pause" });
+```
+
+`ui.Keyed(items, key)` gives each row the integer automation id `#<key>`. The same data is exposed
+in-process as `SemanticNode.Role`/`Value`/`State`/`AutomationId`, and
+`SemanticNode.ToAccessibility()` projects it into the flat record a UIA, AT-SPI or NSAccessibility
+adapter will consume; the platform adapters themselves are not implemented yet.
+
+## Headless viewports, state and readiness
+
+A headless run takes its frame size from `CUISHARP_VIEWPORT`, not from the app's own
+`CuiAppOptions`. `dotnet cui` sets that variable when you ask for a size, so the same build can be
+checked at desktop and phone widths without editing `Width` or `Height`:
+
+```sh
+dotnet cui png shot.png --size 420x720
+dotnet cui png shot.png --sizes 420x720,1180x820   # png only: shot-420x720.png and shot-1180x820.png
+dotnet cui tree --size 620x700
+```
+
+`--sizes` is a `png` convenience: each viewport gets its own app start and its result is written with
+the size in the name. The app's banner is the frame size the tool compares with the request; a
+package that predates `CUISHARP_VIEWPORT` reports its own size and the tool exits nonzero instead of
+passing off a different frame as the requested one.
+
+A headless run can also be given an isolated state root and extra environment:
+
+```sh
+dotnet cui png shot.png --state artifacts/cui-run --env LOG_LEVEL=debug
+```
+
+`--state` sets `CUISHARP_STATE_HOME` to that directory. Apps that keep state should put their own
+folder under it (`CuiMusic`, `CuiDownload`, `GlobalMarketCap`, ...); the samples do. `--env
+KEY=VALUE` is repeated for each variable and is applied before the app starts; `CUISHARP_HEADLESS`
+stays the tool's decision. This keeps a screenshot or a scripted click from reading or changing the
+real user profile.
+
+Async data needs a readiness signal, not a guess at how many frames a decode or a network call
+takes. Mark the frame when the data is usable:
+
+```csharp
+ui.Label(ready ? $"data {rows}" : "loading");
+if (ready) ui.MarkReady();
+```
+
+```sh
+dotnet cui png shot.png --wait ready --wait-timeout 20
+dotnet cui waittext 20 "data 42"
+```
+
+`--wait ready` draws until `ui.MarkReady()`; `--wait-text` waits for a label or query and names the
+last frame when the window closes. A `wait` that times out is an error, not an empty screenshot.
+
+`find` and `click` refuse to guess between equally good matches. A frame with two rows both called
+`Pause` needs a kind, a path or an id:
+
+```sh
+dotnet cui click "Button Pause"
+dotnet cui click "row:42 > Button Pause"
+dotnet cui click id:pause-42
+```
+
+The error lists the candidates and the forms that disambiguate them. An icon-only button is named by
+its tooltip (`IconButton "Pause"`), not by the glyph it draws.
+
 ## Publishing for size
 
-`dotnet publish -c Release -r win-x64` links CUI into one executable. The package already trims it:
+`dotnet publish -c Release -r win-x64` (or the host's RID: `linux-x64`, `osx-arm64`, …) links CUI
+into one executable. The package already trims it:
 a self-contained publish compiles the headless channel and the framework diagnostics a shipped app
 never reads out of the binary, which is about 20% of a small app. Four properties are the whole
 vocabulary, and the defaults are right for most apps:
@@ -669,7 +828,7 @@ dialog is modal, a dropzone returns the paths it received.
 - **Studio** — `Knob(id, ref float, min, max)`, `Fader(id, ref float, min, max)`, `LevelMeter(id, values)`
 - **Calendar** — `MonthCalendar(id, ref Date, events, ref Date selected, MonthOpts)` returning `MonthResult`
 - **Workspace** — `Terminal(id, terminal, TerminalOpts)`, `LogView(id, log, LogViewOpts)`, `HexView`, `DiffView`, `CodeEditor`, `FileBrowser`, `FilePicker`, `ImageViewer`, `Cropper`
-- **Developer tools** — `TraceView(id, tracks, spans, ref TraceViewState, ref int selected)`, `Waterfall(id, requests, ref int selected)`, `GraphView(id, nodes, edges, ref int selected)`, `CommitGraph`, `Pipeline(id, stages, jobs, ref int selected)`, `Problems(id, items)`, `KvEditor(id, pairs, ref int count)`, `QueryBuilder(id, fields, nodes, ref int count)`, `SchedulePicker(id, ref string cron)`, `Keymap`, `TestExplorer`, `StackTrace`, `Blame`, `Coverage`, `RegexTester(id, ref pattern, patternCap, ref text, textCap, ref RegexFlags)`, `RequestBar(id, ref HttpMethod, ref url)` + `ResponseStatus`, `ApiExplorer`, `FeatureFlags(id, flags, envs)`, `Uptime`, `TimeHistogram` — each returns a typed result record, and the arrays it edits (`KvEditor`, `QueryBuilder`, `FeatureFlags`, the editors) come back through the `Span` you pass
+- **Developer tools** — `TraceView(id, tracks, spans, ref TraceViewState, ref int selected)`, `Waterfall(id, requests, ref int selected)`, `GraphView(id, nodes, edges, ref int selected)`, `CommitGraph`, `Pipeline(id, stages, jobs, ref int selected)`, `Problems(id, items)`, `KvEditor(id, pairs, ref int count)`, `QueryBuilder(id, fields, nodes, ref int count)`, `SchedulePicker(id, ref string cron)`, `Keymap`, `TestExplorer`, `StackTrace`, `Blame`, `Coverage`, `RegexTester(id, ref pattern, patternCap, ref text, textCap, ref RegexFlags)`, `RequestBar(id, ref HttpVerb, ref url)` + `ResponseStatus`, `ApiExplorer`, `FeatureFlags(id, flags, envs)`, `Uptime`, `TimeHistogram` — each returns a typed result record, and the arrays it edits (`KvEditor`, `QueryBuilder`, `FeatureFlags`, the editors) come back through the `Span` you pass
 - **Without a frame** — the pure helpers the widgets use, callable from a component or a test: `CuiRegex.TrySearch(…)` with its groups, `CuiCron.TryNext(…)`, `CuiHttp.ParseQuery`/`SetQuery`/`Reason`/`MethodName`, `CuiQuery.Text`/`Match`/`OperatorName`, `CuiFiles.ListDirectory`/`SortFlameSpans`/`SortTraceSpans`, `CuiMath.EvaluateCurve`/`EvaluateGradient`/`DiffLines`
 - **AI interfaces** — `ChatComposer`, `ModelPicker`, `PromptSuggestions`, `Reasoning`, `ResponseActions`, `Citation`, `ContextMeter`, `AgentPlan`, `AgentStatus`
 - **Onboarding** — `Tour(id, steps, ref int step, TourOpts)`; build each `TourStep.Target` from `ui.LastId` right after the control
@@ -683,6 +842,10 @@ per-section page under `api/`. To look one up without opening a file, `dotnet cu
 the live declarations of `ChartOpts`, `Ui.LineChart`, or a bare member name from the catalog packaged
 with the tool (`--json` for machine output), and `dotnet cui icons [filter]` lists every glyph with
 its code point. Both answer offline from `api/catalog.json`: no app, no build, no native library.
+
+The request bar's method is `HttpVerb`, not `HttpMethod`: the latter is `System.Net.Http.HttpMethod`,
+and a file that uses both should not need an alias for the one CUI draws. `CuiHttp.MethodName` takes
+the same `HttpVerb`.
 
 ## Files
 

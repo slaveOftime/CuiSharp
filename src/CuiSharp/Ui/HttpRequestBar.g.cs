@@ -14,15 +14,15 @@ public static unsafe class HttpRequestBarUiExtensions
     extension(Ui ui)
     {
         /// <summary>cui_request_bar_ex</summary>
-        public RequestBarResult RequestBar(UiText id, ref HttpMethod method, ref string url, int cap = 2048, RequestBarOpts o = default)
+        public RequestBarResult RequestBar(UiText id, ref HttpVerb method, ref string url, int cap = 2048, RequestBarOpts o = default)
         {
             int __method = (int)method;
             var __urlSlot = ui.RentText(Native.MakeId(ui.Handle, Utf8.Get(id)) ^ 0x19448d47u, ref url, (int)cap);
             var __opts = o.ToNative();
             var __result = Native.RequestBar(ui.Handle, Utf8.Get(id), ref __method, (nint)__urlSlot.Buffer, (nuint)__urlSlot.Capacity, in __opts);
-            method = (HttpMethod)__method;
+            method = (HttpVerb)__method;
             if (Ui.TextChanged(__urlSlot)) url = Ui.DecodeText(__urlSlot);
-            WidgetRecorder.Note(ui.Handle, "RequestBar", id);
+            WidgetRecorder.NoteValue(ui.Handle, "RequestBar", id, url);
             return RequestBarResult.FromNative(__result);
         }
 

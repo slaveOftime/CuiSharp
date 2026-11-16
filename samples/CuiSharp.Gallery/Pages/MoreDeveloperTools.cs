@@ -11,7 +11,7 @@ internal sealed partial class GalleryApp
     private string _regexPattern = @"\b(\w+)@(\w+)\.com\b";
     private string _regexText = "Write to ada@example.com or grace@navy.mil, not to root@localhost.";
     private RegexFlags _regexFlags = RegexFlags.IgnoreCase;
-    private HttpMethod _httpMethod = HttpMethod.Get;
+    private HttpVerb _httpMethod = HttpVerb.Get;
     private string _url = "https://api.example.com/v1/frames?state=open&limit=20";
     private int _apiSelected = -1;
     private string _regexSummary = "";

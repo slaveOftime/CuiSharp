@@ -22,7 +22,7 @@ public static unsafe class FlameGraphUiExtensions
             var __opts = o.ToNative();
             var __result = Native.FlameGraph(ui.Handle, Utf8.Get(id), (nint)__spans, (int)(spans.Length), ref __view, ref selected, in __opts);
             view = FlameView.FromNative(__view);
-            WidgetRecorder.Note(ui.Handle, "FlameGraph", id);
+            WidgetRecorder.NoteValue(ui.Handle, "FlameGraph", id, (double)selected);
             return FlameResult.FromNative(__result);
         }
 

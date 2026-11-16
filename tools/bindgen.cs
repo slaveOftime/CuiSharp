@@ -2905,11 +2905,65 @@ sealed class Idiomatic
         if (_overrides.ItemLists.TryGetValue(widget.Native.CName, out var items) &&
             widget.Params.Any(p => p.Name == items.Items))
         {
-            return $"WidgetRecorder.NoteItems(ui.Handle, \"{widget.Name}\", \"{items.Kind}\", {namer.Name}, {items.Items});";
+            return $"WidgetRecorder.NoteItems(ui.Handle, \"{widget.Name}\", \"{items.Kind}\", {namer.Name}, {items.Items}, {items.Index});";
         }
 
-        return $"WidgetRecorder.Note(ui.Handle, \"{widget.Name}\", {namer.Name});";
+        // An icon-only button has no label: its tooltip is the name a person and an agent read.
+        // Recording the glyph made `tree` print an unreadable icon and left `click Pause` unable
+        // to name the button it meant.
+        string target = namer.Name;
+        if (widget.Name == "IconButton"
+            && widget.Params.FirstOrDefault(p => p.Type == "ButtonOpts") is { } options)
+        {
+            target = $"string.IsNullOrEmpty({options.Name}.Tooltip) ? {namer.Name} : (UiText){options.Name}.Tooltip";
+        }
+
+        // A widget that edits a value can say what it holds without allocating in the frame:
+        // the recorder stores the text or the number and formats it after the draw. A bool
+        // ref is also the state (checked/selected/expanded), so a checkbox reads as more than
+        // its label without a second API.
+        WidgetParam? textValue = widget.Params.FirstOrDefault(p => p.Mode == "ref " && p.Type == "string");
+        WidgetParam? boolValue = widget.Params.FirstOrDefault(p => p.Mode == "ref " && p.Type == "bool");
+        WidgetParam? numberValue = widget.Params.FirstOrDefault(p =>
+            p.Mode == "ref " && p.Type is "float" or "double" or "int" && IsValueName(p.Name));
+
+        string state = boolValue is { } boolean ? StateFor(boolean.Name, boolean: true) : "";
+        string stateArgument = state.Length == 0
+            ? ""
+            : boolValue is { } stateBool
+                ? $", {stateBool.Name} ? SemanticState.{state} : SemanticState.None"
+                : $", SemanticState.{state}";
+
+        if (textValue is { } textParam)
+        {
+            return $"WidgetRecorder.NoteValue(ui.Handle, \"{widget.Name}\", {target}, {textParam.Name}{stateArgument});";
+        }
+
+        if (numberValue is { } numeric)
+        {
+            return $"WidgetRecorder.NoteValue(ui.Handle, \"{widget.Name}\", {target}, (double){numeric.Name}{stateArgument});";
+        }
+
+        if (boolValue is { } flag)
+        {
+            return $"WidgetRecorder.NoteValue(ui.Handle, \"{widget.Name}\", {target}, {flag.Name}{stateArgument});";
+        }
+
+        return state.Length == 0
+            ? $"WidgetRecorder.Note(ui.Handle, \"{widget.Name}\", {target});"
+            : $"WidgetRecorder.Note(ui.Handle, \"{widget.Name}\", {target}, SemanticState.{state});";
     }
+
+    private static bool IsValueName(string name) => name is
+        "value" or "selected" or "index" or "progress" or "ratio";
+
+    private static string StateFor(string name, bool boolean) => name.ToLowerInvariant() switch
+    {
+        "selected" => "Selected",
+        "open" or "expanded" => "Expanded",
+        "checked" or "on" or "value" when boolean => "Checked",
+        _ => "",
+    };
 
     /// <summary>
     /// The scope a container returns, with the name that makes it a node in a recorded tree.
@@ -3148,7 +3202,7 @@ sealed class Idiomatic
         sb.AppendLine("- Long work goes through `Mutation`: create it once, call `Run()` from a button, read `IsRunning` and `Error`.");
         sb.AppendLine("- A page that changes on its own needs `WantsFrames => true`, or the window sleeps.");
         sb.AppendLine("- Per-frame code allocates nothing: no LINQ, no `new`, no string concatenation. Interpolate into a widget instead.");
-        sb.AppendLine("- Find a control in a frame by a query: a label (`Save`), a kind and a label (`Button \"Save\"`), or a path through its containers (`editor > Save`; only the last step may name a kind).");
+        sb.AppendLine("- Find a control in a frame by a query: a label (`Save`), a kind and a label (`Button \"Save\"`), a semantic role (`role:button`), a value (`value:Milk`), an id (`id:draft`), or a path through its containers (`editor > Save`; only the last step may name a kind).");
         sb.AppendLine();
         sb.AppendLine("## Entry points");
         sb.AppendLine();
@@ -3158,12 +3212,12 @@ sealed class Idiomatic
         sb.AppendLine();
         sb.AppendLine("## Testing and tools");
         sb.AppendLine();
-        sb.AppendLine("- `TestApp.Start(component, w, h)` — drive a real component with no window: `FindButton(\"Save\").Click()`, `FindInput(\"draft\")` + `Type(\"Milk\")`, `Frame(n)`, `Focus()`, `Key(key)`, `Faults`, `PaintedAnything()`, `SavePng(path)`.");
-        sb.AppendLine("- `app.Tree` / `app.Print()` — the frame as the app drew it, nesting included; `SemanticNode.Find(query)`, `Descendants()`, `Path`.");
+        sb.AppendLine("- `TestApp.Start(component, w, h)` — drive a real component with no window: `FindButton(\"Save\").Click()`, `FindInput(\"draft\")` + `Type(\"Milk\")`, `FindById(\"draft\")`, `FindUnique(query)`, `Frame(n)`, `Focus()`, `Key(key)`, `WaitReady(timeout)`, `WaitFor(query, timeout)`, `Faults`, `PaintedAnything()`, `SavePng(path)`.");
+        sb.AppendLine("- `app.Tree` / `app.Print(rects, details)` — the frame as the app drew it, nesting included; `SemanticNode` exposes `Kind`, `Text`/`Name`, `Role`, `Value`, `State`, `AutomationId`, `Rect`, `Path`, `Find(query)`, `Descendants()`, and `ToAccessibility()`.");
         sb.AppendLine("- `HeadlessApp` — the same driver in the framework, which `TestApp` names; `dotnet cui` drives it in a real process.");
         sb.AppendLine("- A tab strip and a segmented control record one control per item (`Tab \"Markets\"`, `Segment \"Dark\"`), so an item is found and clicked like any other control.");
         sb.AppendLine("- `surface.LastFrame` -> `FrameSample` — what the last frame that surface drew cost: `DrawMs`, `AllocatedBytes`, `FrameMs`, `Fps`, `IsLive`. `FrameStats` holds the same for the one window in the process, which is what a footer reads.");
-        sb.AppendLine("- `dotnet cui tree|find|click|type|key|focus|move|frame|faults|png` — one command per line; `dotnet cui session` relays a whole script against one build; `--app` for a published build, `--no-build`, `--frames N`. Any app opts in by running headless (`CUISHARP_HEADLESS=1` or `--headless`).");
+        sb.AppendLine("- `dotnet cui tree|layout|find|click|type|key|focus|move|wheel|frame|wait|waittext|faults|png|doctor` — one command per line (`tree --details`, `find`/`click` `--role`/`--value`/`--id`, `--size WxH`, `png --sizes WxH,WxH`, `--state dir`, `--env KEY=VALUE`, `--wait ready`, `--wait-text query`, `-a [pid|title]`); `dotnet cui session --script file.txt` relays a whole script against one build; `--app` for a published build, `--no-build`, `--frames N`. Any app opts in by running headless (`CUISHARP_HEADLESS=1` or `--headless`).");
         sb.AppendLine();
         sb.AppendLine("## Core API (hand-written, in `src/CuiSharp/Ui`)");
         sb.AppendLine();
@@ -3174,10 +3228,11 @@ sealed class Idiomatic
         sb.AppendLine("- `ui.BarChart(...)` — the same for bars; `ui.LineChart(id, Series[] series, ...)` for several series.");
         sb.AppendLine("- `ui.DonutChart(UiText id, float[] values, string[]? labels = null, ChartOpts o = default)`.");
         sb.AppendLine("- `ui.Canvas(UiText id, Size width, Size height, PaintFn paint)` — custom drawing: `paint(ui, box)` with `ui.DrawLine`, `DrawRect`, `DrawCircle`, `DrawText`, `DrawPath`.");
-        sb.AppendLine("- `ui.Id(int)`, `ui.Id(UiText)` -> `IDisposable` — a scope that prefixes every id inside it; `ui.Keyed(items, key)` enumerates with ids.");
+        sb.AppendLine("- `ui.Id(int)`, `ui.Id(UiText)` -> `IdScope` — a scope that prefixes every native id and sets the automation id inside it; `ui.Keyed(items, key)` enumerates with ids; `ui.Automation(UiText)` -> `AutomationScope` sets only the automation id without changing native identity.");
         sb.AppendLine("- `ui.Shortcut(Mods mods, Key key)` -> `bool`, `ui.WantsKeyboard` — keyboard input, unmodified when a text field has focus.");
         sb.AppendLine("- `ui.RequestRedraw()`, `ui.NeedsRedraw` — rarely needed directly: the host does this from `WantsFrames` and pending work.");
         sb.AppendLine("- `ui.RequestWakeup(float seconds)` — one more frame this many seconds from now: a timer, a toast timeout, a poll interval.");
+        sb.AppendLine("- `ui.MarkReady()` — marks the current frame ready for `WaitReady` / `dotnet cui --wait ready`.");
         sb.AppendLine("- `ui.LastId` -> `uint` — the id of the widget just drawn; what `TourStep.Target` and the other point-at-this APIs take.");
         sb.AppendLine("- `ui.Terminal(UiText id, Terminal terminal, TerminalOpts o = default)` -> `TerminalResult` — the `Terminal` class owns the scrollback (`Write`, `WriteLine`, `Clear`, `LineCount`).");
         sb.AppendLine("- `ui.LogView(UiText id, LogBuffer log, LogViewOpts o = default)` — `LogBuffer` owns the ring (`Append`, `AppendLine`, `Text`, `Clear`), the view adds level filters, search, follow and copy.");
@@ -3187,7 +3242,7 @@ sealed class Idiomatic
         sb.AppendLine("- `ui.TreeTable(id, columns, TreeNode[], row, [ref TableSort, ref int], TreeTableOpts, label)` -> `TreeTableEvents` — a tree over a flat node array the table rewrites; `events.Load` names the nodes whose children it wants, and `CuiTree.Sort(nodes, root, compare)` relinks siblings.");
         sb.AppendLine("- `ui.State<T>(id)` and `ui.State(id, onFree)` -> `Span<T>` — per-id scratch that survives frames; the second form adds a callback CUI runs when it evicts that id (release a texture, a lease, a pooled buffer).");
         sb.AppendLine("- `ui.DiffRows(id, Span<DiffRow>, first)` — the live diff view's rows, for a custom renderer.");
-        sb.AppendLine("- `Color.Oklch(l, c, hue, alpha)`, `Color.Mix(a, b, t)`, `color.WithAlpha(f)`, `ui.ColorOf(color)`, `ui.TokenColor(token)`, `Ui.AccentName(accent)`, `Ui.KeyName(key)`.");
+        sb.AppendLine("- `Color.Oklch(l, c, hue, alpha)`, `Color.Mix(a, b, t)`, `color.WithAlpha(f)`, `color.IsToken`, `ui.ColorOf(color)`, `ui.TokenColor(token)`, `Ui.AccentName(accent)`, `Ui.KeyName(key)`; `Size`: `IsFit`, `IsFill`, `IsFixed`, `IsPercent`, `TryGetPoints(out float)`, `TryGetPercent(out float)`.");
         sb.AppendLine("- `CuiMath.DiffLines(old, new)` / `DiffWords(old, new)` / `EvaluateCurve(keys, x)` / `EvaluateGradient(stops, t)` / `PathMatches(path, filter)`; `MarkdownText.ToggleTask(ref text, offset, result)`; `CuiFiles.ListDirectory(path)`; `CuiSurface` input: `MouseMove`, `MouseDown`, `MouseUp`, `Click`, `Scroll`, `KeyDown`, `KeyUp`, `Type`, `Focus`, `FileDrop`.");
         sb.AppendLine("- `ui.Theme` and `ui.Accent`: assign `Theme.Dark` or `Accent.Blue` from inside any frame and CUI animates the change; `ui.ToggleTheme()` is the dark-mode command.");
         sb.AppendLine("- `ui.Style` -> `ThemeStyle`, the design tokens: `var t = ui.Style;` then `t.RadiusControl`, `t.RadiusPanel`, `t.RadiusSurface`, `t.ControlSm`/`ControlMd`/`ControlLg`, `t.TextXs`/`TextSm`/`TextBody`/`TextLg`, `t.FontScale`, `t.Motion`, `t.GetHeading(level)`/`t.SetHeading(level, points)` for heading levels 1-4. The local is a pointer into CUI's own theme, so nothing is copied and nothing allocates, and an assignment applies from the next frame. A theme or accent switch keeps the radii, the motion multiplier and the font scale.");

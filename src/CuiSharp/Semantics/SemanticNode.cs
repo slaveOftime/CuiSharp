@@ -24,7 +24,8 @@ public sealed class SemanticNode
 
     private SemanticNode(
         string kind, string text, RectF rect, int depth, SemanticNode? parent, uint id = 0,
-        bool hasOwnRect = false, bool detached = false, int layer = 0)
+        bool hasOwnRect = false, bool detached = false, int layer = 0,
+        string? automationId = null, string? value = null, SemanticState state = SemanticState.None)
     {
         Kind = kind;
         Text = text;
@@ -35,6 +36,9 @@ public sealed class SemanticNode
         HasOwnRect = hasOwnRect;
         Detached = detached;
         Layer = layer;
+        AutomationId = automationId;
+        Value = value;
+        State = state;
     }
 
     /// <summary>The wrapper that drew it: <c>Button</c>, <c>Input</c>, <c>Card</c>.</summary>
@@ -42,6 +46,34 @@ public sealed class SemanticNode
 
     /// <summary>The label, or the id when the widget or container has one.</summary>
     public string Text { get; }
+
+    /// <summary>The same thing as <see cref="Text"/>, named the way an accessibility adapter reads it.</summary>
+    public string Name => Text;
+
+    /// <summary>
+    /// The role this wrapper plays, e.g. <see cref="SemanticRole.Button"/>. The exact wrapper is
+    /// still <see cref="Kind"/>; the role is what an accessibility tree, an agent or a query groups by.
+    /// </summary>
+    public SemanticRole Role => SemanticRoles.Of(Kind);
+
+    /// <summary>
+    /// A stable id the app (or a <c>ui.Id</c> / <c>ui.Automation</c> scope) gave this widget,
+    /// independent of its label. Null when the app did not name it; <c>id:</c> queries also keep
+    /// matching the recorded text for widgets whose text is already their id.
+    /// </summary>
+    public string? AutomationId { get; }
+
+    /// <summary>The value a control holds this frame: a text field's text, a slider's number, a toggle's on/off.</summary>
+    public string? Value { get; }
+
+    /// <summary>What was observable about the control in this frame.</summary>
+    public SemanticState State { get; }
+
+    /// <summary>True when a <c>ui.Disabled</c> scope did not cover the control.</summary>
+    public bool IsEnabled => (State & SemanticState.Enabled) != 0;
+
+    /// <summary>True when this frame reported keyboard focus for the control.</summary>
+    public bool IsFocused => (State & SemanticState.Focused) != 0;
 
     /// <summary>Where it was laid out, in points.</summary>
     public RectF Rect { get; }
@@ -122,33 +154,17 @@ public sealed class SemanticNode
 
     internal bool TryFind(WidgetQuery query, out SemanticNode node)
     {
-        // `id:draft` is the exact-id form: no ranking, no partial match, no language.
-        if (query.Path.Length == 0 && query.Kind is null && query.Text.StartsWith("id:", StringComparison.Ordinal))
-        {
-            string id = query.Text[3..];
-            foreach (SemanticNode candidate in SelfAndDescendants())
-            {
-                if (!string.Equals(candidate.Text, id, StringComparison.Ordinal)) continue;
-
-                node = candidate;
-                return true;
-            }
-
-            node = null!;
-            return false;
-        }
-
         if (query.Path.Length > 0)
         {
             // Walk the named containers, outermost first, then search what the last one holds.
             SemanticNode scope = this;
             foreach (string step in query.Path)
             {
-                if (!scope.TryFind(WidgetQuery.Of(kind: null, step), out SemanticNode container)) goto NotFound;
+                if (!scope.TryFindStep(step, out SemanticNode container)) goto NotFound;
                 scope = container;
             }
 
-            if (scope.TryFind(WidgetQuery.Of(query.Kind, query.Text), out node)) return true;
+            if (scope.TryFind(WidgetQuery.Of(query.Kind, query.Text, role: query.Role, value: query.Value), out node)) return true;
             goto NotFound;
         }
 
@@ -175,6 +191,30 @@ public sealed class SemanticNode
         return false;
     }
 
+    private bool TryFindStep(string step, out SemanticNode container)
+    {
+        WidgetQuery query = WidgetQuery.Of(kind: null, step);
+        WidgetQuery byId = step.StartsWith("id:", StringComparison.Ordinal)
+            ? query
+            : WidgetQuery.Of(kind: null, "id:" + step);
+
+        SemanticNode? best = null;
+        int bestScore = int.MaxValue;
+        foreach (SemanticNode candidate in SelfAndDescendants())
+        {
+            if (!candidate.IsContainer) continue;
+            int score = Math.Min(candidate.Score(query), candidate.Score(byId));
+            if (score < bestScore)
+            {
+                best = candidate;
+                bestScore = score;
+            }
+        }
+
+        container = best!;
+        return best is not null;
+    }
+
     /// <summary>Finds a node below this one, or explains what is there instead.</summary>
     public SemanticNode Find(string query)
     {
@@ -182,6 +222,79 @@ public sealed class SemanticNode
         return TryFind(query, out SemanticNode node)
             ? node
             : throw new InvalidOperationException($"Nothing matching \"{query}\" under {Path}. It holds:\n{Print()}");
+    }
+
+    /// <summary>
+    /// Finds one node, refusing to choose when several controls share the best rank. The ordinary
+    /// <see cref="TryFind(string, out SemanticNode)"/> keeps its ranking for programmatic callers;
+    /// the headless <c>find</c> and <c>click</c> use this so a test can never silently hit the
+    /// wrong row.
+    /// </summary>
+    internal bool TryFindUnique(WidgetQuery query, out SemanticNode node)
+    {
+        // A path narrows the scope, then the leaf uses the same strict search as a plain query.
+        if (query.Path.Length > 0)
+        {
+            SemanticNode scope = this;
+            foreach (string step in query.Path)
+            {
+                if (!scope.TryFindStep(step, out SemanticNode container))
+                {
+                    node = null!;
+                    return false;
+                }
+
+                scope = container;
+            }
+
+            return scope.TryFindUnique(WidgetQuery.Of(query.Kind, query.Text, role: query.Role, value: query.Value), out node);
+        }
+
+        SemanticNode? best = null;
+        int bestScore = int.MaxValue;
+        var matches = new List<SemanticNode>();
+
+        foreach (SemanticNode candidate in SelfAndDescendants())
+        {
+            int score = candidate.Score(query);
+            if (score == int.MaxValue) continue;
+
+            if (score < bestScore)
+            {
+                bestScore = score;
+                best = candidate;
+                matches.Clear();
+                matches.Add(candidate);
+            }
+            else if (score == bestScore)
+            {
+                matches.Add(candidate);
+            }
+        }
+
+        if (best is null)
+        {
+            node = null!;
+            return false;
+        }
+
+        if (matches.Count > 1)
+            throw new InvalidOperationException(Ambiguous(query, matches));
+
+        node = best;
+        return true;
+    }
+
+    private static string Ambiguous(WidgetQuery query, List<SemanticNode> matches)
+    {
+        const int shown = 8;
+        string paths = string.Join(
+            '\n', matches.Take(shown).Select(static match => "  " + match.Path));
+        string more = matches.Count > shown ? $"\n  …and {matches.Count - shown} more" : "";
+
+        return $"\"{query}\" matches {matches.Count} controls; refusing to guess.{Environment.NewLine}" +
+            paths + more + Environment.NewLine +
+            "Use a kind (`Button \"…\"`), a role (`role:button`), a value (`value:…`), a path (`card > Button \"…\"`) or `id:…`.";
     }
 
     /// <summary>
@@ -194,8 +307,41 @@ public sealed class SemanticNode
     /// </remarks>
     private int Score(WidgetQuery query)
     {
-        if (query.Text.Length == 0) return int.MaxValue;
         if (query.Kind is { } kind && !Kind.Equals(kind, StringComparison.OrdinalIgnoreCase)) return int.MaxValue;
+        if (query.Role is { } role && Role != role) return int.MaxValue;
+
+        // `id:draft` is the exact-id form: no partial match, no language. An explicit automation
+        // id beats a fallback text match, and an actionable control beats its container or a
+        // static label inside the same id scope.
+        if (query.Path.Length == 0
+            && query.Role is null
+            && query.Value is null
+            && query.Text.StartsWith("id:", StringComparison.Ordinal))
+        {
+            string id = query.Text[3..];
+            if (id.Length == 0) return int.MaxValue;
+            int rank = IsStatic(Kind) ? 2 : IsContainer ? 1 : 0;
+            if (string.Equals(AutomationId, id, StringComparison.Ordinal)) return rank;
+            if (string.Equals(Text, id, StringComparison.Ordinal)) return 3 + rank;
+            return int.MaxValue;
+        }
+
+        int valueTier = 0;
+        if (query.Value is { } value)
+        {
+            if (Value is null) return int.MaxValue;
+            valueTier = Value.Equals(value, StringComparison.OrdinalIgnoreCase) ? 0
+                : Value.StartsWith(value, StringComparison.OrdinalIgnoreCase) ? 1
+                : Value.Contains(value, StringComparison.OrdinalIgnoreCase) ? 2
+                : int.MaxValue;
+            if (valueTier == int.MaxValue) return valueTier;
+        }
+
+        if (query.Text.Length == 0)
+        {
+            if (query.Role is null && query.Value is null) return int.MaxValue;
+            return (IsStatic(Kind) ? 3 : 0) + valueTier;
+        }
 
         int tier = Text.Equals(query.Text, StringComparison.OrdinalIgnoreCase) ? 0
             : Text.StartsWith(query.Text, StringComparison.OrdinalIgnoreCase) ? 1
@@ -204,7 +350,7 @@ public sealed class SemanticNode
         if (tier == int.MaxValue) return tier;
 
         // Text a person reads but cannot act on: a click on it lands on whatever is behind it.
-        return IsStatic(Kind) ? tier + 3 : tier;
+        return (IsStatic(Kind) ? 3 : 0) + tier + valueTier;
     }
 
     /// <summary>
@@ -212,8 +358,10 @@ public sealed class SemanticNode
     /// both answer the query, which is what keeps <c>click Save</c> on the button.
     /// </summary>
     internal static bool IsStatic(string kind) => kind is
-        "Heading" or "Label" or "Text" or "Muted" or "Badge" or "Caption" or "Code" or "Kbd" or
-        "Divider" or "Spacer" or "Icon" or "ProgressBar" or "Spinner";
+        "Heading" or "Label" or "Secondary" or "Text" or "Muted" or "Badge" or "Caption" or "Code" or
+        "Kbd" or "Divider" or "Separator" or "Spacer" or "Gap" or "Icon" or "Progress" or "ProgressBar" or
+        "ProgressRing" or "Meter" or "Gauge" or "RadialGauge" or "Skeleton" or "Spinner" or "EmptyState" or
+        "Metric" or "Readout" or "DotDisplay" or "StatusBarText";
 
     internal IEnumerable<SemanticNode> SelfAndDescendants()
     {
@@ -226,7 +374,12 @@ public sealed class SemanticNode
     /// reads to find out which controls a frame drew.
     /// </summary>
     /// <param name="rects">Include each node's laid-out rectangle.</param>
-    public string Print(bool rects = false)
+    /// <param name="details">
+    /// Include the semantic role and any automation id, value or state the frame recorded. The
+    /// default output stays the compact kind-and-label tree existing tests and readers know;
+    /// <c>dotnet cui tree --details</c> asks for this form.
+    /// </param>
+    public string Print(bool rects = false, bool details = false)
     {
         var sb = new StringBuilder();
         Walk(this, 0);
@@ -234,17 +387,50 @@ public sealed class SemanticNode
 
         void Walk(SemanticNode node, int indent)
         {
-            sb.Append(' ', indent * 2).Append(node.Label);
+            sb.Append(' ', indent * 2).Append(details ? node.Describe() : node.Label);
             if (rects) sb.Append(' ').Append(node.Rect);
             sb.Append('\n');
             foreach (SemanticNode child in node._children) Walk(child, indent + 1);
         }
     }
 
+    /// <summary>
+    /// The compact label plus the role, automation id, value and state of this one node.
+    /// </summary>
+    public string Describe()
+    {
+        var text = new StringBuilder(Label);
+        text.Append(" role=").Append(SemanticRoles.Name(Role));
+        if (AutomationId is { Length: > 0 } id) text.Append(" id=").Append(id);
+        if (Value is not null) text.Append(" value=\"").Append(Escape(Value)).Append('"');
+        if (State != SemanticState.None) text.Append(" state=").Append(SemanticStates.Format(State));
+        return text.ToString();
+    }
+
+    private static string Escape(string value) => value
+        .Replace("\\", "\\\\", StringComparison.Ordinal)
+        .Replace("\"", "\\\"", StringComparison.Ordinal)
+        .Replace("\r", "\\r", StringComparison.Ordinal)
+        .Replace("\n", "\\n", StringComparison.Ordinal);
+
+    /// <summary>
+    /// Projects this frame tree onto the shape a platform accessibility layer consumes. The
+    /// platform adapter (UIA, AT-SPI, NSAccessibility) is still ahead; this object is the stable
+    /// data it will read, so the app does not have to expose a second tree.
+    /// </summary>
+    public SemanticAccessibilityNode ToAccessibility() =>
+        new(Role, Name, Value, State, AutomationId, Rect, [.. _children.Select(child => child.ToAccessibility())]);
+
     /// <inheritdoc />
     public override string ToString() => Label;
 
-    /// <summary>Rebuilds the nesting from what a frame recorded.</summary>
+    /// <summary>
+    /// Finds a node by the explicit id the app gave it. The text of a widget that takes an id is
+    /// still the fallback, so existing <c>FindById("draft")</c> calls keep working.
+    /// </summary>
+    internal SemanticNode? FindById(string id) =>
+        TryFind(WidgetQuery.Of(kind: null, "id:" + id), out SemanticNode node) ? node : null;
+
     /// <summary>Finds a node by the id CUI gave it, below this one.</summary>
     internal SemanticNode? FindById(uint id)
     {
@@ -275,13 +461,15 @@ public sealed class SemanticNode
             {
                 open[^1]._children.Add(new SemanticNode(
                     entry.Kind, entry.Text, entry.Rect, entry.Depth, open[^1], entry.Id,
-                    entry.HasOwnRect, entry.Detached, entry.Layer));
+                    entry.HasOwnRect, entry.Detached, entry.Layer,
+                    entry.AutomationId, entry.Value, entry.State));
                 continue;
             }
 
             var container = new SemanticNode(
                 entry.Kind, entry.Text, entry.Rect, entry.Depth, open[^1], entry.Id,
-                entry.HasOwnRect, entry.Detached, entry.Layer)
+                entry.HasOwnRect, entry.Detached, entry.Layer,
+                entry.AutomationId, entry.Value, entry.State)
             {
                 IsContainer = true,
             };

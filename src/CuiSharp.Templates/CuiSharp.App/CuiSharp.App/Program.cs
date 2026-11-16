@@ -32,7 +32,7 @@ builder.Window.Theme = Theme.Light;
 builder.Window.WindowCreated = window => Console.WriteLine(CuiDiagnostics.Report(window));
 
 // `dotnet cui tree -p CuiSharp.App` builds and runs a fresh headless app for each invocation;
-// `dotnet cui session -p CuiSharp.App < cmds.txt` keeps a multi-step flow in one app.
+// `dotnet cui session -p CuiSharp.App --script cmds.txt` keeps a multi-step flow in one app.
 // `dotnet cui tree -a` instead drives the existing window, preserving its state between commands.
 // LiveAttach enables that listener; it does not open another window.
 builder.Window.LiveAttach = true;

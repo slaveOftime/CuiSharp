@@ -28,6 +28,9 @@ internal static class Cli
 
     private static readonly Lazy<DocLibrary> BundledDocs = new(DocLibrary.LoadEmbedded);
 
+    /// <summary>The catalog this tool ships, shared with <c>doctor</c> so one bad resource is one error.</summary>
+    internal static ApiCatalog Catalog => EmbeddedCatalog.Value;
+
     /// <summary>Runs the tool; the return value is the process exit code.</summary>
     internal static int Run(string[] args, TextWriter output, TextWriter error, TextReader? input = null)
     {
@@ -74,10 +77,19 @@ internal static class Cli
                 return 0;
             }
 
+            if (options.Command == "doctor") return Doctor.Run(options, output);
+
+            if (options.Command == "session" && options.Script is { Length: > 0 } script)
+                input = new StringReader(ReadScript(script));
+
+            if (options.Viewports.Length > 0)
+                return RunViewports(options, output, error);
+
             using HeadlessClient client = options.Attach
                 ? LiveClient.Connect(options, error)
                 : StartHeadless(options, error);
 
+            if (!CheckViewport(client, options, error)) return 1;
             if (!PassPreconditions(client, options, error)) return 1;
 
             if (options.Command == "session") return Relay(client, input, output, error);
@@ -147,8 +159,94 @@ internal static class Cli
                     $"No app found at \"{options.Project ?? Directory.GetCurrentDirectory()}\": " +
                     "no .csproj and no file-based .cs app there.");
 
+        var environment = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach ((string key, string value) in options.Environment) environment[key] = value;
+        if (options.State is { Length: > 0 } state)
+        {
+            string full;
+            try
+            {
+                full = Path.GetFullPath(state);
+                Directory.CreateDirectory(full);
+            }
+            catch (Exception failure) when (failure is ArgumentException or IOException or UnauthorizedAccessException)
+            {
+                throw new ToolException($"`{state}` is not a state directory this tool can use: {failure.Message}");
+            }
+
+            environment["CUISHARP_STATE_HOME"] = full;
+        }
+
+        if (options.Viewport is { } viewport) environment["CUISHARP_VIEWPORT"] = viewport.ToString();
+
         return HeadlessClient.Start(
-            host, hostArgs, echo: options.Quiet ? null : error.WriteLine);
+            host, hostArgs, echo: options.Quiet ? null : error.WriteLine, environment: environment);
+    }
+
+    /// <summary>
+    /// The app's banner is the truth about the frame size. A package that predates
+    /// <c>CUISHARP_VIEWPORT</c> ignores it, so a silent 1080x720 screenshot would be worse than
+    /// a refusal: say which size arrived and how to get the requested one.
+    /// </summary>
+    private static bool CheckViewport(HeadlessClient client, Options options, TextWriter error)
+    {
+        if (options.Viewport is not { } viewport) return true;
+        if (string.Equals(client.Size, viewport.ToString(), StringComparison.Ordinal)) return true;
+
+        error.WriteLine(
+            $"The app started at {client.Size}, not {viewport}. This CuiSharp build does not apply " +
+            "CUISHARP_VIEWPORT; rebuild it with a package or project reference that does, then retry.");
+        return false;
+    }
+
+    /// <summary>
+    /// Runs <c>png</c> once per <c>--sizes</c> viewport. Each app instance gets its own frame
+    /// size, and each output name carries the size so the files cannot overwrite one another.
+    /// </summary>
+    private static int RunViewports(Options options, TextWriter output, TextWriter error)
+    {
+        if (options.Command != "png")
+            throw new ToolException(
+                "--sizes is for `png`; run another command once per --size.");
+
+        bool built = false;
+        foreach (Viewport viewport in options.Viewports)
+        {
+            Options single = options with
+            {
+                Viewport = viewport,
+                Viewports = [],
+                NoBuild = options.NoBuild || built,
+            };
+            using HeadlessClient client = StartHeadless(single, error);
+            built = true;
+            if (!CheckViewport(client, single, error)) return 1;
+            if (!PassPreconditions(client, single, error)) return 1;
+
+            string path = PngPath(single.Argument, viewport);
+            Answer answer = Ask(client, $"png {path}");
+            if (!answer.Ok)
+            {
+                error.WriteLine(answer.Payload);
+                return 1;
+            }
+
+            output.WriteLine(answer.Payload);
+        }
+
+        return 0;
+    }
+
+    private static string PngPath(string argument, Viewport viewport)
+    {
+        string path = argument.Length == 0
+            ? Path.Combine(Path.GetTempPath(), $"cui-{viewport}.png")
+            : Path.GetFullPath(argument);
+        string directory = Path.GetDirectoryName(path) ?? Directory.GetCurrentDirectory();
+        string extension = Path.GetExtension(path);
+        if (extension.Length == 0) extension = ".png";
+        string stem = Path.GetFileNameWithoutExtension(path);
+        return Path.Combine(directory, $"{stem}-{viewport}{extension}");
     }
 
     private static int AnswerCatalog(Options options, TextWriter output)
@@ -191,7 +289,24 @@ internal static class Cli
         return true;
     }
 
-    /// <summary>Feeds commands from stdin to one app session and prints each answer in order.</summary>
+    /// <summary>
+    /// A session script, read before the app starts so a typo in the path is one sentence rather
+    /// than a process that starts, waits for its banner, and then fails to read its first line.
+    /// </summary>
+    internal static string ReadScript(string path)
+    {
+        try
+        {
+            return File.ReadAllText(path);
+        }
+        catch (Exception failure)
+            when (failure is ArgumentException or IOException or UnauthorizedAccessException or NotSupportedException)
+        {
+            throw new ToolException($"Could not read the session script `{path}`: {failure.Message}");
+        }
+    }
+
+    /// <summary>Feeds commands from stdin or a script to one app session and prints each answer in order.</summary>
     internal static int Relay(HeadlessClient client, TextReader? input, TextWriter output, TextWriter error)
     {
         TextReader source = input ?? Console.In;
@@ -323,6 +438,21 @@ internal static class Cli
         internal string? Framework { get; init; }
 
         internal string[] AppArgs { get; init; } = [];
+
+        internal Viewport? Viewport { get; init; }
+
+        internal Viewport[] Viewports { get; init; } = [];
+
+        internal IReadOnlyDictionary<string, string> Environment { get; init; } =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        internal string? State { get; init; }
+
+        internal string? Script { get; init; }
+
+        internal bool Aot { get; init; }
+
+        internal bool Strict { get; init; }
 
         internal string Line => Argument.Length == 0 ? Command : $"{Command} {Argument}";
 

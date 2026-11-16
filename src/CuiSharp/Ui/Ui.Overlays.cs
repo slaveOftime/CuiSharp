@@ -37,18 +37,34 @@ public unsafe ref partial struct Ui
         return d.Year != 0;
     }
 
-    /// <summary>Pushes a string id for the widgets drawn inside the scope.</summary>
+    /// <summary>
+    /// Pushes a string id for the widgets drawn inside the scope. It is also their automation id:
+    /// <c>using (ui.Id("row:42")) ui.Button("Delete")</c> makes <c>id:row:42</c> find that button.
+    /// </summary>
     public IdScope Id(UiText id)
     {
+        WidgetRecorder.PushAutomation(Handle, id);
         Native.PushId(Handle, Utf8.Get(id));
-        return new IdScope(Handle);
+        return new IdScope(Handle, automation: true);
     }
 
-    /// <summary>Pushes an integer id, typically a row or item index.</summary>
+    /// <summary>Pushes an integer id, typically a row or item index; it is the automation id too.</summary>
     public IdScope Id(int key)
     {
+        WidgetRecorder.PushAutomation(Handle, key);
         Native.PushIdInt(Handle, key);
-        return new IdScope(Handle);
+        return new IdScope(Handle, automation: true);
+    }
+
+    /// <summary>
+    /// Names the widgets drawn inside this scope for automation without changing their native
+    /// identity. Use it when a label is readable but not unique; use <see cref="Id(UiText)"/> when
+    /// the native state also has to be separated by the same key.
+    /// </summary>
+    public AutomationScope Automation(UiText id)
+    {
+        WidgetRecorder.PushAutomation(Handle, id);
+        return new AutomationScope(Handle);
     }
 
     /// <summary>
@@ -119,6 +135,7 @@ public unsafe ref partial struct Ui
         var n = o.ToNative();
         bool changed = Native.TagInput(Handle, Utf8.Get(id), (nint)slot.Buffer, (nuint)slot.Capacity, in n) != 0;
         if (changed) value = TextFieldPool.Decode(slot);
+        WidgetRecorder.NoteValue(Handle, "TagInput", id, value);
         return changed;
     }
 
@@ -129,6 +146,7 @@ public unsafe ref partial struct Ui
         var slot = _frame.Text.Rent(key, value, length + 1);
         bool changed = Native.OtpInput(Handle, Utf8.Get(id), (nint)slot.Buffer, length) != 0;
         if (changed) value = TextFieldPool.Decode(slot);
+        WidgetRecorder.NoteValue(Handle, "OtpInput", id, value);
         return changed;
     }
 }

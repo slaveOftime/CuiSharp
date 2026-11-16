@@ -17,7 +17,7 @@ protected override void Draw(Ui ui)
 ## `RequestBar`
 
 ```csharp
-public RequestBarResult RequestBar(UiText id, ref HttpMethod method, ref string url, int cap = 2048, RequestBarOpts o = default)
+public RequestBarResult RequestBar(UiText id, ref HttpVerb method, ref string url, int cap = 2048, RequestBarOpts o = default)
 ```
 
 cui_request_bar_ex

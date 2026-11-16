@@ -45,7 +45,7 @@ using Windows.Storage.Streams;
 //            dotnet cui png shot.png                    that frame as a PNG
 //            dotnet cui docs read live-debugging        the guide, offline
 //            dotnet cui api MenuOpts                    one exact declaration
-//            dotnet cui session < steps.txt             many clicks against one app instance
+//            dotnet cui session --script steps.txt      many clicks against one app instance
 //
 // Below: the window, its panels, the player, the scan, the spectrum behind the
 // effects, and the state they share.
@@ -1435,8 +1435,7 @@ internal static class Artwork
     // the album's colours, which is the closest the renderer gets to a blur.
     private const int Frost = 48;
 
-    private static readonly string Folder = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CuiMusic", "art");
+    private static readonly string Folder = Path.Combine(Store.Home, "art");
 
     private static readonly string Target = Path.Combine(Folder, "cover.img");
 
@@ -1761,11 +1760,22 @@ internal static class Store
 {
     private static readonly long SaveEvery = Stopwatch.Frequency * 5;
 
-    private static readonly string Folder = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CuiMusic");
+    private static readonly string Folder = StateFolder();
 
     private static readonly string StatePath = Path.Combine(Folder, "state.json");
     private static readonly string LibraryPath = Path.Combine(Folder, "library.json");
+
+    /// <summary>The app-specific folder under the shared state root.</summary>
+    public static string Home => Folder;
+
+    private static string StateFolder()
+    {
+        string? state = Environment.GetEnvironmentVariable("CUISHARP_STATE_HOME");
+        return state is { Length: > 0 }
+            ? Path.Combine(state, "CuiMusic")
+            : Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CuiMusic");
+    }
 
     private static long _savedAt;
 

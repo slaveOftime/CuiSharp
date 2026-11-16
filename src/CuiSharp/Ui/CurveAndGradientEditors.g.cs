@@ -28,7 +28,7 @@ public static unsafe class CurveAndGradientEditorsUiExtensions
                 count = __keysCount;
             }
             selected = __selected;
-            WidgetRecorder.Note(ui.Handle, "CurveEditor", id);
+            WidgetRecorder.NoteValue(ui.Handle, "CurveEditor", id, (double)selected);
             return CurveResult.FromNative(__result);
         }
 
@@ -47,7 +47,7 @@ public static unsafe class CurveAndGradientEditorsUiExtensions
                 count = __stopsCount;
             }
             selected = __selected;
-            WidgetRecorder.Note(ui.Handle, "GradientEditor", id);
+            WidgetRecorder.NoteValue(ui.Handle, "GradientEditor", id, (double)selected);
             return GradientResult.FromNative(__result);
         }
 

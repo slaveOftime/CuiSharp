@@ -449,7 +449,7 @@ public enum QueryType
 }
 
 /// <summary>The method, the URL and Send, as in an API client. Enter in the URL sends; while `loading` the button cancels. cui_response_status shows a response&apos;s status, time and size in one line. cui_url_params and cui_url_set_params move a URL&apos;s query to and from key-value pairs, decoding and encoding it, so a parameters table can stay in step with the URL.</summary>
-public enum HttpMethod
+public enum HttpVerb
 {
     Get = 0,
     Post = 1,

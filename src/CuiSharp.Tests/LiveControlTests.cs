@@ -18,6 +18,7 @@ namespace CuiSharp.Tests;
 /// exercise the frame-callback path with no native app handle on every platform, without a display.
 /// </para>
 /// </summary>
+[Collection("ProcessWindowState")]
 public class LiveControlTests
 {
     private static bool CanRun => OperatingSystem.IsWindows();
@@ -72,14 +73,23 @@ public class LiveControlTests
             _thread.Start();
 
             if (!live) return;
-            try
+            var clock = System.Diagnostics.Stopwatch.StartNew();
+            while (clock.Elapsed <= TimeSpan.FromSeconds(30))
             {
-                Session = LiveSession.WaitForActive(generationBefore, TimeSpan.FromSeconds(30));
+                if (LiveSession.Generation != generationBefore && LiveSession.Active is { } session)
+                {
+                    Session = session;
+                    return;
+                }
+
+                if (_closed.Task.IsCompleted)
+                    throw _error ?? new InvalidOperationException("The live window closed before it published a session.");
+
+                Thread.Sleep(5);
             }
-            catch (Exception waitError)
-            {
-                throw _error ?? waitError;
-            }
+
+            throw _error ?? new InvalidOperationException(
+                "No live session started: the app never drew a first frame with live attach within the timeout.");
         }
 
         internal string DiscoveryDir { get; }

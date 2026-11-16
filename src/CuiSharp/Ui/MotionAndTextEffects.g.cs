@@ -107,7 +107,7 @@ public static unsafe class MotionAndTextEffectsUiExtensions
             for (int i = 0; i < items.Length; i++) __items[i] = items[i].ToNative();
             var __opts = o.ToNative();
             var __result = Native.TabBar(ui.Handle, Utf8.Get(id), (nint)__items, (int)(items.Length), ref selected, in __opts);
-            WidgetRecorder.Note(ui.Handle, "TabBar", id);
+            WidgetRecorder.NoteValue(ui.Handle, "TabBar", id, (double)selected);
             return __result != 0;
         }
 
@@ -118,7 +118,7 @@ public static unsafe class MotionAndTextEffectsUiExtensions
             var __opts = o.ToNative();
             var __result = Native.ControlTile(ui.Handle, Utf8.Get(label), (nint)(&__on), in __opts);
             on = __on != 0;
-            WidgetRecorder.Note(ui.Handle, "ControlTile", label);
+            WidgetRecorder.NoteValue(ui.Handle, "ControlTile", label, on, on ? SemanticState.Checked : SemanticState.None);
             return __result != 0;
         }
 
@@ -127,7 +127,7 @@ public static unsafe class MotionAndTextEffectsUiExtensions
         {
             var __opts = o.ToNative();
             var __result = Native.Waveform(ui.Handle, Utf8.Get(id), UiMarshal.Values<float>(peaks), (int)(peaks.Length), ref progress, in __opts);
-            WidgetRecorder.Note(ui.Handle, "Waveform", id);
+            WidgetRecorder.NoteValue(ui.Handle, "Waveform", id, (double)progress);
             return __result != 0;
         }
 

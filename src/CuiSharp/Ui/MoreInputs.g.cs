@@ -20,7 +20,7 @@ public static unsafe class MoreInputsUiExtensions
             var __opts = o.ToNative();
             var __result = Native.InlineEdit(ui.Handle, Utf8.Get(id), (nint)__bufSlot.Buffer, (nuint)__bufSlot.Capacity, in __opts);
             if (Ui.TextChanged(__bufSlot)) buf = Ui.DecodeText(__bufSlot);
-            WidgetRecorder.Note(ui.Handle, "InlineEdit", id);
+            WidgetRecorder.NoteValue(ui.Handle, "InlineEdit", id, buf);
             return __result;
         }
 
@@ -29,7 +29,7 @@ public static unsafe class MoreInputsUiExtensions
         {
             var __opts = o.ToNative();
             var __result = Native.Scrub(ui.Handle, Utf8.Get(label), ref value, min, max, in __opts);
-            WidgetRecorder.Note(ui.Handle, "Scrub", label);
+            WidgetRecorder.NoteValue(ui.Handle, "Scrub", label, (double)value);
             return __result != 0;
         }
 
@@ -38,7 +38,7 @@ public static unsafe class MoreInputsUiExtensions
         {
             var __opts = o.ToNative();
             var __result = Native.MoneyInput(ui.Handle, Utf8.Get(id), ref value, in __opts);
-            WidgetRecorder.Note(ui.Handle, "MoneyInput", id);
+            WidgetRecorder.NoteValue(ui.Handle, "MoneyInput", id, (double)value);
             return __result != 0;
         }
 
