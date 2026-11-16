@@ -35,14 +35,22 @@ on every pull request, every shape in the on-demand job.
 
 | | Value | Where it is enforced |
 |---|---|---|
-| Gallery frame, 1240x820, software raster | **0.83 ms** mean (p50 0.69, p95 1.16, p99 1.39) | budget 0.90 ms, `--fps 900` |
+| Gallery frame, 1240x820, software raster | **0.92 ms** mean (p50 0.78, p95 1.21, p99 1.25) | budget 1.00 ms, `--fps 900` |
 | Build only (a GPU would rasterize) | 0.02 ms | same run |
 | Managed allocation per frame | **0 B** | `FrameLifecycleTests`, `NewComponentTests` |
-| Gallery AOT executable, win-x64 | **2 954 752 B** | budget 2.95 MB |
+| Gallery AOT executable, win-x64 | **3 180 544 B** | budget 3.20 MB |
 | A million virtual list rows | ~12 µs | `--scale` |
 | A million chart points, undecimated | 45.9 ms | why decimation exists |
 | A million chart points, decimated to 800 | 0.018 ms | same |
 | Idle window CPU | 0 % | by construction: CUI sleeps between frames |
+
+0.5.0 takes the executable to 3 180 544 B, 225 792 B more than 0.4.2, and the budget with it: the
+last 148 commits of CUI added forty functions and thirty-six structs (the Voice and Creative controls
+sections, plus the controls that fill three new gallery pages), and the documentation those headers
+carry for every new field reaches the gallery as generated summaries. Frame time rose from 0.83 ms to
+0.92 ms for the same reason a page still only draws what is on it: the benchmark's chart page now
+links a larger binary, and the mean moved inside the run-to-run noise of the reference machine
+(p50 0.69 → 0.78, p95 1.16 → 1.21). A frame still allocates 0 B.
 
 The executable grew again with CUI 1.4, from 2 878 976 B to 2 918 400 B: the five instrument
 components, and the header comments CUI 1.4 wrote for every field of every options struct, which

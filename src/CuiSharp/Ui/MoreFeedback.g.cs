@@ -43,5 +43,23 @@ public static unsafe class MoreFeedbackUiExtensions
             return __result;
         }
 
+        /// <summary>Draw the cover while leaving hit testing to other widgets when it is disabled.</summary>
+        public OpenScope Veil(UiText id, ref bool revealed, VeilOpts o = default)
+        {
+            byte __revealed = (byte)(revealed ? 1 : 0);
+            var __opts = o.ToNative();
+            var __result = Native.VeilBegin(ui.Handle, Utf8.Get(id), (nint)(&__revealed), in __opts);
+            revealed = __revealed != 0;
+            return new OpenScope(ui.Handle, &Native.VeilEnd, "Veil", id, __result != 0);
+        }
+
+        /// <summary>Draws the body only when the container opens, and closes it on exceptions.</summary>
+        public void Veil(UiText id, ref bool revealed, DrawFn body, VeilOpts o = default)
+        {
+            ArgumentNullException.ThrowIfNull(body);
+            using var scope = ui.Veil(id, ref revealed, o);
+            if (scope) body(ui);
+        }
+
     }
 }

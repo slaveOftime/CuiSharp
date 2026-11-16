@@ -20,7 +20,7 @@ protected override void Draw(Ui ui)
 public int Gantt(UiText id, Span<GanttTask> tasks, Date origin, int days, GanttOpts o = default)
 ```
 
-Gantt chart: a task list beside a timeline of bars. Drag a bar to move it, its ends to resize it. Dependencies are drawn as elbow arrows. Returns the index of a clicked task, or -1.
+Returns the activated task index or -1. Read-only tasks still activate.
 
 ## `Kanban`
 
@@ -60,4 +60,4 @@ Month calendar: a month grid with events. All-day and multi-day events are bars 
 public int WeekCalendar(UiText id, Date weekStart, Span<CalendarEvent> events, WeekOpts o = default)
 ```
 
-Week calendar: seven day columns on an hour grid. Drag an event to move it (15 minute steps), drag its bottom edge to resize it. Returns the index of a clicked event, or -1.
+Returns the activated event index or -1. Read-only events still activate.

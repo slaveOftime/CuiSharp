@@ -13,7 +13,7 @@ public static unsafe class CodeUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>Code block with syntax highlighting (lang: &quot;c&quot;, &quot;cpp&quot;, &quot;js&quot;, &quot;ts&quot;, &quot;python&quot;, &quot;rust&quot;, &quot;go&quot;, &quot;json&quot;, &quot;shell&quot;, or &quot;text&quot; for none), line numbers, a title bar and a copy button. Long lines scroll sideways.</summary>
+        /// <summary>Code block with syntax highlighting (lang: &quot;c&quot;, &quot;cpp&quot;, &quot;js&quot;, &quot;ts&quot;, &quot;python&quot;, &quot;rust&quot;, &quot;go&quot;, &quot;json&quot;, &quot;shell&quot;, &quot;sql&quot;, or &quot;text&quot; for none), line numbers, a title bar and a copy button. Long lines scroll sideways.</summary>
         public void CodeBlock(UiText id, UiText code, CodeOpts o = default)
         {
             var __opts = o.ToNative();

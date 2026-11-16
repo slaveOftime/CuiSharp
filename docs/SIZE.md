@@ -12,7 +12,7 @@ pwsh tools/size-report.ps1 -All -Csv .tmp/size.csv
 
 ## Where the bytes go
 
-A minimal app — a column, a heading, a button, a line of text — publishes at **1 165 312 B**:
+A minimal app — a column, a heading, a button, a line of text — publishes at **1 176 064 B**:
 
 | Part | Bytes | Share of the executable |
 |---|---|---|
@@ -54,10 +54,10 @@ way:
 
 | App | Before the profile | Shipped |
 |---|---|---|
-| minimal app | 1 498 112 | 1 165 312 (−22.2%) |
-| gallery, 29 pages | 3 167 232 | 2 954 752 (−6.7%) |
-| `dotnet new cui-app`, published | — | 2 282 496 |
-| `dotnet new cui-mini`, published | — | 1 198 080 |
+| minimal app | 1 498 112 | 1 176 064 (−21.5%) |
+| gallery, 32 pages | 3 167 232 | 3 180 544 (+0.4%: forty more C functions, and three pages that draw them) |
+| `dotnet new cui-app`, published | — | 2 282 496 (0.4.2) |
+| `dotnet new cui-mini`, published | — | 1 201 664 |
 
 Nearly all of it is the headless channel: `System.IO`, `Console`, `Encoding` and the reflection
 over an enum the command lexer reads arrive with it, and a switch only removes them when the

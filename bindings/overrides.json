@@ -95,6 +95,11 @@
       "type": "nint",
       "record": "TableSort",
       "why": "The grid sorts by a table sort the wrapper keeps in the frame arena and writes back to GridState."
+    },
+    "cui_live_cursors_opts.view": {
+      "type": "nint",
+      "record": "NodeView",
+      "why": "Positions are canvas points under this pan and zoom; the wrapper keeps the native copy in the frame arena so the options never expose an address the caller could leave dangling."
     }
   },
   "optionalInjectedParams": {
@@ -103,6 +108,21 @@
     },
     "cui_chat_message_ex.markdownResult": {
       "why": "The markdown view's links and task toggles are only wanted when the bubble renders markdown: with a null result pointer native reports nothing and the common call stays `ui.ChatMessage(text, opts)`."
+    },
+    "cui_treemap_ex.selected": {
+      "why": "A treemap with no selection to keep passes NULL: the wrapper's overload without `ref int selected` does that, so a chart that only displays its items needs no throwaway local."
+    },
+    "cui_voice_wave_ex.progress": {
+      "why": "A waveform that is not being played has no progress to report: the overload without `ref float progress` passes NULL, and the whole clip is drawn."
+    },
+    "cui_palette_strip_ex.seed": {
+      "why": "Without a seed the shuffle button only reports its press: the overload without `ref uint seed` passes NULL."
+    },
+    "cui_voice_session_ex.muted": {
+      "why": "A session without a Mute button passes NULL for `muted`: the overload without `ref bool muted` does that."
+    },
+    "cui_gradient_slider_ex.colorout": {
+      "why": "Most sliders do not need the color under the thumb: the overload without `ref Color colorOut` passes NULL."
     }
   },
   "parameterDefaults": {
@@ -236,6 +256,18 @@
       "storage": "enum",
       "type": "HttpVerb",
       "why": "CUI takes an int* the method menu writes: the wrapper keeps the caller's HttpVerb and hands over the int behind it. HttpVerb, not HttpMethod, so it cannot be confused with System.Net.Http.HttpMethod."
+    },
+    "cui_format_bar_ex.format": {
+      "storage": "value",
+      "why": "cui_text_format is the bar's state: the wrapper converts it to TextFormat, passes it and writes it back when the call returns."
+    },
+    "cui_canvas_controls_ex.view": {
+      "storage": "value",
+      "why": "cui_node_view is the canvas pan and zoom; the wrapper converts it to NodeView and writes it back when the call returns."
+    },
+    "cui_voice_note_ex.note": {
+      "storage": "value",
+      "why": "cui_voice_note is the message's playback state; the wrapper converts it to VoiceNote and writes it back when the call returns."
     }
   },
   "capacityParams": {
@@ -827,6 +859,24 @@
     },
     "cui_dot_chart_ex": {
       "why": "A dot series carries its samples as a bare pointer, and their number is the call's, not the series': the wrapper builds the array in the frame arena from managed series, as the line and bar charts do."
+    },
+    "cui_canvas_controls_ex": {
+      "why": "Ui.CanvasControls in Ui.CreativeControls.cs owns the toggle flags: each toggle is a `bool *` native flips, which a record cannot hold."
+    },
+    "cui_palette_strip_ex": {
+      "why": "Ui.PaletteStrip in Ui.CreativeControls.cs owns both arrays: the colors and the lock flags are edited in place, and native counts them by the one `count`."
+    },
+    "cui_selection_bar_ex": {
+      "why": "Ui.SelectionBar in Ui.CreativeControls.cs owns the selection flags native clears, and passes the action array it converts."
+    },
+    "cui_voice_resample": {
+      "why": "`CuiVoice.Resample(levels, columns)` (Ui/CuiVoice.cs): the resampling the clip strip does, so an app can keep a short waveform with a message."
+    },
+    "cui_set_clipboard_text": {
+      "why": "`Ui.SetClipboard(text)` (Ui/Ui.cs): the platform clipboard hook, for a menu or status bar item that copies."
+    },
+    "cui_get_clipboard_text": {
+      "why": "`Ui.GetClipboard()` (Ui/Ui.cs): copies the returned text out of CUI's frame memory before the frame ends."
     }
   },
   "outParams": {
@@ -889,6 +939,10 @@
     "cui_filter_field.options": {
       "count": "option_count",
       "why": "FilterField is input-only filter metadata; native reads exactly the options copied into the arena."
+    },
+    "cui_voice_note.levels": {
+      "count": "count",
+      "why": "VoiceNote is in/out playback state; native reads exactly the levels copied into the arena."
     }
   },
   "recordNames": {
@@ -1307,6 +1361,34 @@
     "cui_event_track_result": {
       "name": "EventTrackResult",
       "why": "What the event track reports back: whether it changed, and which event was added, removed or selected."
+    },
+    "cui_aspect": {
+      "name": "Aspect",
+      "why": "Aspect ratio choices the picker draws: width, height and an optional name, built at the call site."
+    },
+    "cui_text_style": {
+      "name": "TextStyle",
+      "why": "A style the format bar offers: its name, the size it sets, and how it previews in the menu."
+    },
+    "cui_text_format": {
+      "name": "TextFormat",
+      "why": "The format bar's state: the tone, bold/underline/link, the chosen style and size. The bar writes it back."
+    },
+    "cui_meter_part": {
+      "name": "MeterPart",
+      "why": "One part of a pattern meter's bar: name, value, color and dot density."
+    },
+    "cui_selection_action": {
+      "name": "SelectionAction",
+      "why": "An action in the selection bar: icon, label, and the tone that marks a destructive one."
+    },
+    "cui_live_user": {
+      "name": "LiveUser",
+      "why": "One collaborator on a shared canvas: where the pointer is, the tone it draws in and what it says."
+    },
+    "cui_voice_note": {
+      "name": "VoiceNoteState",
+      "why": "A recorded message's playback state: the levels, the position, the length and the speed. The bubble writes position, speed and playing back; named after the state because the widget is Ui.VoiceNote."
     }
   },
   "extraOptionFields": {
@@ -1434,6 +1516,9 @@
     },
     "cui_url_set_params": {
       "why": "C helper: encodes pairs into a caller buffer. Not a frame call."
+    },
+    "cui_voice_resample": {
+      "why": "C helper: resamples a clip's levels into caller memory. A static utility with no frame and no cui_ctx."
     }
   },
   "arrayLengths": {
@@ -1688,6 +1773,26 @@
     "cui_event_track_opts.selected": {
       "type": "int",
       "why": "The selected event: the track moves it with the keys and a drag, so the wrapper writes it back."
+    },
+    "cui_treemap_opts.selected": {
+      "type": "int",
+      "why": "The selected tile, or -1: a click changes it, so the wrapper writes it back."
+    },
+    "cui_voice_wave_opts.progress": {
+      "type": "float",
+      "why": "A clip's played fraction: seeking moves it, so the wrapper writes it back."
+    },
+    "cui_palette_strip_opts.seed": {
+      "type": "uint",
+      "why": "The shuffle state: shuffling moves the seed on, so the wrapper writes it back."
+    },
+    "cui_voice_session_opts.muted": {
+      "type": "bool",
+      "why": "The mute button flips it, so the wrapper writes it back."
+    },
+    "cui_gradient_slider_opts.color_out": {
+      "type": "Color",
+      "why": "Receives the color under the thumb, e.g. for an eyedropper."
     }
   },
   "arrayParams": {
@@ -1731,6 +1836,26 @@
     "cui_month_opts.day_names": {
       "atLeast": "7",
       "why": "Seven short day names, Monday first: native reads all seven, so the wrapper rejects a shorter array."
+    },
+    "cui_toolbar_radio_opts.labels": {
+      "atLeast": "icons.Length",
+      "why": "One name per icon: native reads `count` labels, so the wrapper rejects a shorter array."
+    },
+    "cui_step_slider_opts.labels": {
+      "atLeast": "max - min + 1",
+      "why": "A name per stop from min to max: native indexes labels[*value - min], so one per stop is the minimum."
+    },
+    "cui_voice_wave_opts.owners": {
+      "atLeast": "levels.Length",
+      "why": "One owner per level: native reads `count` owner bytes, so the wrapper rejects a shorter array."
+    },
+    "cui_voice_session_opts.owners": {
+      "atLeast": "levels.Length",
+      "why": "One owner per level: native reads `count` owner bytes, so the wrapper rejects a shorter array."
+    },
+    "cui_sankey_opts.node_colors": {
+      "atLeast": "nodes.Length",
+      "why": "One color per node: native reads `node_count` entries, so the wrapper rejects a shorter array."
     }
   },
   "inOutArrays": {
@@ -1801,6 +1926,18 @@
     },
     "cui_tree_table_opts.user": {
       "why": "The `void *` for the label callback above; the bridge supplies the GCHandle address for it."
+    },
+    "cui_canvas_controls_opts.toggles": {
+      "why": "Each toggle carries a `bool *` of its own; a value record cannot own a pointer per item, so Ui.CanvasControls takes the flags as a span."
+    },
+    "cui_canvas_controls_opts.toggle_count": {
+      "why": "The length of `toggles`, which the hand-written wrapper derives from the span it is given."
+    },
+    "cui_selection_bar_opts.selected": {
+      "why": "One flag per selection item, cleared by native; Ui.SelectionBar takes the flags as a span it owns and passes on."
+    },
+    "cui_selection_bar_opts.item_count": {
+      "why": "The length of `selected`, which the hand-written wrapper derives from the span it is given."
     }
   },
   "optionFieldCounts": {
@@ -1811,6 +1948,10 @@
     "cui_keymap_opts.categories": {
       "count": "category_count",
       "why": "The legend's names are counted by `category_count`, not `category_count`'s plural form."
+    },
+    "cui_aspect_picker_opts.ratios": {
+      "count": "count",
+      "why": "The picker's choices are counted by `count`, not by a plural of `ratios`."
     }
   },
   "optionTextFields": {

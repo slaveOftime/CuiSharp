@@ -316,6 +316,41 @@ public enum Tone
     Accent = 8,
 }
 
+/// <summary>Spinner: says that something is happening, for as long as you call it. `size` is its height in points (20 when 0). The default style is a ring with a sweeping arc that holds still with reduced motion. The other styles are drawn in dots on an 8x8 ordered dither, one point a dot below 32 points tall and two from there, and each fits a kind of wait:</summary>
+public enum SpinnerStyle
+{
+    /// <summary>a ring with an arc sweeping round it</summary>
+    Arc = 0,
+    /// <summary>a ring of dots with a head and a tail that thins out dot by dot</summary>
+    Comet = 1,
+    /// <summary>a 5x5 grid of dots with a wave running through it, for dense layouts</summary>
+    DotMatrix = 2,
+    /// <summary>a tile that fills from the bottom, then dissolves: a step of a job</summary>
+    FillDrain = 3,
+    /// <summary>a sweep round a dial; points light up as it passes: searching, scanning</summary>
+    Radar = 4,
+    /// <summary>rings spreading from a dot: connecting, pairing, waiting for the other side</summary>
+    Ripple = 5,
+    /// <summary>chevrons streaming up: sending</summary>
+    Upload = 6,
+    /// <summary>chevrons streaming down: receiving</summary>
+    Download = 7,
+    /// <summary>both, side by side: syncing both ways</summary>
+    Transfer = 8,
+    /// <summary>two dots circling, their trails dissolving: syncing</summary>
+    Orbit = 9,
+    /// <summary>three bouncing dots with short trails: typing, a chat reply</summary>
+    Bounce = 10,
+    /// <summary>a scan line reading a page: indexing, importing</summary>
+    Scan = 11,
+    /// <summary>a soft disc breathing in density: recording, live</summary>
+    Pulse = 12,
+    /// <summary>three arms turning: a long, calm background wait</summary>
+    Spiral = 13,
+    /// <summary>slow moving noise in a tile: generating an image or audio</summary>
+    Plasma = 14,
+}
+
 /// <summary>A line, a threshold or a point drawn over a chart, with a two-line label: the label in the foreground color and a muted detail under it. Line and bar charts take them in cui_chart_opts, the dot chart in cui_dot_chart_opts. Labels that would overlap move to the other side of their line, then down.</summary>
 public enum AnnotationKind
 {
@@ -355,6 +390,19 @@ public enum DiffRowKind
     Fold = 4,
 }
 
+/// <summary>cui_gauge_style</summary>
+public enum GaugeStyle
+{
+    /// <summary>segments with `bands`, the arc without</summary>
+    Auto = 0,
+    /// <summary>a track and a value arc with round caps, min and max at its ends</summary>
+    Arc = 1,
+    /// <summary>short segments lit up to the value, in the band colors</summary>
+    Segments = 2,
+    /// <summary>a slim full ring starting at the top</summary>
+    Ring = 3,
+}
+
 /// <summary>cui_loader_style</summary>
 public enum LoaderStyle
 {
@@ -375,13 +423,45 @@ public enum CuiTaskStatus
     Skipped = 4,
 }
 
-/// <summary>Voice orb: a living shape for voice modes. level is the input or output loudness (0..1). Returns true when clicked.</summary>
+/// <summary>What a voice conversation is doing, for the voice session&apos;s label (and the voice orb, which shows the first four).</summary>
 public enum VoiceState
 {
     Idle = 0,
     Listening = 1,
     Thinking = 2,
     Speaking = 3,
+    Muted = 4,
+}
+
+/// <summary>cui_voice_owner</summary>
+public enum VoiceOwner
+{
+    You = 0,
+    Reply = 1,
+}
+
+/// <summary>Gantt chart: a task list beside a timeline of bars. Drag a bar to move it, its ends to resize it. Bars are colored by state (done, active, planned) with their progress inside, dependencies are soft curves with small arrowheads, and today is an accent line. Returns the index of a clicked task, or -1.</summary>
+public enum GanttState
+{
+    /// <summary>from the progress and today: 1 is done, more than 0 is active; untouched work is planned when it starts after today, else active</summary>
+    Auto = 0,
+    /// <summary>a green bar</summary>
+    Done = 1,
+    /// <summary>a bar in the first series color</summary>
+    Active = 2,
+    /// <summary>a dashed, lightly tinted bar</summary>
+    Planned = 3,
+}
+
+/// <summary>Toolbar: a row of compact icon buttons, toggles, separators and small text buttons. Icon only buttons show their tooltip as their name. Items that do not fit collapse, from the end, into a &quot;more&quot; menu; an item chosen there returns true on the next frame. Tab moves through the items.</summary>
+public enum ToolbarStyle
+{
+    /// <summary>a strip as wide as its parent, with a hairline under it</summary>
+    Plain = 0,
+    /// <summary>raised groups inside one muted pill</summary>
+    Grouped = 1,
+    /// <summary>one bordered surface pill</summary>
+    Floating = 2,
 }
 
 /// <summary>Log console. The app owns the storage: give cui_log_init an array of line records and a byte buffer for the text. Appending never allocates; when either is full the oldest lines are dropped (a ring buffer). Lines longer than the text buffer are cut to fit.</summary>
@@ -406,6 +486,28 @@ public enum CurveMode
     Linear = 2,
     /// <summary>hold this value until the next key</summary>
     Step = 3,
+}
+
+/// <summary>Status tag: an icon, a label and a fill tinted by the state, for a table cell, a card header or a group of tags. &quot;In progress&quot; turns its dashed ring slowly (it holds still with reduced motion). A NULL label shows the state&apos;s English name.</summary>
+public enum TagStatus
+{
+    Pending = 0,
+    InProgress = 1,
+    Submitted = 2,
+    InReview = 3,
+    Success = 4,
+    Failed = 5,
+    Expired = 6,
+    /// <summary>your `icon` and `tone` only</summary>
+    Custom = 7,
+}
+
+/// <summary>Gradient slider: a slider whose track is the value itself (a hue wheel, a white balance temperature, an opacity over a checkerboard, or your own stops), with a thumb filled with the color under it. An optional tool button after the track (an eyedropper) reports clicks. Keys as for the slider. Returns CUI_WELL_* flags.</summary>
+public enum GradientTrack
+{
+    Hue = 0,
+    Temperature = 1,
+    Opacity = 2,
 }
 
 /// <summary>Timeline editor (dope sheet): a track list on the left, a time ruler on top and a row per track with its keys (and clips, for video and audio tracks). You own the tracks, their keys and clips, the playhead time and the selection; the editor edits them in place and reports what it did:</summary>
@@ -469,6 +571,24 @@ public enum AxisUnits
     Hours = 1,
 }
 
+/// <summary>Format bar: a floating bar that edits the format of a text selection. A color swatch opens a grid of colors; bold and underline toggle; link reports a click; the size readout follows the text style, chosen from a menu that shows each style at its own size; alignment and list open small flyouts (a corner mark says so); delete asks first, in a small tip with a Delete button. You pass one struct with the format and the bar edits it:</summary>
+public enum FormatAlign
+{
+    Left = 0,
+    Center = 1,
+    Right = 2,
+    Justify = 3,
+}
+
+/// <summary>cui_format_list</summary>
+public enum FormatList
+{
+    None = 0,
+    Bullets = 1,
+    Numbers = 2,
+    Checks = 3,
+}
+
 /// <summary>cui_renderer_kind</summary>
 public enum Renderer
 {
@@ -529,7 +649,7 @@ public enum CommentEvents
     Reply = 2,
 }
 
-/// <summary>CUI_PLAYER_TOGGLE</summary>
+/// <summary>what the user did, from the now playing card and the voice note: CUI_PLAYER_SPEED is the voice note&apos;s speed chip</summary>
 [System.Flags]
 public enum PlayerEvents
 {
@@ -538,6 +658,7 @@ public enum PlayerEvents
     Prev = 2,
     Next = 4,
     Seek = 8,
+    Speed = 16,
 }
 
 /// <summary>Response actions: copy, regenerate, vote and share under an answer.</summary>
@@ -562,4 +683,7 @@ public enum ComposerEvents
     Attach = 4,
     Remove = 8,
     Model = 16,
+    Record = 32,
+    Cancel = 64,
+    Voice = 128,
 }

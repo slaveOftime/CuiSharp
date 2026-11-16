@@ -86,7 +86,7 @@ public static unsafe class LayoutUiExtensions
             WidgetRecorder.Note(ui.Handle, "ScrollTo", scrollId);
         }
 
-        /// <summary>Resizable split view: two panes with a draggable divider. `ratio` is the size of the first pane in 0..1. Call cui_split_next between the panes.</summary>
+        /// <summary>Open a split with pane minimums that can fit the available main axis.</summary>
         public LayoutScope Split(UiText id, ref float ratio, SplitOpts o = default)
         {
             var __ratio = Utf8.AllocFrame<float>(1);

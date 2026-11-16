@@ -44,7 +44,7 @@ cui_node_deleted
 public OpenScope NodeEditor(UiText id, ref NodeView view, NodeEditorOpts o = default)
 ```
 
-Node editor: nodes with input and output pins on a canvas that pans and zooms, joined by curved links. You own the nodes, pins and links; the editor moves the node positions you pass and reports what the user did:
+Build the editor canvas and process gestures while it is enabled.
 
 ## `NodeInput`
 

@@ -14,12 +14,12 @@ namespace CuiSharp.Gallery;
 
 internal sealed partial class GalleryApp : IDisposable
 {
-    public const int PageCount = 29;
+    public const int PageCount = 32;
 
     /// <summary>The release this gallery shows. A literal on purpose: bump it by hand with
     /// <c>Directory.Build.props</c>, and every host that links these sources — desktop and
     /// browser — shows the same number.</summary>
-    internal const string ReleaseVersion = "0.4.2";
+    internal const string ReleaseVersion = "0.5.0";
 
     /// <summary>The first page ported from <c>examples/gallery_more.c</c>; from here on every
     /// page draws inside its own id scope, as the C gallery's second half does.</summary>
@@ -36,7 +36,7 @@ internal sealed partial class GalleryApp : IDisposable
         "Developer tools", "More developer tools",
         "Actions", "Smart inputs", "Pickers", "Capture", "Disclosure", "Reader",
         "Data grid", "Code", "Social and media", "Planning", "More charts",
-        "Motion", "AI", "Audio", "Files", "Instruments",
+        "Motion", "AI", "Audio", "Files", "Instruments", "Creative controls", "Collaboration", "Voice",
     };
 
     internal static readonly string[] PageIcons =
@@ -47,7 +47,7 @@ internal sealed partial class GalleryApp : IDisposable
         Icons.Command, Icons.SquarePen, Icons.Calendar, Icons.Upload, Icons.Layers,
         Icons.FileText, Icons.Grid3x3, Icons.Code, Icons.MessageSquare, Icons.ListChecks,
         Icons.ChartPie, Icons.Activity, Icons.MessageSquare, Icons.AudioLines, Icons.Folder,
-        Icons.Activity,
+        Icons.Activity, Icons.SlidersHorizontal, Icons.Move, Icons.AudioLines,
     };
 
     private static readonly string[] AccentNames =

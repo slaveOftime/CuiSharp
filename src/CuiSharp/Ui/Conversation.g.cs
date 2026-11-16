@@ -38,7 +38,7 @@ public static unsafe class ConversationUiExtensions
             WidgetRecorder.Note(ui.Handle, "ChatDivider", label);
         }
 
-        /// <summary>bouncing dots</summary>
+        /// <summary>bouncing dots, still with reduced motion</summary>
         public void TypingIndicator(UiText name)
         {
             Native.TypingIndicator(ui.Handle, Utf8.Get(name));

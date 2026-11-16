@@ -226,4 +226,20 @@ public unsafe ref partial struct Ui
     /// <summary>Requests another frame; call only from the synchronous draw path.</summary>
     public void RequestRedraw() => Native.RequestRedraw(Handle);
     public bool NeedsRedraw => Native.NeedsRedraw(Handle) != 0;
+
+    /// <summary>
+    /// Puts text on the system clipboard, through the platform's clipboard hook, for a menu or a
+    /// status bar item that copies. Without a hook it does nothing.
+    /// </summary>
+    public void SetClipboard(UiText text) => Native.SetClipboardText(Handle, Utf8.Get(text));
+
+    /// <summary>
+    /// The system clipboard, or null when the platform has no clipboard hook. The text is copied out
+    /// of CUI's frame memory, so it stays valid after the frame.
+    /// </summary>
+    public string? GetClipboard()
+    {
+        nint text = Native.GetClipboardText(Handle);
+        return text == 0 ? null : System.Runtime.InteropServices.Marshal.PtrToStringUTF8(text);
+    }
 }

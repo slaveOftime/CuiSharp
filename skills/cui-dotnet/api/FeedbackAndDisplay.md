@@ -78,6 +78,22 @@ public void Skeleton(Size width, float height)
 
 cui_skeleton
 
+## `SkeletonGroup`
+
+```csharp
+public LayoutScope SkeletonGroup(SkeletonGroupOpts o = default)
+```
+
+Skeleton group: placeholders for content that is loading, built inside it with cui_skeleton (in rows and columns as the content will be), share one shine that passes over them together. With `dither` they are drawn in dots and a band of brighter dots travels over them, asking for 20 frames a second while on screen; reduced motion holds the band still. Groups nest.
+
+## `Spinner`
+
+```csharp
+public void Spinner(float size, SpinnerOpts o = default)
+```
+
+most styles are square; upload and download are 25/32 as wide as tall, transfer 50/32, bounce 40/28, scan 28/32
+
 ## `Spinner`
 
 ```csharp

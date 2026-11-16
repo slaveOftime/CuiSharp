@@ -26,6 +26,12 @@ Value types for the widgets that take an array of items.
 - `Required`: bool
 - `Description`: string?
 
+## `Aspect`
+
+- `W`: int
+- `H`: int
+- `Label`: string?
+
 ## `BlameCommit`
 
 - `Hash`: string?
@@ -269,11 +275,13 @@ Value types for the widgets that take an array of items.
 - `Tone`: Tone
 - `DependsOn`: int
 - `Milestone`: bool
+- `State`: GanttState
 
 ## `GaugeBand`
 
 - `To`: float
 - `Tone`: Tone
+- `Name`: string?
 
 ## `GradientResult`
 
@@ -378,6 +386,18 @@ Value types for the widgets that take an array of items.
 - `Clicked`: Key
 - `Conflicts`: int
 
+## `LiveUser`
+
+- `Name`: string?
+- `Color`: Color
+- `Tone`: Tone
+- `X`: float
+- `Y`: float
+- `Says`: string?
+- `Speaking`: bool
+- `Away`: bool
+- `Avatar`: ulong
+
 ## `LogLine`
 
 - `Offset`: uint
@@ -393,6 +413,13 @@ Value types for the widgets that take an array of items.
 - `TaskLine`: int
 - `TaskChecked`: bool
 - `Height`: float
+
+## `MeterPart`
+
+- `Name`: string?
+- `Value`: float
+- `Color`: Color
+- `Density`: float
 
 ## `Model`
 
@@ -550,6 +577,12 @@ Value types for the widgets that take an array of items.
 - `Valid`: bool
 - `Next`: long
 
+## `SelectionAction`
+
+- `Icon`: string?
+- `Label`: string?
+- `Tone`: Tone
+
 ## `Series`
 
 - `Name`: string?
@@ -630,11 +663,29 @@ Value types for the widgets that take an array of items.
 - `Duration`: float
 - `Message`: string?
 
+## `TextFormat`
+
+- `Color`: Tone
+- `Bold`: bool
+- `Underline`: bool
+- `Link`: bool
+- `Style`: int
+- `Size`: float
+- `Align`: FormatAlign
+- `List`: FormatList
+
 ## `TextMark`
 
 - `Start`: int
 - `End`: int
 - `Color`: int
+
+## `TextStyle`
+
+- `Name`: string?
+- `Size`: float
+- `PreviewSize`: float
+- `Font`: Font
 
 ## `TickerItem`
 
@@ -742,6 +793,14 @@ Value types for the widgets that take an array of items.
 - `Label`: string?
 - `Value`: float
 - `Color`: Color
+
+## `VoiceNoteState`
+
+- `Levels`: float[]?
+- `Position`: float
+- `Duration`: float
+- `Speed`: float
+- `Playing`: bool
 
 ## `WaterfallResult`
 

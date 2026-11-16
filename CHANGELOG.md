@@ -4,9 +4,43 @@ Every user-visible change, newest first. Pre-1.0 the minor number carries new su
 carries fixes. The section for a tag is what the GitHub release publishes, so the two cannot say
 different things.
 
-## [Unreleased]
+## [0.5.0] — unreleased
 
 ### Added
+
+- **CUI is now at `6e6b353`, 148 commits past 1.4.0**: 40 new functions, 36 new structs, and two new
+  header sections (Voice, Creative controls). Every one has a decided status in
+  `bindings/coverage.txt`: 532 functions, 0 pending.
+- **The creative controls** (gallery page *Creative controls*): `ui.StatusTag` with the eight states,
+  `ui.RatioSlider`, `ui.GradientSlider` (hue, white balance, opacity, and a `ref Color` under the
+  thumb), `ui.StepSlider`, `ui.PaletteStrip`, `ui.AspectPicker`, `ui.OptionAction`, `ui.SeedField`
+  and `ui.PatternMeter`. `ui.SkeletonGroup` takes a body, `ui.Veil` opens and closes around one.
+- **Live collaboration** (gallery page *Collaboration*): `ui.PresencePill`, `ui.LiveCursors`,
+  `ui.SelectionRing`, `ui.SelectionBar`, `ui.ResultCard`, `ui.CanvasControls` and `ui.FormatBar`,
+  built on `LiveUser`, `SelectionAction`, `NodeView` and `TextFormat`.
+- **Voice** (gallery page *Voice*): `ui.VoiceWave` (with `ref float progress` for a clip you can
+  seek), `ui.VoiceNote` over a `VoiceNoteState`, `ui.VoiceSession`, `ui.TypingIndicator`,
+  `ui.StatusSpinner`, and `CuiVoice.Resample(levels, columns)` for keeping a short waveform without
+  a frame. `CuiVoice.Silent` is CUI's "no audio at all" level.
+- **`ui.SetClipboard(text)` and `ui.GetClipboard()`** wrap the platform clipboard CUI added: the
+  text is copied out of frame memory, so it stays valid after the frame.
+- **Seven new data records**: `Aspect`, `MeterPart`, `SelectionAction`, `LiveUser`, `TextStyle`,
+  `TextFormat` and `VoiceNoteState`. A widget that writes its state back takes that record `ref`.
+
+### Changed
+
+- **`ui.Treemap` takes `ref int selected`**, so a chart can keep which tile a click picked. The
+  overload without it passes null, which is what a display-only treemap wants, so existing calls
+  compile unchanged. `ui.Sankey` takes `Color[]? nodeColors`, one per node.
+- **`ui.CanvasControls`, `ui.PaletteStrip` and `ui.SelectionBar` are hand-written.** Each carries a
+  pointer per item, or two arrays edited in place and counted once: `CanvasToggle.On`,
+  `PaletteStrip`'s colors and lock flags, and the selection flags native clears. The wrapper owns
+  those flags for the call and copies them back, which a generated record cannot do.
+- **`cui_spinner` became `cui_spinner_ex`**: `ui.Spinner(size)` still compiles, and the style is a
+  `SpinnerStyle` option. `GanttTask` gained `State`, `GaugeBand` gained `Name`.
+- **A length that is one of the widget's own parameters is checked before the call**, not derived:
+  `ToolbarRadio`'s labels, `StepSlider`'s stop names, the voice owners and the sankey node colors
+  throw rather than let native read past a short span.
 
 - **`dotnet cui session --script <file>`** names the command file instead of relying on `<` input
   redirection, which Windows PowerShell does not have. Stdin still works in a POSIX shell.

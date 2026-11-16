@@ -61,7 +61,7 @@ public static unsafe class SelectionControlsUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_range_slider</summary>
+        /// <summary>Range slider with two non-crossing thumbs. Tab focuses the range, Space selects the other thumb, and the slider keys adjust the focused thumb.</summary>
         public bool RangeSlider(UiText label, ref float lo, ref float hi, float min, float max)
         {
             var __result = Native.RangeSlider(ui.Handle, Utf8.Get(label), ref lo, ref hi, min, max);

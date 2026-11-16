@@ -120,6 +120,9 @@ internal sealed partial class GalleryApp
             case 25: PageAi(ui); break;
             case 26: PageAudio(ui); break;
             case 28: PageInstruments(ui); break;
+            case 29: PageCreativeControls(ui); break;
+            case 30: PageCollaboration(ui); break;
+            case 31: PageVoice(ui); break;
             default: PageFiles(ui); break;
         }
     }

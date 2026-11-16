@@ -9,6 +9,319 @@ using CuiSharp.Interop;
 
 namespace CuiSharp;
 
+/// <summary>Voice note: a recorded message in a bubble, with play and pause, its voice waveform as the seek bar (click or drag; the arrow keys step), the time played and the length, and a speed chip that cycles 1x, 1.5x and 2x. It plays nothing itself: you play the audio and pass the position on every frame. Returns CUI_PLAYER_TOGGLE, CUI_PLAYER_SEEK and CUI_PLAYER_SPEED. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct VoiceNoteState
+{
+    /// <summary>the clip&apos;s loudness, 0..1, oldest first (resampled to fit)</summary>
+    public float[]? Levels;
+    /// <summary>seconds played; written when the user seeks</summary>
+    public float Position;
+    /// <summary>length of the clip in seconds</summary>
+    public float Duration;
+    /// <summary>playback rate, 1, 1.5 or 2 (0 reads as 1); the chip moves it to the next</summary>
+    public float Speed;
+    /// <summary>shows pause instead of play; the play button flips it</summary>
+    public bool Playing;
+
+    public VoiceNoteState(float[]? Levels, float Position = default, float Duration = default, float Speed = default, bool Playing = default) { this.Levels = Levels; this.Position = Position; this.Duration = Duration; this.Speed = Speed; this.Playing = Playing; }
+
+    internal readonly NativeVoiceNote ToNative() => new()
+    {
+        Levels = UiMarshal.Values<float>(Levels),
+        Count = Levels?.Length ?? 0,
+        Position = Position,
+        Duration = Duration,
+        Speed = Speed,
+        Playing = (byte)(Playing ? 1 : 0),
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(VoiceNoteState[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeVoiceNote>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static VoiceNoteState FromNative(NativeVoiceNote n) => new()
+    {
+        Levels = null,
+        Position = n.Position,
+        Duration = n.Duration,
+        Speed = n.Speed,
+        Playing = n.Playing != 0,
+    };
+}
+
+/// <summary>Live cursors: other people&apos;s pointers over the previous component (a canvas, a document, a node editor), each an arrow in their color with a name flag and an optional chat bubble. You pass where each pointer is whenever it changes; the cursors glide there, at the same speed at any frame rate. Positions are points from the component&apos;s top-left corner, or canvas points under `view` (the node editor&apos;s pan and zoom). Cursors only draw: they take no input and no focus. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct LiveUser
+{
+    /// <summary>on the flag, and the identity that keeps a cursor gliding: keep it stable</summary>
+    public string? Name;
+    /// <summary>the cursor, flag and avatar; unset: `tone`</summary>
+    public Color Color;
+    /// <summary>the color as a tone of the theme when `color` is unset; 0: a tone chosen from the name</summary>
+    public Tone Tone;
+    /// <summary>where the pointer is</summary>
+    public float X;
+    /// <summary>where the pointer is</summary>
+    public float Y;
+    /// <summary>a chat bubble under the flag; `NULL` for none</summary>
+    public string? Says;
+    /// <summary>presence pill: a ring and moving level bars on this person</summary>
+    public bool Speaking;
+    /// <summary>the pointer is hidden (it left the canvas); still in the presence pill</summary>
+    public bool Away;
+    /// <summary>presence pill: a picture instead of the initials</summary>
+    public ulong Avatar;
+
+    public LiveUser(string? Name, Color Color = default, Tone Tone = default, float X = default, float Y = default, string? Says = null, bool Speaking = default, bool Away = default, ulong Avatar = default) { this.Name = Name; this.Color = Color; this.Tone = Tone; this.X = X; this.Y = Y; this.Says = Says; this.Speaking = Speaking; this.Away = Away; this.Avatar = Avatar; }
+
+    internal readonly NativeLiveUser ToNative() => new()
+    {
+        Name = Utf8.Get(Name),
+        Color = UiMarshal.ToNative(Color),
+        Tone = Tone,
+        X = X,
+        Y = Y,
+        Says = Utf8.Get(Says),
+        Speaking = (byte)(Speaking ? 1 : 0),
+        Away = (byte)(Away ? 1 : 0),
+        Avatar = (nuint)(Avatar),
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(LiveUser[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeLiveUser>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static LiveUser FromNative(NativeLiveUser n) => new()
+    {
+        Name = Marshal.PtrToStringUTF8(n.Name),
+        Color = UiMarshal.FromNative(n.Color),
+        Tone = n.Tone,
+        X = n.X,
+        Y = n.Y,
+        Says = Marshal.PtrToStringUTF8(n.Says),
+        Speaking = n.Speaking != 0,
+        Away = n.Away != 0,
+        Avatar = n.Avatar,
+    };
+}
+
+/// <summary>Selection bar: a floating bar that slides up under the previous component (a list, a table, a grid) while something in it is selected: &quot;3 selected&quot; with a clear button, then labeled actions. Esc clears the selection too. Give it the count, or your array of flags in `selected` and it counts and clears them itself. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct SelectionAction
+{
+    /// <summary>const char * icon</summary>
+    public string? Icon;
+    /// <summary>const char * label</summary>
+    public string? Label;
+    /// <summary>CUI_TONE_DANGER for a destructive action</summary>
+    public Tone Tone;
+
+    public SelectionAction(string? Icon, string? Label = null, Tone Tone = default) { this.Icon = Icon; this.Label = Label; this.Tone = Tone; }
+
+    internal readonly NativeSelectionAction ToNative() => new()
+    {
+        Icon = Utf8.Get(Icon),
+        Label = Utf8.Get(Label),
+        Tone = Tone,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(SelectionAction[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeSelectionAction>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static SelectionAction FromNative(NativeSelectionAction n) => new()
+    {
+        Icon = Marshal.PtrToStringUTF8(n.Icon),
+        Label = Marshal.PtrToStringUTF8(n.Label),
+        Tone = n.Tone,
+    };
+}
+
+/// <summary>Pattern meter: a stacked usage bar (storage, budgets, quotas) whose parts differ in color and in the density of their dots, so it still reads in grayscale, in print and without telling hues apart. One dot of space parts the parts, and the rest of `total` is free space in the track color. Hovering a part, or its legend entry, steps the others back and shows its name, value and share above the bar; the keyboard does the same with Left and Right. Returns the part shown, or -1. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct MeterPart
+{
+    /// <summary>in the legend and the readout</summary>
+    public string? Name;
+    /// <summary>in the meter&apos;s units</summary>
+    public float Value;
+    /// <summary>default: the series palette, in order</summary>
+    public Color Color;
+    /// <summary>share of dots lit, 0..1; 0 takes the next of 1, 0.66, 0.42, 0.24, 0.14, 0.08</summary>
+    public float Density;
+
+    public MeterPart(string? Name, float Value = default, Color Color = default, float Density = default) { this.Name = Name; this.Value = Value; this.Color = Color; this.Density = Density; }
+
+    internal readonly NativeMeterPart ToNative() => new()
+    {
+        Name = Utf8.Get(Name),
+        Value = Value,
+        Color = UiMarshal.ToNative(Color),
+        Density = Density,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(MeterPart[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeMeterPart>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static MeterPart FromNative(NativeMeterPart n) => new()
+    {
+        Name = Marshal.PtrToStringUTF8(n.Name),
+        Value = n.Value,
+        Color = UiMarshal.FromNative(n.Color),
+        Density = n.Density,
+    };
+}
+
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct TextFormat
+{
+    /// <summary>the text color, as a tone so it follows the theme; CUI_TONE_NEUTRAL is the text color</summary>
+    public Tone Color;
+    /// <summary>_Bool bold</summary>
+    public bool Bold;
+    /// <summary>_Bool underline</summary>
+    public bool Underline;
+    /// <summary>the selection is a link: the link button shows pressed</summary>
+    public bool Link;
+    /// <summary>index into the styles (default: 0 Header, 1 Title, 2 Subtitle, 3 Normal text)</summary>
+    public int Style;
+    /// <summary>the size readout, in your units; set from the style when the style changes</summary>
+    public float Size;
+    /// <summary>cui_format_align align</summary>
+    public FormatAlign Align;
+    /// <summary>cui_format_list list</summary>
+    public FormatList List;
+
+    public TextFormat(Tone Color, bool Bold = default, bool Underline = default, bool Link = default, int Style = default, float Size = default, FormatAlign Align = default, FormatList List = default) { this.Color = Color; this.Bold = Bold; this.Underline = Underline; this.Link = Link; this.Style = Style; this.Size = Size; this.Align = Align; this.List = List; }
+
+    internal readonly NativeTextFormat ToNative() => new()
+    {
+        Color = Color,
+        Bold = (byte)(Bold ? 1 : 0),
+        Underline = (byte)(Underline ? 1 : 0),
+        Link = (byte)(Link ? 1 : 0),
+        Style = Style,
+        Size = Size,
+        Align = Align,
+        List = List,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(TextFormat[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeTextFormat>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static TextFormat FromNative(NativeTextFormat n) => new()
+    {
+        Color = n.Color,
+        Bold = n.Bold != 0,
+        Underline = n.Underline != 0,
+        Link = n.Link != 0,
+        Style = n.Style,
+        Size = n.Size,
+        Align = n.Align,
+        List = n.List,
+    };
+}
+
+/// <summary>One text style of the style menu. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct TextStyle
+{
+    /// <summary>&quot;Header&quot;</summary>
+    public string? Name;
+    /// <summary>the size it sets in your document, shown in the readout, e.g. 44</summary>
+    public float Size;
+    /// <summary>the size of its name in the menu, in points</summary>
+    public float PreviewSize;
+    /// <summary>the font of its name in the menu</summary>
+    public Font Font;
+
+    public TextStyle(string? Name, float Size = default, float PreviewSize = default, Font Font = default) { this.Name = Name; this.Size = Size; this.PreviewSize = PreviewSize; this.Font = Font; }
+
+    internal readonly NativeTextStyle ToNative() => new()
+    {
+        Name = Utf8.Get(Name),
+        Size = Size,
+        PreviewSize = PreviewSize,
+        Font = Font,
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(TextStyle[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeTextStyle>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static TextStyle FromNative(NativeTextStyle n) => new()
+    {
+        Name = Marshal.PtrToStringUTF8(n.Name),
+        Size = n.Size,
+        PreviewSize = n.PreviewSize,
+        Font = n.Font,
+    };
+}
+
+/// <summary>Aspect ratio picker: each choice drawn as a rectangle of its own proportions with its ratio under it, and an optional dashed &quot;Custom&quot;. The value at the right of the label is the size in pixels. Tab reaches the choices, Left and Right move between them. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct Aspect
+{
+    /// <summary>label NULL shows &quot;w:h&quot;</summary>
+    public int W;
+    /// <summary>label NULL shows &quot;w:h&quot;</summary>
+    public int H;
+    /// <summary>label NULL shows &quot;w:h&quot;</summary>
+    public string? Label;
+
+    public Aspect(int W, int H = default, string? Label = null) { this.W = W; this.H = H; this.Label = Label; }
+
+    internal readonly NativeAspect ToNative() => new()
+    {
+        W = W,
+        H = H,
+        Label = Utf8.Get(Label),
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(Aspect[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeAspect>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static Aspect FromNative(NativeAspect n) => new()
+    {
+        W = n.W,
+        H = n.H,
+        Label = Marshal.PtrToStringUTF8(n.Label),
+    };
+}
+
 /// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct EventTrackResult
 {
@@ -56,7 +369,7 @@ public unsafe partial struct EventTrackResult
 /// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct DotChartResult
 {
-    /// <summary>the sample under the pointer or the keyboard cursor, or -1</summary>
+    /// <summary>pointer or keyboard sample, middle on first keyboard activation, else -1</summary>
     public int Hovered;
     /// <summary>that sample&apos;s x, in x units</summary>
     public double X;
@@ -538,7 +851,7 @@ public unsafe partial struct TraceResult
 {
     /// <summary>`*selected` changed this frame (click or keys)</summary>
     public bool SelectionChanged;
-    /// <summary>the visible time range or the scroll in `*view` changed (zoom, pan, fit)</summary>
+    /// <summary>time range, scroll position, or measurement in `*view` changed</summary>
     public bool ViewChanged;
     /// <summary>span under the pointer, or -1</summary>
     public int Hovered;
@@ -2085,20 +2398,23 @@ public unsafe partial struct Candle
     };
 }
 
-/// <summary>Radial gauge: one value on a dial with colored bands, labelled ticks, a needle and a target marker, for dashboards (speed, load, temperature, a score against a goal). The needle springs to new values. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Radial gauge: one value as a large number on an arc, for dashboards (load, speed, temperature, a score against a goal). Three styles: CUI_GAUGE_SEGMENTS a ring of short segments, lit in each band&apos;s tone up to the value, with the current band&apos;s name as a chip under the label CUI_GAUGE_ARC a track and a value arc with round caps, min and max at the ends, and a marker at `target` CUI_GAUGE_RING a slim full ring from the top, with `detail` under it CUI_GAUGE_AUTO (the default) picks the segments when `bands` are given and the arc otherwise. The arc fills to new values with a spring. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct GaugeBand
 {
-    /// <summary>from the band before (or min) up to `to`</summary>
+    /// <summary>the band runs from the band before (or min) up to here</summary>
     public float To;
-    /// <summary>from the band before (or min) up to `to`</summary>
+    /// <summary>its color</summary>
     public Tone Tone;
+    /// <summary>shown as a chip while the value is in this band (segments style); `NULL` for none</summary>
+    public string? Name;
 
-    public GaugeBand(float To, Tone Tone = default) { this.To = To; this.Tone = Tone; }
+    public GaugeBand(float To, Tone Tone = default, string? Name = null) { this.To = To; this.Tone = Tone; this.Name = Name; }
 
     internal readonly NativeGaugeBand ToNative() => new()
     {
         To = To,
         Tone = Tone,
+        Name = Utf8.Get(Name),
     };
 
     /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
@@ -2114,6 +2430,7 @@ public unsafe partial struct GaugeBand
     {
         To = n.To,
         Tone = n.Tone,
+        Name = Marshal.PtrToStringUTF8(n.Name),
     };
 }
 
@@ -3342,7 +3659,7 @@ public unsafe partial struct PathBarResult
     };
 }
 
-/// <summary>Sankey: flows between nodes; columns follow the links from the sources. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Sankey: flows between nodes; columns follow the links from the sources. Slim nodes in the colors you give them, flows shaded from source to target color, and hovering a node or a flow lights its whole path upstream and downstream. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct SankeyLink
 {
     /// <summary>index of the node the flow leaves</summary>
@@ -3470,7 +3787,7 @@ public unsafe partial struct DiffRow
     };
 }
 
-/// <summary>Gantt chart: a task list beside a timeline of bars. Drag a bar to move it, its ends to resize it. Dependencies are drawn as elbow arrows. Returns the index of a clicked task, or -1. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct GanttTask
 {
     /// <summary>shown in the task list and, when it fits, on the bar</summary>
@@ -3481,16 +3798,18 @@ public unsafe partial struct GanttTask
     public int Start;
     /// <summary>day the bar ends, counted from `origin` (it is end - start days long); dragging changes it</summary>
     public int End;
-    /// <summary>0..1: the part of the bar drawn darker, as done</summary>
+    /// <summary>0..1: the part of the bar filled in, as done, with the percentage at its end</summary>
     public float Progress;
-    /// <summary>cui_tone tone</summary>
+    /// <summary>overrides the state&apos;s color when set</summary>
     public Tone Tone;
-    /// <summary>index of the task this one waits for: an arrow runs from its end to this start. -1 for none</summary>
+    /// <summary>index of the task this one waits for: a curve runs from its end to this start. -1 for none</summary>
     public int DependsOn;
-    /// <summary>a diamond at `start` instead of a bar; it cannot be resized</summary>
+    /// <summary>an outlined diamond at `start`, labelled with its name and date, instead of a bar; it cannot be resized</summary>
     public bool Milestone;
+    /// <summary>done, active or planned; CUI_GANTT_AUTO works it out from `progress` and `today`</summary>
+    public GanttState State;
 
-    public GanttTask(string? Name, string? Owner = null, int Start = default, int End = default, float Progress = default, Tone Tone = default, int DependsOn = default, bool Milestone = default) { this.Name = Name; this.Owner = Owner; this.Start = Start; this.End = End; this.Progress = Progress; this.Tone = Tone; this.DependsOn = DependsOn; this.Milestone = Milestone; }
+    public GanttTask(string? Name, string? Owner = null, int Start = default, int End = default, float Progress = default, Tone Tone = default, int DependsOn = default, bool Milestone = default, GanttState State = default) { this.Name = Name; this.Owner = Owner; this.Start = Start; this.End = End; this.Progress = Progress; this.Tone = Tone; this.DependsOn = DependsOn; this.Milestone = Milestone; this.State = State; }
 
     internal readonly NativeGanttTask ToNative() => new()
     {
@@ -3502,6 +3821,7 @@ public unsafe partial struct GanttTask
         Tone = Tone,
         DependsOn = DependsOn,
         Milestone = (byte)(Milestone ? 1 : 0),
+        State = State,
     };
 
     /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
@@ -3523,6 +3843,7 @@ public unsafe partial struct GanttTask
         Tone = n.Tone,
         DependsOn = n.DependsOn,
         Milestone = n.Milestone != 0,
+        State = n.State,
     };
 }
 
@@ -3762,7 +4083,7 @@ public unsafe partial struct Source
     };
 }
 
-/// <summary>Agent plan: steps with their status on a connected rail, and progress. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Agent plan: steps with their status on a connected rail, and progress. Reduced motion holds the running glyph still, including in tool calls. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct PlanStep
 {
     /// <summary>the step&apos;s text; shimmers while the step is running</summary>
@@ -3942,7 +4263,7 @@ public unsafe partial struct TabBarItem
     };
 }
 
-/// <summary>Treemap: rectangles with areas proportional to their values. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Treemap: rectangles with areas proportional to their values, on neutral tiles graded by size, each with its label, value and share. The accent marks only the hovered or selected tile; an item&apos;s own `color` fills its tile instead. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct VizItem
 {
     /// <summary>const char * label</summary>
@@ -4010,7 +4331,7 @@ public unsafe partial struct TableSort
     };
 }
 
-/// <summary>Table Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>Table: sortable headers and selectable rows show keyboard focus. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct TableColumn
 {
     /// <summary>text of the column&apos;s header</summary>

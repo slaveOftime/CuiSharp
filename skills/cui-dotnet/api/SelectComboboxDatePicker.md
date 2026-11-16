@@ -28,7 +28,7 @@ cui_calendar
 public bool ColorPicker(UiText id, ref Color value)
 ```
 
-cui_color_picker
+Draw the color trigger and reconcile its HSV controls with the caller's RGB.
 
 ## `DatePicker`
 
@@ -36,7 +36,7 @@ cui_color_picker
 public bool DatePicker(UiText id, ref Date value, DateOpts o = default)
 ```
 
-cui_date_picker_ex
+Draw the date trigger with a focus ring when reached by keyboard.
 
 ## `Select`
 
@@ -44,4 +44,4 @@ cui_date_picker_ex
 public bool Select(UiText id, ReadOnlySpan<string> items, ref int index, SelectOpts o = default)
 ```
 
-cui_select_ex
+Enter opens the list or picks the highlighted item. A searchable select returns focus to its trigger when its list closes.

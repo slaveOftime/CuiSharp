@@ -13,7 +13,7 @@ public static unsafe class SelectComboboxDatePickerUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>cui_select_ex</summary>
+        /// <summary>Enter opens the list or picks the highlighted item. A searchable select returns focus to its trigger when its list closes.</summary>
         public bool Select(UiText id, ReadOnlySpan<string> items, ref int index, SelectOpts o = default)
         {
             if (o.Icons is { } __icons && __icons.Length < items.Length) throw new ArgumentException("Icons must contain at least one entry per item.", nameof(o));
@@ -33,7 +33,7 @@ public static unsafe class SelectComboboxDatePickerUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_date_picker_ex</summary>
+        /// <summary>Draw the date trigger with a focus ring when reached by keyboard.</summary>
         public bool DatePicker(UiText id, ref Date value, DateOpts o = default)
         {
             var __value = UiMarshal.ToNative(value);
@@ -44,7 +44,7 @@ public static unsafe class SelectComboboxDatePickerUiExtensions
             return __result != 0;
         }
 
-        /// <summary>cui_color_picker</summary>
+        /// <summary>Draw the color trigger and reconcile its HSV controls with the caller&apos;s RGB.</summary>
         public bool ColorPicker(UiText id, ref Color value)
         {
             var __value = UiMarshal.ToNative(value);

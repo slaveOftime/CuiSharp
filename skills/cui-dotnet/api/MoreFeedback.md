@@ -37,3 +37,11 @@ public void Countdown(UiText id, double secondsLeft, CountdownOpts o = default)
 ```
 
 Countdown: days, hours, minutes and seconds as tiles whose digits roll.
+
+## `Veil`
+
+```csharp
+public OpenScope Veil(UiText id, ref bool revealed, VeilOpts o = default)
+```
+
+Draw the cover while leaving hit testing to other widgets when it is disabled.

@@ -100,7 +100,7 @@ cui_popover_toggle
 public void Tooltip(UiText text)
 ```
 
-Tooltip for the previous component, shown after a short hover delay.
+Tooltip for the previous component. The first hover waits for the delay, measured in elapsed time even when the app sleeps between frames.
 
 ## `Tour`
 

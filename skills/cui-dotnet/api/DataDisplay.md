@@ -62,6 +62,14 @@ public bool ListItem(UiText title, ListItemOpts o = default)
 
 List item: a selectable row with optional icon, subtitle and trailing text.
 
+## `PatternMeter`
+
+```csharp
+public int PatternMeter(UiText id, ReadOnlySpan<MeterPart> parts, PatternMeterOpts o = default)
+```
+
+Pattern meter: a stacked usage bar (storage, budgets, quotas) whose parts differ in color and in the density of their dots, so it still reads in grayscale, in print and without telling hues apart. One dot of space parts the parts, and the rest of `total` is free space in the track color. Hovering a part, or its legend entry, steps the others back and shows its name, value and share above the bar; the keyboard does the same with Left and Right. Returns the part shown, or -1.
+
 ## `Sparkline`
 
 ```csharp
@@ -76,7 +84,7 @@ cui_sparkline
 public OpenScope Table(UiText id, ReadOnlySpan<TableColumn> columns, ref TableSort sort, TableOpts o = default)
 ```
 
-cui_table_begin_ex
+Begin a table with keyboard focus indicators for its sortable headers.
 
 ## `TableCell`
 
@@ -124,4 +132,4 @@ the node created by the last cui_tree_begin was clicked
 public LayoutScope VirtualList(UiText id, int count, float rowHeight, Size height, out int first, out int last)
 ```
 
-Virtual list: only the visible rows are built, so lists with a million rows stay fast. Fills first/last with the visible range.
+Virtual list: only the visible rows are built, so lists with a million rows stay fast. Fills first/last with the visible range for this row count.

@@ -52,7 +52,7 @@ cui_radio_group
 public bool RangeSlider(UiText label, ref float lo, ref float hi, float min, float max)
 ```
 
-cui_range_slider
+Range slider with two non-crossing thumbs. Tab focuses the range, Space selects the other thumb, and the slider keys adjust the focused thumb.
 
 ## `Rating`
 

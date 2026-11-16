@@ -30,6 +30,30 @@ public EventTrackResult EventTrack(UiText id, Span<double> times, ref int count,
 
 Event track: moments on a time axis, as dots you drag along it. A click on an empty spot adds an event there and a double-click on one removes it. You own the array: the track keeps it sorted, edits it in place and never grows it past `capacity`.
 
+## `FormatBar`
+
+```csharp
+public int FormatBar(UiText id, ref TextFormat format, FormatBarOpts o = default)
+```
+
+Returns CUI_FORMAT_* flags.
+
+## `LiveCursors`
+
+```csharp
+public void LiveCursors(UiText id, ReadOnlySpan<LiveUser> users, ref NodeView nodeview, LiveCursorsOpts o = default)
+```
+
+cui_live_cursors_ex
+
+## `PresencePill`
+
+```csharp
+public void PresencePill(UiText id, ReadOnlySpan<LiveUser> users, PresencePillOpts o = default)
+```
+
+Presence pill: who is here, as overlapping avatars in their colors. Whoever is speaking gets a ring, and the pill shows moving level bars and their name.
+
 ## `Readout`
 
 ```csharp
@@ -37,3 +61,19 @@ public void Readout(UiText label, UiText value, ReadoutOpts o = default)
 ```
 
 Readout: one figure as an instrument shows it. A small label, the value in the monospaced font with its unit, and a muted line of context under it.
+
+## `ResultCard`
+
+```csharp
+public bool ResultCard(UiText id, ulong image, UiText title, ResultCardOpts o = default)
+```
+
+Result card: a picture with rounded corners, an optional status chip in the top corner, and a title and caption on a soft fade at the bottom, for a render, an export or a generated image. Put its actions under it in a floating toolbar (cui_toolbar with CUI_TOOLBAR_FLOATING, cycle pickers for choices like 2x or PNG). The picture fills the card and is cropped to it. The card is focusable; a click, Enter or Space returns true (open it large).
+
+## `SelectionRing`
+
+```csharp
+public void SelectionRing(Color color, SelectionRingOpts o = default)
+```
+
+Selection ring: a ring in someone's color around the previous component, for "this item is selected by Kate", with an optional name flag on its corner.

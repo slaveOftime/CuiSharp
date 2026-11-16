@@ -18,12 +18,26 @@ internal static class CuiFlags
     internal const int CUI_TREE_SELECTED = 4;
     internal const int CUI_TREE_LOADING = 8;
     internal const int CUI_DIFF_IGNORE_EOL = 1;
+    internal const int CUI_VOICE_SESSION_MUTE = 1;
+    internal const int CUI_VOICE_SESSION_END = 2;
+    internal const int CUI_WELL_CHANGED = 1;
+    internal const int CUI_WELL_ACTION = 2;
     internal const int CUI_REGEX_ICASE = 1;
     internal const int CUI_REGEX_MULTILINE = 2;
     internal const int CUI_REGEX_DOTALL = 4;
+    internal const int CUI_FORMAT_CHANGED = 1;
+    internal const int CUI_FORMAT_LINK = 2;
+    internal const int CUI_FORMAT_DELETE = 4;
+    internal const int CUI_FORMAT_MORE = 8;
+    internal const int CUI_CANVAS_ZOOMED = 1;
+    internal const int CUI_CANVAS_FIT = 2;
+    internal const int CUI_CANVAS_TOGGLED = 4;
+    internal const int CUI_SELECTION_NONE = -1;
+    internal const int CUI_SELECTION_CLEARED = -2;
     internal const int CUI_SHADE_TEXT = 0;
     internal const int CUI_SHADE_RRECT = 1;
     internal const int CUI_SHADE_SHADOW = 2;
     internal const int CUI_SHADE_IMAGE = 3;
     internal const int CUI_SHADE_SOLID = 4;
+    internal const int CUI_SHADE_DITHER = 5;
 }

@@ -28,7 +28,7 @@ Inline edit: text that turns into a field in place. Click (or Enter when focused
 public bool MoneyInput(UiText id, ref double value, MoneyOpts o = default)
 ```
 
-Money field: shows the amount with thousands separators, edits as plain digits, keeps a fixed number of decimals.
+Edit an amount only if its grouped display can represent the result.
 
 ## `Scrub`
 
@@ -36,7 +36,7 @@ Money field: shows the amount with thousands separators, edits as plain digits, 
 public bool Scrub(UiText label, ref float value, float min, float max, ScrubOpts o = default)
 ```
 
-Scrub field: drag sideways anywhere on it to change the value (Shift for fine steps), or click to type a number. Arrow keys step when focused.
+Edit a bounded scrub value and accept only a complete, finite numeric draft.
 
 ## `ShortcutLabel`
 

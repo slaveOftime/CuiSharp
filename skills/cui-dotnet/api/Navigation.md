@@ -20,7 +20,7 @@ protected override void Draw(Ui ui)
 public int Breadcrumb(ReadOnlySpan<string> items)
 ```
 
-returns clicked index or -1
+Ancestor links, which show keyboard focus. Returns the clicked index or -1.
 
 ## `NavItem`
 
@@ -44,7 +44,7 @@ cui_nav_section
 public bool Pagination(UiText id, ref int page, int pageCount)
 ```
 
-page is 0 based
+Page buttons, which show keyboard focus; page is 0 based. The compact layout is chosen from the parent's inner width.
 
 ## `Stepper`
 
@@ -52,7 +52,7 @@ page is 0 based
 public void Stepper(ReadOnlySpan<string> steps, int current)
 ```
 
-cui_stepper
+Process steps; labels collapse to fit the width of their own row.
 
 ## `Tabs`
 

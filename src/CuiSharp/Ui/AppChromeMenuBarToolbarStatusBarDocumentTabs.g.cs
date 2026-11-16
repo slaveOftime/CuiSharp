@@ -37,7 +37,7 @@ public static unsafe class AppChromeMenuBarToolbarStatusBarDocumentTabsUiExtensi
             if (scope) body(ui);
         }
 
-        /// <summary>Toolbar: a row of compact icon buttons, toggles, separators and small text buttons. Icon only buttons show their tooltip as their name. Items that do not fit collapse, from the end, into a &quot;more&quot; menu; an item chosen there returns true on the next frame.</summary>
+        /// <summary>Toolbar: a row of compact icon buttons, toggles, separators and small text buttons. Icon only buttons show their tooltip as their name. Items that do not fit collapse, from the end, into a &quot;more&quot; menu; an item chosen there returns true on the next frame. Tab moves through the items.</summary>
         public LayoutScope Toolbar(UiText id, ToolbarOpts o = default)
         {
             var __opts = o.ToNative();
@@ -66,6 +66,52 @@ public static unsafe class AppChromeMenuBarToolbarStatusBarDocumentTabsUiExtensi
         public void ToolbarSpacer()
         {
             Native.ToolbarSpacer(ui.Handle);
+        }
+
+        /// <summary>A group of items: a raised well in the grouped style, set apart by separators in the others.</summary>
+        public LayoutScope ToolbarGroup()
+        {
+            Native.ToolbarGroupBegin(ui.Handle);
+            return new LayoutScope(ui.Handle, &Native.ToolbarGroupEnd, "ToolbarGroup", null);
+        }
+
+        /// <summary>An inset set of icons of which one is on, like a segmented control. Left and Right move the choice. Returns true when *index changed. In the overflow menu each icon is an item named by its label.</summary>
+        public bool ToolbarRadio(UiText id, ReadOnlySpan<string> icons, ref int index, ToolbarRadioOpts o = default)
+        {
+            if (o.Labels is { } __labels && __labels.Length < icons.Length)
+                throw new ArgumentException($"Labels needs at least {icons.Length} entries.", nameof(o));
+            var __opts = o.ToNative();
+            var __result = Native.ToolbarRadio(ui.Handle, Utf8.Get(id), UiMarshal.Strings(icons), (int)(icons.Length), ref index, in __opts);
+            WidgetRecorder.NoteValue(ui.Handle, "ToolbarRadio", id, (double)index);
+            return __result != 0;
+        }
+
+        /// <summary>The main action at the end of a grouped toolbar: a larger button filled with the text color.</summary>
+        public bool ToolbarPrimary(UiText icon, ref bool toggle, ToolOpts o = default)
+        {
+            byte __toggle = (byte)(toggle ? 1 : 0);
+            var __opts = o.ToNative((nint)(&__toggle));
+            var __result = Native.ToolbarPrimary(ui.Handle, Utf8.Get(icon), in __opts);
+            toggle = __toggle != 0;
+            WidgetRecorder.NoteValue(ui.Handle, "ToolbarPrimary", icon, toggle);
+            return __result != 0;
+        }
+
+        /// <summary>A small picker that steps through its choices on each click (&quot;1x&quot;, &quot;2x&quot;, &quot;4x&quot;). Returns true when *index changed.</summary>
+        public bool ToolbarCycle(UiText id, ReadOnlySpan<string> items, ref int index, ref bool toggle, ToolOpts o = default)
+        {
+            byte __toggle = (byte)(toggle ? 1 : 0);
+            var __opts = o.ToNative((nint)(&__toggle));
+            var __result = Native.ToolbarCycle(ui.Handle, Utf8.Get(id), UiMarshal.Strings(items), (int)(items.Length), ref index, in __opts);
+            toggle = __toggle != 0;
+            WidgetRecorder.NoteValue(ui.Handle, "ToolbarCycle", id, (double)index);
+            return __result != 0;
+        }
+
+        /// <summary>A small triangle in the corner of the previous component (at the end side) that says it opens a flyout or a menu. Any button can take it.</summary>
+        public void FlyoutMark()
+        {
+            Native.FlyoutMark(ui.Handle);
         }
 
         /// <summary>Status bar: a thin bar along the bottom of a window, with a hairline on top and no fill of its own (put it in a box with the background you want). Items go left to right; cui_status_bar_spacer sends the rest to the right edge.</summary>

@@ -13,7 +13,7 @@ public static unsafe class DisclosureUiExtensions
 {
     extension(Ui ui)
     {
-        /// <summary>Hover card: rich content that appears when the pointer rests on the previous component, and stays while the pointer is over either.</summary>
+        /// <summary>Keep a dismissed card closed until the pointer leaves its anchor.</summary>
         public OpenScope HoverCard(UiText id, HoverCardOpts o = default)
         {
             var __opts = o.ToNative();
@@ -29,7 +29,7 @@ public static unsafe class DisclosureUiExtensions
             if (scope) body(ui);
         }
 
-        /// <summary>Confirm popover: a small question anchored to the previous component. Open it with cui_popover_open(ui, id). Returns true when confirmed.</summary>
+        /// <summary>Require a fresh Enter when an activation opens the question in this frame.</summary>
         public bool ConfirmPopover(UiText id, ConfirmPopoverOpts o = default)
         {
             var __opts = o.ToNative();
@@ -38,7 +38,7 @@ public static unsafe class DisclosureUiExtensions
             return __result != 0;
         }
 
-        /// <summary>Text clamped to a few lines with a fade and Show more / Show less.</summary>
+        /// <summary>Draw expandable text with a toggle that keeps its identity when its label changes.</summary>
         public bool ExpandableText(UiText id, UiText text, ExpandableTextOpts o = default)
         {
             var __opts = o.ToNative();

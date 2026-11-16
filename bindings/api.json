@@ -2686,7 +2686,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": "shows dots instead of the text, with an eye button that reveals it"
+          "Doc": "shows dots instead of the text, with an eye button that reveals it (inactive when disabled)"
         },
         {
           "CName": "disabled",
@@ -3628,7 +3628,7 @@
     {
       "CName": "cui_menu_item_opts",
       "CsName": "NativeMenuItemOpts",
-      "Size": 32,
+      "Size": 40,
       "Helpers": [],
       "Fields": [
         {
@@ -3711,6 +3711,30 @@
             "Kind": "Bool"
           },
           "Doc": "a check mark at the right edge of the item"
+        },
+        {
+          "CName": "font",
+          "CsName": "Font",
+          "CsType": "Font",
+          "CType": "cui_font",
+          "Offset": 28,
+          "Type": {
+            "Spelling": "cui_font",
+            "Kind": "Int"
+          },
+          "Doc": "the label's font, default CUI_FONT_BODY: a style menu shows each style in its own"
+        },
+        {
+          "CName": "text_size",
+          "CsName": "TextSize",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "the label's size in points, default the body size; the item grows to fit it"
         }
       ],
       "Doc": ""
@@ -3784,6 +3808,30 @@
             "Kind": "Bool"
           },
           "Doc": "clicking outside or Esc does not close"
+        },
+        {
+          "CName": "draggable",
+          "CsName": "Draggable",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 22,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "the header moves the dialog; it stays inside the window"
+        },
+        {
+          "CName": "resizable",
+          "CsName": "Resizable",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 23,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "the edges and corners resize it, down to a minimum size; the content is clipped when it no longer fits"
         }
       ],
       "Doc": ""
@@ -4044,7 +4092,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "no value: a segment (or with `dither`, a soft band of dots) travels the track"
         },
         {
           "CName": "tone",
@@ -4068,7 +4116,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "points, default 6 (8 with `dither`)"
         },
         {
           "CName": "label",
@@ -4085,7 +4133,7 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "a row above the bar with this name"
         },
         {
           "CName": "show_value",
@@ -4097,7 +4145,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": ""
+          "Doc": "a whole percentage at the end of that row"
         },
         {
           "CName": "width",
@@ -4110,9 +4158,133 @@
             "Kind": "Record"
           },
           "Doc": ""
+        },
+        {
+          "CName": "dither",
+          "CsName": "Dither",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 36,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "drawn in dots: the fill dissolves over 60 points past its edge, and the pattern drifts forward while the bar is not full; reduced motion holds it still"
         }
       ],
       "Doc": ""
+    },
+    {
+      "CName": "cui_spinner_opts",
+      "CsName": "NativeSpinnerOpts",
+      "Size": 16,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "style",
+          "CsName": "Style",
+          "CsType": "SpinnerStyle",
+          "CType": "cui_spinner_style",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "cui_spinner_style",
+            "Kind": "Enum"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "color",
+          "CsName": "Color",
+          "CsType": "NativeColor",
+          "CType": "cui_color",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "cui_color",
+            "Kind": "Record"
+          },
+          "Doc": "default the secondary text color for the ring, the text color for dots"
+        },
+        {
+          "CName": "track",
+          "CsName": "Track",
+          "CsType": "NativeColor",
+          "CType": "cui_color",
+          "Offset": 12,
+          "Type": {
+            "Spelling": "cui_color",
+            "Kind": "Record"
+          },
+          "Doc": "the dots' base (a comet's ring, a dot matrix's dots), default `color` at 12%"
+        }
+      ],
+      "Doc": ""
+    },
+    {
+      "CName": "cui_skeleton_group_opts",
+      "CsName": "NativeSkeletonGroupOpts",
+      "Size": 20,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "dither",
+          "CsName": "Dither",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "in dots, with a band of brighter dots passing over them"
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "NativeSize",
+          "CType": "cui_size",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          },
+          "Doc": "default: fill"
+        },
+        {
+          "CName": "gap",
+          "CsName": "Gap",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "between what is built inside, default 8"
+        }
+      ],
+      "Doc": "Skeleton group: placeholders for content that is loading, built inside it with cui_skeleton (in rows and columns as the content will be), share one shine that passes over them together. With `dither` they are drawn in dots and a band of brighter dots travels over them, asking for 20 frames a second while on screen; reduced motion holds the band still. Groups nest."
     },
     {
       "CName": "cui_badge_opts",
@@ -4682,7 +4854,7 @@
           "Doc": ""
         }
       ],
-      "Doc": "Table"
+      "Doc": "Table: sortable headers and selectable rows show keyboard focus."
     },
     {
       "CName": "cui_table_sort",
@@ -5077,7 +5249,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": "bar chart"
+          "Doc": "bars stack in one column; lines stack on the series before them"
         },
         {
           "CName": "smooth",
@@ -5160,6 +5332,227 @@
             "Kind": "Int"
           },
           "Doc": "number of `annotations`"
+        },
+        {
+          "CName": "dither",
+          "CsName": "Dither",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 68,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "line chart: every series filled with dots that thin out from its line to the bottom of its band (implies `area`); with `stacked`, bands never mix colors"
+        }
+      ],
+      "Doc": ""
+    },
+    {
+      "CName": "cui_meter_part",
+      "CsName": "NativeMeterPart",
+      "Size": 24,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "name",
+          "CsName": "Name",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "in the legend and the readout"
+        },
+        {
+          "CName": "value",
+          "CsName": "Value",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "in the meter's units"
+        },
+        {
+          "CName": "color",
+          "CsName": "Color",
+          "CsType": "NativeColor",
+          "CType": "cui_color",
+          "Offset": 12,
+          "Type": {
+            "Spelling": "cui_color",
+            "Kind": "Record"
+          },
+          "Doc": "default: the series palette, in order"
+        },
+        {
+          "CName": "density",
+          "CsName": "Density",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "share of dots lit, 0..1; 0 takes the next of 1, 0.66, 0.42, 0.24, 0.14, 0.08"
+        }
+      ],
+      "Doc": "Pattern meter: a stacked usage bar (storage, budgets, quotas) whose parts differ in color and in the density of their dots, so it still reads in grayscale, in print and without telling hues apart. One dot of space parts the parts, and the rest of `total` is free space in the track color. Hovering a part, or its legend entry, steps the others back and shows its name, value and share above the bar; the keyboard does the same with Left and Right. Returns the part shown, or -1."
+    },
+    {
+      "CName": "cui_pattern_meter_opts",
+      "CsName": "NativePatternMeterOpts",
+      "Size": 56,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "total",
+          "CsName": "Total",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "the whole bar; 0 means the sum of the parts (no free space)"
+        },
+        {
+          "CName": "label",
+          "CsName": "Label",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "the title over the bar, e.g. \"Storage\""
+        },
+        {
+          "CName": "unit",
+          "CsName": "Unit",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "after every value, e.g. \"GB\""
+        },
+        {
+          "CName": "format",
+          "CsName": "Format",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "printf format of a value, default \"%g\""
+        },
+        {
+          "CName": "free_label",
+          "CsName": "FreeLabel",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "the legend entry of the free space, default \"Free\"; \"\" leaves it out"
+        },
+        {
+          "CName": "grayscale",
+          "CsName": "Grayscale",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 40,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "every part in the foreground color, told apart by density alone"
+        },
+        {
+          "CName": "no_legend",
+          "CsName": "NoLegend",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 41,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "height",
+          "CsName": "Height",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 44,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "points, default 18"
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "NativeSize",
+          "CType": "cui_size",
+          "Offset": 48,
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          },
+          "Doc": "default: fill"
         }
       ],
       "Doc": ""
@@ -6025,7 +6418,7 @@
           "Doc": ""
         }
       ],
-      "Doc": "Toggle group: a row of toggles (bold, italic...). values[i] is toggled when item i is clicked; with exclusive set exactly one stays on. Labels become tooltips when icon_only is set. Returns true when a value changed."
+      "Doc": "Toggle group: a row of toggles (bold, italic...). values[i] is toggled when item i is clicked; with exclusive set exactly one stays on. Labels become tooltips when icon_only is set. Left and Right move focus one item. Returns true when a value changed."
     },
     {
       "CName": "cui_confirm_opts",
@@ -6228,6 +6621,62 @@
         }
       ],
       "Doc": ""
+    },
+    {
+      "CName": "cui_status_spinner_opts",
+      "CsName": "NativeStatusSpinnerOpts",
+      "Size": 16,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "size",
+          "CsName": "Size",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "points, default 20"
+        },
+        {
+          "CName": "color",
+          "CsName": "Color",
+          "CsType": "NativeColor",
+          "CType": "cui_color",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "cui_color",
+            "Kind": "Record"
+          },
+          "Doc": "the ring while busy, default the text color"
+        },
+        {
+          "CName": "keep",
+          "CsName": "Keep",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 12,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "the check or cross stays instead of dissolving away"
+        }
+      ],
+      "Doc": "Status spinner: a dither ring while the status is busy that resolves when the work ends: it fills to a disc in the success color with a check, or the danger color with a cross, holds it for a moment and dissolves away. It keeps its space throughout. Returns true while it shows something, so an app can stop calling it after a result."
     },
     {
       "CName": "cui_reaction",
@@ -7807,7 +8256,7 @@
               "IsConst": true
             }
           },
-          "Doc": "\"c\", \"cpp\", \"js\", \"ts\", \"python\", \"rust\", \"go\", \"json\", \"shell\" or \"text\" (no colors); shown in the title bar"
+          "Doc": "\"c\", \"cpp\", \"js\", \"ts\", \"python\", \"rust\", \"go\", \"json\", \"shell\", \"sql\" or \"text\" (no colors); shown in the title bar"
         },
         {
           "CName": "title",
@@ -7899,7 +8348,7 @@
           "Doc": "no title bar, even with a lang"
         }
       ],
-      "Doc": "Code block with syntax highlighting (lang: \"c\", \"cpp\", \"js\", \"ts\", \"python\", \"rust\", \"go\", \"json\", \"shell\", or \"text\" for none), line numbers, a title bar and a copy button. Long lines scroll sideways."
+      "Doc": "Code block with syntax highlighting (lang: \"c\", \"cpp\", \"js\", \"ts\", \"python\", \"rust\", \"go\", \"json\", \"shell\", \"sql\", or \"text\" for none), line numbers, a title bar and a copy button. Long lines scroll sideways."
     },
     {
       "CName": "cui_json_opts",
@@ -8215,7 +8664,7 @@
               "IsConst": true
             }
           },
-          "Doc": "as cui_code_block: \"c\", \"cpp\", \"js\", \"ts\", \"python\", \"rust\", \"go\", \"json\", \"shell\"; \"text\" for none"
+          "Doc": "as cui_code_block: \"c\", \"cpp\", \"js\", \"ts\", \"python\", \"rust\", \"go\", \"json\", \"shell\", \"sql\"; \"text\" for none"
         },
         {
           "CName": "width",
@@ -9931,7 +10380,7 @@
             "Spelling": "cui_color",
             "Kind": "Record"
           },
-          "Doc": "hue of the scale, default the accent"
+          "Doc": "the top step, default the accent; the steps mix toward it from the empty surface"
         },
         {
           "CName": "format",
@@ -9963,7 +10412,7 @@
           "Doc": ""
         }
       ],
-      "Doc": "Heatmap: a rows x cols matrix (values[row * cols + col]) on one hue, light to dark, with a scale below."
+      "Doc": "Heatmap: a rows x cols matrix (values[row * cols + col]) in five steps from the empty surface to the accent, with the range and a Less / More key below."
     },
     {
       "CName": "cui_calendar_heatmap_opts",
@@ -10004,7 +10453,7 @@
             "Spelling": "cui_color",
             "Kind": "Record"
           },
-          "Doc": ""
+          "Doc": "the top step, default the accent"
         },
         {
           "CName": "format",
@@ -10090,12 +10539,12 @@
           "Doc": ""
         }
       ],
-      "Doc": "Treemap: rectangles with areas proportional to their values."
+      "Doc": "Treemap: rectangles with areas proportional to their values, on neutral tiles graded by size, each with its label, value and share. The accent marks only the hovered or selected tile; an item's own `color` fills its tile instead."
     },
     {
       "CName": "cui_treemap_opts",
       "CsName": "NativeTreemapOpts",
-      "Size": 24,
+      "Size": 32,
       "Helpers": [],
       "Fields": [
         {
@@ -10131,7 +10580,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": ""
+          "Doc": "default 300"
         },
         {
           "CName": "format",
@@ -10148,7 +10597,23 @@
               "IsConst": true
             }
           },
-          "Doc": ""
+          "Doc": "the values, e.g. \"%.0f KB\""
+        },
+        {
+          "CName": "selected",
+          "CsName": "Selected",
+          "CsType": "nint",
+          "CType": "int *",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "int *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "int",
+              "Kind": "Int"
+            }
+          },
+          "Doc": "the selected item or -1, kept by you; a click selects, a second click clears. `NULL`: no selection"
         }
       ],
       "Doc": ""
@@ -10224,7 +10689,7 @@
           "Doc": ""
         }
       ],
-      "Doc": "Radar chart: series over shared axes (series[i].values[axis])."
+      "Doc": "Radar chart: series over shared axes (series[i].values[axis]), light fills with crisp outlines on hairline rings. The last series shows its points, or the one nearest the pointer, with a chip of the hovered value."
     },
     {
       "CName": "cui_funnel_opts",
@@ -10341,12 +10806,12 @@
           "Doc": "size of the flow: sets the link's thickness"
         }
       ],
-      "Doc": "Sankey: flows between nodes; columns follow the links from the sources."
+      "Doc": "Sankey: flows between nodes; columns follow the links from the sources. Slim nodes in the colors you give them, flows shaded from source to target color, and hovering a node or a flow lights its whole path upstream and downstream."
     },
     {
       "CName": "cui_sankey_opts",
       "CsName": "NativeSankeyOpts",
-      "Size": 32,
+      "Size": 40,
       "Helpers": [],
       "Fields": [
         {
@@ -10411,7 +10876,24 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": "width of the node bars in points, default 12"
+          "Doc": "width of the node bars in points, default 6"
+        },
+        {
+          "CName": "node_colors",
+          "CsName": "NodeColors",
+          "CsType": "nint",
+          "CType": "const cui_color *",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "const cui_color *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_color",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          },
+          "Doc": "one per node, colored by meaning; `NULL`, or an unset entry, falls back to the palette for outcomes and neutral gray for sources and steps"
         }
       ],
       "Doc": ""
@@ -10947,7 +11429,7 @@
     {
       "CName": "cui_gauge_band",
       "CsName": "NativeGaugeBand",
-      "Size": 8,
+      "Size": 16,
       "Helpers": [],
       "Fields": [
         {
@@ -10959,7 +11441,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": "from the band before (or min) up to `to`"
+          "Doc": "the band runs from the band before (or min) up to here"
         },
         {
           "CName": "tone",
@@ -10971,15 +11453,32 @@
             "Spelling": "cui_tone",
             "Kind": "Enum"
           },
-          "Doc": "from the band before (or min) up to `to`"
+          "Doc": "its color"
+        },
+        {
+          "CName": "name",
+          "CsName": "Name",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "shown as a chip while the value is in this band (segments style); `NULL` for none"
         }
       ],
-      "Doc": "Radial gauge: one value on a dial with colored bands, labelled ticks, a needle and a target marker, for dashboards (speed, load, temperature, a score against a goal). The needle springs to new values."
+      "Doc": "Radial gauge: one value as a large number on an arc, for dashboards (load, speed, temperature, a score against a goal). Three styles: CUI_GAUGE_SEGMENTS  a ring of short segments, lit in each band's tone up to the value, with the current band's name as a chip under the label CUI_GAUGE_ARC       a track and a value arc with round caps, min and max at the ends, and a marker at `target` CUI_GAUGE_RING      a slim full ring from the top, with `detail` under it CUI_GAUGE_AUTO (the default) picks the segments when `bands` are given and the arc otherwise. The arc fills to new values with a spring."
     },
     {
       "CName": "cui_radial_gauge_opts",
       "CsName": "NativeRadialGaugeOpts",
-      "Size": 64,
+      "Size": 88,
       "Helpers": [],
       "Fields": [
         {
@@ -11025,7 +11524,7 @@
               "IsConst": true
             }
           },
-          "Doc": "the value and the tick labels, default \"%.0f\""
+          "Doc": "the value, the ends and the target, default whole numbers with large ones shortened (1.8k)"
         },
         {
           "CName": "unit",
@@ -11042,7 +11541,7 @@
               "IsConst": true
             }
           },
-          "Doc": "after the value, smaller"
+          "Doc": "after the value, smaller and muted"
         },
         {
           "CName": "size",
@@ -11066,7 +11565,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": "degrees of arc, default 240 (90 to 300)"
+          "Doc": "degrees of arc, default 270 (90 to 300); the ring is always a full turn"
         },
         {
           "CName": "bands",
@@ -11107,7 +11606,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": "labelled divisions, default 5; -1 hides the ticks"
+          "Doc": "-1 hides the min and max labels at the ends of the arc"
         },
         {
           "CName": "target",
@@ -11131,7 +11630,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": "draws the marker at `target`"
+          "Doc": "draws the marker at `target`, labelled with its value (arc style)"
         },
         {
           "CName": "no_needle",
@@ -11143,7 +11642,48 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": "a thick arc filled to the value instead of a needle"
+          "Doc": "kept for older code; no style has a needle"
+        },
+        {
+          "CName": "style",
+          "CsName": "Style",
+          "CsType": "GaugeStyle",
+          "CType": "cui_gauge_style",
+          "Offset": 64,
+          "Type": {
+            "Spelling": "cui_gauge_style",
+            "Kind": "Enum"
+          },
+          "Doc": "CUI_GAUGE_AUTO picks segments with `bands`, else the arc"
+        },
+        {
+          "CName": "detail",
+          "CsName": "Detail",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 72,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "a muted line under the gauge, e.g. \"190 of 500 GB\"; `NULL` for none"
+        },
+        {
+          "CName": "color",
+          "CsName": "Color",
+          "CsType": "NativeColor",
+          "CType": "cui_color",
+          "Offset": 80,
+          "Type": {
+            "Spelling": "cui_color",
+            "Kind": "Record"
+          },
+          "Doc": "the value's color; unset: the band the value is in, else the accent (the ring: the first series color)"
         }
       ],
       "Doc": ""
@@ -12471,7 +13011,7 @@
           "Doc": ""
         }
       ],
-      "Doc": "Agent plan: steps with their status on a connected rail, and progress."
+      "Doc": "Agent plan: steps with their status on a connected rail, and progress. Reduced motion holds the running glyph still, including in tool calls."
     },
     {
       "CName": "cui_agent_plan_opts",
@@ -12987,7 +13527,7 @@
     {
       "CName": "cui_composer_opts",
       "CsName": "NativeComposerOpts",
-      "Size": 88,
+      "Size": 104,
       "Helpers": [],
       "Fields": [
         {
@@ -13148,6 +13688,71 @@
             "Kind": "Record"
           },
           "Doc": ""
+        },
+        {
+          "CName": "mic",
+          "CsName": "Mic",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 84,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "a microphone button beside send, which returns `CUI_COMPOSER_RECORD`"
+        },
+        {
+          "CName": "recording",
+          "CsName": "Recording",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 85,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "shows the recorder instead of the text: set it on `CUI_COMPOSER_RECORD`, clear it on cancel or send"
+        },
+        {
+          "CName": "levels",
+          "CsName": "Levels",
+          "CsType": "nint",
+          "CType": "const float *",
+          "Offset": 88,
+          "Type": {
+            "Spelling": "const float *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const float",
+              "Kind": "Float",
+              "IsConst": true
+            }
+          },
+          "Doc": "the microphone's levels while recording (0..1, newest last), drawn as a scrolling voice waveform"
+        },
+        {
+          "CName": "level_count",
+          "CsName": "LevelCount",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 96,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "number of `levels`"
+        },
+        {
+          "CName": "record_seconds",
+          "CsName": "RecordSeconds",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 100,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "how long the take is so far, shown beside the recording dot"
         }
       ],
       "Doc": ""
@@ -13192,6 +13797,434 @@
             "Kind": "Record"
           },
           "Doc": ""
+        }
+      ],
+      "Doc": "Deprecated: use the voice session (cui_voice_session), the voice waveform (cui_voice_wave) or the composer's recorder instead. Kept so existing code builds; it gets no new features. Voice orb: a living shape for voice modes. level is the input or output loudness (0..1). Returns true when clicked."
+    },
+    {
+      "CName": "cui_voice_wave_opts",
+      "CsName": "NativeVoiceWaveOpts",
+      "Size": 48,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "clip",
+          "CsName": "Clip",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "the whole clip resampled to the width, instead of the newest levels scrolling in"
+        },
+        {
+          "CName": "progress",
+          "CsName": "Progress",
+          "CsType": "nint",
+          "CType": "float *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "float *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "float",
+              "Kind": "Float"
+            }
+          },
+          "Doc": "a clip's played fraction (0..1): colors the played part, draws a playhead and seeks; implies `clip`"
+        },
+        {
+          "CName": "owners",
+          "CsName": "Owners",
+          "CsType": "nint",
+          "CType": "const uint8_t *",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "const uint8_t *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const uint8_t",
+              "Kind": "UChar",
+              "IsConst": true
+            }
+          },
+          "Doc": "one per level, `CUI_VOICE_YOU` or `CUI_VOICE_REPLY`, for two voices on one timeline; `NULL`: all `owner`"
+        },
+        {
+          "CName": "owner",
+          "CsName": "Owner",
+          "CsType": "VoiceOwner",
+          "CType": "cui_voice_owner",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "cui_voice_owner",
+            "Kind": "Enum"
+          },
+          "Doc": "whose voice it is: you in the foreground color, the reply in the accent"
+        },
+        {
+          "CName": "color",
+          "CsName": "Color",
+          "CsType": "NativeColor",
+          "CType": "cui_color",
+          "Offset": 28,
+          "Type": {
+            "Spelling": "cui_color",
+            "Kind": "Record"
+          },
+          "Doc": "lit dots in this color instead of the owner's"
+        },
+        {
+          "CName": "pitch",
+          "CsName": "Pitch",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "distance between dot centers in points, default 3.6; the strip is 14 pitches tall"
+        },
+        {
+          "CName": "step",
+          "CsName": "Step",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 36,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "how far an arrow key seeks, as a fraction of the clip, default 0.05"
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "NativeSize",
+          "CType": "cui_size",
+          "Offset": 40,
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          },
+          "Doc": "default fill"
+        }
+      ],
+      "Doc": ""
+    },
+    {
+      "CName": "cui_voice_note",
+      "CsName": "NativeVoiceNote",
+      "Size": 32,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "levels",
+          "CsName": "Levels",
+          "CsType": "nint",
+          "CType": "const float *",
+          "Type": {
+            "Spelling": "const float *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const float",
+              "Kind": "Float",
+              "IsConst": true
+            }
+          },
+          "Doc": "the clip's loudness, 0..1, oldest first (resampled to fit)"
+        },
+        {
+          "CName": "count",
+          "CsName": "Count",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "number of `levels`"
+        },
+        {
+          "CName": "position",
+          "CsName": "Position",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 12,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "seconds played; written when the user seeks"
+        },
+        {
+          "CName": "duration",
+          "CsName": "Duration",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "length of the clip in seconds"
+        },
+        {
+          "CName": "speed",
+          "CsName": "Speed",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 20,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "playback rate, 1, 1.5 or 2 (0 reads as 1); the chip moves it to the next"
+        },
+        {
+          "CName": "playing",
+          "CsName": "Playing",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "shows pause instead of play; the play button flips it"
+        }
+      ],
+      "Doc": "Voice note: a recorded message in a bubble, with play and pause, its voice waveform as the seek bar (click or drag; the arrow keys step), the time played and the length, and a speed chip that cycles 1x, 1.5x and 2x. It plays nothing itself: you play the audio and pass the position on every frame. Returns CUI_PLAYER_TOGGLE, CUI_PLAYER_SEEK and CUI_PLAYER_SPEED."
+    },
+    {
+      "CName": "cui_voice_note_opts",
+      "CsName": "NativeVoiceNoteOpts",
+      "Size": 16,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "mine",
+          "CsName": "Mine",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "a message you sent: tinted with the accent and placed at the end of the row"
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "NativeSize",
+          "CType": "cui_size",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          },
+          "Doc": "default 330 points, narrower in a narrower container"
+        }
+      ],
+      "Doc": ""
+    },
+    {
+      "CName": "cui_voice_session_opts",
+      "CsName": "NativeVoiceSessionOpts",
+      "Size": 88,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "owners",
+          "CsName": "Owners",
+          "CsType": "nint",
+          "CType": "const uint8_t *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const uint8_t *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const uint8_t",
+              "Kind": "UChar",
+              "IsConst": true
+            }
+          },
+          "Doc": "one per level: `CUI_VOICE_YOU` or `CUI_VOICE_REPLY`; `NULL`: all yours"
+        },
+        {
+          "CName": "label",
+          "CsName": "Label",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "text for the state instead of \"Listening\", \"Thinking...\", \"Speaking\", \"Muted\" or \"Waiting\""
+        },
+        {
+          "CName": "transcript",
+          "CsName": "Transcript",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "the words of the current turn spoken so far, under the strip; `NULL` for none"
+        },
+        {
+          "CName": "upcoming",
+          "CsName": "Upcoming",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "the rest of the turn, not spoken yet: dimmed after `transcript`"
+        },
+        {
+          "CName": "speaker",
+          "CsName": "Speaker",
+          "CsType": "VoiceOwner",
+          "CType": "cui_voice_owner",
+          "Offset": 40,
+          "Type": {
+            "Spelling": "cui_voice_owner",
+            "Kind": "Enum"
+          },
+          "Doc": "whose turn the transcript is, named before it"
+        },
+        {
+          "CName": "you",
+          "CsName": "You",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 48,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "your name in the legend and the transcript, default \"You\""
+        },
+        {
+          "CName": "assistant",
+          "CsName": "Assistant",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 56,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "the assistant's name, default \"Assistant\""
+        },
+        {
+          "CName": "muted",
+          "CsName": "Muted",
+          "CsType": "nint",
+          "CType": "_Bool *",
+          "Offset": 64,
+          "Type": {
+            "Spelling": "_Bool *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "_Bool",
+              "Kind": "Bool"
+            }
+          },
+          "Doc": "the microphone is muted: the button reads Unmute; a click flips it. `NULL` leaves Mute out"
+        },
+        {
+          "CName": "no_end",
+          "CsName": "NoEnd",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 72,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "leaves the End button out"
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "NativeSize",
+          "CType": "cui_size",
+          "Offset": 76,
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          },
+          "Doc": "default fill"
         }
       ],
       "Doc": ""
@@ -13750,7 +14783,7 @@
     {
       "CName": "cui_gantt_task",
       "CsName": "NativeGanttTask",
-      "Size": 40,
+      "Size": 48,
       "Helpers": [],
       "Fields": [
         {
@@ -13820,7 +14853,7 @@
             "Spelling": "float",
             "Kind": "Float"
           },
-          "Doc": "0..1: the part of the bar drawn darker, as done"
+          "Doc": "0..1: the part of the bar filled in, as done, with the percentage at its end"
         },
         {
           "CName": "tone",
@@ -13832,7 +14865,7 @@
             "Spelling": "cui_tone",
             "Kind": "Enum"
           },
-          "Doc": ""
+          "Doc": "overrides the state's color when set"
         },
         {
           "CName": "depends_on",
@@ -13844,7 +14877,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": "index of the task this one waits for: an arrow runs from its end to this start. -1 for none"
+          "Doc": "index of the task this one waits for: a curve runs from its end to this start. -1 for none"
         },
         {
           "CName": "milestone",
@@ -13856,10 +14889,22 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": "a diamond at `start` instead of a bar; it cannot be resized"
+          "Doc": "an outlined diamond at `start`, labelled with its name and date, instead of a bar; it cannot be resized"
+        },
+        {
+          "CName": "state",
+          "CsName": "State",
+          "CsType": "GanttState",
+          "CType": "cui_gantt_state",
+          "Offset": 40,
+          "Type": {
+            "Spelling": "cui_gantt_state",
+            "Kind": "Enum"
+          },
+          "Doc": "done, active or planned; CUI_GANTT_AUTO works it out from `progress` and `today`"
         }
       ],
-      "Doc": "Gantt chart: a task list beside a timeline of bars. Drag a bar to move it, its ends to resize it. Dependencies are drawn as elbow arrows. Returns the index of a clicked task, or -1."
+      "Doc": ""
     },
     {
       "CName": "cui_gantt_opts",
@@ -13924,7 +14969,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": "day to mark as today, counted from `origin`; 0 marks none"
+          "Doc": "day to mark as today, counted from `origin`, with an accent line and a \"Today\" chip; 0 marks none"
         },
         {
           "CName": "read_only",
@@ -14107,7 +15152,7 @@
           "Doc": ""
         }
       ],
-      "Doc": "Confirm popover: a small question anchored to the previous component. Open it with cui_popover_open(ui, id). Returns true when confirmed."
+      "Doc": "Confirm popover: a small question anchored to the previous component. Open it with cui_popover_open(ui, id). A new Enter press can confirm it. Returns true when confirmed."
     },
     {
       "CName": "cui_expandable_text_opts",
@@ -14560,6 +15605,108 @@
         }
       ],
       "Doc": ""
+    },
+    {
+      "CName": "cui_veil_opts",
+      "CsName": "NativeVeilOpts",
+      "Size": 48,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "label",
+          "CsName": "Label",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "a line in the middle of the veil, e.g. \"Sensitive image\"; `NULL` for none"
+        },
+        {
+          "CName": "hint",
+          "CsName": "Hint",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "a smaller line under it, e.g. \"Click to show\""
+        },
+        {
+          "CName": "toggle",
+          "CsName": "Toggle",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "a click on the revealed content covers it again"
+        },
+        {
+          "CName": "radius",
+          "CsName": "Radius",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 28,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "corners of the veil, default 0"
+        },
+        {
+          "CName": "color",
+          "CsName": "Color",
+          "CsType": "NativeColor",
+          "CType": "cui_color",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "cui_color",
+            "Kind": "Record"
+          },
+          "Doc": "the veil's ground, default the muted surface; its dots are a step toward the text color"
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "NativeSize",
+          "CType": "cui_size",
+          "Offset": 36,
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          },
+          "Doc": "default: the content's width"
+        }
+      ],
+      "Doc": "Veil: covers what is built inside it (a picture, a secret such as an API key, a spoiler) with a slowly moving dither in muted tones that keeps its space. A click, or Enter or Space, reveals it: the veil dissolves dot by dot in about a quarter of a second, and comes back the same way when *revealed is set to false again. While covered, the content takes no clicks and no keyboard focus. Reduced motion holds the noise still and reveals at once."
     },
     {
       "CName": "cui_multi_select_opts",
@@ -16449,7 +17596,7 @@
     {
       "CName": "cui_toolbar_opts",
       "CsName": "NativeToolbarOpts",
-      "Size": 8,
+      "Size": 12,
       "Helpers": [],
       "Fields": [
         {
@@ -16473,15 +17620,27 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
+          "Doc": "plain style: no hairline under the strip"
+        },
+        {
+          "CName": "style",
+          "CsName": "Style",
+          "CsType": "ToolbarStyle",
+          "CType": "cui_toolbar_style",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "cui_toolbar_style",
+            "Kind": "Enum"
+          },
           "Doc": ""
         }
       ],
-      "Doc": "Toolbar: a row of compact icon buttons, toggles, separators and small text buttons. Icon only buttons show their tooltip as their name. Items that do not fit collapse, from the end, into a \"more\" menu; an item chosen there returns true on the next frame."
+      "Doc": ""
     },
     {
       "CName": "cui_tool_opts",
       "CsName": "NativeToolOpts",
-      "Size": 48,
+      "Size": 56,
       "Helpers": [],
       "Fields": [
         {
@@ -16573,9 +17732,75 @@
             "Kind": "Bool"
           },
           "Doc": ""
+        },
+        {
+          "CName": "tone",
+          "CsName": "Tone",
+          "CsType": "Tone",
+          "CType": "cui_tone",
+          "Offset": 44,
+          "Type": {
+            "Spelling": "cui_tone",
+            "Kind": "Enum"
+          },
+          "Doc": "icon and label color: always on a plain button (CUI_TONE_DANGER for delete), only while on for a toggle"
+        },
+        {
+          "CName": "flyout",
+          "CsName": "Flyout",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 48,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "the corner mark that says the button opens more options (cui_flyout_mark)"
         }
       ],
       "Doc": ""
+    },
+    {
+      "CName": "cui_toolbar_radio_opts",
+      "CsName": "NativeToolbarRadioOpts",
+      "Size": 16,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "labels",
+          "CsName": "Labels",
+          "CsType": "nint",
+          "CType": "const char *const *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const char *const *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char *const",
+              "Kind": "Pointer",
+              "IsConst": true,
+              "Element": {
+                "Spelling": "const char",
+                "Kind": "Char_S",
+                "IsConst": true
+              }
+            }
+          },
+          "Doc": "a name for each icon, for the overflow menu; `NULL` leaves them unnamed"
+        }
+      ],
+      "Doc": "An inset set of icons of which one is on, like a segmented control. Left and Right move the choice. Returns true when *index changed. In the overflow menu each icon is an item named by its label."
     },
     {
       "CName": "cui_status_bar_opts",
@@ -19218,6 +20443,969 @@
         }
       ],
       "Doc": ""
+    },
+    {
+      "CName": "cui_status_tag_opts",
+      "CsName": "NativeStatusTagOpts",
+      "Size": 40,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "size",
+          "CsName": "Size",
+          "CsType": "ControlSize",
+          "CType": "cui_control_size",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "cui_control_size",
+            "Kind": "Enum"
+          },
+          "Doc": "CUI_SIZE_SM is 24 points high, for tables and tag groups; default 30"
+        },
+        {
+          "CName": "removable",
+          "CsName": "Removable",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "the tag becomes a button that shows an x on hover: the call returns true when it is clicked, or on Enter, Delete or Backspace"
+        },
+        {
+          "CName": "icon",
+          "CsName": "Icon",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "instead of the state's icon"
+        },
+        {
+          "CName": "tone",
+          "CsName": "Tone",
+          "CsType": "Tone",
+          "CType": "cui_tone",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "cui_tone",
+            "Kind": "Enum"
+          },
+          "Doc": "instead of the state's color; 0 keeps it (gray for CUI_TAG_CUSTOM)"
+        },
+        {
+          "CName": "id",
+          "CsName": "Id",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "identity of a removable tag when two share a label"
+        }
+      ],
+      "Doc": ""
+    },
+    {
+      "CName": "cui_ratio_slider_opts",
+      "CsName": "NativeRatioSliderOpts",
+      "Size": 28,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "tone",
+          "CsName": "Tone",
+          "CsType": "Tone",
+          "CType": "cui_tone",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "cui_tone",
+            "Kind": "Enum"
+          },
+          "Doc": "color of the first part; 0 uses the accent"
+        },
+        {
+          "CName": "step",
+          "CsName": "Step",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "arrow key step as a share, default 0.01 (one percent)"
+        },
+        {
+          "CName": "height",
+          "CsName": "Height",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 12,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "default 52"
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "NativeSize",
+          "CType": "cui_size",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          },
+          "Doc": "default fill"
+        },
+        {
+          "CName": "disabled",
+          "CsName": "Disabled",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        }
+      ],
+      "Doc": "Ratio slider: a whole split into two named parts, with a bar between them to drag. *ratio is the first part's share, 0..1. Both names and percentages stay readable: the split stops where a part would get too narrow for them. Arrows move one step (Shift: ten), Home and End go to the limits."
+    },
+    {
+      "CName": "cui_gradient_slider_opts",
+      "CsName": "NativeGradientSliderOpts",
+      "Size": 88,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "track",
+          "CsName": "Track",
+          "CsType": "GradientTrack",
+          "CType": "cui_gradient_track",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "cui_gradient_track",
+            "Kind": "Enum"
+          },
+          "Doc": "the built-in track, default the hue wheel; ignored when `stops` is set"
+        },
+        {
+          "CName": "stops",
+          "CsName": "Stops",
+          "CsType": "nint",
+          "CType": "const cui_gradient_stop *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const cui_gradient_stop *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_gradient_stop",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          },
+          "Doc": "your own track, positions 0..1"
+        },
+        {
+          "CName": "stop_count",
+          "CsName": "StopCount",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "color",
+          "CsName": "Color",
+          "CsType": "NativeColor",
+          "CType": "cui_color",
+          "Offset": 20,
+          "Type": {
+            "Spelling": "cui_color",
+            "Kind": "Record"
+          },
+          "Doc": "CUI_GRADIENT_OPACITY: the color it fades in; unset: the accent"
+        },
+        {
+          "CName": "color_out",
+          "CsName": "ColorOut",
+          "CsType": "nint",
+          "CType": "cui_color *",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "cui_color *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_color",
+              "Kind": "Record"
+            }
+          },
+          "Doc": "receives the color under the thumb"
+        },
+        {
+          "CName": "step",
+          "CsName": "Step",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "snap to multiples of step from min; 0 = continuous"
+        },
+        {
+          "CName": "format",
+          "CsName": "Format",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 40,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "printf format for the value; default \"%.0f°\" for hue, \"%.0f K\" for temperature, a percent of the range for opacity, \"%.0f\" for stops"
+        },
+        {
+          "CName": "value",
+          "CsName": "Value",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 48,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "text at the right of the label instead of the formatted value"
+        },
+        {
+          "CName": "swatch",
+          "CsName": "Swatch",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 56,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "a dot in the color under the thumb after the track"
+        },
+        {
+          "CName": "tool",
+          "CsName": "Tool",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 64,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "icon of a button after the track, e.g. a picker; a click returns CUI_WELL_ACTION"
+        },
+        {
+          "CName": "tool_tooltip",
+          "CsName": "ToolTooltip",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 72,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "names the tool button"
+        },
+        {
+          "CName": "tool_on",
+          "CsName": "ToolOn",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 80,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "shows the tool button pressed, e.g. while picking"
+        },
+        {
+          "CName": "plain",
+          "CsName": "Plain",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 81,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "no well around it"
+        },
+        {
+          "CName": "disabled",
+          "CsName": "Disabled",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 82,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        }
+      ],
+      "Doc": ""
+    },
+    {
+      "CName": "cui_step_slider_opts",
+      "CsName": "NativeStepSliderOpts",
+      "Size": 56,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "labels",
+          "CsName": "Labels",
+          "CsType": "nint",
+          "CType": "const char *const *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const char *const *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char *const",
+              "Kind": "Pointer",
+              "IsConst": true,
+              "Element": {
+                "Spelling": "const char",
+                "Kind": "Char_S",
+                "IsConst": true
+              }
+            }
+          },
+          "Doc": "a name for each stop, shown as the value: labels[*value - min]"
+        },
+        {
+          "CName": "format",
+          "CsName": "Format",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "printf format for the value, default \"%d\""
+        },
+        {
+          "CName": "value",
+          "CsName": "Value",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "text at the right of the label instead"
+        },
+        {
+          "CName": "tool",
+          "CsName": "Tool",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "icon of a button after the track; a click returns CUI_WELL_ACTION"
+        },
+        {
+          "CName": "tool_tooltip",
+          "CsName": "ToolTooltip",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 40,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "tool_on",
+          "CsName": "ToolOn",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 48,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "plain",
+          "CsName": "Plain",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 49,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "disabled",
+          "CsName": "Disabled",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 50,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        }
+      ],
+      "Doc": "Step slider: a few discrete stops marked with dots; the thumb snaps to each and glides between them. Arrows move one stop, Home and End go to the ends. Returns CUI_WELL_* flags."
+    },
+    {
+      "CName": "cui_palette_strip_opts",
+      "CsName": "NativePaletteStripOpts",
+      "Size": 40,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "seed",
+          "CsName": "Seed",
+          "CsType": "nint",
+          "CType": "uint32_t *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "uint32_t *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "uint32_t",
+              "Kind": "UInt"
+            }
+          },
+          "Doc": "shuffle state, yours: shuffle recolors the unlocked swatches from it and moves it on, so the same seed gives the same colors; NULL only reports the press"
+        },
+        {
+          "CName": "value",
+          "CsName": "Value",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "text at the right of the label, e.g. \"Click a swatch to lock it\""
+        },
+        {
+          "CName": "no_shuffle",
+          "CsName": "NoShuffle",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "no shuffle button"
+        },
+        {
+          "CName": "height",
+          "CsName": "Height",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 28,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "default 32"
+        },
+        {
+          "CName": "plain",
+          "CsName": "Plain",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        }
+      ],
+      "Doc": "Palette strip: a joined row of color swatches (up to 16). A click on a swatch locks or unlocks it, and the shuffle button after the row recolors the unlocked ones. The swatch under the pointer widens and shows its hex code. Tab reaches the swatches, Left and Right move between them, Space or Enter locks. Returns CUI_WELL_CHANGED when a lock or a color changed and CUI_WELL_ACTION when shuffle was pressed."
+    },
+    {
+      "CName": "cui_aspect",
+      "CsName": "NativeAspect",
+      "Size": 16,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "w",
+          "CsName": "W",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "label NULL shows \"w:h\""
+        },
+        {
+          "CName": "h",
+          "CsName": "H",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "label NULL shows \"w:h\""
+        },
+        {
+          "CName": "label",
+          "CsName": "Label",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "label NULL shows \"w:h\""
+        }
+      ],
+      "Doc": "Aspect ratio picker: each choice drawn as a rectangle of its own proportions with its ratio under it, and an optional dashed \"Custom\". The value at the right of the label is the size in pixels. Tab reaches the choices, Left and Right move between them."
+    },
+    {
+      "CName": "cui_aspect_picker_opts",
+      "CsName": "NativeAspectPickerOpts",
+      "Size": 56,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "ratios",
+          "CsName": "Ratios",
+          "CsType": "nint",
+          "CType": "const cui_aspect *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const cui_aspect *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_aspect",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          },
+          "Doc": "your choices; NULL: 1:1, 4:5, 3:2, 16:9, 9:16 and 21:9"
+        },
+        {
+          "CName": "count",
+          "CsName": "Count",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "custom",
+          "CsName": "Custom",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 20,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "adds a \"Custom\" choice after a divider; *index == the count of choices selects it"
+        },
+        {
+          "CName": "custom_label",
+          "CsName": "CustomLabel",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "default \"Custom\""
+        },
+        {
+          "CName": "base",
+          "CsName": "Base",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "the short side in pixels, for the size at the right of the label; default 1080, negative hides the size"
+        },
+        {
+          "CName": "value",
+          "CsName": "Value",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 40,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "text at the right of the label instead of the size"
+        },
+        {
+          "CName": "plain",
+          "CsName": "Plain",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 48,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        }
+      ],
+      "Doc": ""
+    },
+    {
+      "CName": "cui_option_action_opts",
+      "CsName": "NativeOptionActionOpts",
+      "Size": 40,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "tooltip",
+          "CsName": "Tooltip",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "names the action button"
+        },
+        {
+          "CName": "action_on",
+          "CsName": "ActionOn",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "shows the action button pressed"
+        },
+        {
+          "CName": "action_disabled",
+          "CsName": "ActionDisabled",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 17,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "value",
+          "CsName": "Value",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "text at the right of the label"
+        },
+        {
+          "CName": "plain",
+          "CsName": "Plain",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        }
+      ],
+      "Doc": "Option field with action: a compact segmented choice and the icon button of the action it feeds (save as png, jpg or webp, then download). Returns CUI_WELL_* flags."
+    },
+    {
+      "CName": "cui_seed_field_opts",
+      "CsName": "NativeSeedFieldOpts",
+      "Size": 40,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "value",
+          "CsName": "Value",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "text at the right of the label"
+        },
+        {
+          "CName": "random_text",
+          "CsName": "RandomText",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "the mode word in the field while unlocked, default \"random\""
+        },
+        {
+          "CName": "fixed_text",
+          "CsName": "FixedText",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "and while locked, default \"fixed\""
+        },
+        {
+          "CName": "plain",
+          "CsName": "Plain",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        }
+      ],
+      "Doc": "Seed field: a random seed in the monospaced font. The dice rolls a new one, its digits rolling into place, and the lock keeps it fixed (the dice is off while locked). Returns CUI_WELL_CHANGED when the seed or the lock changed and CUI_WELL_ACTION on a roll."
     },
     {
       "CName": "cui_timeline_clip",
@@ -22010,7 +24198,7 @@
             "Spelling": "_Bool",
             "Kind": "Bool"
           },
-          "Doc": "the visible time range or the scroll in `*view` changed (zoom, pan, fit)"
+          "Doc": "time range, scroll position, or measurement in `*view` changed"
         },
         {
           "CName": "hovered",
@@ -24227,7 +26415,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": "the sample under the pointer or the keyboard cursor, or -1"
+          "Doc": "pointer or keyboard sample, middle on first keyboard activation, else -1"
         },
         {
           "CName": "x",
@@ -24690,6 +26878,1021 @@
         }
       ],
       "Doc": "Dot-matrix display: text drawn with a 5 by 7 dot font, for clocks, counters and status lines. Printable ASCII, the degree sign and the middle dot have glyphs; anything else is a box. Unlit dots show dimly unless `no_dim` is set. In a box narrower than the text, the dots shrink to fit, or with `marquee` the text scrolls."
+    },
+    {
+      "CName": "cui_text_format",
+      "CsName": "NativeTextFormat",
+      "Size": 24,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "color",
+          "CsName": "Color",
+          "CsType": "Tone",
+          "CType": "cui_tone",
+          "Type": {
+            "Spelling": "cui_tone",
+            "Kind": "Enum"
+          },
+          "Doc": "the text color, as a tone so it follows the theme; CUI_TONE_NEUTRAL is the text color"
+        },
+        {
+          "CName": "bold",
+          "CsName": "Bold",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "underline",
+          "CsName": "Underline",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 5,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "link",
+          "CsName": "Link",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 6,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "the selection is a link: the link button shows pressed"
+        },
+        {
+          "CName": "style",
+          "CsName": "Style",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "index into the styles (default: 0 Header, 1 Title, 2 Subtitle, 3 Normal text)"
+        },
+        {
+          "CName": "size",
+          "CsName": "Size",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 12,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "the size readout, in your units; set from the style when the style changes"
+        },
+        {
+          "CName": "align",
+          "CsName": "Align",
+          "CsType": "FormatAlign",
+          "CType": "cui_format_align",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "cui_format_align",
+            "Kind": "Enum"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "list",
+          "CsName": "List",
+          "CsType": "FormatList",
+          "CType": "cui_format_list",
+          "Offset": 20,
+          "Type": {
+            "Spelling": "cui_format_list",
+            "Kind": "Enum"
+          },
+          "Doc": ""
+        }
+      ],
+      "Doc": ""
+    },
+    {
+      "CName": "cui_text_style",
+      "CsName": "NativeTextStyle",
+      "Size": 24,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "name",
+          "CsName": "Name",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "\"Header\""
+        },
+        {
+          "CName": "size",
+          "CsName": "Size",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "the size it sets in your document, shown in the readout, e.g. 44"
+        },
+        {
+          "CName": "preview_size",
+          "CsName": "PreviewSize",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 12,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "the size of its name in the menu, in points"
+        },
+        {
+          "CName": "font",
+          "CsName": "Font",
+          "CsType": "Font",
+          "CType": "cui_font",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "cui_font",
+            "Kind": "Int"
+          },
+          "Doc": "the font of its name in the menu"
+        }
+      ],
+      "Doc": "One text style of the style menu."
+    },
+    {
+      "CName": "cui_format_bar_opts",
+      "CsName": "NativeFormatBarOpts",
+      "Size": 72,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "styles",
+          "CsName": "Styles",
+          "CsType": "nint",
+          "CType": "const cui_text_style *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const cui_text_style *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_text_style",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          },
+          "Doc": "`NULL`: Header, Title, Subtitle and Normal text"
+        },
+        {
+          "CName": "style_count",
+          "CsName": "StyleCount",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "colors",
+          "CsName": "Colors",
+          "CsType": "nint",
+          "CType": "const cui_tone *",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "const cui_tone *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_tone",
+              "Kind": "Enum",
+              "IsConst": true
+            }
+          },
+          "Doc": "the color grid; `NULL`: eight tones, the text color first"
+        },
+        {
+          "CName": "color_count",
+          "CsName": "ColorCount",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "footer",
+          "CsName": "Footer",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 40,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "a muted line under the styles, default \"Text options\"; \"\" leaves it out"
+        },
+        {
+          "CName": "footer_keys",
+          "CsName": "FooterKeys",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 48,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "keycaps beside it, default \"Ctrl Alt 0\" (\"\" for none); a hint, the shortcut is yours"
+        },
+        {
+          "CName": "delete_question",
+          "CsName": "DeleteQuestion",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 56,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "default \"Delete this text?\""
+        },
+        {
+          "CName": "no_delete",
+          "CsName": "NoDelete",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 64,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "leaves out the delete button"
+        },
+        {
+          "CName": "no_more",
+          "CsName": "NoMore",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 65,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "leaves out the \"...\" button"
+        }
+      ],
+      "Doc": ""
+    },
+    {
+      "CName": "cui_live_user",
+      "CsName": "NativeLiveUser",
+      "Size": 48,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "name",
+          "CsName": "Name",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "on the flag, and the identity that keeps a cursor gliding: keep it stable"
+        },
+        {
+          "CName": "color",
+          "CsName": "Color",
+          "CsType": "NativeColor",
+          "CType": "cui_color",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "cui_color",
+            "Kind": "Record"
+          },
+          "Doc": "the cursor, flag and avatar; unset: `tone`"
+        },
+        {
+          "CName": "tone",
+          "CsName": "Tone",
+          "CsType": "Tone",
+          "CType": "cui_tone",
+          "Offset": 12,
+          "Type": {
+            "Spelling": "cui_tone",
+            "Kind": "Enum"
+          },
+          "Doc": "the color as a tone of the theme when `color` is unset; 0: a tone chosen from the name"
+        },
+        {
+          "CName": "x",
+          "CsName": "X",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "where the pointer is"
+        },
+        {
+          "CName": "y",
+          "CsName": "Y",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 20,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "where the pointer is"
+        },
+        {
+          "CName": "says",
+          "CsName": "Says",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "a chat bubble under the flag; `NULL` for none"
+        },
+        {
+          "CName": "speaking",
+          "CsName": "Speaking",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "presence pill: a ring and moving level bars on this person"
+        },
+        {
+          "CName": "away",
+          "CsName": "Away",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 33,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "the pointer is hidden (it left the canvas); still in the presence pill"
+        },
+        {
+          "CName": "avatar",
+          "CsName": "Avatar",
+          "CsType": "nuint",
+          "CType": "cui_texture",
+          "Offset": 40,
+          "Type": {
+            "Spelling": "cui_texture",
+            "Kind": "ULongLong"
+          },
+          "Doc": "presence pill: a picture instead of the initials"
+        }
+      ],
+      "Doc": "Live cursors: other people's pointers over the previous component (a canvas, a document, a node editor), each an arrow in their color with a name flag and an optional chat bubble. You pass where each pointer is whenever it changes; the cursors glide there, at the same speed at any frame rate. Positions are points from the component's top-left corner, or canvas points under `view` (the node editor's pan and zoom). Cursors only draw: they take no input and no focus."
+    },
+    {
+      "CName": "cui_live_cursors_opts",
+      "CsName": "NativeLiveCursorsOpts",
+      "Size": 24,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "view",
+          "CsName": "View",
+          "CsType": "nint",
+          "CType": "const cui_node_view *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const cui_node_view *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_node_view",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          },
+          "Doc": "positions are canvas points under this pan and zoom; `NULL`: points in the component"
+        },
+        {
+          "CName": "no_glide",
+          "CsName": "NoGlide",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "jump to each new position"
+        }
+      ],
+      "Doc": ""
+    },
+    {
+      "CName": "cui_presence_pill_opts",
+      "CsName": "NativePresencePillOpts",
+      "Size": 12,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "size",
+          "CsName": "Size",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "avatar size, default 26"
+        },
+        {
+          "CName": "max_visible",
+          "CsName": "MaxVisible",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "default 5; the rest become \"+n\""
+        }
+      ],
+      "Doc": "Presence pill: who is here, as overlapping avatars in their colors. Whoever is speaking gets a ring, and the pill shows moving level bars and their name."
+    },
+    {
+      "CName": "cui_selection_ring_opts",
+      "CsName": "NativeSelectionRingOpts",
+      "Size": 24,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "name",
+          "CsName": "Name",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "a small flag at the top end corner; `NULL` for none"
+        },
+        {
+          "CName": "radius",
+          "CsName": "Radius",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "the ring's corner radius; 0 follows the component's corners"
+        }
+      ],
+      "Doc": "Selection ring: a ring in someone's color around the previous component, for \"this item is selected by Kate\", with an optional name flag on its corner."
+    },
+    {
+      "CName": "cui_canvas_toggle",
+      "CsName": "NativeCanvasToggle",
+      "Size": 24,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "icon",
+          "CsName": "Icon",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "label",
+          "CsName": "Label",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "the tooltip"
+        },
+        {
+          "CName": "on",
+          "CsName": "On",
+          "CsType": "nint",
+          "CType": "_Bool *",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "_Bool *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "_Bool",
+              "Kind": "Bool"
+            }
+          },
+          "Doc": "flipped on click, shown pressed while true"
+        }
+      ],
+      "Doc": "Canvas controls: a floating rail of zoom controls over the previous component, at its end edge: zoom in, the zoom as a percentage (a click resets it to 100%), zoom out, fit, and toggles of your own (grid, layers). It drives a pan and zoom view, the same struct as the node editor's, so it works with a node editor as it is; zooming keeps the middle of the component in place and eases there. Zoom steps through presets (25% to 400% unless you pass your own). Tab moves through the buttons."
+    },
+    {
+      "CName": "cui_canvas_controls_opts",
+      "CsName": "NativeCanvasControlsOpts",
+      "Size": 56,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "steps",
+          "CsName": "Steps",
+          "CsType": "nint",
+          "CType": "const float *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const float *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const float",
+              "Kind": "Float",
+              "IsConst": true
+            }
+          },
+          "Doc": "zoom presets, ascending; `NULL`: 0.25 0.33 0.5 0.67 0.8 1 1.25 1.5 2 3 4"
+        },
+        {
+          "CName": "step_count",
+          "CsName": "StepCount",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "content",
+          "CsName": "Content",
+          "CsType": "NativeRect",
+          "CType": "cui_rect",
+          "Offset": 20,
+          "Type": {
+            "Spelling": "cui_rect",
+            "Kind": "Record"
+          },
+          "Doc": "the content's bounds in canvas points, for fit; empty: fit is only reported"
+        },
+        {
+          "CName": "toggles",
+          "CsName": "Toggles",
+          "CsType": "nint",
+          "CType": "const cui_canvas_toggle *",
+          "Offset": 40,
+          "Type": {
+            "Spelling": "const cui_canvas_toggle *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_canvas_toggle",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "toggle_count",
+          "CsName": "ToggleCount",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 48,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "no_fit",
+          "CsName": "NoFit",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 52,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "leaves out the fit button"
+        },
+        {
+          "CName": "start_side",
+          "CsName": "StartSide",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 53,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "the rail sits at the start edge (left, or right in a right-to-left interface)"
+        }
+      ],
+      "Doc": ""
+    },
+    {
+      "CName": "cui_result_card_opts",
+      "CsName": "NativeResultCardOpts",
+      "Size": 48,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "caption",
+          "CsName": "Caption",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "under the title, wraps"
+        },
+        {
+          "CName": "badge",
+          "CsName": "Badge",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "the status chip, e.g. \"Done in 4.2 s\"; `NULL` for none"
+        },
+        {
+          "CName": "badge_tone",
+          "CsName": "BadgeTone",
+          "CsType": "Tone",
+          "CType": "cui_tone",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "cui_tone",
+            "Kind": "Enum"
+          },
+          "Doc": "the chip's dot, default success"
+        },
+        {
+          "CName": "image_w",
+          "CsName": "ImageW",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 28,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "the picture's size in pixels, to crop it without stretching; 0: stretched"
+        },
+        {
+          "CName": "image_h",
+          "CsName": "ImageH",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "the picture's size in pixels, to crop it without stretching; 0: stretched"
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "NativeSize",
+          "CType": "cui_size",
+          "Offset": 36,
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          },
+          "Doc": "default fill, up to 320"
+        },
+        {
+          "CName": "aspect",
+          "CsName": "Aspect",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 44,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "height over width, default 1.25"
+        }
+      ],
+      "Doc": "Result card: a picture with rounded corners, an optional status chip in the top corner, and a title and caption on a soft fade at the bottom, for a render, an export or a generated image. Put its actions under it in a floating toolbar (cui_toolbar with CUI_TOOLBAR_FLOATING, cycle pickers for choices like 2x or PNG). The picture fills the card and is cropped to it. The card is focusable; a click, Enter or Space returns true (open it large)."
+    },
+    {
+      "CName": "cui_selection_action",
+      "CsName": "NativeSelectionAction",
+      "Size": 24,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "icon",
+          "CsName": "Icon",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "label",
+          "CsName": "Label",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "tone",
+          "CsName": "Tone",
+          "CsType": "Tone",
+          "CType": "cui_tone",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "cui_tone",
+            "Kind": "Enum"
+          },
+          "Doc": "CUI_TONE_DANGER for a destructive action"
+        }
+      ],
+      "Doc": "Selection bar: a floating bar that slides up under the previous component (a list, a table, a grid) while something in it is selected: \"3 selected\" with a clear button, then labeled actions. Esc clears the selection too. Give it the count, or your array of flags in `selected` and it counts and clears them itself."
+    },
+    {
+      "CName": "cui_selection_bar_opts",
+      "CsName": "NativeSelectionBarOpts",
+      "Size": 40,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "_",
+          "CsName": "Sentinel",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "selected",
+          "CsName": "Selected",
+          "CsType": "nint",
+          "CType": "_Bool *",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "_Bool *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "_Bool",
+              "Kind": "Bool"
+            }
+          },
+          "Doc": "your flags, one per item: counted, and cleared by the clear button and Esc"
+        },
+        {
+          "CName": "item_count",
+          "CsName": "ItemCount",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "how many flags `selected` holds"
+        },
+        {
+          "CName": "count_format",
+          "CsName": "CountFormat",
+          "CsType": "nint",
+          "CType": "const char *",
+          "Offset": 24,
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          },
+          "Doc": "default \"%d selected\""
+        },
+        {
+          "CName": "anchor",
+          "CsName": "Anchor",
+          "CsType": "uint",
+          "CType": "cui_id",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "cui_id",
+            "Kind": "UInt"
+          },
+          "Doc": "the component it sits under; 0: the previous component"
+        },
+        {
+          "CName": "no_escape",
+          "CsName": "NoEscape",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 36,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "Esc does not clear"
+        }
+      ],
+      "Doc": ""
     },
     {
       "CName": "cui_corners",
@@ -26839,6 +30042,103 @@
       "Doc": ""
     },
     {
+      "CName": "cui_spinner_style",
+      "CsName": "SpinnerStyle",
+      "Values": [
+        {
+          "CName": "CUI_SPINNER_ARC",
+          "CsName": "Arc",
+          "Value": "0",
+          "Doc": "a ring with an arc sweeping round it"
+        },
+        {
+          "CName": "CUI_SPINNER_COMET",
+          "CsName": "Comet",
+          "Value": "1",
+          "Doc": "a ring of dots with a head and a tail that thins out dot by dot"
+        },
+        {
+          "CName": "CUI_SPINNER_DOT_MATRIX",
+          "CsName": "DotMatrix",
+          "Value": "2",
+          "Doc": "a 5x5 grid of dots with a wave running through it, for dense layouts"
+        },
+        {
+          "CName": "CUI_SPINNER_FILL_DRAIN",
+          "CsName": "FillDrain",
+          "Value": "3",
+          "Doc": "a tile that fills from the bottom, then dissolves: a step of a job"
+        },
+        {
+          "CName": "CUI_SPINNER_RADAR",
+          "CsName": "Radar",
+          "Value": "4",
+          "Doc": "a sweep round a dial; points light up as it passes: searching, scanning"
+        },
+        {
+          "CName": "CUI_SPINNER_RIPPLE",
+          "CsName": "Ripple",
+          "Value": "5",
+          "Doc": "rings spreading from a dot: connecting, pairing, waiting for the other side"
+        },
+        {
+          "CName": "CUI_SPINNER_UPLOAD",
+          "CsName": "Upload",
+          "Value": "6",
+          "Doc": "chevrons streaming up: sending"
+        },
+        {
+          "CName": "CUI_SPINNER_DOWNLOAD",
+          "CsName": "Download",
+          "Value": "7",
+          "Doc": "chevrons streaming down: receiving"
+        },
+        {
+          "CName": "CUI_SPINNER_TRANSFER",
+          "CsName": "Transfer",
+          "Value": "8",
+          "Doc": "both, side by side: syncing both ways"
+        },
+        {
+          "CName": "CUI_SPINNER_ORBIT",
+          "CsName": "Orbit",
+          "Value": "9",
+          "Doc": "two dots circling, their trails dissolving: syncing"
+        },
+        {
+          "CName": "CUI_SPINNER_BOUNCE",
+          "CsName": "Bounce",
+          "Value": "10",
+          "Doc": "three bouncing dots with short trails: typing, a chat reply"
+        },
+        {
+          "CName": "CUI_SPINNER_SCAN",
+          "CsName": "Scan",
+          "Value": "11",
+          "Doc": "a scan line reading a page: indexing, importing"
+        },
+        {
+          "CName": "CUI_SPINNER_PULSE",
+          "CsName": "Pulse",
+          "Value": "12",
+          "Doc": "a soft disc breathing in density: recording, live"
+        },
+        {
+          "CName": "CUI_SPINNER_SPIRAL",
+          "CsName": "Spiral",
+          "Value": "13",
+          "Doc": "three arms turning: a long, calm background wait"
+        },
+        {
+          "CName": "CUI_SPINNER_PLASMA",
+          "CsName": "Plasma",
+          "Value": "14",
+          "Doc": "slow moving noise in a tile: generating an image or audio"
+        }
+      ],
+      "Doc": "Spinner: says that something is happening, for as long as you call it. `size` is its height in points (20 when 0). The default style is a ring with a sweeping arc that holds still with reduced motion. The other styles are drawn in dots on an 8x8 ordered dither, one point a dot below 32 points tall and two from there, and each fits a kind of wait:"
+    },
+    {
       "CName": "cui_annotation_kind",
       "CsName": "AnnotationKind",
       "Values": [
@@ -26951,6 +30251,37 @@
       "Doc": "The rows the view shows after folding, e.g. to put a comment button beside a line. Copies rows [first, first + cap) and returns how many there are (0 before the view's first frame). Call it in the same id scope as the view."
     },
     {
+      "CName": "cui_gauge_style",
+      "CsName": "GaugeStyle",
+      "Values": [
+        {
+          "CName": "CUI_GAUGE_AUTO",
+          "CsName": "Auto",
+          "Value": "0",
+          "Doc": "segments with `bands`, the arc without"
+        },
+        {
+          "CName": "CUI_GAUGE_ARC",
+          "CsName": "Arc",
+          "Value": "1",
+          "Doc": "a track and a value arc with round caps, min and max at its ends"
+        },
+        {
+          "CName": "CUI_GAUGE_SEGMENTS",
+          "CsName": "Segments",
+          "Value": "2",
+          "Doc": "short segments lit up to the value, in the band colors"
+        },
+        {
+          "CName": "CUI_GAUGE_RING",
+          "CsName": "Ring",
+          "Value": "3",
+          "Doc": "a slim full ring starting at the top"
+        }
+      ],
+      "Doc": ""
+    },
+    {
       "CName": "cui_loader_style",
       "CsName": "LoaderStyle",
       "Values": [
@@ -27051,9 +30382,90 @@
           "CsName": "Speaking",
           "Value": "3",
           "Doc": ""
+        },
+        {
+          "CName": "CUI_VOICE_MUTED",
+          "CsName": "Muted",
+          "Value": "4",
+          "Doc": ""
         }
       ],
-      "Doc": "Voice orb: a living shape for voice modes. level is the input or output loudness (0..1). Returns true when clicked."
+      "Doc": "What a voice conversation is doing, for the voice session's label (and the voice orb, which shows the first four)."
+    },
+    {
+      "CName": "cui_voice_owner",
+      "CsName": "VoiceOwner",
+      "Values": [
+        {
+          "CName": "CUI_VOICE_YOU",
+          "CsName": "You",
+          "Value": "0",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_VOICE_REPLY",
+          "CsName": "Reply",
+          "Value": "1",
+          "Doc": ""
+        }
+      ],
+      "Doc": ""
+    },
+    {
+      "CName": "cui_gantt_state",
+      "CsName": "GanttState",
+      "Values": [
+        {
+          "CName": "CUI_GANTT_AUTO",
+          "CsName": "Auto",
+          "Value": "0",
+          "Doc": "from the progress and today: 1 is done, more than 0 is active; untouched work is planned when it starts after today, else active"
+        },
+        {
+          "CName": "CUI_GANTT_DONE",
+          "CsName": "Done",
+          "Value": "1",
+          "Doc": "a green bar"
+        },
+        {
+          "CName": "CUI_GANTT_ACTIVE",
+          "CsName": "Active",
+          "Value": "2",
+          "Doc": "a bar in the first series color"
+        },
+        {
+          "CName": "CUI_GANTT_PLANNED",
+          "CsName": "Planned",
+          "Value": "3",
+          "Doc": "a dashed, lightly tinted bar"
+        }
+      ],
+      "Doc": "Gantt chart: a task list beside a timeline of bars. Drag a bar to move it, its ends to resize it. Bars are colored by state (done, active, planned) with their progress inside, dependencies are soft curves with small arrowheads, and today is an accent line. Returns the index of a clicked task, or -1."
+    },
+    {
+      "CName": "cui_toolbar_style",
+      "CsName": "ToolbarStyle",
+      "Values": [
+        {
+          "CName": "CUI_TOOLBAR_PLAIN",
+          "CsName": "Plain",
+          "Value": "0",
+          "Doc": "a strip as wide as its parent, with a hairline under it"
+        },
+        {
+          "CName": "CUI_TOOLBAR_GROUPED",
+          "CsName": "Grouped",
+          "Value": "1",
+          "Doc": "raised groups inside one muted pill"
+        },
+        {
+          "CName": "CUI_TOOLBAR_FLOATING",
+          "CsName": "Floating",
+          "Value": "2",
+          "Doc": "one bordered surface pill"
+        }
+      ],
+      "Doc": "Toolbar: a row of compact icon buttons, toggles, separators and small text buttons. Icon only buttons show their tooltip as their name. Items that do not fit collapse, from the end, into a \"more\" menu; an item chosen there returns true on the next frame. Tab moves through the items."
     },
     {
       "CName": "cui_log_level",
@@ -27128,6 +30540,86 @@
         }
       ],
       "Doc": "Curve editor: keyframes on a plot, for easing, animation timing and response curves. You own the array of keys, sorted by x; the editor edits it in place (moves, handles, modes, adds and removes) and reports what it did in the result, so data you keep beside each key can follow:"
+    },
+    {
+      "CName": "cui_tag_status",
+      "CsName": "TagStatus",
+      "Values": [
+        {
+          "CName": "CUI_TAG_PENDING",
+          "CsName": "Pending",
+          "Value": "0",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_TAG_IN_PROGRESS",
+          "CsName": "InProgress",
+          "Value": "1",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_TAG_SUBMITTED",
+          "CsName": "Submitted",
+          "Value": "2",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_TAG_IN_REVIEW",
+          "CsName": "InReview",
+          "Value": "3",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_TAG_SUCCESS",
+          "CsName": "Success",
+          "Value": "4",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_TAG_FAILED",
+          "CsName": "Failed",
+          "Value": "5",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_TAG_EXPIRED",
+          "CsName": "Expired",
+          "Value": "6",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_TAG_CUSTOM",
+          "CsName": "Custom",
+          "Value": "7",
+          "Doc": "your `icon` and `tone` only"
+        }
+      ],
+      "Doc": "Status tag: an icon, a label and a fill tinted by the state, for a table cell, a card header or a group of tags. \"In progress\" turns its dashed ring slowly (it holds still with reduced motion). A NULL label shows the state's English name."
+    },
+    {
+      "CName": "cui_gradient_track",
+      "CsName": "GradientTrack",
+      "Values": [
+        {
+          "CName": "CUI_GRADIENT_HUE",
+          "CsName": "Hue",
+          "Value": "0",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_GRADIENT_TEMPERATURE",
+          "CsName": "Temperature",
+          "Value": "1",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_GRADIENT_OPACITY",
+          "CsName": "Opacity",
+          "Value": "2",
+          "Doc": ""
+        }
+      ],
+      "Doc": "Gradient slider: a slider whose track is the value itself (a hue wheel, a white balance temperature, an opacity over a checkerboard, or your own stops), with a thumb filled with the color under it. An optional tool button after the track (an eyedropper) reports clicks. Keys as for the slider. Returns CUI_WELL_* flags."
     },
     {
       "CName": "cui_timeline_ruler",
@@ -27326,6 +30818,68 @@
         }
       ],
       "Doc": "How an axis labels its values."
+    },
+    {
+      "CName": "cui_format_align",
+      "CsName": "FormatAlign",
+      "Values": [
+        {
+          "CName": "CUI_FORMAT_ALIGN_LEFT",
+          "CsName": "Left",
+          "Value": "0",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_FORMAT_ALIGN_CENTER",
+          "CsName": "Center",
+          "Value": "1",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_FORMAT_ALIGN_RIGHT",
+          "CsName": "Right",
+          "Value": "2",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_FORMAT_ALIGN_JUSTIFY",
+          "CsName": "Justify",
+          "Value": "3",
+          "Doc": ""
+        }
+      ],
+      "Doc": "Format bar: a floating bar that edits the format of a text selection. A color swatch opens a grid of colors; bold and underline toggle; link reports a click; the size readout follows the text style, chosen from a menu that shows each style at its own size; alignment and list open small flyouts (a corner mark says so); delete asks first, in a small tip with a Delete button. You pass one struct with the format and the bar edits it:"
+    },
+    {
+      "CName": "cui_format_list",
+      "CsName": "FormatList",
+      "Values": [
+        {
+          "CName": "CUI_FORMAT_LIST_NONE",
+          "CsName": "None",
+          "Value": "0",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_FORMAT_LIST_BULLETS",
+          "CsName": "Bullets",
+          "Value": "1",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_FORMAT_LIST_NUMBERS",
+          "CsName": "Numbers",
+          "Value": "2",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_FORMAT_LIST_CHECKS",
+          "CsName": "Checks",
+          "Value": "3",
+          "Doc": ""
+        }
+      ],
+      "Doc": ""
     },
     {
       "CName": "cui_renderer_kind",
@@ -27530,9 +31084,15 @@
           "CsName": "Seek",
           "Value": "8",
           "Doc": ""
+        },
+        {
+          "CName": "CUI_PLAYER_SPEED",
+          "CsName": "Speed",
+          "Value": "16",
+          "Doc": ""
         }
       ],
-      "Doc": ""
+      "Doc": "what the user did, from the now playing card and the voice note: CUI_PLAYER_SPEED is the voice note's speed chip"
     },
     {
       "CName": "CUI_RESPONSE_COPY",
@@ -27617,6 +31177,24 @@
           "CName": "CUI_COMPOSER_MODEL",
           "CsName": "Model",
           "Value": "16",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_COMPOSER_RECORD",
+          "CsName": "Record",
+          "Value": "32",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_COMPOSER_CANCEL",
+          "CsName": "Cancel",
+          "Value": "64",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_COMPOSER_VOICE",
+          "CsName": "Voice",
+          "Value": "128",
           "Doc": ""
         }
       ],
@@ -27859,7 +31437,7 @@
         "Kind": "Void"
       },
       "Module": "Context and frame",
-      "Doc": "dt is the time since the previous frame in seconds."
+      "Doc": "dt is the elapsed time since the previous frame in seconds. Timers use the full interval (up to an hour). Animation steps are capped after idle."
     },
     {
       "CName": "cui_end_frame",
@@ -28643,6 +32221,77 @@
       "ReturnType": {
         "Spelling": "cui_cursor",
         "Kind": "Enum"
+      },
+      "Module": "Input (called by the platform layer)",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_set_clipboard_text",
+      "CsName": "SetClipboardText",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "text",
+          "CsName": "text",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "Input (called by the platform layer)",
+      "Doc": "The system clipboard, for a menu or status bar item that copies or pastes (\"Copy path\"). They go through the platform's clipboard hooks, as the copy button and text fields do: without a hook, setting does nothing and getting returns \"\". The returned text stays valid until the next call."
+    },
+    {
+      "CName": "cui_get_clipboard_text",
+      "CsName": "GetClipboardText",
+      "CsReturn": "nint",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "const char *",
+        "Kind": "Pointer",
+        "Element": {
+          "Spelling": "const char",
+          "Kind": "Char_S",
+          "IsConst": true
+        }
       },
       "Module": "Input (called by the platform layer)",
       "Doc": ""
@@ -30142,7 +33791,7 @@
         "Kind": "Void"
       },
       "Module": "Layout",
-      "Doc": ""
+      "Doc": "Open a split with pane minimums that can fit the available main axis."
     },
     {
       "CName": "cui_split_next",
@@ -31599,7 +35248,7 @@
         "Kind": "Bool"
       },
       "Module": "Selection controls",
-      "Doc": ""
+      "Doc": "Range slider with two non-crossing thumbs. Tab focuses the range, Space selects the other thumb, and the slider keys adjust the focused thumb."
     },
     {
       "CName": "cui_rating",
@@ -31880,7 +35529,7 @@
         "Kind": "Int"
       },
       "Module": "Text input",
-      "Doc": "Multi-line text area with word wrap."
+      "Doc": "Multi-line text area with word wrap. The wheel scrolls the text first and goes to the enclosing scroll view at the text area's edges."
     },
     {
       "CName": "cui_search_ex",
@@ -32041,7 +35690,7 @@
         "Kind": "Bool"
       },
       "Module": "Text input",
-      "Doc": ""
+      "Doc": "A bounded number field. Only complete finite drafts update the value. Enter or loss of focus shows the accepted value using opts.decimals."
     },
     {
       "CName": "cui_select_ex",
@@ -32136,7 +35785,7 @@
         "Kind": "Bool"
       },
       "Module": "Select, combobox, date picker",
-      "Doc": ""
+      "Doc": "Enter opens the list or picks the highlighted item. A searchable select returns focus to its trigger when its list closes."
     },
     {
       "CName": "cui_date_today",
@@ -32268,7 +35917,7 @@
         "Kind": "Bool"
       },
       "Module": "Select, combobox, date picker",
-      "Doc": ""
+      "Doc": "Draw the date trigger with a focus ring when reached by keyboard."
     },
     {
       "CName": "cui_color_picker",
@@ -32321,7 +35970,7 @@
         "Kind": "Bool"
       },
       "Module": "Select, combobox, date picker",
-      "Doc": ""
+      "Doc": "Draw the color trigger and reconcile its HSV controls with the caller's RGB."
     },
     {
       "CName": "cui_tabs_ex",
@@ -32564,7 +36213,7 @@
         "Kind": "Int"
       },
       "Module": "Navigation",
-      "Doc": "returns clicked index or -1"
+      "Doc": "Ancestor links, which show keyboard focus. Returns the clicked index or -1."
     },
     {
       "CName": "cui_pagination",
@@ -32626,7 +36275,7 @@
         "Kind": "Bool"
       },
       "Module": "Navigation",
-      "Doc": "page is 0 based"
+      "Doc": "Page buttons, which show keyboard focus; page is 0 based. The compact layout is chosen from the parent's inner width."
     },
     {
       "CName": "cui_stepper",
@@ -32689,7 +36338,7 @@
         "Kind": "Void"
       },
       "Module": "Navigation",
-      "Doc": ""
+      "Doc": "Process steps; labels collapse to fit the width of their own row."
     },
     {
       "CName": "cui_popover_begin",
@@ -33325,7 +36974,7 @@
         "Kind": "Void"
       },
       "Module": "Menus and popovers",
-      "Doc": "Tooltip for the previous component, shown after a short hover delay."
+      "Doc": "Tooltip for the previous component. The first hover waits for the delay, measured in elapsed time even when the app sleeps between frames."
     },
     {
       "CName": "cui_dialog_begin",
@@ -33392,7 +37041,7 @@
         "Kind": "Bool"
       },
       "Module": "Dialogs, sheets, toasts, alerts",
-      "Doc": "Modal dialog. Shown while *open is true; closing sets it to false."
+      "Doc": "Modal dialog. Shown while *open is true; closing sets it to false. Escape leaves a focused text field before it can dismiss the dialog."
     },
     {
       "CName": "cui_dialog_end",
@@ -33617,7 +37266,7 @@
         "Kind": "Int"
       },
       "Module": "Dialogs, sheets, toasts, alerts",
-      "Doc": "Queue a toast. Returns a handle; cui_toast_action_clicked(handle) tells whether its action button was pressed."
+      "Doc": "Queue a toast. Returns a handle; cui_toast_action_clicked(handle) tells whether its action button was pressed before the toast started closing."
     },
     {
       "CName": "cui_toast_action_clicked",
@@ -33793,6 +37442,55 @@
       "Doc": ""
     },
     {
+      "CName": "cui_spinner_ex",
+      "CsName": "SpinnerEx",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "size",
+          "CsName": "size",
+          "CsType": "float",
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeSpinnerOpts",
+          "Type": {
+            "Spelling": "const cui_spinner_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_spinner_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "Feedback and display",
+      "Doc": "most styles are square; upload and download are 25/32 as wide as tall, transfer 50/32, bounce 40/28, scan 28/32"
+    },
+    {
       "CName": "cui_spinner",
       "CsName": "Spinner",
       "CsReturn": "void",
@@ -33861,6 +37559,72 @@
           "Type": {
             "Spelling": "float",
             "Kind": "Float"
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "Feedback and display",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_skeleton_group_begin_ex",
+      "CsName": "SkeletonGroupBegin",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeSkeletonGroupOpts",
+          "Type": {
+            "Spelling": "const cui_skeleton_group_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_skeleton_group_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "Feedback and display",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_skeleton_group_end",
+      "CsName": "SkeletonGroupEnd",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
           }
         }
       ],
@@ -34588,7 +38352,7 @@
         "Kind": "Void"
       },
       "Module": "Data display",
-      "Doc": "Virtual list: only the visible rows are built, so lists with a million rows stay fast. Fills first/last with the visible range."
+      "Doc": "Virtual list: only the visible rows are built, so lists with a million rows stay fast. Fills first/last with the visible range for this row count."
     },
     {
       "CName": "cui_virtual_list_end",
@@ -34691,7 +38455,7 @@
         "Kind": "Bool"
       },
       "Module": "Data display",
-      "Doc": ""
+      "Doc": "Begin a table with keyboard focus indicators for its sortable headers."
     },
     {
       "CName": "cui_table_row",
@@ -35205,6 +38969,83 @@
       "Doc": ""
     },
     {
+      "CName": "cui_pattern_meter_ex",
+      "CsName": "PatternMeter",
+      "CsReturn": "int",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "parts",
+          "CsName": "parts",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const cui_meter_part *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_meter_part",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "count",
+          "CsName": "count",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativePatternMeterOpts",
+          "Type": {
+            "Spelling": "const cui_pattern_meter_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_pattern_meter_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "int",
+        "Kind": "Int"
+      },
+      "Module": "Data display",
+      "Doc": ""
+    },
+    {
       "CName": "cui_image_create",
       "CsName": "ImageCreate",
       "CsReturn": "nuint",
@@ -35326,7 +39167,7 @@
         "Kind": "ULongLong"
       },
       "Module": "Data display",
-      "Doc": "PNG/JPEG via stb_image"
+      "Doc": "UTF-8 path, PNG/JPEG via stb_image"
     },
     {
       "CName": "cui_image_destroy",
@@ -35826,7 +39667,7 @@
         "Kind": "Bool"
       },
       "Module": "More components",
-      "Doc": ""
+      "Doc": "max_tags applies to every tag, including a batch separated by commas."
     },
     {
       "CName": "cui_otp_input",
@@ -35888,7 +39729,7 @@
         "Kind": "Bool"
       },
       "Module": "More components",
-      "Doc": "One time code input: `length` boxes; code must hold length + 1 bytes. Returns true when all boxes are filled (once per change)."
+      "Doc": "One time code input: `length` boxes; code must hold length + 1 bytes. Returns true when all boxes are filled, including when a paste replaces one complete code with a different complete code."
     },
     {
       "CName": "cui_button_group_begin",
@@ -36526,7 +40367,7 @@
         "Kind": "Bool"
       },
       "Module": "More actions",
-      "Doc": ""
+      "Doc": "Move focus once per arrow press unless a later control took focus."
     },
     {
       "CName": "cui_confirm_button_ex",
@@ -36632,6 +40473,69 @@
             "Kind": "Pointer",
             "Element": {
               "Spelling": "const cui_status_button_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "_Bool",
+        "Kind": "Bool"
+      },
+      "Module": "More actions",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_status_spinner_ex",
+      "CsName": "StatusSpinner",
+      "CsReturn": "byte",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "status",
+          "CsName": "status",
+          "CsType": "Status",
+          "Type": {
+            "Spelling": "cui_status",
+            "Kind": "Enum"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeStatusSpinnerOpts",
+          "Type": {
+            "Spelling": "const cui_status_spinner_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_status_spinner_opts",
               "Kind": "Record",
               "IsConst": true
             }
@@ -36782,7 +40686,7 @@
         "Kind": "Int"
       },
       "Module": "More actions",
-      "Doc": ""
+      "Doc": "Balance the action scope even if an action closes the dial during the build."
     },
     {
       "CName": "cui_theme_switcher",
@@ -37160,7 +41064,7 @@
         "Kind": "Bool"
       },
       "Module": "Data grid",
-      "Doc": ""
+      "Doc": "Returns a visible range for the current row count, even after the grid shrinks."
     },
     {
       "CName": "cui_data_grid_row",
@@ -37566,7 +41470,7 @@
         "Kind": "Bool"
       },
       "Module": "Data grid",
-      "Doc": ""
+      "Doc": "Draw filter chips and open the new chip's value list when a field is added."
     },
     {
       "CName": "cui_tree_table_begin_ex",
@@ -39286,7 +43190,7 @@
         "Kind": "Void"
       },
       "Module": "Conversation",
-      "Doc": "bouncing dots"
+      "Doc": "bouncing dots, still with reduced motion"
     },
     {
       "CName": "cui_comment_ex",
@@ -40514,7 +44418,7 @@
         "Kind": "Int"
       },
       "Module": "More charts",
-      "Doc": ""
+      "Doc": "Returns the clicked node index, node_count + the clicked input link index, or -1."
     },
     {
       "CName": "cui_waffle_ex",
@@ -41844,7 +45748,7 @@
         "Kind": "Bool"
       },
       "Module": "Motion and text effects",
-      "Doc": ""
+      "Doc": "Move one tab per arrow press, keeping the move tied to the original focus."
     },
     {
       "CName": "cui_control_tile_ex",
@@ -42903,6 +46807,294 @@
       "Doc": ""
     },
     {
+      "CName": "cui_voice_wave_ex",
+      "CsName": "VoiceWave",
+      "CsReturn": "byte",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "levels",
+          "CsName": "levels",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const float *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const float",
+              "Kind": "Float",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "count",
+          "CsName": "count",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeVoiceWaveOpts",
+          "Type": {
+            "Spelling": "const cui_voice_wave_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_voice_wave_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "_Bool",
+        "Kind": "Bool"
+      },
+      "Module": "Voice",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_voice_resample",
+      "CsName": "VoiceResample",
+      "CsReturn": "int",
+      "Params": [
+        {
+          "CName": "levels",
+          "CsName": "levels",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const float *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const float",
+              "Kind": "Float",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "count",
+          "CsName": "count",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "out",
+          "CsName": "@out",
+          "CsType": "ref float",
+          "Type": {
+            "Spelling": "float *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "float",
+              "Kind": "Float"
+            }
+          }
+        },
+        {
+          "CName": "columns",
+          "CsName": "columns",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "int",
+        "Kind": "Int"
+      },
+      "Module": "Voice",
+      "Doc": "Resamples a clip to `columns` levels the way the clip strip does (the loudest level of each stretch; a stretch with no audio stays CUI_VOICE_SILENT), for keeping a short waveform with a message. Returns the number written."
+    },
+    {
+      "CName": "cui_voice_note_ex",
+      "CsName": "VoiceNote",
+      "CsReturn": "int",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "note",
+          "CsName": "note",
+          "CsType": "ref NativeVoiceNote",
+          "Type": {
+            "Spelling": "cui_voice_note *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_voice_note",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeVoiceNoteOpts",
+          "Type": {
+            "Spelling": "const cui_voice_note_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_voice_note_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "int",
+        "Kind": "Int"
+      },
+      "Module": "Voice",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_voice_session_ex",
+      "CsName": "VoiceSession",
+      "CsReturn": "int",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "state",
+          "CsName": "state",
+          "CsType": "VoiceState",
+          "Type": {
+            "Spelling": "cui_voice_state",
+            "Kind": "Enum"
+          }
+        },
+        {
+          "CName": "levels",
+          "CsName": "levels",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const float *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const float",
+              "Kind": "Float",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "count",
+          "CsName": "count",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeVoiceSessionOpts",
+          "Type": {
+            "Spelling": "const cui_voice_session_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_voice_session_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "int",
+        "Kind": "Int"
+      },
+      "Module": "Voice",
+      "Doc": ""
+    },
+    {
       "CName": "cui_kanban_begin",
       "CsName": "KanbanBegin",
       "CsReturn": "void",
@@ -43214,7 +47406,7 @@
         "Kind": "Int"
       },
       "Module": "Planning",
-      "Doc": ""
+      "Doc": "Returns the activated event index or -1. Read-only events still activate."
     },
     {
       "CName": "cui_month_calendar_ex",
@@ -43398,7 +47590,7 @@
         "Kind": "Int"
       },
       "Module": "Planning",
-      "Doc": ""
+      "Doc": "Returns the activated task index or -1. Read-only tasks still activate."
     },
     {
       "CName": "cui_hover_card_begin",
@@ -43452,7 +47644,7 @@
         "Kind": "Bool"
       },
       "Module": "Disclosure",
-      "Doc": ""
+      "Doc": "Keep a dismissed card closed until the pointer leaves its anchor."
     },
     {
       "CName": "cui_hover_card_end",
@@ -43532,7 +47724,7 @@
         "Kind": "Bool"
       },
       "Module": "Disclosure",
-      "Doc": ""
+      "Doc": "Require a fresh Enter when an activation opens the question in this frame."
     },
     {
       "CName": "cui_expandable_text_ex",
@@ -43600,7 +47792,7 @@
         "Kind": "Bool"
       },
       "Module": "Disclosure",
-      "Doc": ""
+      "Doc": "Draw expandable text with a toggle that keeps its identity when its label changes."
     },
     {
       "CName": "cui_expandable_card_begin",
@@ -44000,6 +48192,99 @@
       "ReturnType": {
         "Spelling": "int",
         "Kind": "Int"
+      },
+      "Module": "More feedback",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_veil_begin_ex",
+      "CsName": "VeilBegin",
+      "CsReturn": "byte",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "revealed",
+          "CsName": "revealed",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "_Bool *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "_Bool",
+              "Kind": "Bool"
+            }
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeVeilOpts",
+          "Type": {
+            "Spelling": "const cui_veil_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_veil_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "_Bool",
+        "Kind": "Bool"
+      },
+      "Module": "More feedback",
+      "Doc": "Draw the cover while leaving hit testing to other widgets when it is disabled."
+    },
+    {
+      "CName": "cui_veil_end",
+      "CsName": "VeilEnd",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
       },
       "Module": "More feedback",
       "Doc": ""
@@ -44445,7 +48730,7 @@
         "Kind": "Bool"
       },
       "Module": "Pickers",
-      "Doc": ""
+      "Doc": "Build a wheel picker, apply input routed to its drum, and draw its focus ring with its rows."
     },
     {
       "CName": "cui_time_dial",
@@ -44605,7 +48890,7 @@
         "Kind": "Bool"
       },
       "Module": "Pickers",
-      "Doc": ""
+      "Doc": "Build a ruler slider: it takes vertical wheel input before the enclosing view and keeps every rounded value in range."
     },
     {
       "CName": "cui_histogram_slider_ex",
@@ -45210,7 +49495,7 @@
         "Kind": "Int"
       },
       "Module": "Capture",
-      "Doc": ""
+      "Doc": "Build a dropzone and show drag feedback only while it can accept a drop."
     },
     {
       "CName": "cui_path_has_extension",
@@ -45488,7 +49773,7 @@
         "Kind": "Bool"
       },
       "Module": "More inputs",
-      "Doc": ""
+      "Doc": "Edit a bounded scrub value and accept only a complete, finite numeric draft."
     },
     {
       "CName": "cui_money_input_ex",
@@ -45555,7 +49840,7 @@
         "Kind": "Bool"
       },
       "Module": "More inputs",
-      "Doc": ""
+      "Doc": "Edit an amount only if its grouped display can represent the result."
     },
     {
       "CName": "cui_shortcut_recorder_ex",
@@ -45756,7 +50041,7 @@
         "Kind": "Bool"
       },
       "Module": "Node editor",
-      "Doc": ""
+      "Doc": "Build the editor canvas and process gestures while it is enabled."
     },
     {
       "CName": "cui_node_editor_end",
@@ -46605,6 +50890,328 @@
       },
       "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
       "Doc": "pushes the following items to the right"
+    },
+    {
+      "CName": "cui_toolbar_group_begin",
+      "CsName": "ToolbarGroupBegin",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Doc": "A group of items: a raised well in the grouped style, set apart by separators in the others."
+    },
+    {
+      "CName": "cui_toolbar_group_end",
+      "CsName": "ToolbarGroupEnd",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_toolbar_radio_ex",
+      "CsName": "ToolbarRadio",
+      "CsReturn": "byte",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "icons",
+          "CsName": "icons",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *const *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char *const",
+              "Kind": "Pointer",
+              "IsConst": true,
+              "Element": {
+                "Spelling": "const char",
+                "Kind": "Char_S",
+                "IsConst": true
+              }
+            }
+          }
+        },
+        {
+          "CName": "count",
+          "CsName": "count",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "index",
+          "CsName": "index",
+          "CsType": "ref int",
+          "Type": {
+            "Spelling": "int *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "int",
+              "Kind": "Int"
+            }
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeToolbarRadioOpts",
+          "Type": {
+            "Spelling": "const cui_toolbar_radio_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_toolbar_radio_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "_Bool",
+        "Kind": "Bool"
+      },
+      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_toolbar_primary_ex",
+      "CsName": "ToolbarPrimary",
+      "CsReturn": "byte",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "icon",
+          "CsName": "icon",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeToolOpts",
+          "Type": {
+            "Spelling": "const cui_tool_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_tool_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "_Bool",
+        "Kind": "Bool"
+      },
+      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Doc": "The main action at the end of a grouped toolbar: a larger button filled with the text color."
+    },
+    {
+      "CName": "cui_toolbar_cycle_ex",
+      "CsName": "ToolbarCycle",
+      "CsReturn": "byte",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "items",
+          "CsName": "items",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *const *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char *const",
+              "Kind": "Pointer",
+              "IsConst": true,
+              "Element": {
+                "Spelling": "const char",
+                "Kind": "Char_S",
+                "IsConst": true
+              }
+            }
+          }
+        },
+        {
+          "CName": "count",
+          "CsName": "count",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "index",
+          "CsName": "index",
+          "CsType": "ref int",
+          "Type": {
+            "Spelling": "int *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "int",
+              "Kind": "Int"
+            }
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeToolOpts",
+          "Type": {
+            "Spelling": "const cui_tool_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_tool_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "_Bool",
+        "Kind": "Bool"
+      },
+      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Doc": "A small picker that steps through its choices on each click (\"1x\", \"2x\", \"4x\"). Returns true when *index changed."
+    },
+    {
+      "CName": "cui_flyout_mark",
+      "CsName": "FlyoutMark",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "App chrome: menu bar, toolbar, status bar, document tabs",
+      "Doc": "A small triangle in the corner of the previous component (at the end side) that says it opens a flyout or a menu. Any button can take it."
     },
     {
       "CName": "cui_status_bar_begin",
@@ -49393,6 +54000,665 @@
       "Doc": "The color at t: exactly what the ramp shows (each channel, alpha too, interpolated in sRGB between the stops on either side; the end colors continue past the first and last stop)."
     },
     {
+      "CName": "cui_status_tag_ex",
+      "CsName": "StatusTag",
+      "CsReturn": "byte",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "label",
+          "CsName": "label",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "status",
+          "CsName": "status",
+          "CsType": "TagStatus",
+          "Type": {
+            "Spelling": "cui_tag_status",
+            "Kind": "Enum"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeStatusTagOpts",
+          "Type": {
+            "Spelling": "const cui_status_tag_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_status_tag_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "_Bool",
+        "Kind": "Bool"
+      },
+      "Module": "Creative controls",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_ratio_slider_ex",
+      "CsName": "RatioSlider",
+      "CsReturn": "byte",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "first",
+          "CsName": "first",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "second",
+          "CsName": "second",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "ratio",
+          "CsName": "ratio",
+          "CsType": "ref float",
+          "Type": {
+            "Spelling": "float *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "float",
+              "Kind": "Float"
+            }
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeRatioSliderOpts",
+          "Type": {
+            "Spelling": "const cui_ratio_slider_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_ratio_slider_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "_Bool",
+        "Kind": "Bool"
+      },
+      "Module": "Creative controls",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_gradient_slider_ex",
+      "CsName": "GradientSlider",
+      "CsReturn": "int",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "label",
+          "CsName": "label",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "value",
+          "CsName": "value",
+          "CsType": "ref float",
+          "Type": {
+            "Spelling": "float *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "float",
+              "Kind": "Float"
+            }
+          }
+        },
+        {
+          "CName": "min",
+          "CsName": "min",
+          "CsType": "float",
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          }
+        },
+        {
+          "CName": "max",
+          "CsName": "max",
+          "CsType": "float",
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeGradientSliderOpts",
+          "Type": {
+            "Spelling": "const cui_gradient_slider_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_gradient_slider_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "int",
+        "Kind": "Int"
+      },
+      "Module": "Creative controls",
+      "Doc": "Edit a gradient slider without snapping a passive model value or an endpoint."
+    },
+    {
+      "CName": "cui_step_slider_ex",
+      "CsName": "StepSlider",
+      "CsReturn": "int",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "label",
+          "CsName": "label",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "value",
+          "CsName": "value",
+          "CsType": "ref int",
+          "Type": {
+            "Spelling": "int *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "int",
+              "Kind": "Int"
+            }
+          }
+        },
+        {
+          "CName": "min",
+          "CsName": "min",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "max",
+          "CsName": "max",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeStepSliderOpts",
+          "Type": {
+            "Spelling": "const cui_step_slider_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_step_slider_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "int",
+        "Kind": "Int"
+      },
+      "Module": "Creative controls",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_palette_strip_ex",
+      "CsName": "PaletteStrip",
+      "CsReturn": "int",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "label",
+          "CsName": "label",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "colors",
+          "CsName": "colors",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_color *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_color",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "locked",
+          "CsName": "locked",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "_Bool *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "_Bool",
+              "Kind": "Bool"
+            }
+          }
+        },
+        {
+          "CName": "count",
+          "CsName": "count",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativePaletteStripOpts",
+          "Type": {
+            "Spelling": "const cui_palette_strip_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_palette_strip_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "int",
+        "Kind": "Int"
+      },
+      "Module": "Creative controls",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_aspect_picker_ex",
+      "CsName": "AspectPicker",
+      "CsReturn": "byte",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "label",
+          "CsName": "label",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "index",
+          "CsName": "index",
+          "CsType": "ref int",
+          "Type": {
+            "Spelling": "int *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "int",
+              "Kind": "Int"
+            }
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeAspectPickerOpts",
+          "Type": {
+            "Spelling": "const cui_aspect_picker_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_aspect_picker_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "_Bool",
+        "Kind": "Bool"
+      },
+      "Module": "Creative controls",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_option_action_ex",
+      "CsName": "OptionAction",
+      "CsReturn": "int",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "label",
+          "CsName": "label",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "items",
+          "CsName": "items",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *const *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char *const",
+              "Kind": "Pointer",
+              "IsConst": true,
+              "Element": {
+                "Spelling": "const char",
+                "Kind": "Char_S",
+                "IsConst": true
+              }
+            }
+          }
+        },
+        {
+          "CName": "count",
+          "CsName": "count",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "index",
+          "CsName": "index",
+          "CsType": "ref int",
+          "Type": {
+            "Spelling": "int *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "int",
+              "Kind": "Int"
+            }
+          }
+        },
+        {
+          "CName": "icon",
+          "CsName": "icon",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeOptionActionOpts",
+          "Type": {
+            "Spelling": "const cui_option_action_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_option_action_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "int",
+        "Kind": "Int"
+      },
+      "Module": "Creative controls",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_seed_field_ex",
+      "CsName": "SeedField",
+      "CsReturn": "int",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "label",
+          "CsName": "label",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "seed",
+          "CsName": "seed",
+          "CsType": "ref uint",
+          "Type": {
+            "Spelling": "uint32_t *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "uint32_t",
+              "Kind": "UInt"
+            }
+          }
+        },
+        {
+          "CName": "locked",
+          "CsName": "locked",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "_Bool *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "_Bool",
+              "Kind": "Bool"
+            }
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeSeedFieldOpts",
+          "Type": {
+            "Spelling": "const cui_seed_field_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_seed_field_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "int",
+        "Kind": "Int"
+      },
+      "Module": "Creative controls",
+      "Doc": ""
+    },
+    {
       "CName": "cui_timeline_editor_ex",
       "CsName": "TimelineEditor",
       "CsReturn": "NativeTimelineEditorResult",
@@ -49862,7 +55128,7 @@
         "Kind": "Bool"
       },
       "Module": "Query builder",
-      "Doc": ""
+      "Doc": "Read-only and disabled builders preserve the input rules and count."
     },
     {
       "CName": "cui_query_op_name",
@@ -50692,7 +55958,7 @@
         "Kind": "Record"
       },
       "Module": "Trace viewer",
-      "Doc": ""
+      "Doc": "Draw the trace and report changes to its range, scroll position, or measurement."
     },
     {
       "CName": "cui_trace_sort",
@@ -51588,7 +56854,7 @@
         "Kind": "Record"
       },
       "Module": "Time histogram",
-      "Doc": ""
+      "Doc": "Draw a time histogram and cancel a pending selection when it becomes disabled."
     },
     {
       "CName": "cui_coverage_ex",
@@ -52051,7 +57317,7 @@
         "Kind": "Record"
       },
       "Module": "Instruments: dot-matrix chart, event track, readout, dot-matrix display",
-      "Doc": ""
+      "Doc": "Draw a dot chart and report activation at the current sample or pointer position."
     },
     {
       "CName": "cui_event_track_ex",
@@ -52281,6 +57547,506 @@
       },
       "Module": "Instruments: dot-matrix chart, event track, readout, dot-matrix display",
       "Doc": ""
+    },
+    {
+      "CName": "cui_format_bar_ex",
+      "CsName": "FormatBar",
+      "CsReturn": "int",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "format",
+          "CsName": "format",
+          "CsType": "ref NativeTextFormat",
+          "Type": {
+            "Spelling": "cui_text_format *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_text_format",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeFormatBarOpts",
+          "Type": {
+            "Spelling": "const cui_format_bar_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_format_bar_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "int",
+        "Kind": "Int"
+      },
+      "Module": "Instruments: dot-matrix chart, event track, readout, dot-matrix display",
+      "Doc": "Returns CUI_FORMAT_* flags."
+    },
+    {
+      "CName": "cui_live_cursors_ex",
+      "CsName": "LiveCursors",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "users",
+          "CsName": "users",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const cui_live_user *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_live_user",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "count",
+          "CsName": "count",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeLiveCursorsOpts",
+          "Type": {
+            "Spelling": "const cui_live_cursors_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_live_cursors_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "Instruments: dot-matrix chart, event track, readout, dot-matrix display",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_presence_pill_ex",
+      "CsName": "PresencePill",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "users",
+          "CsName": "users",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const cui_live_user *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_live_user",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "count",
+          "CsName": "count",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativePresencePillOpts",
+          "Type": {
+            "Spelling": "const cui_presence_pill_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_presence_pill_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "Instruments: dot-matrix chart, event track, readout, dot-matrix display",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_selection_ring_ex",
+      "CsName": "SelectionRing",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "color",
+          "CsName": "color",
+          "CsType": "NativeColor",
+          "Type": {
+            "Spelling": "cui_color",
+            "Kind": "Record"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeSelectionRingOpts",
+          "Type": {
+            "Spelling": "const cui_selection_ring_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_selection_ring_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "Instruments: dot-matrix chart, event track, readout, dot-matrix display",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_canvas_controls_ex",
+      "CsName": "CanvasControls",
+      "CsReturn": "int",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "view",
+          "CsName": "view",
+          "CsType": "ref NativeNodeView",
+          "Type": {
+            "Spelling": "cui_node_view *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_node_view",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeCanvasControlsOpts",
+          "Type": {
+            "Spelling": "const cui_canvas_controls_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_canvas_controls_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "int",
+        "Kind": "Int"
+      },
+      "Module": "Instruments: dot-matrix chart, event track, readout, dot-matrix display",
+      "Doc": "Returns CUI_CANVAS_* flags."
+    },
+    {
+      "CName": "cui_result_card_ex",
+      "CsName": "ResultCard",
+      "CsReturn": "byte",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "image",
+          "CsName": "image",
+          "CsType": "nuint",
+          "Type": {
+            "Spelling": "cui_texture",
+            "Kind": "ULongLong"
+          }
+        },
+        {
+          "CName": "title",
+          "CsName": "title",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeResultCardOpts",
+          "Type": {
+            "Spelling": "const cui_result_card_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_result_card_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "_Bool",
+        "Kind": "Bool"
+      },
+      "Module": "Instruments: dot-matrix chart, event track, readout, dot-matrix display",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_selection_bar_ex",
+      "CsName": "SelectionBar",
+      "CsReturn": "int",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "count",
+          "CsName": "count",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "actions",
+          "CsName": "actions",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const cui_selection_action *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_selection_action",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "action_count",
+          "CsName": "actionCount",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "in NativeSelectionBarOpts",
+          "Type": {
+            "Spelling": "const cui_selection_bar_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_selection_bar_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "int",
+        "Kind": "Int"
+      },
+      "Module": "Instruments: dot-matrix chart, event track, readout, dot-matrix display",
+      "Doc": "Returns the action picked, CUI_SELECTION_CLEARED when the clear button or Esc cleared the selection, or CUI_SELECTION_NONE."
     },
     {
       "CName": "cui_draw_rect",
@@ -53791,6 +59557,67 @@
       "Doc": ""
     },
     {
+      "CName": "cui_app_maximize",
+      "CsName": "AppMaximize",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "app",
+          "CsName": "app",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_app *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_app",
+              "Kind": "Record"
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "cui_app",
+      "Doc": "Maximizes the window on its display, as the title bar's maximize button does. NULL means the running app, so a cui_app_run callback can call it on its first frame; with the loop form it is fine right after cui_app_create. Nothing happens for a fixed-size window or where the window manager does not support it (an X11 window manager without EWMH)."
+    },
+    {
+      "CName": "cui_app_follow_system_theme",
+      "CsName": "AppFollowSystemTheme",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "app",
+          "CsName": "app",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_app *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_app",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "follow",
+          "CsName": "follow",
+          "CsType": "byte",
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "cui_app",
+      "Doc": "Starts or stops following the OS light/dark setting, as cui_app_desc.follow_system_theme does at creation, for a theme switcher with Light, Dark and System. Starting applies the OS setting at once, where the platform reports one. Stopping keeps the current theme, so a cui_set_theme after it lasts. Later OS changes are followed on Windows and macOS."
+    },
+    {
       "CName": "cui_app_is_software",
       "CsName": "AppIsSoftware",
       "CsReturn": "byte",
@@ -54651,6 +60478,22 @@
       "Value": 1
     },
     {
+      "CName": "CUI_VOICE_SESSION_MUTE",
+      "Value": 1
+    },
+    {
+      "CName": "CUI_VOICE_SESSION_END",
+      "Value": 2
+    },
+    {
+      "CName": "CUI_WELL_CHANGED",
+      "Value": 1
+    },
+    {
+      "CName": "CUI_WELL_ACTION",
+      "Value": 2
+    },
+    {
       "CName": "CUI_REGEX_ICASE",
       "Value": 1
     },
@@ -54661,6 +60504,42 @@
     {
       "CName": "CUI_REGEX_DOTALL",
       "Value": 4
+    },
+    {
+      "CName": "CUI_FORMAT_CHANGED",
+      "Value": 1
+    },
+    {
+      "CName": "CUI_FORMAT_LINK",
+      "Value": 2
+    },
+    {
+      "CName": "CUI_FORMAT_DELETE",
+      "Value": 4
+    },
+    {
+      "CName": "CUI_FORMAT_MORE",
+      "Value": 8
+    },
+    {
+      "CName": "CUI_CANVAS_ZOOMED",
+      "Value": 1
+    },
+    {
+      "CName": "CUI_CANVAS_FIT",
+      "Value": 2
+    },
+    {
+      "CName": "CUI_CANVAS_TOGGLED",
+      "Value": 4
+    },
+    {
+      "CName": "CUI_SELECTION_NONE",
+      "Value": -1
+    },
+    {
+      "CName": "CUI_SELECTION_CLEARED",
+      "Value": -2
     },
     {
       "CName": "CUI_SHADE_TEXT"
@@ -54680,6 +60559,10 @@
     {
       "CName": "CUI_SHADE_SOLID",
       "Value": 4
+    },
+    {
+      "CName": "CUI_SHADE_DITHER",
+      "Value": 5
     }
   ],
   "Icons": [
