@@ -679,10 +679,17 @@ internal sealed class FrameRecorder
     private void Add(
         nint ui, string kind, nint pointer, int length, string? text, bool container, bool ownRect,
         bool detached, SemanticState state = SemanticState.None, string? textValue = null,
-        double? numberValue = null, bool? boolValue = null) =>
+        double? numberValue = null, bool? boolValue = null)
+    {
+        // A widget native creates under the hash of its own text and leaves last_id alone (a
+        // menu item) is recorded under that derived id, which CUI computes here and now - the
+        // same call the wrapper's own argument just made, and only while a frame is recording.
+        bool derived = GeometryProvenance.DerivesNameId(kind);
         _pending.Add(new Pending(
-            kind, pointer, length, text, Native.LastId(ui), _depth, container, ownRect, detached,
-            _layer, CurrentAutomation, textValue, numberValue, boolValue, state | Enabled(ui)));
+            kind, pointer, length, text, derived ? Native.MakeId(ui, pointer) : Native.LastId(ui),
+            _depth, container, ownRect || derived, detached, _layer, CurrentAutomation,
+            textValue, numberValue, boolValue, state | Enabled(ui)));
+    }
 }
 
 /// <summary>
@@ -713,6 +720,13 @@ internal static class GeometryProvenance
 
     /// <summary>True when CUI draws this wrapper's widget on a layer detached from the flow.</summary>
     internal static bool IsFloating(string kind) => Floating.Contains(kind);
+
+    /// <summary>
+    /// True when CUI lays this wrapper's node out under the id it derives from the text itself,
+    /// leaving <c>last_id</c> untouched — a menu item. Recording such a widget means deriving that
+    /// id with CUI's own hash at Note time, not borrowing whoever drew before it.
+    /// </summary>
+    internal static bool DerivesNameId(string kind) => DerivesNameIdFromText.Contains(kind);
 
     /// <summary>
     /// True when the native builder skips the whole widget — no node, no published id — unless
@@ -760,12 +774,26 @@ internal static class GeometryProvenance
         // the item hashes derive from — and the call ends ui->last_id = id - but only when
         // it built one (see BuiltOnlyWithItems).
         "Segmented",
+        // cui_overlay.c cui_menu_begin: the node is the menu's own trigger, drawn by
+        // cui_button_ex — by cui_icon_button_ex when icon_only, whose id hashes the glyph
+        // with the tooltip — and the button builder ends ui->last_id = that id. Nothing in
+        // cui__popup_begin writes last_id (cui_layout.c assigns it nowhere), so the id still
+        // on record when the wrapper returns is the trigger's whether the popup drew or not.
+        "MenuButton",
     ];
 
     // cui_actions.c cui_toggle_group_ex and cui_controls.c cui__segments both begin with
     // `if (count <= 0) return false;`, before any node is created or last_id touched: an
     // empty group records under whoever drew before it, and must not claim that rect.
     private static readonly HashSet<string> BuiltOnlyWithItems = ["Segmented", "ToggleGroup"];
+
+    // cui_overlay.c cui_menu_item_ex: the item node is created under
+    // cui_id id = cui_make_id(ui, label) and the call never assigns ui->last_id, so the id on
+    // record when the wrapper returns is whoever drew before the menu - the trigger, with the
+    // trigger's own rectangle. The item's id is the hash of its label, which the recording call
+    // recomputes with native's own cui_make_id while the popup's id is still the seed on the
+    // id stack: that is what makes the same label in two different menus two different nodes.
+    private static readonly HashSet<string> DerivesNameIdFromText = ["MenuItem"];
 
     private static readonly HashSet<string> Floating =
     [

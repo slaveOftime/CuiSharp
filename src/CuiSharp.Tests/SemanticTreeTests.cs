@@ -261,6 +261,80 @@ public class SemanticTreeTests
     }
 
     /// <summary>
+    /// A menu draws the button that opens it, so the trigger is the one control a closed menu
+    /// shows. It used to record nothing: the trigger had no node, so a scripted session could not
+    /// name it and every action behind the menu was unreachable.
+    /// </summary>
+    private sealed class EffectPicker : Component
+    {
+        public string Effect = "Bars";
+
+        protected override void Draw(Ui ui)
+        {
+            // The music sample's effect picker: an icon-only trigger named by its tooltip.
+            using var menu = ui.Menu(Effect, new MenuOpts
+            {
+                Icon = Icons.Sparkles,
+                IconOnly = true,
+                Variant = ButtonVariant.Ghost,
+            });
+
+            if (!menu) return;
+            foreach (string name in (string[])["Bars", "Scope"])
+            {
+                if (ui.MenuItem(name, new MenuItemOpts { Checked = name == Effect })) Effect = name;
+            }
+        }
+    }
+
+    [Fact]
+    public void AMenusTriggerIsAControlWhileTheMenuIsClosed()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        using var app = TestApp.Start(new EffectPicker(), 420, 220);
+
+        // Closed, the frame still names the button that opens the menu - and shows nothing else,
+        // because the items are not drawn yet.
+        Assert.Equal(
+            """
+            Frame
+              MenuButton "Bars"
+            """.ReplaceLineEndings("\n"),
+            app.Print().ReplaceLineEndings("\n"));
+
+        SemanticNode trigger = app.Find("MenuButton", "Bars").Node;
+        Assert.True(trigger.Rect.W > 0 && trigger.Rect.H > 0);
+    }
+
+    [Fact]
+    public void ClickingAMenusTriggerOpensItsItemsAndAnItemPicks()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        var page = new EffectPicker();
+        using var app = TestApp.Start(page, 420, 220);
+
+        // The trigger's id is the id the button builder left as last_id, so the click lands on
+        // the button itself and native opens the menu it was refusing to open for a script.
+        app.Find("MenuButton", "Bars").ClickAndFrame();
+        app.Frame(4);
+        Assert.Equal(
+            """
+            Frame
+              MenuButton "Bars"
+              Menu "Bars"
+                MenuItem "Bars"
+                MenuItem "Scope"
+            """.ReplaceLineEndings("\n"),
+            app.Print().ReplaceLineEndings("\n"));
+
+        // ...and the item behind it is a control like any other.
+        app.Find("MenuItem", "Scope").ClickAndFrame();
+        Assert.Equal("Scope", page.Effect);
+    }
+
+    /// <summary>
     /// A named box, row, column or scroll area must be recorded under the id CUI laid it out
     /// under. A begin that reports no last_id used to leave the container borrowing the previous
     /// widget's id, which made it claim someone else's rectangle.

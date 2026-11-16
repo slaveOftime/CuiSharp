@@ -458,6 +458,13 @@ sealed record ScopeResultOverride(string Type, string Why, string? Out = null);
 /// </summary>
 sealed record ItemListOverride(string Kind, string Items, string Index, string Why);
 
+/// <summary>
+/// A container whose <c>begin</c> also draws a control of its own - the button that opens a menu.
+/// The trigger is recorded as a widget before the body the scope records, so a frame names the
+/// thing a person clicks even while the body is closed.
+/// </summary>
+sealed record TriggerOverride(string Kind, string Why);
+
 sealed record ReasonOverride(string Why);
 
 sealed record ConstantModel(string CName, long Value);
@@ -553,6 +560,12 @@ sealed class Overrides
     /// the strip, and a click on an item is a click on the item.
     /// </summary>
     public Dictionary<string, ItemListOverride> ItemLists { get; set; } = new();
+
+    /// <summary>
+    /// Containers that draw their own trigger: a menu's button. The wrapper records that trigger
+    /// under its own kind, because the body it returns is a floating layer and the trigger is not.
+    /// </summary>
+    public Dictionary<string, TriggerOverride> Triggers { get; set; } = new();
 
     /// <summary>Option fields that are pointers to primitives, exposed as `ref` parameters.</summary>
     public Dictionary<string, PointerFieldOverride> OptionPointers { get; set; } = new();
@@ -1780,6 +1793,17 @@ sealed class Idiomatic
                 if (!function.Params.Any(p => p.CName == parameter))
                     throw new InvalidOperationException($"Item list {key} has no parameter {parameter}");
             }
+        }
+        foreach (var (key, value) in _overrides.Triggers)
+        {
+            RequireReason(key, value.Why);
+            var function = _api.Functions.FirstOrDefault(f => f.CName == key)
+                ?? throw new InvalidOperationException($"Unknown trigger: {key}");
+            // The trigger is named by the same text the app gives the container; a begin
+            // without one draws no trigger that could carry a name.
+            if (!function.Params.Any(p => p.Type.Kind == "Pointer" && p.Type.Element is { Kind: "Char_S" or "Char_U" }))
+                throw new InvalidOperationException($"Trigger without a text parameter: {key}");
+            if (value.Kind.Length == 0) throw new InvalidOperationException($"Trigger without a kind: {key}");
         }
         foreach (var (key, value) in _overrides.TextFields)
         {
@@ -3011,6 +3035,21 @@ sealed class Idiomatic
             : $"WidgetRecorder.Note(ui.Handle, \"{widget.Name}\", {target}, SemanticState.{state});";
     }
 
+    /// <summary>
+    /// The line that records the control a container's own <c>begin</c> draws before it returns —
+    /// a menu's trigger. Everything else about a container is recorded through the scope it
+    /// hands back, but the trigger is drawn whether or not that scope opened, so it is the one
+    /// node a frame can show while the body is closed.
+    /// </summary>
+    private string? TriggerLine(WidgetPlan widget)
+    {
+        if (widget.End is null) return null;
+        if (!_overrides.Triggers.TryGetValue(widget.Native.CName, out var trigger)) return null;
+        WidgetParam? namer = widget.Params.FirstOrDefault(p => p.Type == "UiText" && p.Mode != "out ");
+        if (namer is null) return null;
+        return $"WidgetRecorder.Note(ui.Handle, \"{trigger.Kind}\", {namer.Name});";
+    }
+
     private static bool IsValueName(string name) => name is
         "value" or "selected" or "index" or "progress" or "ratio";
 
@@ -3094,6 +3133,7 @@ sealed class Idiomatic
                 else sb.AppendLine($"            var __result = {call};");
                 foreach (string line in w.WriteBack) sb.AppendLine("            " + line);
                 if (NoteLine(w) is { } note) sb.AppendLine("            " + note);
+                if (TriggerLine(w) is { } trigger) sb.AppendLine("            " + trigger);
                 if (w.End is not null)
                     sb.AppendLine($"            return {ScopeNew(w, "__result", w.Return)};");
                 else if (w.ReturnStatement is { } statement) sb.AppendLine("            " + statement);
