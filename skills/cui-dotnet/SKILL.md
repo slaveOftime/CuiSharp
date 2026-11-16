@@ -302,6 +302,12 @@ if (dialog)
 `ui.Menu("Options", static body => body.MenuItem("Save"))` is the callback form, for when the body
 is one expression.
 
+The button a menu draws is a recorded control in its own right — `MenuButton "Options"`, named by
+the menu's title, or by its tooltip when `IconOnly` — so it exists in the tree and in
+`dotnet cui tree` while the menu is closed, and `dotnet cui click Options` opens it. A `Popover` or
+`ContextMenu` draws no trigger: it anchors to the widget drawn before it, so give that action a real
+`Button` if a script has to reach it.
+
 ## Custom controls
 
 Anything CUI lacks becomes an extension member on `Ui`, called exactly like a built-in: no base

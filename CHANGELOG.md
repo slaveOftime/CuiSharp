@@ -22,6 +22,10 @@ different things.
   Both helpers cache results per UI context: call directly in Draw, without a startup flag or
   per-frame IO, font loading or managed allocation. Candidate lists and script samples are best
   effort, not a guarantee of language coverage.
+- **A menu's trigger is a recorded control of its own**: `ui.Menu` now records `MenuButton "Options"`
+  — named by the menu's title, or by the tooltip of an `IconOnly` trigger — so `dotnet cui tree`
+  shows the button that opens the menu while the menu is closed, and `dotnet cui click` can open it.
+  An action reachable only through a menu used to be undrivable from a scripted session.
 
 ### Fixed
 
@@ -35,6 +39,10 @@ different things.
   result) or `Progressive` (reports as it runs) and points at `hosting.md`, and CUI001/CUI007 no
   longer treat background `Task`-returning work delegates inside `Draw` or a `Component` as in-frame
   code.
+- A recorded `MenuItem` no longer borrows the id and rectangle of whatever drew before the menu.
+  `cui_menu_item_ex` creates the item's node under `cui_make_id(label)` and never publishes
+  `last_id`, so the recorder derives that same id; before, every item claimed the trigger's rect
+  and a click on an item landed on the trigger.
 - Loading a font that fails no longer reports a fallback: `UseSystemFontFallback` and the pixel
   probe now treat a failed load as nothing to install instead of treating the error id as a face.
 - Font probes preserve the active frame's arena, callbacks and statistics, reject partial sample

@@ -180,6 +180,26 @@ public static class WidgetRecorder
     }
 
     /// <summary>
+    /// Whether the surface drawing right now is enabled before a container's <c>begin</c> runs.
+    /// A menu's <c>begin</c> draws its trigger in the flow and then opens the popup, which pushes
+    /// <c>disabled</c> while the popup animates closed; reading the flag first keeps the trigger's
+    /// own state instead of the closing popup's. Costs nothing while recording is off.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static bool IsEnabled(nint ui) => _current is not null && Native.IsDisabled(ui) == 0;
+
+    /// <summary>
+    /// Records the trigger a container's own <c>begin</c> drew before opening its body.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static void NoteTrigger(nint ui, string kind, UiText text, bool enabled, bool bodyBuilt)
+    {
+        FrameRecorder? frame = _current;
+        if (frame is null) return;
+        frame.NoteTrigger(ui, kind, text, enabled, bodyBuilt);
+    }
+
+    /// <summary>
     /// Called by the wrapper of a widget CUI builds only when it is given items (a toggle group).
     /// <paramref name="itemCount"/> is what native's "no items, no widget" return turns on, and it
     /// is the only evidence that this call built anything: the last id proves nothing, because
@@ -569,6 +589,24 @@ internal sealed class FrameRecorder
     internal void Note(nint ui, string kind, UiText text, SemanticState state) =>
         Note(ui, kind, text, UnknownItemCount, state);
 
+    internal void NoteTrigger(nint ui, string kind, UiText text, bool enabled, bool bodyBuilt)
+    {
+        nint pointer = text.GetPointer(out int length);
+        if (length == 0) return;
+
+        // cui_menu_begin draws the trigger under the caller's disabled state, then calls
+        // cui__popup_begin, which pushes disabled = true when the popup is only fading out
+        // (!p->open). So an enabled trigger whose begin left the context enabled has genuinely
+        // opened its popup; one whose begin disabled the context is already closed and animating out.
+        SemanticState state = enabled
+            ? SemanticState.Enabled | (bodyBuilt && Native.IsDisabled(ui) == 0 ? SemanticState.Expanded : SemanticState.None)
+            : SemanticState.None;
+        _pending.Add(new Pending(
+            kind, pointer, length, null, Native.LastId(ui), _depth, container: false,
+            GeometryProvenance.HasOwnLastId(kind), GeometryProvenance.IsFloating(kind),
+            _layer, CurrentAutomation, state: state));
+    }
+
     internal void Note(nint ui, string kind, UiText text, int itemCount, SemanticState state = SemanticState.None)
     {
         nint pointer = text.GetPointer(out int length);
@@ -679,10 +717,17 @@ internal sealed class FrameRecorder
     private void Add(
         nint ui, string kind, nint pointer, int length, string? text, bool container, bool ownRect,
         bool detached, SemanticState state = SemanticState.None, string? textValue = null,
-        double? numberValue = null, bool? boolValue = null) =>
+        double? numberValue = null, bool? boolValue = null)
+    {
+        // A widget native creates under the hash of its own text and leaves last_id alone (a
+        // menu item) is recorded under that derived id, which CUI computes here and now - the
+        // same call the wrapper's own argument just made, and only while a frame is recording.
+        bool derived = GeometryProvenance.DerivesNameId(kind);
         _pending.Add(new Pending(
-            kind, pointer, length, text, Native.LastId(ui), _depth, container, ownRect, detached,
-            _layer, CurrentAutomation, textValue, numberValue, boolValue, state | Enabled(ui)));
+            kind, pointer, length, text, derived ? Native.MakeId(ui, pointer) : Native.LastId(ui),
+            _depth, container, ownRect || derived, detached, _layer, CurrentAutomation,
+            textValue, numberValue, boolValue, state | Enabled(ui)));
+    }
 }
 
 /// <summary>
@@ -713,6 +758,13 @@ internal static class GeometryProvenance
 
     /// <summary>True when CUI draws this wrapper's widget on a layer detached from the flow.</summary>
     internal static bool IsFloating(string kind) => Floating.Contains(kind);
+
+    /// <summary>
+    /// True when CUI lays this wrapper's node out under the id it derives from the text itself,
+    /// leaving <c>last_id</c> untouched — a menu item. Recording such a widget means deriving that
+    /// id with CUI's own hash at Note time, not borrowing whoever drew before it.
+    /// </summary>
+    internal static bool DerivesNameId(string kind) => DerivesNameIdFromText.Contains(kind);
 
     /// <summary>
     /// True when the native builder skips the whole widget — no node, no published id — unless
@@ -760,12 +812,26 @@ internal static class GeometryProvenance
         // the item hashes derive from — and the call ends ui->last_id = id - but only when
         // it built one (see BuiltOnlyWithItems).
         "Segmented",
+        // cui_overlay.c cui_menu_begin: the node is the menu's own trigger, drawn by
+        // cui_button_ex — by cui_icon_button_ex when icon_only, whose id hashes the glyph
+        // with the tooltip — and the button builder ends ui->last_id = that id. Nothing in
+        // cui__popup_begin writes last_id (cui_layout.c assigns it nowhere), so the id still
+        // on record when the wrapper returns is the trigger's whether the popup drew or not.
+        "MenuButton",
     ];
 
     // cui_actions.c cui_toggle_group_ex and cui_controls.c cui__segments both begin with
     // `if (count <= 0) return false;`, before any node is created or last_id touched: an
     // empty group records under whoever drew before it, and must not claim that rect.
     private static readonly HashSet<string> BuiltOnlyWithItems = ["Segmented", "ToggleGroup"];
+
+    // cui_overlay.c cui_menu_item_ex: the item node is created under
+    // cui_id id = cui_make_id(ui, label) and the call never assigns ui->last_id, so the id on
+    // record when the wrapper returns is whoever drew before the menu - the trigger, with the
+    // trigger's own rectangle. The item's id is the hash of its label, which the recording call
+    // recomputes with native's own cui_make_id while the popup's id is still the seed on the
+    // id stack: that is what makes the same label in two different menus two different nodes.
+    private static readonly HashSet<string> DerivesNameIdFromText = ["MenuItem"];
 
     private static readonly HashSet<string> Floating =
     [
