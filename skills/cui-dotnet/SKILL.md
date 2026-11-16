@@ -509,15 +509,30 @@ to do it once at startup.
 
 The bundled faces are Latin, Latin-1, Latin Extended-A and common symbols. A file name, a folder or
 a tag from another machine can be written in any script, and a glyph no loaded face has draws
-nothing at all — no box, no warning. Call `ui.UseSystemFontFallbacks()` once at startup: it installs
-the faces this machine has for CJK, Cyrillic, Greek, Arabic, Hebrew, Thai, Devanagari and emoji, and
-leaves alone the ones the theme already draws. `ui.UseSystemFontFallback("中文")` is the same search
-for one sample, for an app that knows which script it needs.
+nothing at all — no box, no warning. Call `ui.UseSystemFontFallbacks()` directly in Draw, before
+text that needs it:
 
-A loaded face costs memory for the life of the window, so call this once, not per frame. Text that
-needs colour emoji still goes through `ui.Emoji` or the emoji picker; a colour emoji font that
-carries outlines (Segoe UI Emoji) also lets an emoji inside a name paint as text, and one that does
-not (bitmap fonts) leaves that glyph to the emoji APIs.
+```csharp
+public void Draw(Ui ui)
+{
+    ui.UseSystemFontFallbacks();
+    ui.Label("Downloads · 下载 · ダウンロード");
+}
+```
+
+The first call probes candidate system files for CJK, Cyrillic, Greek, Arabic, Hebrew, Thai,
+Devanagari and emoji, skipping samples the bundled faces already draw. Later calls on the same
+UI context do no IO, load no fonts and allocate 0 B — no `_fonts` flag is needed. Each new window
+or test surface initializes independently. `ui.UseSystemFontFallback("中文")` searches for one
+sample and also caches its result, reusing faces installed by either helper.
+
+A loaded face costs memory for the life of the window. Searches that find nothing are cached for
+that lifetime too; fonts installed on the OS later are picked up by a new context. The return value
+is an installed-face count, not a coverage guarantee. Candidates are a best-effort list, and short
+samples check visible Unicode scalars, not every glyph in a language or its shaping: check the text
+you ship. Text that needs colour emoji still goes through `ui.Emoji` or the emoji picker; a colour
+emoji font that carries outlines (Segoe UI Emoji) also lets an emoji inside a name paint as text,
+and one that does not (bitmap fonts) leaves that glyph to the emoji APIs.
 
 ## Translating the date names
 
@@ -708,7 +723,8 @@ not in the app's folder.
   is exactly the answer you asked for.
 - Text in a script the bundled Latin faces do not cover draws nothing at all, with no box and no
   warning. `ui.UseSystemFontFallbacks()` installs this machine's faces for CJK, Cyrillic, Greek,
-  Arabic, Hebrew, Thai, Devanagari and emoji; call it once at startup and check the scripts you ship.
+  Arabic, Hebrew, Thai, Devanagari and emoji; call directly in Draw (cached per context) and check
+  the scripts you ship.
   `ui.UseSystemFontFallback("中文")` is the single-sample form.
 - The app serves this itself (`CUISHARP_HEADLESS=1`), so any app works — `dotnet cui` passes
   `-p:CuiSharpHeadless=true` to the builds it runs. A **published** app carries the channel only when

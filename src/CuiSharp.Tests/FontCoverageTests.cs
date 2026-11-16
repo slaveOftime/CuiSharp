@@ -1,3 +1,6 @@
+using System.Runtime.InteropServices;
+using System.Text;
+using CuiSharp.Hosting;
 using CuiSharp.Testing;
 
 namespace CuiSharp.Tests;
@@ -7,6 +10,7 @@ namespace CuiSharp.Tests;
 /// only way to find out is to ask. This pins the asking — and that the answer comes from pixels,
 /// because a font's advance cannot tell a missing glyph from a present one.
 /// </summary>
+[Collection("FontProbeStatistics")]
 public class FontCoverageTests
 {
     [Fact]
@@ -18,12 +22,9 @@ public class FontCoverageTests
         Assert.True(FontProbe.Paints(inter, "Hello"));
         Assert.False(FontProbe.Paints(inter, "中文"), "Inter has no CJK glyphs");
 
-        // The machine's own CJK face, when it has one: the probe has to say yes to a face that
-        // really draws the script, or the fallback it drives would never fire.
-        if (SystemFonts.Probes.FirstOrDefault(File.Exists) is { } system && FontProbe.Paints(system, "中文"))
-        {
-            Assert.True(FontProbe.Paints(system, "中文"));
-        }
+        // Partial coverage must not be accepted just because the Latin half paints.
+        Assert.False(FontProbe.Paints(inter, "Hello中文"));
+        Assert.False(FontProbe.PaintsThemeFace("Hello中文"));
     }
 
     [Fact]
@@ -44,9 +45,14 @@ public class FontCoverageTests
         bool machineHasACjkFace = SystemFonts.Probes.Any(path => File.Exists(path) && FontProbe.Paints(path, "中文"));
 
         // What must hold either way: the answer is about pixels, so it agrees with the probe.
-        if (machineHasACjkFace) Assert.NotEqual(0, (int)face);
+        if (machineHasACjkFace)
+        {
+            Assert.NotEqual(0, (int)face);
+            byte[] blank = Render(app.Surface, " ");
+            foreach (var rune in "中文".EnumerateRunes())
+                Assert.True(HasInk(Render(app.Surface, rune.ToString()), blank));
+        }
         else Assert.Equal(0, (int)face);
-
     }
 
     [Fact]
@@ -57,6 +63,23 @@ public class FontCoverageTests
         // A failed load used to fall through to the bundled face, whose pixels made the probe
         // report that a file which is not there could draw Latin.
         Assert.False(FontProbe.Paints(missing, "Hello"));
+    }
+
+    [Fact]
+    public void AnExistingFileThatIsNotAFontCannotBecomeAFallback()
+    {
+        string path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".ttf");
+        try
+        {
+            File.WriteAllBytes(path, [1, 2, 3]);
+            using var surface = CuiSurface.Create(240, 60);
+            Assert.Equal(-1, (int)surface.Ui.LoadFont(path));
+            Assert.False(FontProbe.Paints(path, "Hello"));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 
     [Fact]
@@ -96,9 +119,141 @@ public class FontCoverageTests
         // Ink, not a measurement: a missing glyph still reports a .notdef advance.
         foreach (string sample in drawable)
         {
-            byte[] painted = Render(surface, sample);
-            Assert.True(HasInk(painted, blank), $"UseSystemFontFallbacks installed no face that draws {sample}");
+            foreach (var rune in sample.EnumerateRunes())
+                Assert.True(HasInk(Render(surface, rune.ToString()), blank),
+                    $"UseSystemFontFallbacks installed no face that draws {rune} in {sample}");
         }
+    }
+
+    [Fact]
+    public void RepeatedDrawCallsReuseTheSetWithoutLoadingMoreFacesOrAllocating()
+    {
+        using var surface = CuiSurface.Create(240, 60);
+        int installed = -1;
+        Font singular = 0;
+        Font marker;
+        int changed = 0;
+        string inter = Path.Combine(RepositoryRoot, "native", "CUI", "assets", "fonts", "Inter-Regular.ttf");
+
+        void Draw()
+        {
+            surface.BeginFrame();
+            int count = surface.Ui.UseSystemFontFallbacks();
+            Font face = surface.Ui.UseSystemFontFallback("中文");
+            if (installed >= 0 && (installed != count || singular != face)) changed++;
+            installed = count;
+            singular = face;
+            surface.Ui.Label("中文");
+            surface.EndFrame();
+        }
+
+        Draw();
+        marker = surface.Ui.LoadFont(inter);
+        Assert.True((int)marker > (int)Font.Icons);
+        for (int i = 0; i < 10; i++) Draw();
+        long before = GC.GetAllocatedBytesForCurrentThread();
+        for (int i = 0; i < 100; i++) Draw();
+        long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        Assert.Equal(0, allocated);
+        Assert.Equal(0, changed);
+        // Native handles are sequential: even a hidden reload changes the next handle.
+        Assert.Equal((int)marker + 1, (int)surface.Ui.LoadFont(inter));
+    }
+
+    [Fact]
+    public void ANewContextGetsItsOwnFallbacksEvenAfterAnotherWasDisposed()
+    {
+        int expected;
+        using (var first = CuiSurface.Create(240, 60))
+        {
+            string inter = Path.Combine(RepositoryRoot, "native", "CUI", "assets", "fonts", "Inter-Regular.ttf");
+            Font before = first.Ui.LoadFont(inter);
+            Font chinese = first.Ui.UseSystemFontFallback("中文");
+            expected = first.Ui.UseSystemFontFallbacks();
+            Assert.Equal(expected, first.Ui.UseSystemFontFallbacks());
+            if (chinese != 0)
+            {
+                Assert.Equal(chinese, first.Ui.UseSystemFontFallback("中"));
+                Assert.Equal(chinese, first.Ui.UseSystemFontFallback("文"));
+            }
+            Assert.Equal((int)before + expected + 1, (int)first.Ui.LoadFont(inter));
+        }
+
+        using var second = CuiSurface.Create(240, 60);
+        Assert.Equal(expected, second.Ui.UseSystemFontFallbacks());
+        byte[] blank = Render(second, " ");
+        if (expected > 0)
+        {
+            string sample = SystemFonts.Samples.First(s => !FontProbe.PaintsThemeFace(s)
+                && SystemFonts.Probes.Any(p => FontProbe.Paints(p, s)));
+            foreach (var rune in sample.EnumerateRunes())
+                Assert.True(HasInk(Render(second, rune.ToString()), blank));
+        }
+    }
+
+    [Fact]
+    public void MissingAndInvisibleSamplesAreCachedWithoutAllocatingInDraw()
+    {
+        using var surface = CuiSurface.Create(240, 60);
+        const string missing = "\U0010FFFF";
+        Assert.Equal(0, (int)surface.Ui.UseSystemFontFallback(missing));
+        Assert.Equal(0, (int)surface.Ui.UseSystemFontFallback(" \t\n\u200D"));
+        Assert.Equal(0, (int)surface.Ui.UseSystemFontFallback(""));
+        Assert.Throws<ArgumentNullException>(() => surface.Ui.UseSystemFontFallback(null!));
+
+        long before = GC.GetAllocatedBytesForCurrentThread();
+        for (int i = 0; i < 100; i++)
+        {
+            surface.Ui.UseSystemFontFallback(missing);
+            surface.Ui.UseSystemFontFallback(" \t\n\u200D");
+        }
+        Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
+    }
+
+    [Fact]
+    public void FirstUseInDrawPreservesEarlierTextAndDoesNotCountProbeFrames()
+    {
+        using var surface = CuiSurface.Create(240, 120);
+        surface.RecordWidgets = true;
+        surface.BeginFrame();
+        UiText saved = "keep this text across the font probe";
+        surface.Ui.Label(saved);
+        long frames = FrameStats.Frames;
+        int arenaBytes = Utf8.FrameBytes;
+        surface.Ui.UseSystemFontFallbacks();
+        Assert.Equal(frames, FrameStats.Frames);
+        Assert.Equal(arenaBytes, Utf8.FrameBytes);
+        Assert.Equal("keep this text across the font probe", Marshal.PtrToStringUTF8(Utf8.Get(saved)));
+        surface.Ui.Label("after the probe");
+        surface.EndFrame();
+        Assert.Equal(["keep this text across the font probe", "after the probe"],
+            surface.Widgets.Select(w => w.Text).ToArray());
+    }
+
+    [Fact]
+    public void ProbingDoesNotRetireCallbacksRegisteredEarlierInTheFrame()
+    {
+        using var surface = CuiSurface.Create(240, 60);
+        surface.BeginFrame();
+        string key = Guid.NewGuid().ToString("N");
+        Func<int, string?> label = static _ => "kept";
+        nint handle = FrameCallbacks.Rent(key, label);
+        object? holder = GCHandle.FromIntPtr(handle).Target;
+        Assert.NotNull(holder);
+        surface.Ui.UseSystemFontFallbacks();
+        // Rent again before inspecting: if a buggy probe freed the old GCHandle, dereferencing it
+        // directly could crash rather than produce a useful assertion failure.
+        nint after = FrameCallbacks.Rent(key, label);
+        Assert.Same(holder, GCHandle.FromIntPtr(after).Target);
+        surface.EndFrame();
+    }
+
+    [Fact]
+    public void AFileProbeCannotBorrowLatinGlyphsFromTheBundledFaces()
+    {
+        string icons = Path.Combine(RepositoryRoot, "native", "CUI", "assets", "fonts", "Lucide-CUI.ttf");
+        Assert.True(File.Exists(icons));
+        Assert.False(FontProbe.Paints(icons, "Hello"));
     }
 
     private static byte[] Render(CuiSurface surface, string text)
@@ -136,3 +291,7 @@ public class FontCoverageTests
         }
     }
 }
+
+// FrameStats is process-wide. No other test may draw frames while its preservation is asserted.
+[CollectionDefinition("FontProbeStatistics", DisableParallelization = true)]
+public sealed class FontProbeStatisticsCollection { }

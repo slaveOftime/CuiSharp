@@ -1,4 +1,6 @@
+using System.Globalization;
 using System.IO;
+using System.Text;
 using CuiSharp.Interop;
 
 namespace CuiSharp;
@@ -12,7 +14,7 @@ public static unsafe class FontUiExtensions
     extension(Ui ui)
     {
         /// <summary>Loads a font file (TTF/OTF) and returns a handle for <see cref="SetFont"/>.</summary>
-        /// <remarks>Returns 0 when the file cannot be read, which leaves the theme's face in place.</remarks>
+        /// <remarks>Returns -1 when the file cannot be loaded. Do not pass a failed handle to <see cref="SetFont"/>.</remarks>
         public Font LoadFont(UiText path) => Native.FontLoadFile(ui.Handle, Utf8.Get(path));
 
         /// <summary>
@@ -66,29 +68,21 @@ public static unsafe class FontUiExtensions
         /// </para>
         /// <para>
         /// The probes are the faces each OS ships for its own languages (Microsoft YaHei, PingFang,
-        /// Noto CJK, …). Call it once at startup, not per frame: it reads a short list of paths,
-        /// paints one sample for each face that is there, and loads the first that draws.
+        /// Noto CJK, …). The first call for a sample probes files and loads a face; subsequent
+        /// calls on the same UI context reuse the result (including 0), without IO or allocation.
+        /// Call it directly in Draw before text that needs it. The probe checks visible Unicode
+        /// scalars, not shaping or complete language coverage.
         /// </para>
         /// </remarks>
         /// <returns>
-        /// The face it installed, or 0 when there was nothing to do: the theme's own face already
-        /// draws the sample, or no face on this machine does.
+        /// The installed or reused face, or 0 when the bundled faces already draw the sample,
+        /// the sample has no visible scalars, or no candidate face draws it. The result is cached
+        /// for this context's lifetime, so newly installed OS fonts need a new context.
         /// </returns>
         public Font UseSystemFontFallback(string sample)
         {
-            // Nothing to do when the theme's own face already draws it — which is the common case,
-            // and the reason this is safe to call unconditionally at startup.
-            if (FontProbe.PaintsThemeFace(sample)) return 0;
-
-            foreach (string path in SystemFonts.Probes)
-            {
-                if (!File.Exists(path) || !FontProbe.Paints(path, sample)) continue;
-
-                Font face = Install(ui, path);
-                if (face != 0) return face;
-            }
-
-            return 0;
+            ArgumentNullException.ThrowIfNull(sample);
+            return ui.SystemFontFallbacks.Ensure(ui, sample);
         }
 
         /// <summary>
@@ -100,78 +94,28 @@ public static unsafe class FontUiExtensions
         /// <para>
         /// The bundled faces are Latin. A glyph no loaded face has draws nothing at all, with no box
         /// and no warning, and a folder, a download or a music tag is exactly the kind of text that
-        /// arrives in a script the app was not built for. Call this once at startup; loading a face
-        /// per frame would churn the glyph atlas.
+        /// arrives in a script the app was not built for. Call this directly in Draw before text:
+        /// it initializes once per UI context, then returns the cached result with no IO, font
+        /// loading or managed allocation. Searches that find no usable face are cached too.
         /// </para>
         /// <para>
-        /// A script the theme's own face already paints is left alone, and so is a sample no face on
+        /// A sample the bundled faces already paint is left alone, and so is a sample no face on
         /// this machine paints. The fallback chain holds four faces, so any further face is reached
         /// by CUI's own scan of every loaded face; that is slower, not invisible.
         /// </para>
         /// </remarks>
         /// <returns>
-        /// How many faces it loaded, or 0 when the bundled faces cover everything the machine can
-        /// draw. Call it for the side effect, not for the number.
+        /// The number of system faces installed by these helpers on this context, stable on repeated
+        /// calls. 0 means no suitable additional face was found. This is not a coverage guarantee.
         /// </returns>
-        public int UseSystemFontFallbacks()
-        {
-            string[] probes = [.. SystemFonts.Probes];
-            var loaded = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var installed = 0;
-
-            foreach (string sample in SystemFonts.Samples)
-            {
-                if (FontProbe.PaintsThemeFace(sample)) continue;
-
-                // A face loaded for an earlier script may already paint this one: not every OS
-                // ships a separate file per script, and Arial Unicode is one file for many.
-                bool covered = false;
-                foreach (string path in loaded)
-                {
-                    if (!FontProbe.Paints(path, sample)) continue;
-
-                    covered = true;
-                    break;
-                }
-
-                if (covered) continue;
-
-                foreach (string path in probes)
-                {
-                    if (loaded.Contains(path)) continue;
-                    if (!File.Exists(path) || !FontProbe.Paints(path, sample)) continue;
-
-                    Font face = Install(ui, path);
-                    if (face == 0) continue;
-
-                    loaded.Add(path);
-                    installed++;
-                    break;
-                }
-            }
-
-            return installed;
-        }
-
-        /// <summary>Loads a face and makes it a fallback of every text role; 0 when the file did not load.</summary>
-        private static Font Install(Ui surface, string path)
-        {
-            Font face = surface.LoadFont(path);
-
-            // User fonts start at CUI__USER_FONT_BASE (16); 0..4 are the built-in roles, and -1 is
-            // a failed load. None of them can serve as a fallback.
-            if ((int)face <= (int)Font.Icons) return 0;
-
-            foreach (Font role in SystemFonts.Roles) surface.AddFontFallback(role, face);
-            return face;
-        }
+        public int UseSystemFontFallbacks() => ui.SystemFontFallbacks.EnsureAll(ui);
     }
 }
 
 /// <summary>
 /// Where each OS keeps the faces that cover the scripts its own UI is written in and the ones a
 /// file name, a folder or a tag can arrive in. Ordered by how likely the file is to be there, not
-/// by preference: the first one that measures wins.
+/// by preference: the first one that paints every visible scalar wins.
 /// </summary>
 internal static class SystemFonts
 {
@@ -288,52 +232,79 @@ internal static class SystemFonts
 }
 
 /// <summary>
-/// Asks a font file whether it can actually draw something. A face without the glyph still reports
-/// its <c>.notdef</c> advance, so measuring text cannot answer this; painting it can.
+/// Checks visible scalars in isolation. A face without the glyph still reports its <c>.notdef</c>
+/// advance, so measuring text cannot answer this; painting it can. This is not a shaping test.
 /// </summary>
-internal static class FontProbe
+internal static unsafe class FontProbe
 {
-    /// <summary>
-    /// True when the theme's own face — the bundled Latin one, unless the app replaced it — puts
-    /// pixels on the screen for <paramref name="sample"/>.
-    /// </summary>
+    /// <summary>Checks the bundled faces, not a caller's remapped roles.</summary>
     internal static bool PaintsThemeFace(string sample) => Paints(path: null, sample);
 
-    /// <summary>True when <paramref name="path"/> puts pixels on the screen for <paramref name="sample"/>.</summary>
-    internal static bool Paints(string? path, string sample)
+    internal static bool HasVisibleScalars(string sample)
     {
-        if (string.IsNullOrEmpty(sample)) return false;
-
-        // Two throwaway surfaces, the same in every way except the string: whatever the background
-        // paints is subtracted, so only the glyphs are being compared.
-        byte[] with = Render(path, sample);
-        byte[] without = Render(path, " ");
-        if (with.Length == 0 || without.Length == 0) return false;
-
-        for (int i = 0; i < with.Length; i++)
-        {
-            if (with[i] != without[i]) return true;
-        }
-
+        foreach (Rune rune in sample.EnumerateRunes())
+            if (IsVisible(rune)) return true;
         return false;
     }
 
-    private static byte[] Render(string? path, string text)
+    private static bool IsVisible(Rune rune) => !Rune.IsWhiteSpace(rune)
+        && Rune.GetUnicodeCategory(rune) is not (UnicodeCategory.Control or UnicodeCategory.Format);
+
+    /// <summary>True only when every visible scalar paints, without borrowing another face's glyphs.</summary>
+    internal static bool Paints(string? path, string sample)
     {
-        using CuiSurface probe = CuiSurface.Create(128, 48);
-        if (path is not null)
+        if (string.IsNullOrEmpty(sample) || !HasVisibleScalars(sample)) return false;
+        if (path is not null && !File.Exists(path)) return false;
+
+        // Do not use CuiSurface.BeginFrame here: this helper runs inside Draw, and a nested managed
+        // frame would reset the caller's arena, free its callbacks, drain work and skew FrameStats.
+        // A file probe also must not borrow glyphs from the bundled faces via CUI's global scan.
+        using var scope = Utf8.Scope();
+        nint sw = Native.SwCreate();
+        if (sw == 0) throw new InvalidOperationException("cui_sw_create failed.");
+        nint ctx = 0;
+        try
         {
-            Font face = probe.Ui.LoadFont(path);
-            if ((int)face <= (int)Font.Icons) return [];
-            probe.Ui.SetFont(Font.Body, face);
+            var desc = new NativeCtxDesc { Renderer = Native.SwIface(sw), NoDefaultFonts = (byte)(path is null ? 0 : 1) };
+            ctx = Native.Create(in desc);
+            if (ctx == 0) throw new InvalidOperationException("cui_create failed.");
+            Native.SetViewport(ctx, 128, 96, 1);
+
+            if (path is not null)
+            {
+                Font face = Native.FontLoadFile(ctx, Utf8.Get(path));
+                if ((int)face <= (int)Font.Icons) return false;
+                Native.FontSetRole(ctx, Font.Body, face);
+            }
+
+            byte[] blank = new byte[128 * 96 * 4];
+            byte[] painted = new byte[blank.Length];
+            Render(ctx, sw, null, blank);
+            foreach (Rune rune in sample.EnumerateRunes())
+            {
+                if (!IsVisible(rune)) continue;
+                Render(ctx, sw, rune.ToString(), painted);
+                if (painted.AsSpan().SequenceEqual(blank)) return false;
+            }
+
+            return true;
         }
+        finally
+        {
+            if (ctx != 0) Native.Destroy(ctx);
+            Native.SwDestroy(sw);
+        }
+    }
 
-        probe.BeginFrame();
-        probe.Ui.Label(text);
-        probe.EndFrame();
+    private static void Render(nint ctx, nint sw, string? text, byte[] pixels)
+    {
+        using var scope = Utf8.Scope();
+        Native.BeginFrame(ctx, 1f / 60f);
+        Native.Label(ctx, Utf8.Get(text ?? " "));
+        Native.EndFrame(ctx);
 
-        byte[] pixels = new byte[probe.PixelWidth * probe.PixelHeight * 4];
-        probe.Render(pixels, PixelFormat.Rgba);
-        return pixels;
+        var drawData = (NativeDrawData*)Native.GetDrawData(ctx);
+        fixed (byte* p = pixels)
+            Native.SwRender(sw, in *drawData, (nint)p, 128, 96, 128 * 4, SwFormat.Rgba);
     }
 }

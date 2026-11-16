@@ -890,7 +890,7 @@ internal static class BundledTopics
         ("fonts",
             "the bundled Latin faces, a fallback for every script, and emoji",
             ["SKILL#fonts-and-scripts"],
-            "A missing glyph draws nothing: call `ui.UseSystemFontFallbacks()` once at startup."),
+            "A missing glyph draws nothing: call `ui.UseSystemFontFallbacks()` directly in Draw (cached per context)."),
 
         ("translation",
             "the one name table the date widgets read, and how a surface owns it",

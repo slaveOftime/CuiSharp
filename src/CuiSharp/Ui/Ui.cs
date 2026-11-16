@@ -13,6 +13,8 @@ public unsafe ref partial struct Ui
     private byte* Arena(int bytes) => Utf8.AllocFrameBytes(bytes);
     private float* FloatBlock(ReadOnlySpan<float> values) => (float*)UiMarshal.Values<float>(values);
 
+    internal SystemFontFallbackState SystemFontFallbacks => _frame.SystemFontFallbacks ??= new();
+
     // Text inputs and charts stay hand-written: inputs need the per-id buffer
     // pool (a managed string cannot be the field's storage) and charts need
     // automatic decimation. The rest of these sections is generated.
