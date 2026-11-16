@@ -304,6 +304,11 @@ public class SemanticTreeTests
             app.Print().ReplaceLineEndings("\n"));
 
         SemanticNode trigger = app.Find("MenuButton", "Bars").Node;
+        Assert.Equal(SemanticRole.Button, trigger.Role);
+        Assert.True(trigger.IsEnabled);
+        Assert.Equal(SemanticState.None, trigger.State & SemanticState.Expanded);
+        Assert.True(trigger.HasOwnRect);
+        Assert.False(trigger.Detached);
         Assert.True(trigger.Rect.W > 0 && trigger.Rect.H > 0);
     }
 
@@ -317,8 +322,7 @@ public class SemanticTreeTests
 
         // The trigger's id is the id the button builder left as last_id, so the click lands on
         // the button itself and native opens the menu it was refusing to open for a script.
-        app.Find("MenuButton", "Bars").ClickAndFrame();
-        app.Frame(4);
+        app.FindUnique("Bars").ClickAndFrame();
         Assert.Equal(
             """
             Frame
@@ -328,10 +332,64 @@ public class SemanticTreeTests
                 MenuItem "Scope"
             """.ReplaceLineEndings("\n"),
             app.Print().ReplaceLineEndings("\n"));
+        Assert.Equal(SemanticState.Expanded, app.Find("MenuButton", "Bars").Node.State & SemanticState.Expanded);
+
+        // The path "Bars > Bars" walks the Menu container and lands on its MenuItem, not back
+        // on the container that shares the item's label.
+        Assert.Equal("MenuItem", app.FindUnique("Bars > Bars").Node.Kind);
 
         // ...and the item behind it is a control like any other.
-        app.Find("MenuItem", "Scope").ClickAndFrame();
+        app.FindUnique("Scope").ClickAndFrame();
         Assert.Equal("Scope", page.Effect);
+    }
+
+    [Fact]
+    public void TwoMenusWithTheSameItemLabelKeepTheirOwnItemIdentitiesAndTriggerStates()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        int fileDuplicates = 0, editDuplicates = 0;
+        using var app = TestApp.Start(ui =>
+        {
+            using (ui.Row(new() { Gap = 8 }))
+            {
+                using (var file = ui.Menu("File"))
+                {
+                    if (file && ui.MenuItem("Duplicate")) fileDuplicates++;
+                }
+
+                using (var edit = ui.Menu("Edit"))
+                {
+                    if (edit && ui.MenuItem("Duplicate")) editDuplicates++;
+                }
+            }
+        }, 420, 220);
+
+        app.FindUnique("Edit").ClickAndFrame();
+
+        // While "Edit" is open, both MenuButton "Edit" and Menu "Edit" are in the tree with
+        // the same label; an unprefixed query still resolves uniquely to the actionable trigger.
+        SemanticNode openTrigger = app.FindUnique("Edit").Node;
+        Assert.Equal("MenuButton", openTrigger.Kind);
+        Assert.True(openTrigger.IsEnabled);
+        Assert.Equal(SemanticState.Expanded, openTrigger.State & SemanticState.Expanded);
+
+        // The item's id is derived while the popup's id is on the native id stack, so its rect
+        // is the item's own (not the trigger's) and clicking it fires Edit's item, not File's.
+        SemanticNode item = app.FindUnique("Duplicate").Node;
+        Assert.NotEqual(openTrigger.Id, item.Id);
+        Assert.NotEqual(openTrigger.Rect, item.Rect);
+
+        app.FindUnique("Duplicate").ClickAndFrame();
+        Assert.Equal(0, fileDuplicates);
+        Assert.Equal(1, editDuplicates);
+
+        // On the frame right after choosing an item the popup is animating out with disabled
+        // pushed for its fading body; the trigger itself sits in the flow and stays enabled
+        // while dropping Expanded immediately.
+        SemanticNode closingTrigger = app.FindUnique("Edit").Node;
+        Assert.True(closingTrigger.IsEnabled);
+        Assert.Equal(SemanticState.None, closingTrigger.State & SemanticState.Expanded);
     }
 
     /// <summary>

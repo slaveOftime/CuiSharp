@@ -274,7 +274,6 @@ A container is a node when the app named it — a `Card`/`Box`/`Scroll` with an 
 returns, so the record knows where the container ends. Unnamed containers are not nodes, but their
 children still nest under the nearest named one and `Depth` reports the real depth.
 
-A widget that draws one control per item — a tab strip, a segmented control — records the strip as
 A menu is the one container that also draws a control of its own: `cui_menu_begin` paints the
 trigger button before it returns, so the wrapper records that trigger as a widget — `MenuButton
 "Effects"`, named by the menu's title or by the tooltip an icon-only trigger shows — and the scope

@@ -415,14 +415,15 @@ public class LayoutInspectionTests
                 ui.Chip("H", ref chip);
                 ui.Link("L");
                 ui.Segmented("G", ["one", "two"], ref segment);
+                using (ui.Menu("M")) { }
             }
-        }, 400, 300);
+        }, 400, 340);
 
         string[] lines = LayoutLines(app);
         (string Kind, string Text)[] proven =
         [
             ("Card", "proven"), ("Button", "B"), ("Checkbox", "C"), ("Switch", "S"),
-            ("Radio", "R"), ("Chip", "H"), ("Link", "L"), ("Segmented", "G"),
+            ("Radio", "R"), ("Chip", "H"), ("Link", "L"), ("Segmented", "G"), ("MenuButton", "M"),
         ];
         foreach ((string kind, string text) in proven)
         {
@@ -644,6 +645,53 @@ public class LayoutInspectionTests
     }
 
     [Fact]
+    public void AnOpenedMenuCountsItsTriggerInTheFlowAndItsItemsOnItsFloatingLayer()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        // cui_menu_begin draws MenuButton in the flow and then opens the Menu body through
+        // cui__popup_begin: the trigger belongs to the column's union, while the MenuItem
+        // nodes inside the open popup belong to the floating Menu's union and must not make
+        // the 90-point column overflow.
+        using var app = TestApp.Start(ui =>
+        {
+            using (ui.Column(new() { Id = "host", Width = Size.Px(140), Height = Size.Px(90), Pad = 4, Gap = 4 }))
+            {
+                ui.Button("Body");
+                using (var menu = ui.Menu("Actions"))
+                {
+                    if (menu)
+                    {
+                        ui.MenuItem("Rename");
+                        ui.MenuItem("Delete");
+                    }
+                }
+            }
+        }, 400, 300);
+
+        app.FindUnique("Actions").ClickAndFrame();
+
+        string[] lines = LayoutLines(app);
+        SemanticNode snapshot = app.Tree;
+        SemanticNode body = snapshot.Find("Body");
+        SemanticNode trigger = snapshot.Find("MenuButton \"Actions\"");
+        SemanticNode rename = snapshot.Find("Rename");
+        SemanticNode delete = snapshot.Find("Delete");
+        SemanticNode host = snapshot.Find("host");
+
+        Assert.True(trigger.HasOwnRect && rename.HasOwnRect && delete.HasOwnRect);
+        Assert.True(delete.Rect.Y + delete.Rect.H > host.Rect.Y + host.Rect.H);
+
+        string menuLine = LineFor(lines, "Menu \"Actions\"");
+        Assert.Contains("(floating)", menuLine, StringComparison.Ordinal);
+        Assert.Contains($"union≥[{Union(rename.Rect, delete.Rect)}] (lower-bound", menuLine, StringComparison.Ordinal);
+
+        string hostLine = LineFor(lines, "Column \"host\"");
+        Assert.Contains($"union≥[{Union(body.Rect, trigger.Rect)}] (lower-bound", hostLine, StringComparison.Ordinal);
+        Assert.DoesNotContain("OVERFLOW", hostLine, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void FloatingClassificationFollowsNativeLayersNotLabels()
     {
         // Every kind here was read out of the pinned native source at a cui__float_begin or
@@ -658,9 +706,9 @@ public class LayoutInspectionTests
             Assert.True(GeometryProvenance.IsFloating(kind), $"{kind} draws on a cui__float_begin layer");
 
         // The things around a floating layer stay on the caller's layer: the bar that owns a
-        // trigger, the footer inside a dialog, the item inside a menu, and the commands that
-        // only poke a popup's open flag.
-        foreach (string kind in new[] { "MenuBar", "DialogFooter", "MenuItem", "MenuLabel", "PopoverOpen", "PathBar", "Button", "Column" })
+        // trigger, the button a menu draws in the flow, the footer inside a dialog, the item
+        // inside a menu, and the commands that only poke a popup's open flag.
+        foreach (string kind in new[] { "MenuBar", "MenuButton", "DialogFooter", "MenuItem", "MenuLabel", "PopoverOpen", "PathBar", "Button", "Column" })
             Assert.False(GeometryProvenance.IsFloating(kind), $"{kind} is drawn in the flow");
     }
 

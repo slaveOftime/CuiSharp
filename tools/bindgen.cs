@@ -3047,7 +3047,7 @@ sealed class Idiomatic
         if (!_overrides.Triggers.TryGetValue(widget.Native.CName, out var trigger)) return null;
         WidgetParam? namer = widget.Params.FirstOrDefault(p => p.Type == "UiText" && p.Mode != "out ");
         if (namer is null) return null;
-        return $"WidgetRecorder.Note(ui.Handle, \"{trigger.Kind}\", {namer.Name});";
+        return $"WidgetRecorder.NoteTrigger(ui.Handle, \"{trigger.Kind}\", {namer.Name}, __enabled, __result != 0);";
     }
 
     private static bool IsValueName(string name) => name is
@@ -3128,12 +3128,14 @@ sealed class Idiomatic
                 Summary(sb, w.Native.Doc.Length == 0 ? w.Native.CName : w.Native.Doc, "        ");
                 sb.AppendLine($"        public {w.Return} {w.Name}({Signature(w.Params)})\n        {{");
                 foreach (string line in w.Prepare) sb.AppendLine("            " + line);
+                string? trigger = TriggerLine(w);
+                if (trigger is not null) sb.AppendLine("            var __enabled = WidgetRecorder.IsEnabled(ui.Handle);");
                 string call = $"Native.{w.Native.CsName}({string.Join(", ", w.Arguments)})";
                 if (w.Native.CsReturn == "void") sb.AppendLine("            " + call + ";");
                 else sb.AppendLine($"            var __result = {call};");
                 foreach (string line in w.WriteBack) sb.AppendLine("            " + line);
                 if (NoteLine(w) is { } note) sb.AppendLine("            " + note);
-                if (TriggerLine(w) is { } trigger) sb.AppendLine("            " + trigger);
+                if (trigger is not null) sb.AppendLine("            " + trigger);
                 if (w.End is not null)
                     sb.AppendLine($"            return {ScopeNew(w, "__result", w.Return)};");
                 else if (w.ReturnStatement is { } statement) sb.AppendLine("            " + statement);

@@ -340,7 +340,7 @@ public sealed class SemanticNode
         if (query.Text.Length == 0)
         {
             if (query.Role is null && query.Value is null) return int.MaxValue;
-            return (IsStatic(Kind) ? 3 : 0) + valueTier;
+            return (((IsStatic(Kind) ? 3 : 0) + valueTier) * 2) + (IsContainer ? 1 : 0);
         }
 
         int tier = Text.Equals(query.Text, StringComparison.OrdinalIgnoreCase) ? 0
@@ -350,7 +350,9 @@ public sealed class SemanticNode
         if (tier == int.MaxValue) return tier;
 
         // Text a person reads but cannot act on: a click on it lands on whatever is behind it.
-        return (IsStatic(Kind) ? 3 : 0) + tier + valueTier;
+        // At the same tier an actionable control also beats the container that shares its name
+        // (an open Menu "Options" beside its MenuButton "Options", or a path "Bars > Bars").
+        return (((IsStatic(Kind) ? 3 : 0) + tier + valueTier) * 2) + (IsContainer ? 1 : 0);
     }
 
     /// <summary>

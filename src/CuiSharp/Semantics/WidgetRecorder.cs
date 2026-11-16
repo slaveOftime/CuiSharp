@@ -180,6 +180,26 @@ public static class WidgetRecorder
     }
 
     /// <summary>
+    /// Whether the surface drawing right now is enabled before a container's <c>begin</c> runs.
+    /// A menu's <c>begin</c> draws its trigger in the flow and then opens the popup, which pushes
+    /// <c>disabled</c> while the popup animates closed; reading the flag first keeps the trigger's
+    /// own state instead of the closing popup's. Costs nothing while recording is off.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static bool IsEnabled(nint ui) => _current is not null && Native.IsDisabled(ui) == 0;
+
+    /// <summary>
+    /// Records the trigger a container's own <c>begin</c> drew before opening its body.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static void NoteTrigger(nint ui, string kind, UiText text, bool enabled, bool bodyBuilt)
+    {
+        FrameRecorder? frame = _current;
+        if (frame is null) return;
+        frame.NoteTrigger(ui, kind, text, enabled, bodyBuilt);
+    }
+
+    /// <summary>
     /// Called by the wrapper of a widget CUI builds only when it is given items (a toggle group).
     /// <paramref name="itemCount"/> is what native's "no items, no widget" return turns on, and it
     /// is the only evidence that this call built anything: the last id proves nothing, because
@@ -568,6 +588,24 @@ internal sealed class FrameRecorder
 
     internal void Note(nint ui, string kind, UiText text, SemanticState state) =>
         Note(ui, kind, text, UnknownItemCount, state);
+
+    internal void NoteTrigger(nint ui, string kind, UiText text, bool enabled, bool bodyBuilt)
+    {
+        nint pointer = text.GetPointer(out int length);
+        if (length == 0) return;
+
+        // cui_menu_begin draws the trigger under the caller's disabled state, then calls
+        // cui__popup_begin, which pushes disabled = true when the popup is only fading out
+        // (!p->open). So an enabled trigger whose begin left the context enabled has genuinely
+        // opened its popup; one whose begin disabled the context is already closed and animating out.
+        SemanticState state = enabled
+            ? SemanticState.Enabled | (bodyBuilt && Native.IsDisabled(ui) == 0 ? SemanticState.Expanded : SemanticState.None)
+            : SemanticState.None;
+        _pending.Add(new Pending(
+            kind, pointer, length, null, Native.LastId(ui), _depth, container: false,
+            GeometryProvenance.HasOwnLastId(kind), GeometryProvenance.IsFloating(kind),
+            _layer, CurrentAutomation, state: state));
+    }
 
     internal void Note(nint ui, string kind, UiText text, int itemCount, SemanticState state = SemanticState.None)
     {
