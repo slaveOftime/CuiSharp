@@ -44,7 +44,7 @@ on every pull request, every shape in the on-demand job.
 | A million chart points, decimated to 800 | 0.018 ms | same |
 | Idle window CPU | 0 % | by construction: CUI sleeps between frames |
 
-0.5.0 takes the executable to 3 177 984 B, 223 232 B more than 0.4.2, and the budget with it: the
+0.4.3 takes the executable to 3 177 984 B, 223 232 B more than 0.4.2, and the budget with it: the
 148 commits of CUI added thirty-six functions and thirty-two structs, including the voice and
 creative controls drawn by three new gallery pages. XML summaries are not linked code; they do not
 explain executable growth.

@@ -3,7 +3,7 @@
 A CuiSharp app publishes as one NativeAOT executable. This page says what is inside it, which
 lever moves the size, and what the package now does about it. Every number is measured by
 `tools/size-report.ps1` on one Windows machine (win-x64, stripped). The historical profile study
-used CUI 1.3.1; the 0.5.0 snapshot below uses CUI `6e6b353`. Treat absolute values as indicative,
+used CUI 1.3.1; the 0.4.3 snapshot below uses CUI `6e6b353`. Treat absolute values as indicative,
 and do not attribute a difference across revisions to a single build switch.
 
 ```sh
@@ -52,10 +52,10 @@ way:
 | `dotnet new cui-app`, published | — | 2 282 496 |
 | `dotnet new cui-mini`, published | — | 1 198 080 |
 
-Those are historical profile measurements, not a same-library comparison with 0.5.0.
+Those are historical profile measurements, not a same-library comparison with 0.4.3.
 The current shipped snapshot is:
 
-| App | 0.5.0, shipped |
+| App | 0.4.3, shipped |
 |---|---|
 | minimal app | 1 176 064 B |
 | gallery, 32 pages | 3 177 984 B |
