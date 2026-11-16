@@ -207,7 +207,9 @@ public sealed class FrameAnalyzer : DiagnosticAnalyzer
 
     /// <summary>
     /// True when the node runs inside a frame: a method, lambda or local function that takes a
-    /// <c>Ui</c>, or any member of a <c>Component</c>.
+    /// <c>Ui</c>, or a synchronous member of a <c>Component</c>. Work handed to a
+    /// <c>Mutation</c> or a <c>Progressive</c> returns a <c>Task</c> and runs on the pool, so its
+    /// body is not part of the frame even when it is written inline inside <c>Draw</c>.
     /// </summary>
     private static bool InFrame(SyntaxNode node, SemanticModel model, KnownTypes types, CancellationToken token)
     {
@@ -218,8 +220,13 @@ public sealed class FrameAnalyzer : DiagnosticAnalyzer
                 case MethodDeclarationSyntax method when HasUiParameter(method.ParameterList, model, types, token):
                 case LocalFunctionStatementSyntax local when HasUiParameter(local.ParameterList, model, types, token):
                     return true;
+                case MethodDeclarationSyntax method when ReturnsAwaitable(method.ReturnType, model, token):
+                case LocalFunctionStatementSyntax local when ReturnsAwaitable(local.ReturnType, model, token):
+                    return false;
                 case LambdaExpressionSyntax lambda when LambdaTakesUi(lambda, model, types, token):
                     return true;
+                case AnonymousFunctionExpressionSyntax function when IsAsyncWorkDelegate(function, model, token):
+                    return false;
                 case TypeDeclarationSyntax declaration:
                     return model.GetDeclaredSymbol(declaration, token) is { } type && types.IsComponent(type);
             }
@@ -227,6 +234,15 @@ public sealed class FrameAnalyzer : DiagnosticAnalyzer
 
         return false;
     }
+
+    private static bool ReturnsAwaitable(TypeSyntax? returnType, SemanticModel model, CancellationToken token) =>
+        returnType is not null &&
+        model.GetTypeInfo(returnType, token).Type is { } type &&
+        IsAwaitable(type);
+
+    private static bool IsAsyncWorkDelegate(AnonymousFunctionExpressionSyntax function, SemanticModel model, CancellationToken token) =>
+        model.GetTypeInfo(function, token).ConvertedType is INamedTypeSymbol { DelegateInvokeMethod.ReturnType: { } returnType } &&
+        IsAwaitable(returnType);
 
     private static bool HasUiParameter(BaseParameterListSyntax? parameters, SemanticModel model, KnownTypes types, CancellationToken token)
     {

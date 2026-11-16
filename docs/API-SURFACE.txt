@@ -1719,6 +1719,19 @@ class CuiSharp.Hosting.Mutation`1
   ctor(Func<CancellationToken, Task<T>>, Action<T>)
   property Boolean IsRunning { get; }
   property Exception Error { get; }
+class CuiSharp.Hosting.Progressive`1
+  Void Cancel()
+  Void Dispose()
+  Void Restart()
+  Void Restart(Func<CancellationToken, Action<T>, Task>, T)
+  Void Run()
+  Void Run(Func<CancellationToken, Action<T>, Task>, T)
+  ctor()
+  ctor(Func<CancellationToken, Action<T>, Task>)
+  property Boolean IsRunning { get; }
+  property Exception Error { get; }
+  property Single FrameRate { get; set; }
+  property T Latest { get; }
 struct CuiSharp.Hosting.WidgetTarget
   HeadlessApp ClickAndFrame()
   String ToString()

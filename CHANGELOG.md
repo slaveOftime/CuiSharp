@@ -8,6 +8,13 @@ different things.
 
 ### Added
 
+- **`Progressive<T>`** is the many-report sibling of `Mutation` for work with no single result: a
+  scan's counts, a download's bytes, a spectrum table, a live feed. The producer runs on the pool and
+  calls `publish` as it goes; `Draw` reads `Latest` with a volatile load, so there is no
+  `CancellationTokenSource`, `Volatile` field or `RequestWakeup` cadence to hand-roll. `Run` starts
+  if idle, `Restart` supersedes a stale producer (with an optional initial snapshot), `Cancel` stops
+  a run while keeping the instance reusable, `FrameRate` throttles the wake-up, and a completion
+  wakes the window and draws one final frame. `hosting.md` and `SKILL.md` show it beside `Mutation`.
 - **`ui.UseSystemFontFallbacks()`** installs this machine's faces for CJK, Cyrillic, Greek, Arabic,
   Hebrew, Thai, Devanagari and emoji in one call, so a folder name, a download name or a music tag
   written in another script draws instead of disappearing. A script the bundled Latin faces already
@@ -18,6 +25,16 @@ different things.
 
 ### Fixed
 
+- **The frame boundary is the host's, not a component's.** `Mutation`'s `apply` callback now runs
+  in a plain `CuiApp.Run` app and in the manual `CuiApp.Create`/`Frame` loop, not only in
+  `CuiApplication` and tests: every host enters a frame through the same drain/wake/reset pair, so a
+  result is applied and a pool thread can wake a sleeping window. The boundary is installed by the
+  first component or background operation, so a plain app that uses neither still trims the hosting
+  layer out. The frame contract in `hosting.md` names both hosts.
+- **CUI001 no longer advises a `Query` type that does not exist.** The message names `Mutation` (one
+  result) or `Progressive` (reports as it runs) and points at `hosting.md`, and CUI001/CUI007 no
+  longer treat background `Task`-returning work delegates inside `Draw` or a `Component` as in-frame
+  code.
 - Loading a font that fails no longer reports a fallback: `UseSystemFontFallback` and the pixel
   probe now treat a failed load as nothing to install instead of treating the error id as a face.
 - Font probes preserve the active frame's arena, callbacks and statistics, reject partial sample

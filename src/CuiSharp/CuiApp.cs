@@ -86,6 +86,7 @@ public sealed unsafe class CuiApp : IDisposable
     private Theme _theme;
     private Accent _accent;
     private bool _themeDirty;
+    private bool _inFrame;
     private readonly nint _ctx;
     private readonly UiFrameState _frame = new();
 
@@ -162,6 +163,12 @@ public sealed unsafe class CuiApp : IDisposable
     {
         if (_handle == 0) return false;
 
+        // The caller drew since the last call. Spend what that frame asked for before the native
+        // loop blocks, so work that finished on a pool thread wakes a sleeping window. Null when
+        // the app never constructed a component or a background operation, and skipped before the
+        // first frame has been entered.
+        if (_inFrame) FrameHooks.Current?.Leave(_ctx);
+
         if (_themeDirty)
         {
             Native.SetTheme(_ctx, _theme);
@@ -181,6 +188,11 @@ public sealed unsafe class CuiApp : IDisposable
 
         // Everything the last frame copied for argument strings is dead now.
         Utf8.BeginFrame();
+
+        // The next frame begins here, so work that finished meanwhile is applied before the
+        // caller draws it.
+        if (alive) FrameHooks.Current?.Enter();
+        _inFrame = alive;
 
         return alive;
     }
@@ -378,7 +390,18 @@ public sealed unsafe class CuiApp : IDisposable
         if (Features.Live) state.Live?.EnterFrame();
         try
         {
-            state.Draw(new Ui(ui, state.Frame));
+            // Every window frame enters and leaves through the same boundary: apply what finished
+            // on the pool, draw, then wake the loop if work is still in flight or a component is
+            // live. Null when the app never constructed a component or a background operation.
+            FrameHooks.Current?.Enter();
+            try
+            {
+                state.Draw(new Ui(ui, state.Frame));
+            }
+            finally
+            {
+                FrameHooks.Current?.Leave(ui);
+            }
         }
         finally
         {
@@ -420,6 +443,7 @@ public sealed unsafe class CuiApp : IDisposable
         HotReloadWake.Detach(NativeWindow);
         Native.AppDestroy(_handle);
         _handle = 0;
+        _inFrame = false;
         _frame.Reset();
         _frame.Release();
     }

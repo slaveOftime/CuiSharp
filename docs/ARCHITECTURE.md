@@ -33,7 +33,7 @@ src/CuiSharp/                 the library (package: CuiSharp)
     *.g.cs                    generated wrappers - never edited
   Runtime/                    frame state, text-field pool, native-callback bridge, feature switches
   Semantics/                  what a frame recorded: recorder, tree, query
-  Hosting/                    builder, DI, Component, Mutation, headless loop and app
+  Hosting/                    builder, DI, Component, Mutation/Progressive, headless loop and app
   Charting/                   series decimation for long or live data
   CuiApp.cs, CuiSurface.cs    the window, and the same frames without one
 src/CuiSharp.Analyzers/       CUI001-CUI008, packed into CuiSharp at analyzers/dotnet/cs
@@ -200,11 +200,23 @@ labels used to animate widgets (Gauge, Meter, ProgressRing) still need distinct 
 is what the OS modal loop also invokes while a window edge is dragged, which is why the window owns
 the loop: a managed `while` loop is blocked during the drag and the layout would go stale.
 
-Each frame, in order: `Completions.Drain()` (work that finished on a pool thread is applied on the
-UI thread), `Component.BeginFrame()`, `FrameStats.Begin()`, the root component renders, `FrameStats.End()`,
-then `ui.RequestRedraw()` if a mutation is running or a component reported `WantsFrames`, because a
-sleeping window cannot be woken by a pool thread. Finally `PendingWork.MarkDrawn()` spends the owed
-wake-up, so the loop can sleep again.
+Each frame, in order: `FrameBoundary.Enter()` (work that finished on a pool thread is applied on
+the UI thread, and the component frame flags are reset), `FrameStats.Begin()`, the root component
+renders, `FrameStats.End()`, then `FrameBoundary.Leave()` keeps the loop awake while a mutation or
+progressive run is in flight, an operation completed since the last frame, or a component reported
+`WantsFrames` — because a sleeping window cannot be woken by a pool thread. `Leave` spends the owed
+wake-up, so the loop can sleep again once nothing is outstanding. `CuiApp.Run`'s native frame
+callback invokes those two hooks around the draw callback, and the manual `CuiApp.Frame` loop and
+`CuiSurface` use the same contract, so a plain `CuiApp.Run` app, a `CuiApplication` and `dotnet cui`
+all behave alike.
+
+`FrameBoundary` is the reason the boundary is not in `CuiApplication`: a hosted app is one draw
+callback among several, and the promise ("a `Mutation` apply callback runs in a plain app too") is
+about the host, not about the component composition root. It is installed, not called
+unconditionally: the first `Component`, `Mutation` or `Progressive` creates a small `FrameHooks`
+object, and `CuiApp` invokes a nullable delegate on it. An app that never constructs one of those
+keeps the null check and the trimmer drops the dispatcher, the queue and the component machinery —
+which is why the size floor does not move for a plain window.
 
 `FrameStats` measures the frame that just drew, so a footer needs no clock of its own. `DrawMs` and
 `AllocatedBytes` cover the component's own draw — CUI's layout and paint happen after it — so
@@ -231,6 +243,20 @@ tests, the benchmarks, the snapshots and `dotnet cui` use.
 There is no synchronization context and no `TimeProvider` today. `Mutation` applies its result
 through `Completions`, and that is the whole async story: continuations do not run on the UI thread,
 they hand a value over at the next frame boundary.
+
+`Progressive<T>` is the many-report sibling for work that has no single result. The producer runs on
+the pool and publishes a *reference* to its current snapshot; the frame reads `Latest` with one
+volatile load. Intermediate reports are dropped by design — a frame wants the newest state, not a
+queue whose length is set by the producer — and `T` is constrained to a class because publishing a
+reference is atomic while a struct would have to be boxed per report. It has no apply callback for
+the same reason: invoking one per report would move the producer's rate into frame cost, which is
+the problem the value slot exists to avoid. A run reports its `FrameRate` to `PendingWork`, so a
+scan can ask the loop for five frames a second while a visualizer keeps the full rate; a completion
+wakes an attached window immediately and gets an unthrottled frame so the final value is drawn once,
+while a cancelled or superseded run settles its count without claiming a completion frame. `Run` is
+re-entry-safe, `Restart` supersedes an older producer so its late publish cannot land in the new
+state, `Cancel` stops a run while keeping the instance reusable, and `Dispose` cancels and settles
+the run when the owner goes away.
 
 That boundary belongs to one thread. `Completions` queues into a `FrameDispatcher`, found through a
 thread-static and captured when `Run` starts the work, so a frame applies only results queued by

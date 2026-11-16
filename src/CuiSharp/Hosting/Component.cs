@@ -19,6 +19,12 @@ namespace CuiSharp.Hosting;
 /// </code></example>
 public abstract class Component : IDisposable
 {
+    /// <summary>
+    /// A component is going to need the host's frame boundary (drain results, wake for
+    /// <see cref="WantsFrames"/>), so this is one of the places that installs it.
+    /// </summary>
+    protected Component() => FrameBoundary.Install();
+
     [ThreadStatic] private static bool _wantsFrames;
 
     private CancellationTokenSource? _token;
@@ -34,7 +40,7 @@ public abstract class Component : IDisposable
 
     internal bool WantsFramesNow => WantsFrames;
 
-    /// <summary>Operations in flight across every component. For diagnostics.</summary>
+    /// <summary>Background operations in flight across the process. For diagnostics.</summary>
     public static int PendingOperations => PendingWork.Count;
 
     /// <summary>
@@ -152,22 +158,89 @@ public static class ComponentExtensions
 /// </summary>
 internal static class PendingWork
 {
+    // One entry per running operation. The interval is how long it is willing to wait between
+    // frames: 0 means every frame (an animation), a positive value throttles a progress bar or a
+    // scan. Lookups are rare (a run starts or ends) while the frame reads the computed fields.
+    private static readonly Lock Gate = new();
+    private static readonly Dictionary<long, float> Running = [];
+    private static long _nextId;
     private static int _running;
     private static int _finished;
+    private static float _seconds = -1f;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static void Add() => Interlocked.Increment(ref _running);
-
-    internal static void Remove()
+    internal static long Add(float seconds = 0f)
     {
+        if (!float.IsFinite(seconds) || seconds < 0f) seconds = 0f;
+
+        long id = Interlocked.Increment(ref _nextId);
+        lock (Gate)
+        {
+            Running[id] = seconds;
+            Refresh();
+        }
+
+        Interlocked.Increment(ref _running);
+        return id;
+    }
+
+    internal static void Settle(long id, bool completed)
+    {
+        if (id == 0) return;
+
+        lock (Gate)
+        {
+            // A stale completion may name a run that was superseded and already settled. It must
+            // not settle the newer run's count or claim a frame the new run still owes.
+            if (!Running.Remove(id)) return;
+
+            Refresh();
+        }
+
         Interlocked.Decrement(ref _running);
-        Interlocked.Increment(ref _finished);
+
+        // Only a run that finished while still current owes a completion frame; a run cancelled
+        // by Restart, Cancel or Dispose was abandoned on purpose and must not force an unthrottled
+        // redraw or leave a headless surface looking live.
+        if (completed)
+        {
+            Interlocked.Increment(ref _finished);
+            HotReloadWake.Wake();
+        }
     }
 
     internal static bool Any => Volatile.Read(ref _running) > 0 || Volatile.Read(ref _finished) > 0;
 
+    /// <summary>True when an operation completed since the last frame: one frame is owed.</summary>
+    internal static bool Due => Volatile.Read(ref _finished) > 0;
+
     internal static int Count => Volatile.Read(ref _running);
+
+    /// <summary>
+    /// The shortest interval any running operation asked for, 0 for "every frame", or -1 when
+    /// nothing is running. A due completion always wins over this.
+    /// </summary>
+    internal static float NextFrameSeconds => Volatile.Read(ref _seconds);
 
     /// <summary>Clears the "a frame is owed" flags once that frame has been drawn.</summary>
     internal static void MarkDrawn() => Interlocked.Exchange(ref _finished, 0);
+
+    // Called with Gate held: the frame reads the answer without taking a lock or allocating.
+    private static void Refresh()
+    {
+        float shortest = -1f;
+
+        foreach (float seconds in Running.Values)
+        {
+            if (seconds <= 0f)
+            {
+                shortest = 0f;
+                break;
+            }
+
+            if (shortest < 0f || seconds < shortest) shortest = seconds;
+        }
+
+        Volatile.Write(ref _seconds, shortest);
+    }
 }

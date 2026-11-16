@@ -44,7 +44,7 @@ public sealed class Mutation<T> : IDisposable
     // The run this mutation is currently owned by. Bumped by every Run, read by a completion
     // that arrives later: an operation the app has moved on from may not publish.
     private long _generation;
-    private long _counted;        // the generation PendingWork is counting, 0 for none
+    private long _counted;        // the PendingWork id being counted, 0 for none
     private volatile bool _disposed;
 
     /// <summary>Creates a mutation around the work it runs.</summary>
@@ -62,6 +62,7 @@ public sealed class Mutation<T> : IDisposable
         // A component is usually built on the UI thread, but DI may construct it earlier or
         // elsewhere. Run() binds the completion to the thread that actually starts the work.
         Frames = FrameDispatcher.Current;
+        FrameBoundary.Install();
     }
 
     /// <summary>
@@ -72,7 +73,7 @@ public sealed class Mutation<T> : IDisposable
     internal FrameDispatcher Frames { get; private set; }
 
     /// <summary>True while the operation is in flight.</summary>
-    public bool IsRunning => _pending is { IsCompleted: false };
+    public bool IsRunning => Volatile.Read(ref _counted) != 0;
 
     /// <summary>
     /// The failure that ended the last run, or null. Cached when the operation
@@ -108,6 +109,9 @@ public sealed class Mutation<T> : IDisposable
             return;
         }
 
+        long id = PendingWork.Add();
+        Volatile.Write(ref _counted, id);
+
         Task<T> task;
         try
         {
@@ -121,12 +125,12 @@ public sealed class Mutation<T> : IDisposable
             // A faulted start must not escape into the frame: report it like any
             // other failure so the component can show it.
             Volatile.Write(ref _error, error.GetBaseException());
+            PendingWork.Settle(id, completed: false);
+            Interlocked.CompareExchange(ref _counted, 0, id);
             return;
         }
 
         _pending = task;
-        PendingWork.Add();
-        Interlocked.Exchange(ref _counted, generation);
 
         // Settle on completion, not on TryPublish: a component that is no longer
         // drawn never polls, and a finished operation must not keep the window
@@ -134,10 +138,10 @@ public sealed class Mutation<T> : IDisposable
         task.ContinueWith(
             static (completed, state) =>
             {
-                (Mutation<T> owner, long run) = ((Mutation<T>, long))state!;
-                owner.Complete(completed, run);
+                (Mutation<T> owner, long run, long counted) = ((Mutation<T>, long, long))state!;
+                owner.Complete(completed, run, counted);
             },
-            (this, generation),
+            (this, generation, id),
             CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
     }
 
@@ -148,7 +152,7 @@ public sealed class Mutation<T> : IDisposable
     public bool TryPublish([NotNullWhen(true)] out T? result)
     {
         result = default;
-        if (_pending is not { IsCompleted: true } completed) return false;
+        if (IsRunning || _pending is not { IsCompleted: true } completed) return false;
 
         _pending = null;
         if (!completed.IsCompletedSuccessfully) return false;
@@ -172,10 +176,10 @@ public sealed class Mutation<T> : IDisposable
         _lifetime.Cancel();
         _lifetime.Dispose();
         _pending = null;
-        Settle(Volatile.Read(ref _counted));
+        PendingWork.Settle(Interlocked.Exchange(ref _counted, 0), completed: false);
     }
 
-    private void Complete(Task<T> task, long generation)
+    private void Complete(Task<T> task, long generation, long counted)
     {
         // A result is published only by the run that still owns this mutation. A run that
         // finished after the app moved on — restarted, navigated, disposed — is dropped, and
@@ -190,14 +194,13 @@ public sealed class Mutation<T> : IDisposable
         }
         else if (current)
         {
-            // Error is the completion signal callers observe. Publish it only after PendingWork
-            // has been settled, so observing the error also observes the matching count update.
-            Settle(generation);
             Volatile.Write(ref _error, task.Exception?.GetBaseException() ?? new TaskCanceledException(task));
-            return;
         }
 
-        Settle(generation);
+        // Settle PendingWork and publish Error/Completions before clearing _counted: a caller that
+        // observes IsRunning == false also observes the settled count and the final outcome.
+        PendingWork.Settle(counted, completed: current);
+        Interlocked.CompareExchange(ref _counted, 0, counted);
     }
 
     private bool IsCurrent(long generation) => !_disposed && Volatile.Read(ref _generation) == generation;
@@ -208,15 +211,6 @@ public sealed class Mutation<T> : IDisposable
         if (!IsCurrent(generation)) return;
         _pending = null;
         _apply?.Invoke(value);
-    }
-
-    // Each run counts pending work under its own generation, so a stale completion settles its
-    // own count and never the newer operation's.
-    private void Settle(long generation)
-    {
-        if (generation == 0) return;
-        if (Interlocked.CompareExchange(ref _counted, 0, generation) != generation) return;
-        PendingWork.Remove();
     }
 }
 

@@ -91,8 +91,17 @@ internal static class HotReloadWake
     internal static bool Notify()
     {
         Interlocked.Increment(ref s_reloads);
+        return Wake();
+    }
 
-        // Posting under the lock keeps a reload landing at the same moment as a detach from
+    /// <summary>
+    /// Wakes every attached window from a pool thread by posting <c>WM_NULL</c>, which sets
+    /// <c>QS_POSTMESSAGE</c> and returns <c>MsgWaitForMultipleObjectsEx</c> without waiting for
+    /// the current wakeup timer to expire.
+    /// </summary>
+    internal static bool Wake()
+    {
+        // Posting under the lock keeps a wake landing at the same moment as a detach from
         // waking a handle the loop no longer owns. The message is WM_NULL: the smallest thing
         // that sets QS_POSTMESSAGE, dispatched to DefWindowProc and dropped without effect.
         lock (Gate)

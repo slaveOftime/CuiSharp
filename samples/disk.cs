@@ -19,6 +19,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using CuiSharp;
+using CuiSharp.Hosting;
 
 // ---------------------------------------------------------------------------
 // Disk Usage — a native CuiSharp treemap over the file system.
@@ -87,9 +88,6 @@ internal sealed class DiskApp(Browser browser, DiskScanner scanner)
         else DrawNarrow(ui, result, height);
 
         _picker.Draw(ui, browser);
-
-        // Five frames a second while sizes are still arriving, one otherwise.
-        ui.RequestWakeup(scanner.IsBusy ? 0.2f : 1f);
     }
 
     private static void SquareCorners(Ui ui)
@@ -948,39 +946,29 @@ internal sealed class DiskScanner
         RecurseSubdirectories = false,
     };
 
-    private readonly Lock _publishGate = new();
+    // Five frames a second while sizes are still arriving is enough for the map; a completion
+    // always draws its final frame before the window sleeps.
+    private readonly Progressive<ScanResult> _scan = new() { FrameRate = 5 };
 
-    private ScanResult? _current;
-    private CancellationTokenSource? _cancel;
-    private int _generation;
     private long _publishedAt;
-    private volatile bool _busy;
 
-    public ScanResult? Current => Volatile.Read(ref _current);
-    public bool IsBusy => _busy;
+    public ScanResult? Current => _scan.Latest;
 
-    public void Scan(Location location)
-    {
-        var cancellation = new CancellationTokenSource();
-        Interlocked.Exchange(ref _cancel, cancellation)?.Cancel();
-        var generation = Interlocked.Increment(ref _generation);
+    public void Scan(Location location) =>
+        _scan.Restart(
+            (token, publish) =>
+            {
+                Run(location, token, publish);
+                return Task.CompletedTask;
+            },
+            initial: new ScanResult { Location = location });
 
-        _busy = true;
-        Volatile.Write(ref _current, new() { Location = location });
-
-        var thread = new Thread(() => Run(location, generation, cancellation.Token))
-        {
-            IsBackground = true,
-            Name = "disk-scan",
-        };
-
-        thread.Start();
-    }
-
-    private void Run(Location location, int generation, CancellationToken token)
+    private void Run(Location location, CancellationToken token, Action<ScanResult> publish)
     {
         var clock = Stopwatch.StartNew();
         var entries = new List<DiskEntry>(256);
+
+        Interlocked.Exchange(ref _publishedAt, 0);
 
         try
         {
@@ -992,7 +980,7 @@ internal sealed class DiskScanner
                 else if (File.Exists(path)) entries.Add(ReadFile(new(path)));
             }
 
-            Publish(location, entries, clock.Elapsed, complete: false, error: null);
+            Publish(location, entries, clock.Elapsed, complete: false, error: null, publish);
 
             var options = new ParallelOptions
             {
@@ -1007,10 +995,10 @@ internal sealed class DiskScanner
                 entry.Files = measured.Files;
                 entry.Folders = measured.Folders;
 
-                PublishThrottled(location, entries, clock.Elapsed);
+                PublishThrottled(location, entries, clock.Elapsed, publish);
             });
 
-            Publish(location, entries, clock.Elapsed, complete: true, error: null);
+            Publish(location, entries, clock.Elapsed, complete: true, error: null, publish);
         }
         catch (OperationCanceledException)
         {
@@ -1018,11 +1006,7 @@ internal sealed class DiskScanner
         }
         catch (Exception error)
         {
-            Publish(location, entries, clock.Elapsed, complete: true, error: error.Message);
-        }
-        finally
-        {
-            if (generation == Volatile.Read(ref _generation)) _busy = false;
+            Publish(location, entries, clock.Elapsed, complete: true, error: error.Message, publish);
         }
     }
 
@@ -1105,7 +1089,7 @@ internal sealed class DiskScanner
         }
     }
 
-    private void PublishThrottled(Location location, List<DiskEntry> entries, TimeSpan elapsed)
+    private void PublishThrottled(Location location, List<DiskEntry> entries, TimeSpan elapsed, Action<ScanResult> publish)
     {
         var now = Stopwatch.GetTimestamp();
         var last = Volatile.Read(ref _publishedAt);
@@ -1113,10 +1097,16 @@ internal sealed class DiskScanner
         if (now - last < PublishEvery) return;
         if (Interlocked.CompareExchange(ref _publishedAt, now, last) != last) return;
 
-        Publish(location, entries, elapsed, complete: false, error: null);
+        Publish(location, entries, elapsed, complete: false, error: null, publish);
     }
 
-    private void Publish(Location location, List<DiskEntry> entries, TimeSpan elapsed, bool complete, string? error)
+    private static void Publish(
+        Location location,
+        List<DiskEntry> entries,
+        TimeSpan elapsed,
+        bool complete,
+        string? error,
+        Action<ScanResult> publish)
     {
         var sorted = entries.ToArray();
         Array.Sort(sorted, static (a, b) => b.Size.CompareTo(a.Size));
@@ -1138,7 +1128,7 @@ internal sealed class DiskScanner
 
         for (var i = shown; i < sorted.Length; i++) otherBytes += sorted[i].Size;
 
-        var result = new ScanResult
+        publish(new ScanResult
         {
             Location = location,
             Entries = sorted[..shown],
@@ -1150,9 +1140,7 @@ internal sealed class DiskScanner
             Complete = complete,
             Elapsed = elapsed,
             Error = error,
-        };
-
-        lock (_publishGate) Volatile.Write(ref _current, result);
+        });
     }
 }
 

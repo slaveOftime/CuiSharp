@@ -23,6 +23,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json;
 using CuiSharp;
+using CuiSharp.Hosting;
 using Windows.Graphics.Imaging;
 using Windows.Media.Core;
 using Windows.Media.MediaProperties;
@@ -149,9 +150,9 @@ internal sealed class MusicApp
         Shortcuts(ui);
         Persist();
 
-        // Forty frames a second while the visualizer moves or a track is still
-        // being decoded for the seek bar, one while it rests.
-        ui.RequestWakeup(_player.IsPlaying || _nowPlaying.IsReading ? 1f / 40f : 1f);
+        // Forty frames a second while the visualizer moves; one while it rests. A decode that is
+        // still arriving is counted as pending work by the Progressive, so it needs no term here.
+        ui.RequestWakeup(_player.IsPlaying ? 1f / 40f : 1f);
     }
 
     private void DrawSideBySide(Ui ui, float width, float height)
@@ -266,14 +267,14 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
     private readonly Visualizer _visualizer = new(visualizer);
     private readonly SeekBar _seek = new(player);
 
-    private Sound? _sound;
+    // The decode reports once, with the whole table; Progressive keeps it off the frame thread,
+    // cancels it when the track changes and keeps the window awake until it arrives. A future
+    // decoder can publish partial tables without changing this field.
+    private readonly Progressive<Sound> _sound = new() { FrameRate = 40 };
     private string _soundPath = "";
-    private Task<Sound?>? _reading;
 
     private string _positionText = "0:00";
     private int _lastSecond = -1;
-
-    public bool IsReading => _reading is not null;
 
     public void Advance(float delta, bool playing)
     {
@@ -288,26 +289,27 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
     {
         if (player.Current is not { } track)
         {
-            _sound = null;
-            _soundPath = "";
-            _reading = null;
+            if (_soundPath.Length > 0)
+            {
+                _soundPath = "";
+                _sound.Cancel();
+            }
+
             return null;
         }
 
         if (track.Path != _soundPath)
         {
             _soundPath = track.Path;
-            _sound = null;
-            _reading = Task.Run(() => Sound.LoadAsync(track.Path, track.Duration));
+
+            _sound.Restart(async (token, publish) =>
+            {
+                if (await Sound.LoadAsync(track.Path, track.Duration, token) is { } sound)
+                    publish(sound);
+            });
         }
 
-        if (_reading is { IsCompleted: true } reading)
-        {
-            _reading = null;
-            _sound = reading.Result;
-        }
-
-        return _sound;
+        return _sound.Latest;
     }
 
     public void DrawTall(Ui ui, float width, Size height, bool tight)
@@ -2013,10 +2015,10 @@ internal sealed class Sound
     }
 
     /// <summary>
-    /// Decodes and measures a track. Never throws: a file the system will not
-    /// decode still plays, it just has no spectrum to draw.
+    /// Decodes and measures a track. A file the system will not decode still plays, it just has no
+    /// spectrum to draw; cancellation propagates so a superseded decode cannot publish.
     /// </summary>
-    public static async Task<Sound?> LoadAsync(string path, double duration)
+    public static async Task<Sound?> LoadAsync(string path, double duration, CancellationToken token)
     {
         if (path.Length == 0 || duration > MaxSeconds) return null;
 
@@ -2029,7 +2031,12 @@ internal sealed class Sound
 
         try
         {
-            sound = await MeasureFileAsync(path);
+            sound = await MeasureFileAsync(path, token);
+        }
+        catch (OperationCanceledException)
+        {
+            // The track changed before this decode finished; its publisher must not land.
+            throw;
         }
         catch
         {
@@ -2084,20 +2091,22 @@ internal sealed class Sound
         return peak;
     }
 
-    private static async Task<Sound?> MeasureFileAsync(string path)
+    private static async Task<Sound?> MeasureFileAsync(string path, CancellationToken token)
     {
-        var pcm = await DecodeAsync(path);
+        var pcm = await DecodeAsync(path, token);
 
         // The transcoder writes a RIFF header before the samples; reading it as
         // audio would put a click at the start of every track.
-        return Parse(pcm) is { } wave ? Measure(pcm, wave) : null;
+        return Parse(pcm) is { } wave ? Measure(pcm, wave, token) : null;
     }
 
     /// <summary>Any codec the system can read, through the same WAV.</summary>
-    private static async Task<byte[]> DecodeAsync(string path)
+    private static async Task<byte[]> DecodeAsync(string path, CancellationToken token)
     {
         try
         {
+            token.ThrowIfCancellationRequested();
+
             var file = await StorageFile.GetFileFromPathAsync(path);
 
             using var source = await file.OpenReadAsync();
@@ -2109,7 +2118,8 @@ internal sealed class Sound
 
             if (!prepared.CanTranscode) return [];
 
-            await prepared.TranscodeAsync();
+            await prepared.TranscodeAsync().AsTask(token);
+            token.ThrowIfCancellationRequested();
 
             // Reading the whole stream is the expensive part; a track this long
             // is not worth the megabytes for a bar chart.
@@ -2120,10 +2130,15 @@ internal sealed class Sound
 
             using var reader = new DataReader(destination.GetInputStreamAt(0));
             await reader.LoadAsync(size);
+            token.ThrowIfCancellationRequested();
 
             var pcm = new byte[(int)size];
             reader.ReadBytes(pcm);
             return pcm;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch
         {
@@ -2170,10 +2185,12 @@ internal sealed class Sound
     private static bool IsChunk(byte[] file, int at, string id) =>
         file[at] == id[0] && file[at + 1] == id[1] && file[at + 2] == id[2] && file[at + 3] == id[3];
 
-    private static Sound? Measure(byte[] pcm, Wave wave)
+    private static Sound? Measure(byte[] pcm, Wave wave, CancellationToken token)
     {
         var frames = wave.Length / (wave.Channels * 2);
         if (frames < Window) return null;
+
+        token.ThrowIfCancellationRequested();
 
         var seconds = frames / (double)wave.Rate;
         if (seconds > MaxSeconds) return null;
@@ -2233,7 +2250,11 @@ internal sealed class Sound
 
         // The rows are independent, and a whole track is a few seconds of maths:
         // one core less than the machine keeps the frame loop smooth meanwhile.
-        var options = new ParallelOptions { MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount - 1) };
+        var options = new ParallelOptions
+        {
+            MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount - 1),
+            CancellationToken = token,
+        };
 
         Parallel.For(0, rows, options, () => new Scratch(),
             (row, _, scratch) =>

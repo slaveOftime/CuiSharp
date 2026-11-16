@@ -98,29 +98,15 @@ public sealed class CuiApplication : IDisposable
         _services.Dispose();
     }
 
-    // One frame: draw the tree, record what it cost, then keep the loop awake while
-    // work is outstanding.
+    // One frame: draw the tree, record what it cost. The frame boundary — applying finished work
+    // and keeping the loop awake — belongs to CuiApp.Run, which wraps every draw callback alike.
     private static void Host(Component root, Ui ui)
     {
-        // Work that finished on a pool thread is applied here, on the UI thread, so
-        // this frame draws it and no component has to poll.
-        Completions.Drain();
-
-        Component.BeginFrame();
         long allocated = FrameStats.Begin();
 
         root.Render(ui);
 
         FrameStats.End(allocated);
-
-        // CUI sleeps between frames unless something asks for one. A mutation or a
-        // live feed finishing on a pool thread cannot wake a sleeping window, so a
-        // pending operation has to be reflected here.
-        if (PendingWork.Any || Component.AnyWantFrames) ui.RequestRedraw();
-
-        // This frame has drawn whatever finished before it, so the owed wake-up is
-        // spent. Without this the loop would never sleep again after one operation.
-        PendingWork.MarkDrawn();
 
         FrameTrace.Frame();
     }
