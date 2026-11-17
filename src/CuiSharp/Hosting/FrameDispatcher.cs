@@ -6,7 +6,7 @@ namespace CuiSharp.Hosting;
 /// The thread-bound queue for mutation results waiting at a frame boundary.
 /// <para>
 /// Work that finished on a pool thread may only be applied at a frame boundary on the thread that
-/// called <see cref="Mutation{T}.Run"/>. A process-wide queue instead lets a frame on another
+/// called <see cref="Mutation{T}.Run()"/>. A process-wide queue instead lets a frame on another
 /// thread apply that result, so the queue belongs to the dispatcher and a dispatcher belongs to one
 /// thread.
 /// </para>

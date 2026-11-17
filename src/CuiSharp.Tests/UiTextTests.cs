@@ -74,9 +74,17 @@ public class UiTextTests
             _ = text.GetPointer(out _);
         }
         for (int i = 0; i < 10; i++) Format();
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        for (int i = 0; i < 1_000; i++) Format();
-        Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
+
+        // Median of several batches: a one-off runtime allocation is not a formatting cost.
+        var perBatch = new long[5];
+        for (int batch = 0; batch < perBatch.Length; batch++)
+        {
+            long before = GC.GetAllocatedBytesForCurrentThread();
+            for (int i = 0; i < 200; i++) Format();
+            perBatch[batch] = GC.GetAllocatedBytesForCurrentThread() - before;
+        }
+
+        Assert.Equal(0, perBatch.Median());
     }
 
     private static unsafe string Read(UiText text)

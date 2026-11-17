@@ -31,9 +31,11 @@ blur the software renderer spends CPU on.
 ## Build and run
 
 Install .NET SDK 10.0.403 or a later .NET 10 feature band, plus its browser workloads, on Windows
-x64; then run these commands from the repository root.
-The archive script currently resolves the Windows workload packs; the Pages workflow uses the same
-Windows x64 toolchain.
+x64; then run these commands from the repository root. The sample's `global.json` pins that band,
+because a wasm workload belongs to the SDK feature band that installed it — a newer SDK would
+provide different runtime and Emscripten packs than this `net10.0` app links. The archive script
+currently resolves the Windows workload packs; the Pages workflow uses the same Windows x64
+toolchain.
 
 ```powershell
 Push-Location samples/CuiSharp.Gallery.Browser

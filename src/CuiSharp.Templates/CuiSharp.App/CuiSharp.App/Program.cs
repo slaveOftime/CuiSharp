@@ -18,8 +18,8 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<TodoService>();
 builder.Services.AddSingleton<PriceFeed>();
 builder.Services.AddSingleton<MarketFeed>();
-builder.Services.AddSingleton<TodoPage>();
-builder.Services.AddSingleton<MarketsPage>();
+builder.AddPage<TodoPage>();
+builder.AddPage<MarketsPage>();
 builder.Services.AddSingleton<App>();
 
 builder.Window.Title = "CuiSharp.App";

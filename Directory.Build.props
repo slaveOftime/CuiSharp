@@ -12,6 +12,10 @@
     <InvariantGlobalization>true</InvariantGlobalization>
     <Deterministic>true</Deterministic>
     <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+    <!-- Build both net10.0 and net11.0 when the .NET 11+ SDK is present. CI installs both SDKs,
+         so both targets are compiled there; a .NET 10-only host still builds net10.0 alone. -->
+    <CuiSharpTargetFrameworks>net10.0</CuiSharpTargetFrameworks>
+    <CuiSharpTargetFrameworks Condition="'$(NETCoreSdkVersion)' != '' And $([MSBuild]::VersionGreaterThanOrEquals('$(NETCoreSdkVersion)', '11.0'))">net10.0;net11.0</CuiSharpTargetFrameworks>
   </PropertyGroup>
 
   <!-- Package metadata, inherited by every packable project. -->

@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 namespace CuiSharp;
 
 /// <summary>
@@ -48,38 +50,83 @@ public ref struct AutomationScope : IDisposable
     }
 }
 
-/// <summary>The key for one item in <see cref="Ui.Keyed{T}"/>.</summary>
+/// <summary>The key for one item in <see cref="Ui.Keyed{T}(T[], KeyFn{T})"/>.</summary>
 public delegate int KeyFn<T>(in T item);
 
 /// <summary>
-/// Enumerates items, pushing one id scope per item, so the same markup can draw
-/// every row while each row keeps its own widget state.
+/// Enumerates items, pushing one id scope per item, so a natural <c>foreach</c> can draw every
+/// row while each row keeps its own widget state and allocates 0 B.
 /// <para>
-/// The items are an array, not a span: the enumerator holds them for the length
-/// of the loop, and a span would tie that loop to the span's own lifetime.
-/// <para>
-/// The key selector is a delegate: a capturing lambda allocates once per call,
-/// so prefer a static lambda or a method group in the frame loop.
+/// Accepts <see cref="ReadOnlySpan{T}"/>, arrays, <see cref="List{T}"/> and
+/// <see cref="IReadOnlyList{T}"/>. Lists are indexed directly rather than through
+/// <see cref="IEnumerable{T}.GetEnumerator"/>, so enumerating an <see cref="IReadOnlyList{T}"/>
+/// never boxes an enumerator on the frame heap.
 /// </para>
+/// <para>
+/// When a key selector is passed, prefer a <c>static</c> lambda (<c>static item =&gt; item.Id</c>)
+/// so the compiler caches the delegate once for the process. When omitted, the item's index is
+/// used as its key.
 /// </para>
 /// </summary>
 /// <example><code>
-/// foreach (var person in ui.Keyed(People, static (in Person p) => p.Id))
-///     ui.ListItem(person.Name);
+/// foreach (var item in ui.Keyed(todos.Items, static item => item.Id))
+///     ui.Checkbox(item.Title, ref done);
 /// </code></example>
 public ref struct KeyedScope<T>
 {
-    private readonly T[] _items;
-    private readonly KeyFn<T> _key;
+    private readonly ReadOnlySpan<T> _span;
+    private readonly IReadOnlyList<T>? _list;
+    private readonly Func<T, int>? _selectKey;
+    private readonly KeyFn<T>? _key;
     private readonly nint _ui;
     private int _index;
     private bool _pushed;
 
+    internal KeyedScope(nint ui, ReadOnlySpan<T> items, Func<T, int>? key = null)
+    {
+        _ui = ui;
+        _span = items;
+        _list = null;
+        _selectKey = key;
+        _key = null;
+        _index = -1;
+        _pushed = false;
+        Current = default!;
+    }
+
     internal KeyedScope(nint ui, T[] items, KeyFn<T> key)
     {
         _ui = ui;
-        _items = items;
+        _span = items;
+        _list = null;
+        _selectKey = null;
         _key = key;
+        _index = -1;
+        _pushed = false;
+        Current = default!;
+    }
+
+    internal KeyedScope(nint ui, IReadOnlyList<T> items, Func<T, int>? key = null)
+    {
+        _ui = ui;
+        if (items is T[] array)
+        {
+            _span = array;
+            _list = null;
+        }
+        else if (items is List<T> list)
+        {
+            _span = CollectionsMarshal.AsSpan(list);
+            _list = null;
+        }
+        else
+        {
+            _span = default;
+            _list = items;
+        }
+
+        _selectKey = key;
+        _key = null;
         _index = -1;
         _pushed = false;
         Current = default!;
@@ -96,11 +143,24 @@ public ref struct KeyedScope<T>
         Pop();
 
         _index++;
-        if ((uint)_index >= (uint)_items.Length) return false;
+        if (_list is not null)
+        {
+            if ((uint)_index >= (uint)_list.Count) return false;
+            Current = _list[_index];
+        }
+        else
+        {
+            if ((uint)_index >= (uint)_span.Length) return false;
+            Current = _span[_index];
+        }
 
-        Current = _items[_index];
         T item = Current;
-        int key = _key(in item);
+        int key = _selectKey is not null
+            ? _selectKey(item)
+            : _key is not null
+                ? _key(in item)
+                : _index;
+
         Interop.Native.PushIdInt(_ui, key);
         WidgetRecorder.PushAutomation(_ui, key);
         _pushed = true;

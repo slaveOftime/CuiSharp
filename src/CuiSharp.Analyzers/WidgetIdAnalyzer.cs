@@ -83,15 +83,30 @@ public sealed class WidgetIdAnalyzer : DiagnosticAnalyzer
     {
         foreach (SyntaxNode ancestor in node.Ancestors())
         {
-            if (ancestor is UsingStatementSyntax { Expression: InvocationExpressionSyntax call } &&
-                call.Expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: "Id" or "Keyed" })
+            if (ancestor is UsingStatementSyntax usingStatement)
             {
-                return true;
+                if (IsIdCall(usingStatement.Expression)) return true;
+                if (usingStatement.Declaration is { Variables.Count: > 0 } decl &&
+                    IsIdCall(decl.Variables[0].Initializer?.Value))
+                {
+                    return true;
+                }
             }
 
-            if (ancestor is ForEachStatementSyntax foreachStatement &&
-                foreachStatement.Expression is InvocationExpressionSyntax loop &&
-                loop.Expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: "Keyed" })
+            if (ancestor is BlockSyntax block)
+            {
+                foreach (StatementSyntax statement in block.Statements)
+                {
+                    if (statement.SpanStart >= node.SpanStart) break;
+                    if (statement is LocalDeclarationStatementSyntax { UsingKeyword.RawKind: not 0, Declaration.Variables: { Count: > 0 } vars } &&
+                        IsIdCall(vars[0].Initializer?.Value))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            if (ancestor is ForEachStatementSyntax foreachStatement && IsIdCall(foreachStatement.Expression))
             {
                 return true;
             }
@@ -99,4 +114,10 @@ public sealed class WidgetIdAnalyzer : DiagnosticAnalyzer
 
         return false;
     }
+
+    private static bool IsIdCall(ExpressionSyntax? expression) =>
+        expression is InvocationExpressionSyntax
+        {
+            Expression: MemberAccessExpressionSyntax { Name.Identifier.ValueText: "Id" or "Keyed" }
+        };
 }

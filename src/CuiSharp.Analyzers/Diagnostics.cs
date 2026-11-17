@@ -19,11 +19,11 @@ internal static class Diagnostics
     internal static readonly DiagnosticDescriptor BlockingCall = new(
         id: "CUI001",
         title: "Do not block inside a frame",
-        messageFormat: "'{0}' blocks the UI thread inside a frame; run the work in a Mutation or Query instead, so the frame keeps drawing",
+        messageFormat: "'{0}' blocks the UI thread inside a frame; start it from a Mutation or a Progressive instead (skills/cui-dotnet/hosting.md), so the frame keeps drawing",
         category: Category,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        description: "A frame builds the whole window. Blocking in a Component's Draw or in any method that takes a Ui stalls input, paint and animation.");
+        description: "A frame builds the whole window. Blocking in a Component's Draw or in any method that takes a Ui stalls input, paint and animation; start background work from a Mutation (one result) or a Progressive (reports as it runs) instead.");
 
     /// <summary>A scope-returning call whose result is thrown away.</summary>
     internal static readonly DiagnosticDescriptor ScopeNotDisposed = new(
@@ -68,8 +68,8 @@ internal static class Diagnostics
     /// <summary>async void: nothing can observe the failure and nothing tracks the work.</summary>
     internal static readonly DiagnosticDescriptor AsyncVoidInComponent = new(
         id: "CUI006",
-        title: "Use a Mutation instead of async void",
-        messageFormat: "'{0}' is 'async void'; return Task and run it through a Mutation, so the frame knows work is pending and errors surface in the page",
+        title: "Use a Mutation or Progressive instead of async void",
+        messageFormat: "'{0}' is 'async void'; return Task and run it through a Mutation or a Progressive, so the frame knows work is pending and errors surface in the page",
         category: Category,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true,

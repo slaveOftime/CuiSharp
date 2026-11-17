@@ -53,6 +53,9 @@ public unsafe ref struct UiText
     public void AppendFormatted(object? value, string? format) => _handler.AppendFormatted(value, format);
     public void AppendFormatted(object? value, int alignment, string? format = null) => _handler.AppendFormatted(value, alignment, format);
 
+    /// <summary>True when this text holds no bytes (for example, <c>default</c>).</summary>
+    public readonly bool IsEmpty => _handler.IsEmpty;
+
     internal nint GetPointer(out int byteLength)
     {
         byteLength = _handler.Length;

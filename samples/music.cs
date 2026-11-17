@@ -1,9 +1,19 @@
-#:package CuiSharp@*
+#:project ../src/CuiSharp/CuiSharp.csproj
+#:package JAJ.Packages.MiniAudioEx@4.0.1
+#:package TagLibSharp@2.3.0
+#:package StbImageSharp@2.30.16
+// miniaudio's Windows build links the VC++ runtime; Windows Sandbox does not
+// carry it, so the redistributable is published beside the app.
+#:package NtvLibs.MSVCP.vcruntime140.runtime.win-x64@14.42.34430
 
 // The properties below are what make `dotnet publish music.cs -c Release -o .`
-// leave one small native executable beside this file, with no .NET on the target.
-// The Windows target is what brings in the MediaPlayer this app plays through.
-#:property TargetFramework=net10.0-windows10.0.19041.0
+// leave one native executable beside this file, with no .NET runtime on the
+// target. The player is miniaudio, so the same source runs on Windows, macOS and
+// Linux and reads MP3, FLAC, WAV and AIFF. Its native libraries travel with it as
+// sidecars: `miniaudioex.dll` (or the platform's .so/.dylib) and, on Windows,
+// `vcruntime140.dll`. NativeAOT cannot bundle a native library into the image.
+// The size profile, including the diagnostics below, comes from CuiSharp.Size.targets.
+#:property TargetFramework=net11.0
 #:property PublishAot=true
 #:property OptimizationPreference=Size
 #:property InvariantGlobalization=true
@@ -11,35 +21,27 @@
 #:property DebugType=none
 #:property OutputType=WinExe
 #:property ApplicationIcon=music.ico
-#:property EventSourceSupport=false
-#:property HttpActivityPropagationSupport=false
-#:property MetadataUpdaterSupport=false
-#:property UseSystemResourceKeys=true
-#:property StackTraceSupport=false
-#:property MetricsSupport=false
+#:property NoWarn=CA2266
 
-using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using CuiSharp;
-using Windows.Graphics.Imaging;
-using Windows.Media.Core;
-using Windows.Media.MediaProperties;
-using Windows.Media.Playback;
-using Windows.Media.Transcoding;
-using Windows.Storage;
-using Windows.Storage.FileProperties;
-using Windows.Storage.Streams;
+using CuiSharp.Hosting;
+using MiniAudioEx.Core.AdvancedAPI;
+using MiniAudioEx.Native;
+using StbImageSharp;
 
 // ---------------------------------------------------------------------------
 // Music — a native CuiSharp player over the folders you point it at.
 //
 //   run      dotnet run music.cs                        the window
-//   ship     dotnet publish music.cs -c Release -o .    one music.exe, no runtime needed
+//   ship     dotnet publish music.cs -c Release -o .    one executable, no runtime needed
 //            (add -p:CuiSharpHeadless=true to publish a build `dotnet cui` can drive)
 //
-//   iterate  CUISHARP_HEADLESS=1 ./music.exe            no window; serves the tool's protocol
+//   iterate  CUISHARP_HEADLESS=1 ./music                no window; serves the tool's protocol
+//            (music.exe on Windows)
 //            dotnet cui tree                            the controls the last frame drew
 //            dotnet cui click Play                      click one, print the frame it produced
 //            dotnet cui png shot.png                    that frame as a PNG
@@ -57,7 +59,8 @@ using var player = new Player(preferences);
 var app = new MusicApp(library, player, preferences);
 
 var exitCode = CuiApp.Run(app.Options, app.Draw);
-Store.Save(preferences, player, library);
+app.SyncPreferences();
+Store.Flush(preferences, player, library);
 return exitCode;
 
 // ---------------------------------------------------------------------------
@@ -90,7 +93,10 @@ internal sealed class MusicApp
 
     private Track? _savedTrack;
     private int _libraryCount = -1;
-    private bool _fonts;
+    private int _summaryTracks = -1;
+    private int _summaryFolders = -1;
+    private int _summarySeconds = -1;
+    private string _summaryText = "";
 
     public MusicApp(Library library, Player player, Preferences preferences)
     {
@@ -122,19 +128,21 @@ internal sealed class MusicApp
 
     public CuiAppOptions Options { get; }
 
+    public void SyncPreferences() => _preferences.Visualizer = _nowPlaying.VisualizerMode;
+
     public void Draw(Ui ui)
     {
-        if (!_fonts)
-        {
-            // Half a music library is tagged in a script the bundled faces do not carry.
-            ui.UseSystemFontFallback("中文");
-            _fonts = true;
-        }
+        // Half a music library is tagged in a script the bundled faces do not carry, and a folder
+        // name can be in another one or carry an emoji. Cached after the first call.
+        ui.UseSystemFontFallbacks();
 
         _player.Pump();
         _player.SetQueue(_library.Queue);
-        _nowPlaying.Advance(ui.DeltaTime, _player.IsPlaying);
         Resolve();
+        Shortcuts(ui);
+
+        var trackBefore = _player.Current;
+        _nowPlaying.Advance(ui.DeltaTime, _player.IsPlaying);
 
         var (width, height) = ui.ViewportSize();
 
@@ -146,12 +154,18 @@ internal sealed class MusicApp
         else DrawSideBySide(ui, width, height);
 
         _picker.Draw(ui, _library);
-        Shortcuts(ui);
         Persist();
 
+        // If a click inside the library changed the active track after the top
+        // of the frame, wake immediately so every panel reflects the new track.
+        var trackChanged = !ReferenceEquals(trackBefore, _player.Current);
+
         // Forty frames a second while the visualizer moves or a track is still
-        // being decoded for the seek bar, one while it rests.
-        ui.RequestWakeup(_player.IsPlaying || _nowPlaying.IsReading ? 1f / 40f : 1f);
+        // being decoded, ten while a scan ticks the badge, one while it rests.
+        ui.RequestWakeup(
+            trackChanged ? 0f :
+            _player.IsPlaying || _nowPlaying.IsReading ? 1f / 40f :
+            _library.IsScanning ? 1f / 10f : 1f);
     }
 
     private void DrawSideBySide(Ui ui, float width, float height)
@@ -192,10 +206,19 @@ internal sealed class MusicApp
     {
         var tracks = _library.Count;
         var folders = _library.Folders.Count;
+        var seconds = (int)_library.TotalDuration;
+
+        if (tracks != _summaryTracks || folders != _summaryFolders || seconds != _summarySeconds)
+        {
+            _summaryTracks = tracks;
+            _summaryFolders = folders;
+            _summarySeconds = seconds;
+            _summaryText = Summary(tracks, folders, seconds);
+        }
 
         using (ui.Row(new Box { Align = Align.Center, Gap = 10 }))
         {
-            ui.Muted(Summary(tracks, folders, _library.TotalDuration));
+            ui.Muted(_summaryText);
             ui.Spacer();
             ui.Muted(_library.Status);
         }
@@ -241,7 +264,11 @@ internal sealed class MusicApp
             Save();
         }
 
-        if (_player.IsPlaying) Store.MaybeSave(_preferences, _player, _library);
+        if (_player.IsPlaying)
+        {
+            SyncPreferences();
+            Store.MaybeSave(_preferences, _player, _library);
+        }
     }
 
     private void AddFolder() => _picker.Request();
@@ -252,7 +279,11 @@ internal sealed class MusicApp
         Save();
     }
 
-    private void Save() => Store.Save(_preferences, _player, _library);
+    private void Save()
+    {
+        SyncPreferences();
+        Store.Save(_preferences, _player, _library);
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -266,14 +297,20 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
     private readonly Visualizer _visualizer = new(visualizer);
     private readonly SeekBar _seek = new(player);
 
-    private Sound? _sound;
+    // The decode publishes a preview as rows become available, so the spectrum appears while
+    // the rest of the track is still being read; Progressive keeps it off the frame thread,
+    // cancels it when the track changes and keeps the window awake until it settles.
+    private readonly Progressive<Sound> _sound = new() { FrameRate = 40 };
     private string _soundPath = "";
-    private Task<Sound?>? _reading;
 
     private string _positionText = "0:00";
+    private string _durationText = "0:01";
     private int _lastSecond = -1;
+    private int _lastDuration = -1;
 
-    public bool IsReading => _reading is not null;
+    public bool IsReading => _sound.IsRunning || art.IsLoading;
+
+    public int VisualizerMode => _visualizer.Mode;
 
     public void Advance(float delta, bool playing)
     {
@@ -283,31 +320,40 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
         _seek.Sound = sound;
     }
 
-    /// <summary>The decoded track, once the background read has one to hand.</summary>
+    /// <summary>
+    /// The spectrum for the current track: the cached table when there is one,
+    /// otherwise a preview that fills in while the track is being measured.
+    /// </summary>
     private Sound? Listening()
     {
         if (player.Current is not { } track)
         {
-            _sound = null;
-            _soundPath = "";
-            _reading = null;
+            if (_soundPath.Length > 0)
+            {
+                _soundPath = "";
+                _sound.Cancel();
+            }
+
             return null;
         }
 
         if (track.Path != _soundPath)
         {
             _soundPath = track.Path;
-            _sound = null;
-            _reading = Task.Run(() => Sound.LoadAsync(track.Path, track.Duration));
+            var startAt = player.Position;
+            Sound.TryGetCached(track.Path, out var cached);
+
+            _sound.Restart(
+                (token, publish) =>
+                {
+                    var sound = Sound.Load(track.Path, track.Duration, startAt, publish, token);
+                    if (sound is not null) publish(sound);
+                    return Task.CompletedTask;
+                },
+                initial: cached);
         }
 
-        if (_reading is { IsCompleted: true } reading)
-        {
-            _reading = null;
-            _sound = reading.Result;
-        }
-
-        return _sound;
+        return _sound.Latest;
     }
 
     public void DrawTall(Ui ui, float width, Size height, bool tight)
@@ -471,6 +517,7 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
 
         _visualizer.Hue = track?.Hue ?? 268f;
         _seek.Hue = _visualizer.Hue;
+        _seek.Sound = Listening();
 
         var cover = art.Get(ui, track);
         _visualizer.Art = cover.Texture;
@@ -521,20 +568,26 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
 
         // A failed open replaces the credit line rather than trailing it:
         // "A-Lin · 失恋无罪 · Can't play this file" reads like a tag.
-        return player.Error ?? Format.Credit(track);
+        return player.Error ?? track.Credit;
     }
 
     private void Progress(Ui ui, Size width, float height)
     {
         _seek.Draw(ui, "seek", width, height);
 
-        var duration = Math.Max(1, player.Duration);
+        var duration = Math.Max(1, (int)player.Duration);
         var second = (int)player.Position;
 
         if (second != _lastSecond)
         {
             _lastSecond = second;
             _positionText = Format.Time(second);
+        }
+
+        if (duration != _lastDuration)
+        {
+            _lastDuration = duration;
+            _durationText = Format.Time(duration);
         }
 
         using (ui.Row(new Box { Gap = 8, Align = Align.Center, Width = width }))
@@ -547,7 +600,7 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
                 Width = Size.Px(TimeWidth),
             });
             ui.Spacer();
-            ui.Text(Format.Time(duration), new TextOpts
+            ui.Text(_durationText, new TextOpts
             {
                 Size = 10,
                 Tabular = true,
@@ -587,17 +640,28 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
         }
     }
 
-    /// <summary>Shuffle, previous, play/pause, next, repeat — all icon buttons.</summary>
+    /// <summary>Playback mode, previous, play/pause, next — all icon buttons.</summary>
     private void Buttons(Ui ui)
     {
-        if (ui.IconButton(Icons.Shuffle, new ButtonOpts
+        var mode = player.Mode;
+        var icon = mode is PlaybackMode.Shuffle or PlaybackMode.Off ? Icons.Shuffle : Icons.Repeat;
+
+        var tooltip = mode switch
         {
-            Tooltip = "Shuffle",
+            PlaybackMode.Shuffle => "Shuffle on · click for repeat all",
+            PlaybackMode.RepeatAll => "Repeat all · click for repeat one",
+            PlaybackMode.RepeatOne => "Repeat one · click for off",
+            _ => "Shuffle and repeat off · click for shuffle",
+        };
+
+        if (ui.IconButton(icon, new ButtonOpts
+        {
+            Tooltip = tooltip,
             Size = ControlSize.Sm,
-            Selected = player.Shuffle,
+            Selected = mode != PlaybackMode.Off,
         }))
         {
-            player.Shuffle = !player.Shuffle;
+            player.CycleMode();
             save();
         }
 
@@ -616,17 +680,6 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
 
         if (ui.IconButton(Icons.SkipForward, new ButtonOpts { Tooltip = "Next", Size = ControlSize.Sm }))
             player.Next();
-
-        if (ui.IconButton(Icons.Repeat, new ButtonOpts
-        {
-            Tooltip = player.Repeat switch { 1 => "Repeat all", 2 => "Repeat one", _ => "Repeat off" },
-            Size = ControlSize.Sm,
-            Selected = player.Repeat != 0,
-        }))
-        {
-            player.Repeat = (player.Repeat + 1) % 3;
-            save();
-        }
     }
 
     /// <summary>The effect picker as an icon button: the active effect is its tooltip.</summary>
@@ -691,6 +744,12 @@ internal sealed class LibraryPanel(Library library, Player player, Action add, A
     private const float SearchCompactMax = 196f;
 
     private string _query = "";
+    private string _badgeText = "";
+    private int _badgeCount = -1;
+    private int _badgeDone = -1;
+    private int _badgeTotal = -1;
+    private bool _badgeScanning;
+    private bool _badgeWide;
 
     public void Draw(Ui ui, Size width, Size height, float panelWidth, bool compact)
     {
@@ -716,13 +775,7 @@ internal sealed class LibraryPanel(Library library, Player player, Action add, A
         {
             ui.Icon(Icons.Music, 14, Color.Accent);
 
-            var badge = library.IsScanning
-                ? $"{library.Done}/{library.Total}"
-                : panelWidth >= 480f
-                    ? $"{Format.Count(library.Count)} tracks"
-                    : Format.Count(library.Count);
-
-            ui.Badge(badge, new BadgeOpts { Tone = Tone.Neutral, Size = ControlSize.Sm });
+            ui.Badge(Badge(panelWidth >= 480f), new BadgeOpts { Tone = Tone.Neutral, Size = ControlSize.Sm });
 
             if (inlineFolder)
                 FolderPill(ui, library.Folders[0]);
@@ -750,6 +803,34 @@ internal sealed class LibraryPanel(Library library, Player player, Action add, A
         }
 
         if (_query != library.Query) library.Filter(_query);
+    }
+
+    private string Badge(bool wide)
+    {
+        var scanning = library.IsScanning;
+        var done = scanning ? library.Done : 0;
+        var total = scanning ? library.Total : 0;
+        var count = library.Count;
+
+        if (_badgeText.Length > 0
+            && scanning == _badgeScanning
+            && done == _badgeDone
+            && total == _badgeTotal
+            && count == _badgeCount
+            && wide == _badgeWide)
+            return _badgeText;
+
+        _badgeScanning = scanning;
+        _badgeDone = done;
+        _badgeTotal = total;
+        _badgeCount = count;
+        _badgeWide = wide;
+
+        return _badgeText = scanning
+            ? $"{done}/{total}"
+            : wide
+                ? $"{Format.Count(count)} tracks"
+                : Format.Count(count);
     }
 
     private void Chips(Ui ui)
@@ -812,7 +893,7 @@ internal sealed class LibraryPanel(Library library, Player player, Action add, A
                 && string.Equals(Path.GetFileName(other), leaf, StringComparison.OrdinalIgnoreCase))
             {
                 var parent = Path.GetFileName(Path.GetDirectoryName(folder) ?? "");
-                return parent.Length > 0 ? $"{parent}\\{leaf}" : folder;
+                return parent.Length > 0 ? $"{parent}{Path.DirectorySeparatorChar}{leaf}" : folder;
             }
         }
 
@@ -838,12 +919,14 @@ internal sealed class LibraryPanel(Library library, Player player, Action add, A
 
     private void Row(Ui ui, Track track)
     {
-        var current = player.Current is { } playing && playing.Path == track.Path;
+        var current = player.Current is { } playing
+            && (ReferenceEquals(playing, track)
+                || string.Equals(playing.Path, track.Path, StringComparison.OrdinalIgnoreCase));
 
         var clicked = ui.ListItem(track.Title, new ListItemOpts
         {
-            Subtitle = Format.Credit(track),
-            Trailing = Format.Length(track.Duration),
+            Subtitle = track.Credit,
+            Trailing = track.Length,
             Selected = current,
             Icon = current ? Icons.AudioLines : null,
         });
@@ -861,7 +944,7 @@ internal sealed class LibraryPanel(Library library, Player player, Action add, A
             {
                 Description = hasFolders
                     ? "No track here has that title, artist or album."
-                    : "Point it at a folder: every audio file under it lands here, tags and all.",
+                    : "Point it at a folder: every MP3, FLAC, WAV or AIFF file under it lands here, tags and all.",
                 Icon = Icons.Music,
                 Action = hasFolders ? null : "Add folder",
             });
@@ -898,14 +981,30 @@ internal sealed class FolderPicker
 }
 
 // ---------------------------------------------------------------------------
-// Playback. MediaPlayer does the decoding; this owns the queue, the transport
-// and the state the UI reads, and never blocks a frame.
+// Playback. miniaudio does the decoding; this owns the queue, the transport and
+// the state the UI reads, and never blocks a frame.
 // ---------------------------------------------------------------------------
+
+/// <summary>The one playback mode the transport exposes at a time.</summary>
+internal enum PlaybackMode
+{
+    Off,
+    Shuffle,
+    RepeatAll,
+    RepeatOne,
+}
 
 internal sealed class Player : IDisposable
 {
-    private readonly MediaPlayer _media = new();
     private readonly Random _random = new();
+
+    private MaEngine? _engine;
+    private MaContext? _context;
+    private ma_device_id_ptr? _deviceId;
+    private MaSound? _sound;
+    private bool _ready;
+    private bool _soundLoaded;
+    private float _volume;
 
     private Track[] _queue = [];
     private int _index = -1;
@@ -913,26 +1012,220 @@ internal sealed class Player : IDisposable
     private double _duration;
     private double _pendingSeek;
     private bool _loaded;
+    private bool _playing;
     private bool _wasPlaying;
-    private volatile bool _ended;
-    private volatile string? _error;
+    private string? _error;
 
     public Player(Preferences preferences)
     {
-        _media.AutoPlay = false;
-        _media.Volume = preferences.Volume;
-        _media.MediaEnded += (_, _) => _ended = true;
-        _media.MediaFailed += (_, args) => _error = Explain(args.Error);
-
+        // A state file from the two-button transport can have both enabled;
+        // the combined control can only show one, so shuffle wins.
         Shuffle = preferences.Shuffle;
-        Repeat = preferences.Repeat;
+        Repeat = Shuffle ? 0 : Math.Clamp(preferences.Repeat, 0, 2);
+        _volume = Math.Clamp(preferences.Volume, 0f, 1f);
+
+        InitializeAudio();
     }
 
+    /// <summary>
+    /// Tries miniaudio's normal backend pick first, then the older Windows
+    /// backends. Windows Sandbox exposes its host audio through waveOut, while
+    /// the default WASAPI endpoint often has no usable default device there.
+    /// </summary>
+    private void InitializeAudio()
+    {
+        // The decoder is a sidecar next to the executable; failing that, the OS
+        // search path (a system-wide install) is the fallback.
+        if (!NativeLibrary.TryLoad("miniaudioex", typeof(MiniAudioNative).Assembly, null, out _))
+        {
+            _error = "Audio library missing";
+            return;
+        }
+
+        if (TryDefaultEngine()) return;
+
+        foreach (var backend in FallbackBackends())
+            if (TryBackend(backend)) return;
+
+        // A machine with no sound card still gets a window; it just cannot play.
+        _error = "No audio output";
+    }
+
+    private bool TryDefaultEngine()
+    {
+        MaEngine? engine = null;
+        var ready = false;
+
+        try
+        {
+            engine = new MaEngine();
+            if (engine.Initialize() != ma_result.success) return false;
+
+            ready = true;
+            engine.SetVolume(_volume);
+            _engine = engine;
+            _ready = true;
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+        finally
+        {
+            if (!_ready && engine is not null)
+            {
+                if (ready) engine.Dispose();
+                else engine.Handle.Free();
+            }
+        }
+    }
+
+    private bool TryBackend(ma_backend backend)
+    {
+        MaContext? context = null;
+        MaEngine? engine = null;
+        ma_device_id_ptr? deviceId = null;
+        var contextReady = false;
+        var engineReady = false;
+
+        try
+        {
+            context = new MaContext();
+            if (context.Initialize([backend], context.GetConfig()) != ma_result.success) return false;
+            contextReady = true;
+
+            deviceId = TryDeviceId(context);
+
+            // Prefer an explicit device: in a sandbox the one visible endpoint is
+            // not always marked as the default.
+            if (deviceId is not { } id || !TryEngine(context, id, out engine))
+            {
+                if (deviceId is { } unused) unused.Free();
+                deviceId = null;
+
+                if (!TryEngine(context, null, out engine)) return false;
+            }
+
+            engineReady = true;
+            engine!.SetVolume(_volume);
+
+            _context = context;
+            _deviceId = deviceId;
+            _engine = engine;
+            _ready = true;
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+        finally
+        {
+            if (!_ready)
+            {
+                if (engine is not null)
+                {
+                    if (engineReady) engine.Dispose();
+                    else engine.Handle.Free();
+                }
+
+                if (context is not null)
+                {
+                    if (contextReady) context.Dispose();
+                    else context.Handle.Free();
+                }
+
+                if (deviceId is { } leftover) leftover.Free();
+            }
+        }
+    }
+
+    private static bool TryEngine(MaContext context, ma_device_id_ptr? deviceId, out MaEngine? engine)
+    {
+        engine = null;
+        MaEngine? candidate = null;
+        var ready = false;
+
+        try
+        {
+            candidate = new MaEngine();
+            var config = candidate.GetConfig();
+            config.pContext = context.Handle;
+            if (deviceId is { } id) config.pPlaybackDeviceID = id;
+
+            if (candidate.Initialize(config) != ma_result.success) return false;
+
+            ready = true;
+            engine = candidate;
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+        finally
+        {
+            if (!ready && candidate is not null) candidate.Handle.Free();
+        }
+    }
+
+    private static ma_device_id_ptr? TryDeviceId(MaContext context)
+    {
+        try
+        {
+            if (!context.GetDevices(out var playback, out _) || playback is not { Length: > 0 })
+                return null;
+
+            var pick = playback[0];
+
+            foreach (var device in playback)
+            {
+                if (!device.IsDefault) continue;
+
+                pick = device;
+                break;
+            }
+
+            var id = new ma_device_id_ptr(allocate: true);
+            if (id.pointer == IntPtr.Zero) return null;
+
+            try
+            {
+                Marshal.StructureToPtr(pick.deviceInfo.id, id.pointer, false);
+                return id;
+            }
+            catch
+            {
+                id.Free();
+                return null;
+            }
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static ma_backend[] FallbackBackends() => OperatingSystem.IsWindows()
+        ? [ma_backend.winmm, ma_backend.dsound]
+        : OperatingSystem.IsMacOS()
+            ? [ma_backend.coreaudio]
+            : [ma_backend.pulseaudio, ma_backend.alsa];
+
     /// <summary>Called once, after the frame loop has returned.</summary>
-    public void Dispose() => _media.Dispose();
+    public void Dispose()
+    {
+        Unload();
+        _engine?.Dispose();
+
+        // The engine has stopped using the context and the device id by now.
+        if (_deviceId is { } deviceId) deviceId.Free();
+        _context?.Dispose();
+    }
 
     public Track? Current { get; private set; }
-    public bool IsPlaying => _media.PlaybackSession.PlaybackState == MediaPlaybackState.Playing;
+    public bool IsPlaying => _playing;
     public double Position => _position;
     public double Duration => _duration > 0 ? _duration : Current?.Duration ?? 0;
     public string? Error => _error;
@@ -941,38 +1234,82 @@ internal sealed class Player : IDisposable
 
     public float Volume
     {
-        get => (float)_media.Volume;
-        set => _media.Volume = Math.Clamp(value, 0f, 1f);
+        get => _volume;
+        set
+        {
+            _volume = Math.Clamp(value, 0f, 1f);
+            _engine?.SetVolume(_volume);
+        }
     }
 
-    /// <summary>Reads the session once per frame, so drawing never touches COM.</summary>
+    public PlaybackMode Mode => Shuffle
+        ? PlaybackMode.Shuffle
+        : Repeat switch
+        {
+            1 => PlaybackMode.RepeatAll,
+            2 => PlaybackMode.RepeatOne,
+            _ => PlaybackMode.Off,
+        };
+
+    /// <summary>Off → shuffle → repeat all → repeat one → off.</summary>
+    public void CycleMode()
+    {
+        switch (Mode)
+        {
+            case PlaybackMode.Off:
+                Shuffle = true;
+                Repeat = 0;
+                break;
+            case PlaybackMode.Shuffle:
+                Shuffle = false;
+                Repeat = 1;
+                break;
+            case PlaybackMode.RepeatAll:
+                Shuffle = false;
+                Repeat = 2;
+                break;
+            default:
+                Shuffle = false;
+                Repeat = 0;
+                break;
+        }
+    }
+
+    /// <summary>Reads the decoder once per frame, so drawing never waits for audio.</summary>
     public void Pump()
     {
         // Nothing is open yet: the restored position is what the UI shows.
-        if (!_loaded) return;
+        if (!_loaded || _sound is not { } sound) return;
 
-        var session = _media.PlaybackSession;
-
-        _position = session.Position.TotalSeconds;
-
-        var natural = session.NaturalDuration.TotalSeconds;
-        if (natural > 0) _duration = natural;
+        if (_duration <= 0
+            && MiniAudioNative.ma_sound_get_length_in_seconds(sound.Handle, out var length) == ma_result.success
+            && length > 0f)
+            _duration = length;
 
         if (_pendingSeek > 0 && _duration > 0)
         {
-            session.Position = TimeSpan.FromSeconds(Math.Clamp(_pendingSeek, 0, _duration - 0.25));
-            _position = session.Position.TotalSeconds;
+            var target = Math.Clamp(_pendingSeek, 0, Math.Max(0, _duration - 0.25));
+            MiniAudioNative.ma_sound_seek_to_second(sound.Handle, (float)target);
+            _position = target;
             _pendingSeek = 0;
         }
 
-        var playing = session.PlaybackState == MediaPlaybackState.Playing;
+        var playing = MiniAudioNative.ma_sound_is_playing(sound.Handle) != 0;
 
-        if (_ended || Finished(playing))
+        if (playing
+            && MiniAudioNative.ma_sound_get_cursor_in_seconds(sound.Handle, out var cursor) == ma_result.success
+            && cursor >= 0f)
+            _position = cursor;
+
+        var atEnd = MiniAudioNative.ma_sound_at_end(sound.Handle) != 0;
+
+        if (atEnd || Finished(playing))
         {
-            _ended = false;
             Advance();
+            return;
         }
 
+        _playing = playing;
         _wasPlaying = playing;
     }
 
@@ -988,14 +1325,11 @@ internal sealed class Player : IDisposable
     {
         Current = track;
         _index = IndexOf(track);
-        _position = startAt;
+        _position = Math.Max(0, startAt);
         _duration = track.Duration;
-        _pendingSeek = startAt;
-        _loaded = true;
-        _error = null;
+        _pendingSeek = 0;
 
-        _media.Source = MediaSource.CreateFromUri(new Uri(track.Path));
-        _media.Play();
+        Load(track, _position, start: true);
     }
 
     public void Toggle()
@@ -1006,21 +1340,37 @@ internal sealed class Player : IDisposable
             return;
         }
 
-        if (!_loaded)
+        if (!_loaded || _sound is not { } sound)
         {
-            // Picking up where the last session stopped.
+            // Picking up where the last session stopped, or retrying a failed open.
             Play(Current, _position);
             return;
         }
 
-        if (IsPlaying) _media.Pause();
-        else _media.Play();
+        if (_playing)
+        {
+            MiniAudioNative.ma_sound_stop(sound.Handle);
+            _playing = false;
+            _wasPlaying = false;
+            return;
+        }
+
+        if (MiniAudioNative.ma_sound_at_end(sound.Handle) != 0) Seek(0);
+        MiniAudioNative.ma_sound_start(sound.Handle);
+        _playing = true;
     }
 
     private void Stop()
     {
-        _media.Pause();
-        Seek(0);
+        if (_soundLoaded && _sound is { } sound)
+        {
+            MiniAudioNative.ma_sound_stop(sound.Handle);
+            MiniAudioNative.ma_sound_seek_to_second(sound.Handle, 0f);
+        }
+
+        _position = 0;
+        _playing = false;
+        _wasPlaying = false;
     }
 
     public void Next(bool manual = true)
@@ -1054,34 +1404,94 @@ internal sealed class Player : IDisposable
             return;
         }
 
-        _position = Math.Clamp(seconds, 0, limit - 0.25);
+        _position = Math.Clamp(seconds, 0, Math.Max(0, limit - 0.25));
 
-        if (!_loaded)
+        if (!_loaded || _sound is not { } sound)
         {
             _pendingSeek = _position;
             return;
         }
 
-        _media.PlaybackSession.Position = TimeSpan.FromSeconds(_position);
+        MiniAudioNative.ma_sound_seek_to_second(sound.Handle, (float)_position);
     }
 
-    /// <summary>Shows the last session's track and position without opening a file yet.</summary>
+    /// <summary>Pre-opens the last session's track at its saved position so Play starts immediately.</summary>
     public void Restore(Track? track, double position)
     {
         Current = track;
-        _position = position;
-        _pendingSeek = position;
+        _position = Math.Max(0, position);
+        _duration = track?.Duration ?? 0;
+        _pendingSeek = 0;
         _index = track is null ? -1 : IndexOf(track);
+        if (_ready) _error = null;
+
+        if (track is not null) Load(track, _position, start: false);
     }
 
     private bool Finished(bool playing) => _wasPlaying && !playing && _duration > 0 && _position >= _duration - 0.6;
 
-    /// <summary>The enum names mean nothing in the UI; say what went wrong instead.</summary>
-    private static string Explain(MediaPlayerError error) => error switch
+    private void Load(Track track, double startAt, bool start = true)
     {
-        MediaPlayerError.NetworkError => "Can't reach this file",
-        MediaPlayerError.DecodingError => "Can't decode this file",
-        MediaPlayerError.Aborted => "Playback was interrupted",
+        Unload();
+        if (_ready) _error = null;
+        if (!_ready || _engine is null) return;
+
+        var sound = new MaSound();
+        var flags = ma_sound_flags.stream | ma_sound_flags.no_pitch | ma_sound_flags.no_spatialization;
+        if (track.Duration > 0) flags |= ma_sound_flags.unknown_length;
+
+        // The wide call is what keeps a Chinese album title in its folder name.
+        var opened = OperatingSystem.IsWindows()
+            ? MiniAudioNative.ma_sound_init_from_file_w(
+                _engine.Handle, track.Path, flags, default, default, sound.Handle)
+            : MiniAudioNative.ma_sound_init_from_file(
+                _engine.Handle, track.Path, flags, default, default, sound.Handle);
+
+        if (opened != ma_result.success)
+        {
+            sound.Dispose();
+            if (start) _error = Explain(opened);
+            return;
+        }
+
+        _sound = sound;
+        _soundLoaded = true;
+        _loaded = true;
+
+        if (startAt > 0) MiniAudioNative.ma_sound_seek_to_second(sound.Handle, (float)startAt);
+
+        if (start)
+        {
+            MiniAudioNative.ma_sound_start(sound.Handle);
+            _playing = true;
+        }
+    }
+
+    private void Unload()
+    {
+        _playing = false;
+        _wasPlaying = false;
+
+        if (_sound is not { } sound) return;
+
+        if (_soundLoaded)
+        {
+            MiniAudioNative.ma_sound_stop(sound.Handle);
+            MiniAudioNative.ma_sound_uninit(sound.Handle);
+            _soundLoaded = false;
+        }
+
+        sound.Dispose();
+        _sound = null;
+        _loaded = false;
+    }
+
+    /// <summary>The enum names mean nothing in the UI; say what went wrong instead.</summary>
+    private static string Explain(ma_result result) => result switch
+    {
+        ma_result.does_not_exist or ma_result.access_denied or ma_result.invalid_file => "Can't read this file",
+        ma_result.format_not_supported or ma_result.invalid_data => "Can't decode this file",
+        ma_result.no_backend or ma_result.no_device => "No audio output",
         _ => "Can't play this file",
     };
 
@@ -1091,8 +1501,16 @@ internal sealed class Player : IDisposable
 
         if (Repeat == 2)
         {
+            if (!_loaded || _sound is not { } sound)
+            {
+                Play(Current);
+                return;
+            }
+
             Seek(0);
-            _media.Play();
+            MiniAudioNative.ma_sound_start(sound.Handle);
+            _playing = true;
+            _wasPlaying = true;
             return;
         }
 
@@ -1143,6 +1561,7 @@ internal sealed class Library
 
     private Track[] _all = [];
     private Track[] _queue = [];
+    private double _totalDuration;
     private volatile string _query = "";
     private volatile string _status = "";
     private volatile bool _scanning;
@@ -1158,6 +1577,7 @@ internal sealed class Library
                 _folders.Add(path);
 
         _all = Store.LoadLibrary();
+        _totalDuration = SumDuration(_all);
         Rebuild();
 
         if (_folders.Count > 0) Scan();
@@ -1171,15 +1591,13 @@ internal sealed class Library
     public int Total => Volatile.Read(ref _total);
     public string Status => _status;
     public string Query => _query;
+    public double TotalDuration => Volatile.Read(ref _totalDuration);
 
-    public double TotalDuration
+    private static double SumDuration(Track[] tracks)
     {
-        get
-        {
-            var total = 0d;
-            foreach (var track in Volatile.Read(ref _all)) total += track.Duration;
-            return total;
-        }
+        var total = 0d;
+        foreach (var track in tracks) total += track.Duration;
+        return total;
     }
 
     public Track? Find(string path)
@@ -1251,7 +1669,12 @@ internal sealed class Library
         var folders = _folders.ToArray();
         var cached = Volatile.Read(ref _all);
 
-        _cancel?.Cancel();
+        if (_cancel is { } previous)
+        {
+            previous.Cancel();
+            previous.Dispose();
+        }
+
         var cancel = new CancellationTokenSource();
         _cancel = cancel;
 
@@ -1265,7 +1688,7 @@ internal sealed class Library
         {
             try
             {
-                var tracks = await Scanner.ScanAsync(folders, cached, (done, total) =>
+                var (tracks, changed) = await Scanner.ScanAsync(folders, cached, (done, total) =>
                 {
                     Volatile.Write(ref _done, done);
                     Volatile.Write(ref _total, total);
@@ -1274,8 +1697,9 @@ internal sealed class Library
                 if (generation != _generation) return;
 
                 Array.Sort(tracks, TrackOrder.Compare);
+                Volatile.Write(ref _totalDuration, SumDuration(tracks));
                 Volatile.Write(ref _all, tracks);
-                Store.SaveLibrary(tracks);
+                if (changed) Store.SaveLibrary(tracks);
                 Rebuild();
 
                 _status = $"{Format.Count(tracks.Length)} tracks · scanned {DateTime.Now:HH:mm}";
@@ -1303,8 +1727,8 @@ internal sealed class Library
 
 internal static class Scanner
 {
-    private static readonly string[] Extensions =
-        [".mp3", ".flac", ".wav", ".m4a", ".aac", ".wma", ".ogg", ".opus", ".aiff", ".aif"];
+    // miniaudio decodes these; TagLib reads their tags.
+    private static readonly string[] Extensions = [".mp3", ".flac", ".wav", ".aiff", ".aif"];
 
     private static readonly EnumerationOptions Options = new()
     {
@@ -1313,10 +1737,10 @@ internal static class Scanner
         RecurseSubdirectories = true,
     };
 
-    public static async Task<Track[]> ScanAsync(
+    public static async Task<(Track[] Tracks, bool Changed)> ScanAsync(
         string[] folders, Track[] cached, Action<int, int> progress, CancellationToken token)
     {
-        var known = new Dictionary<string, Track>(StringComparer.OrdinalIgnoreCase);
+        var known = new Dictionary<string, Track>(cached.Length, StringComparer.OrdinalIgnoreCase);
         foreach (var track in cached) known[track.Path] = track;
 
         var files = new List<FileInfo>(known.Count);
@@ -1332,19 +1756,23 @@ internal static class Scanner
 
         var tracks = new Track[files.Count];
         var done = 0;
+        var changed = files.Count != cached.Length ? 1 : 0;
         progress(0, files.Count);
 
         await Parallel.ForEachAsync(Enumerable.Range(0, files.Count), new ParallelOptions
         {
             MaxDegreeOfParallelism = 6,
             CancellationToken = token,
-        }, async (index, cancellation) =>
+        }, (index, cancellation) =>
         {
-            tracks[index] = await ReadAsync(files[index], known, cancellation);
+            var (track, fresh) = Read(files[index], known, cancellation);
+            tracks[index] = track;
+            if (fresh) Volatile.Write(ref changed, 1);
             progress(Interlocked.Increment(ref done), files.Count);
+            return ValueTask.CompletedTask;
         });
 
-        return tracks;
+        return (tracks, Volatile.Read(ref changed) != 0);
     }
 
     private static bool IsAudio(string extension)
@@ -1356,14 +1784,15 @@ internal static class Scanner
         return false;
     }
 
-    private static async Task<Track> ReadAsync(FileInfo file, Dictionary<string, Track> known, CancellationToken token)
+    private static (Track Track, bool Fresh) Read(
+        FileInfo file, Dictionary<string, Track> known, CancellationToken token)
     {
         var modified = file.LastWriteTimeUtc.Ticks;
 
         if (known.TryGetValue(file.FullName, out Track? cached)
             && cached.Size == file.Length
             && cached.Modified == modified)
-            return cached;
+            return (cached, false);
 
         (var fileArtist, var fileTitle) = Split(file.Name);
 
@@ -1375,37 +1804,34 @@ internal static class Scanner
 
         try
         {
-            var storage = await StorageFile.GetFileFromPathAsync(file.FullName);
-            var tags = await storage.Properties.GetMusicPropertiesAsync();
+            using var tags = Tags.Open(file.FullName);
 
-            if (tags.Title is { Length: > 0 } taggedTitle) title = taggedTitle.Trim();
-            if (tags.Artist is { Length: > 0 } taggedArtist) artist = taggedArtist.Trim();
-            if (tags.Album is { Length: > 0 } taggedAlbum) album = taggedAlbum.Trim();
+            if (tags.Tag.Title is { Length: > 0 } taggedTitle) title = taggedTitle.Trim();
+            if (tags.Tag.FirstPerformer is { Length: > 0 } taggedArtist) artist = taggedArtist.Trim();
+            if (tags.Tag.Album is { Length: > 0 } taggedAlbum) album = taggedAlbum.Trim();
 
-            duration = tags.Duration.TotalSeconds;
+            // The decoder is the authority on length; TagLib estimates an MP3
+            // without a Xing header from the bitrate, and reads AIFF off by the
+            // sample-rate ratio on files ffmpeg writes. The open is cheap and
+            // only happens for files the cache has not measured.
+            duration = Tags.Seconds(file.FullName);
+            if (duration <= 0) duration = tags.Properties.Duration.TotalSeconds;
+
             details = new Details(
-                tags.AlbumArtist?.Trim() ?? "",
-                First(tags.Genre),
-                tags.Year,
-                tags.TrackNumber,
-                tags.Bitrate);
+                tags.Tag.FirstAlbumArtist?.Trim() ?? "",
+                tags.Tag.FirstGenre?.Trim() ?? "",
+                tags.Tag.Year,
+                tags.Tag.Track,
+                (uint)Math.Max(0, tags.Properties.AudioBitrate) * 1000u);
         }
         catch
         {
-            // A file the property system refuses still plays; its name says enough.
+            // A file whose tags will not read still plays; its name says enough.
+            if (duration <= 0) duration = Tags.Seconds(file.FullName);
         }
 
         token.ThrowIfCancellationRequested();
-        return Track.Create(file.FullName, title, artist, album, duration, file.Length, modified, details);
-    }
-
-    private static string First(IList<string> values)
-    {
-        foreach (var value in values)
-            if (value is { Length: > 0 })
-                return value.Trim();
-
-        return "";
+        return (Track.Create(file.FullName, title, artist, album, duration, file.Length, modified, details), true);
     }
 
     /// <summary>"Artist - Title.mp3" splits on the first dash; anything else is a title.</summary>
@@ -1420,233 +1846,195 @@ internal static class Scanner
     }
 }
 
+/// <summary>
+/// The one place that knows which concrete TagLib reader to construct. Calling
+/// TagLib.File.Create would look the reader up by extension through reflection,
+/// and NativeAOT trims those constructors away.
+/// </summary>
+internal static class Tags
+{
+    public static TagLib.File Open(string path) => Path.GetExtension(path).ToLowerInvariant() switch
+    {
+        ".mp3" => new TagLib.Mpeg.AudioFile(path),
+        ".flac" => new TagLib.Flac.File(path),
+        ".wav" => new TagLib.Riff.File(path),
+        ".aiff" or ".aif" => new TagLib.Aiff.File(path),
+        _ => throw new InvalidOperationException("Unsupported audio file"),
+    };
+
+    /// <summary>The decoded length, or 0 when miniaudio will not open the file.</summary>
+    public static double Seconds(string path)
+    {
+        try
+        {
+            using var decoder = new MaDecoder();
+            var config = decoder.GetConfig();
+
+            var opened = OperatingSystem.IsWindows()
+                ? decoder.InitializeFromFileW(path, config)
+                : decoder.InitializeFromFile(path, config);
+
+            if (opened != ma_result.success) return 0;
+            if (decoder.GetDataFormat(out _, out _, out var rate, default, 0) != ma_result.success || rate == 0)
+                return 0;
+            if (decoder.GetLengthInPCMFrames(out var frames) != ma_result.success) return 0;
+
+            return frames / (double)rate;
+        }
+        catch
+        {
+            return 0;
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
-// Cover art. Windows' thumbnail service hands back a generic icon for these
-// files, so the picture is read out of the file's own tags instead: an APIC
-// frame in an MP3, a PICTURE block in a FLAC. One track's picture is on disk at
-// a time, because the app only ever shows the one that is playing.
+// Cover art. The picture comes out of the file's own tags through TagLib and is
+// decoded by StbImageSharp, so no platform thumbnail or imaging service is
+// involved. One cover is on the GPU at a time, because the app only shows the
+// track that is playing.
 // ---------------------------------------------------------------------------
 
 internal static class Artwork
 {
-    private const int Limit = 8 << 20;
-
     // A cover this small has no detail left; blown back up it is a soft wash of
     // the album's colours, which is the closest the renderer gets to a blur.
-    private const int Frost = 48;
+    public const int Frost = 48;
 
-    private static readonly string Folder = Path.Combine(Store.Home, "art");
+    // Covers are shown at a few hundred points at most. Decoding a 3000-pixel
+    // scan to a 3000-pixel texture costs tens of megabytes and a slow upload for
+    // detail no window can show.
+    private const int MaxSize = 512;
 
-    private static readonly string Target = Path.Combine(Folder, "cover.img");
+    private const int Limit = 8 << 20;
 
-    /// <summary>Writes the track's embedded picture and returns its path, or null when it has none.</summary>
-    public static string? Save(string trackPath)
+    /// <summary>The picture decoded to RGBA, plus the 48-pixel copy behind the mini player.</summary>
+    public static CoverArt? Load(string trackPath)
     {
         var picture = Picture(trackPath);
         if (picture is null) return null;
 
         try
         {
-            Directory.CreateDirectory(Folder);
-            System.IO.File.WriteAllBytes(Target, picture);
-            return Target;
+            var image = ImageResult.FromMemory(picture, ColorComponents.RedGreenBlueAlpha);
+            if (image.Width <= 0 || image.Height <= 0) return null;
+            if (image.Data.Length < image.Width * image.Height * 4) return null;
+
+            var (width, height, pixels) = Fit(image.Width, image.Height, image.Data);
+
+            return new CoverArt(
+                width,
+                height,
+                pixels,
+                Shrink(pixels, width, height, Frost));
         }
         catch
         {
+            // A picture TagLib found but StbImageSharp cannot decode still plays.
             return null;
         }
     }
 
-    /// <summary>The same picture at a few dozen pixels, for the glass behind the mini player.</summary>
-    public static (int Width, int Height, byte[] Pixels)? Frosted(string path)
+    /// <summary>Box-filter a cover down to the texture size; a small cover keeps its pixels.</summary>
+    private static (int Width, int Height, byte[] Pixels) Fit(int width, int height, byte[] pixels)
     {
-        try
-        {
-            var file = StorageFile.GetFileFromPathAsync(path).AsTask().GetAwaiter().GetResult();
-            using var stream = file.OpenReadAsync().AsTask().GetAwaiter().GetResult();
-            var decoder = BitmapDecoder.CreateAsync(stream).AsTask().GetAwaiter().GetResult();
+        if (width <= MaxSize && height <= MaxSize) return (width, height, pixels);
 
-            var transform = new BitmapTransform
-            {
-                ScaledWidth = Frost,
-                ScaledHeight = Frost,
-                InterpolationMode = BitmapInterpolationMode.Fant,
-            };
+        var scale = Math.Min(MaxSize / (float)width, MaxSize / (float)height);
+        var toWidth = Math.Max(1, (int)(width * scale));
+        var toHeight = Math.Max(1, (int)(height * scale));
 
-            var pixels = decoder.GetPixelDataAsync(
-                BitmapPixelFormat.Rgba8,
-                BitmapAlphaMode.Ignore,
-                transform,
-                ExifOrientationMode.IgnoreExifOrientation,
-                ColorManagementMode.DoNotColorManage).AsTask().GetAwaiter().GetResult();
-
-            return (Frost, Frost, pixels.DetachPixelData());
-        }
-        catch
-        {
-            // A picture CUI can load but WIC cannot still plays, just without glass.
-            return null;
-        }
+        return (toWidth, toHeight, Shrink(pixels, width, height, toWidth, toHeight));
     }
 
     private static byte[]? Picture(string path)
     {
         try
         {
-            using var file = System.IO.File.OpenRead(path);
+            using var file = Tags.Open(path);
 
-            Span<byte> head = stackalloc byte[10];
-            if (file.Read(head) < 4) return null;
+            TagLib.IPicture? first = null;
 
-            if (head[0] == 'I' && head[1] == 'D' && head[2] == '3') return Id3(file, head);
-            if (head[0] == 'f' && head[1] == 'L' && head[2] == 'a' && head[3] == 'C') return Flac(file);
+            foreach (var picture in file.Tag.Pictures)
+            {
+                if (picture.Type == TagLib.PictureType.FrontCover)
+                {
+                    var front = Data(picture);
+                    if (front is not null) return front;
+                }
+
+                first ??= picture;
+            }
+
+            return first is null ? null : Data(first);
         }
         catch
         {
-            // An unreadable tag is the same as no picture.
+            return null;
         }
-
-        return null;
     }
 
-    private static byte[]? Id3(Stream file, ReadOnlySpan<byte> head)
+    private static byte[]? Data(TagLib.IPicture picture)
     {
-        var version = head[3];
-        var size = SyncSafe(head[6..10]);
+        var data = picture.Data?.Data;
+        return data is { Length: > 0 } && data.Length <= Limit ? data : null;
+    }
 
-        if (size is <= 0 or > 64 << 20) return null;
+    /// <summary>Box-filter the cover down to the glass texture; tiny covers copy their pixels.</summary>
+    private static byte[] Shrink(byte[] pixels, int width, int height, int size) =>
+        size == width && size == height ? pixels : Shrink(pixels, width, height, size, size);
 
-        var tag = new byte[size];
-        file.ReadExactly(tag);
+    private static byte[] Shrink(byte[] pixels, int width, int height, int toWidth, int toHeight)
+    {
+        var result = new byte[toWidth * toHeight * 4];
 
-        ReadOnlySpan<byte> span = tag;
-        var at = 0;
-
-        while (at + (version == 2 ? 6 : 10) <= span.Length)
+        for (var y = 0; y < toHeight; y++)
         {
-            var id = System.Text.Encoding.ASCII.GetString(span.Slice(at, version == 2 ? 3 : 4));
-            if (id[0] == '\0') break;
+            var fromY = y * height / toHeight;
+            var toY = Math.Max(fromY + 1, (y + 1) * height / toHeight);
 
-            var length = version switch
+            for (var x = 0; x < toWidth; x++)
             {
-                2 => span[at + 3] << 16 | span[at + 4] << 8 | span[at + 5],
-                4 => SyncSafe(span.Slice(at + 4, 4)),
-                _ => span[at + 4] << 24 | span[at + 5] << 16 | span[at + 6] << 8 | span[at + 7],
-            };
+                var fromX = x * width / toWidth;
+                var toX = Math.Max(fromX + 1, (x + 1) * width / toWidth);
 
-            var header = version == 2 ? 6 : 10;
-            if (length <= 0 || at + header + length > span.Length) break;
+                long red = 0, green = 0, blue = 0, alpha = 0, count = 0;
 
-            if (id is "APIC" or "PIC")
-                return Frame(span.Slice(at + header, length), version);
+                for (var py = fromY; py < toY; py++)
+                {
+                    for (var px = fromX; px < toX; px++)
+                    {
+                        var at = (py * width + px) * 4;
+                        red += pixels[at];
+                        green += pixels[at + 1];
+                        blue += pixels[at + 2];
+                        alpha += pixels[at + 3];
+                        count++;
+                    }
+                }
 
-            at += header + length;
-        }
-
-        return null;
-    }
-
-    /// <summary>encoding, mime, picture type, description, then the picture itself.</summary>
-    private static byte[]? Frame(ReadOnlySpan<byte> frame, int version)
-    {
-        if (frame.Length < 5) return null;
-
-        var at = 1;
-
-        if (version == 2)
-        {
-            at += 3;
-        }
-        else
-        {
-            var mime = frame[at..].IndexOf((byte)0);
-            if (mime < 0) return null;
-
-            at += mime + 1;
-        }
-
-        at += 1;
-
-        if (frame[0] is 1 or 2)
-        {
-            while (at + 1 < frame.Length && (frame[at] != 0 || frame[at + 1] != 0)) at += 2;
-
-            at += 2;
-        }
-        else
-        {
-            var end = frame[at..].IndexOf((byte)0);
-            if (end < 0) return null;
-
-            at += end + 1;
-        }
-
-        if (at >= frame.Length || frame.Length - at > Limit) return null;
-
-        return frame[at..].ToArray();
-    }
-
-    private static byte[]? Flac(Stream file)
-    {
-        Span<byte> header = stackalloc byte[4];
-
-        while (file.Read(header) == 4)
-        {
-            var last = (header[0] & 0x80) != 0;
-            var type = header[0] & 0x7F;
-            var length = header[1] << 16 | header[2] << 8 | header[3];
-
-            if (length < 0 || length > Limit) return null;
-
-            if (type == 6)
-            {
-                var block = new byte[length];
-                file.ReadExactly(block);
-
-                return FlacPicture(block);
+                var to = (y * toWidth + x) * 4;
+                result[to] = (byte)(red / count);
+                result[to + 1] = (byte)(green / count);
+                result[to + 2] = (byte)(blue / count);
+                result[to + 3] = (byte)(alpha / count);
             }
-
-            if (last) return null;
-
-            file.Seek(length, SeekOrigin.Current);
         }
 
-        return null;
+        return result;
     }
-
-    /// <summary>type, mime, description, width, height, depth, colours, then the picture.</summary>
-    private static byte[]? FlacPicture(ReadOnlySpan<byte> block)
-    {
-        var at = 4;
-
-        if (at + 4 > block.Length) return null;
-
-        var mime = (int)System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(block[at..]);
-        at += 4 + mime;
-
-        if (at + 4 > block.Length) return null;
-
-        var description = (int)System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(block[at..]);
-        at += 4 + description + 16;
-
-        if (at + 4 > block.Length) return null;
-
-        var length = (int)System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(block[at..]);
-        at += 4;
-
-        if (length <= 0 || length > block.Length - at) return null;
-
-        return block.Slice(at, length).ToArray();
-    }
-
-    private static int SyncSafe(ReadOnlySpan<byte> four) =>
-        (four[0] & 0x7F) << 21 | (four[1] & 0x7F) << 14 | (four[2] & 0x7F) << 7 | (four[3] & 0x7F);
 }
+
+internal readonly record struct CoverArt(int Width, int Height, byte[] Pixels, byte[] Frost);
 
 // ---------------------------------------------------------------------------
 // The cover as a texture, kept for the handful of tracks played recently. A
 // track with no picture is remembered as such, or every frame would re-read its
 // tags looking for one.
+//
+// Reading the picture and decoding it is tens to hundreds of milliseconds of
+// disk and CPU, so it happens on a worker: the first frame after a track change
+// draws without art, and the texture appears as soon as the decode is done.
 // ---------------------------------------------------------------------------
 
 internal sealed class ArtCache
@@ -1657,41 +2045,113 @@ internal sealed class ArtCache
     private readonly HashSet<string> _empty = [with(StringComparer.OrdinalIgnoreCase)];
     private readonly Queue<string> _order = new();
 
+    // One worker owns the disk and the decoder; the frame only queues a path and
+    // picks up a finished picture, so a slow cover never lands on the UI thread.
+    private readonly object _gate = new();
+    private readonly Queue<string> _requests = new();
+    private readonly HashSet<string> _requested = [with(StringComparer.OrdinalIgnoreCase)];
+    private readonly Dictionary<string, CoverArt?> _ready = [with(StringComparer.OrdinalIgnoreCase)];
+
+    public ArtCache()
+    {
+        var worker = new Thread(Work) { IsBackground = true, Name = "cover art" };
+        worker.Start();
+    }
+
+    private void Work()
+    {
+        while (true)
+        {
+            string path;
+
+            lock (_gate)
+            {
+                while (_requests.Count == 0) Monitor.Wait(_gate);
+                path = _requests.Dequeue();
+            }
+
+            CoverArt? art;
+
+            try
+            {
+                art = Artwork.Load(path);
+            }
+            catch
+            {
+                // A picture that defeats the decoder must not stop the worker.
+                art = null;
+            }
+
+            lock (_gate) _ready[path] = art;
+        }
+    }
+
+    public bool IsLoading
+    {
+        get
+        {
+            lock (_gate) return _requested.Count > 0;
+        }
+    }
+
     public Cover Get(Ui ui, Track? track)
     {
-        if (track is null || _empty.Contains(track.Path)) return default;
+        if (track is null) return default;
 
-        if (_covers.TryGetValue(track.Path, out var cached)) return cached;
+        var path = track.Path;
 
-        var file = Artwork.Save(track.Path);
+        if (_covers.TryGetValue(path, out var cached)) return cached;
+        if (_empty.Contains(path)) return default;
 
-        if (file is null || !ui.LoadImage(file, out var texture, out var width, out var height) || texture == 0)
+        var ready = false;
+        CoverArt? art = null;
+
+        lock (_gate)
         {
-            _empty.Add(track.Path);
-            return default;
-        }
-
-        _covers[track.Path] = new Cover(texture, width, height, Frost(ui, file));
-        _order.Enqueue(track.Path);
-
-        while (_order.Count > Keep)
-        {
-            var oldest = _order.Dequeue();
-
-            if (_covers.Remove(oldest, out var cover))
+            if (_ready.Remove(path, out art))
             {
-                ui.DestroyImage(cover.Texture);
-                ui.DestroyImage(cover.Frost);
+                _requested.Remove(path);
+                ready = true;
+            }
+            else if (_requested.Add(path))
+            {
+                _requests.Enqueue(path);
+                Monitor.Pulse(_gate);
             }
         }
 
-        return _covers[track.Path];
-    }
+        if (!ready) return default;
 
-    private static ulong Frost(Ui ui, string file) =>
-        Artwork.Frosted(file) is { } frosted
-            ? ui.CreateImage(frosted.Width, frosted.Height, frosted.Pixels)
-            : 0;
+        if (art is null)
+        {
+            _empty.Add(path);
+            return default;
+        }
+
+        var cover = art.Value;
+        var texture = ui.CreateImage(cover.Width, cover.Height, cover.Pixels);
+        if (texture == 0)
+        {
+            _empty.Add(path);
+            return default;
+        }
+
+        var frost = ui.CreateImage(Artwork.Frost, Artwork.Frost, cover.Frost);
+
+        _covers[path] = new Cover(texture, cover.Width, cover.Height, frost);
+        _order.Enqueue(path);
+
+        while (_order.Count > Keep)
+        {
+            if (_covers.Remove(_order.Dequeue(), out var old))
+            {
+                ui.DestroyImage(old.Texture);
+                ui.DestroyImage(old.Frost);
+            }
+        }
+
+        return _covers[path];
+    }
 }
 
 internal readonly record struct Cover(ulong Texture, int Width, int Height, ulong Frost);
@@ -1715,6 +2175,12 @@ internal sealed record Track(
         $"{Artist} {Title} {Album} {System.IO.Path.GetFileNameWithoutExtension(Path)}".ToLowerInvariant();
 
     public string Meta { get; } = Format.Meta(Details);
+
+    // Both are drawn for every visible row on every frame; computing them once
+    // per track keeps the list scrolling without allocating.
+    public string Credit { get; } = Format.Credit(Artist, Album);
+
+    public string Length { get; } = Format.Length(Duration);
 
     public float Hue { get; } = Palette.HueOf(Path);
 
@@ -1764,6 +2230,13 @@ internal static class Store
 
     private static readonly string StatePath = Path.Combine(Folder, "state.json");
     private static readonly string LibraryPath = Path.Combine(Folder, "library.json");
+
+    // A volume drag, a mode click and a track change can all land in the same
+    // second; the file is written from a worker and only the last snapshot
+    // matters, so a burst collapses into one write.
+    private static readonly Lock Gate = new();
+    private static byte[]? _pending;
+    private static Task _writer = Task.CompletedTask;
 
     /// <summary>The app-specific folder under the shared state root.</summary>
     public static string Home => Folder;
@@ -1819,6 +2292,7 @@ internal static class Store
         Save(preferences, player, library);
     }
 
+    /// <summary>Snapshots the state and hands the bytes to the writer; never blocks.</summary>
     public static void Save(Preferences preferences, Player player, Library library)
     {
         _savedAt = Stopwatch.GetTimestamp();
@@ -1830,10 +2304,10 @@ internal static class Store
         preferences.TrackPath = player.Current?.Path ?? "";
         preferences.Position = player.Position;
 
+        byte[] bytes;
+
         try
         {
-            Directory.CreateDirectory(Folder);
-
             using var buffer = new MemoryStream();
             using (var json = new Utf8JsonWriter(buffer))
             {
@@ -1853,11 +2327,63 @@ internal static class Store
                 json.WriteEndObject();
             }
 
-            Write(StatePath, buffer.ToArray());
+            bytes = buffer.ToArray();
         }
         catch
         {
-            // Losing the state file must never take the player down with it.
+            return;
+        }
+
+        lock (Gate)
+        {
+            _pending = bytes;
+            if (!_writer.IsCompleted) return;
+
+            _writer = Task.Run(Drain);
+        }
+    }
+
+    /// <summary>Writes the last snapshot and waits for it, for the end of the session.</summary>
+    public static void Flush(Preferences preferences, Player player, Library library)
+    {
+        Save(preferences, player, library);
+
+        Task writer;
+        lock (Gate) writer = _writer;
+
+        try
+        {
+            writer.Wait(TimeSpan.FromSeconds(2));
+        }
+        catch
+        {
+            // The state is a convenience; a slow disk must not block exit.
+        }
+    }
+
+    private static void Drain()
+    {
+        while (true)
+        {
+            byte[]? bytes;
+
+            lock (Gate)
+            {
+                bytes = _pending;
+                _pending = null;
+            }
+
+            if (bytes is null) return;
+
+            try
+            {
+                Directory.CreateDirectory(Folder);
+                Write(StatePath, bytes);
+            }
+            catch
+            {
+                // Losing the state file must never take the player down with it.
+            }
         }
     }
 
@@ -1965,71 +2491,131 @@ internal static class Store
 
     private static void Write(string path, byte[] bytes)
     {
-        var temporary = path + ".tmp";
+        var temporary = path + "." + Environment.ProcessId + ".tmp";
         File.WriteAllBytes(temporary, bytes);
-        File.Move(temporary, path, overwrite: true);
+
+        try
+        {
+            File.Move(temporary, path, overwrite: true);
+        }
+        finally
+        {
+            try
+            {
+                if (File.Exists(temporary)) File.Delete(temporary);
+            }
+            catch
+            {
+            }
+        }
     }
 }
 
 // ---------------------------------------------------------------------------
-// What a track sounds like. CUI hands the app no samples, so the file is
-// decoded once, off the frame thread, into a table of spectra: one row per
-// ~20 ms of playback. The effects read the row at the position being heard, so
-// the bars follow the song rather than a clock, and a seek moves them with it.
+// What a track sounds like. CUI hands the app no samples, so the file is read
+// off the frame thread into a table of spectra: one row per ~20 ms of playback.
+// The table is filled in chunks and handed to the UI as it grows, so the bars
+// move within a few milliseconds of a click instead of after the whole file.
+// The effects read the row at the position being heard, so the bars follow the
+// song rather than a clock, and a seek moves them with it.
 // ---------------------------------------------------------------------------
 
 internal sealed class Sound
 {
     public const int Bands = 64;
 
-    private const int Window = 1024;         // 64 ms: long enough to show a bass note
-    private const int RowsPerSecond = 50;    // one row per 20 ms of playback
-    private const int FrameCap = 12000;      // bounds a long file's table at a few MB
-    private const int LowBands = 14;         // a kick drum and a bass line live here
-    private const int OnsetGap = 4;          // rows compared to spot a transient
-    private const float OnsetDecay = 0.92f;  // how fast a hit lets go
+    private const int TargetRate = 8000;      // a bar chart needs nothing above 4 kHz
+    private const int Window = 1024;          // 128 ms at that rate: long enough for a bass note
+    private const int RowsPerSecond = 50;     // one row per 20 ms of playback
+    private const int FrameCap = 12000;       // bounds a long file's table at a few MB
+    private const int LowBands = 14;          // a kick drum and a bass line live here
+    private const int OnsetGap = 4;           // rows compared to spot a transient
+    private const float OnsetDecay = 0.92f;   // how fast a hit lets go
     private const float MinHz = 40f;
     private const float MaxHz = 7000f;
     private const double MaxSeconds = 15 * 60;
-    private const ulong MaxBytes = 30ul << 20;   // 15 minutes of the WAV profile below
     private const int Keep = 2;
     private const float Tau = MathF.PI * 2f;
+
+    // A whole-track decode allocates tens of megabytes and returns nothing until
+    // it is done. Reading in chunks keeps the working set at a few hundred KB and
+    // lets the spectrum appear while the rest of the track is still being read.
+    private const int ChunkFrames = 8192;
+    private const double PreviewSeconds = 3;
 
     private static readonly Lock Gate = new();
     private static readonly Dictionary<string, Sound?> Cache = [with(StringComparer.OrdinalIgnoreCase)];
     private static readonly Queue<string> Order = new();
 
-    private readonly float[] _cells;    // Bands per row, normalized 0..1
+    // The window, the bit order and the twiddle factors are the same for every
+    // row of every track, so they are built once instead of per transform.
+    private static readonly float[] Hann = BuildHann();
+    private static readonly int[] Reversed = BuildReversal();
+    private static readonly float[] TwiddleRe = new float[Window];
+    private static readonly float[] TwiddleIm = new float[Window];
+
+    static Sound()
+    {
+        for (var length = 2; length <= Window; length <<= 1)
+        {
+            var half = length / 2;
+            var angle = -Tau / length;
+
+            for (var k = 0; k < half; k++)
+            {
+                TwiddleRe[half + k] = MathF.Cos(angle * k);
+                TwiddleIm[half + k] = MathF.Sin(angle * k);
+            }
+        }
+    }
+
+    private readonly float[] _cells;    // Bands per row, raw magnitudes
     private readonly float[] _level;    // one loudness value per row
     private readonly float[] _attack;   // one onset value per row
+    private readonly float[] _low;      // bass average per row, kept for the onset gap
+    private readonly float[] _peak = new float[Bands];
+    private readonly int[] _edges;
     private readonly int _rows;
+    private readonly int _hop;
+    private float _loudest;
 
-    private Sound(float[] cells, float[] level, float[] attack, int rows)
+    private Sound(int rows, int hop, int rate)
     {
-        _cells = cells;
-        _level = level;
-        _attack = attack;
         _rows = rows;
+        _hop = hop;
+        _cells = new float[rows * Bands];
+        _level = new float[rows];
+        _attack = new float[rows];
+        _low = new float[rows];
+        _edges = BandEdges(rate);
+    }
+
+    public static bool TryGetCached(string path, out Sound? sound)
+    {
+        lock (Gate) return Cache.TryGetValue(path, out sound);
     }
 
     /// <summary>
-    /// Decodes and measures a track. Never throws: a file the system will not
-    /// decode still plays, it just has no spectrum to draw.
+    /// Measures a track in the background. <paramref name="publish"/> is called
+    /// as rows become available, so the caller can show the first seconds of the
+    /// spectrum long before the whole file has been read. Never throws: a file
+    /// the system will not decode still plays, it just has no spectrum to draw.
     /// </summary>
-    public static async Task<Sound?> LoadAsync(string path, double duration)
+    public static Sound? Load(
+        string path, double duration, double startAt, Action<Sound> publish, CancellationToken token)
     {
         if (path.Length == 0 || duration > MaxSeconds) return null;
-
-        lock (Gate)
-        {
-            if (Cache.TryGetValue(path, out var cached)) return cached;
-        }
+        if (TryGetCached(path, out var cached)) return cached;
 
         Sound? sound;
 
         try
         {
-            sound = await MeasureFileAsync(path);
+            sound = MeasureFile(path, duration, startAt, publish, token);
+        }
+        catch (OperationCanceledException)
+        {
+            return null;
         }
         catch
         {
@@ -2051,7 +2637,8 @@ internal sealed class Sound
 
     /// <summary>
     /// The row at <paramref name="position"/>, blended between neighbours so a
-    /// slow frame rate does not turn the spectrum into steps.
+    /// slow frame rate does not turn the spectrum into steps. Rows that have not
+    /// been measured yet read as silence, which is what the preview relies on.
     /// </summary>
     public void Read(double position, double duration, Span<float> bands, out float level, out float attack)
     {
@@ -2065,9 +2652,20 @@ internal sealed class Sound
         var later = next * Bands;
 
         for (var band = 0; band < Bands; band++)
-            bands[band] = _cells[now + band] + (_cells[later + band] - _cells[now + band]) * blend;
+        {
+            var value = _cells[now + band] + (_cells[later + band] - _cells[now + band]) * blend;
+            var peak = _peak[band];
 
-        level = _level[index] + (_level[next] - _level[index]) * blend;
+            // Each band scales to its own peak: on one shared scale the bass
+            // would flatten the treble into the floor and half the bars would
+            // never move. The peak grows while the track is measured, so the
+            // scale is applied here instead of baking it into the table.
+            bands[band] = peak > 0f ? MathF.Sqrt(MathF.Max(0f, value) / peak) : 0f;
+        }
+
+        var loudness = _level[index] + (_level[next] - _level[index]) * blend;
+        level = _loudest > 0f ? MathF.Sqrt(MathF.Max(0f, loudness) / _loudest) : 0f;
+
         attack = _attack[index] + (_attack[next] - _attack[index]) * blend;
     }
 
@@ -2081,237 +2679,208 @@ internal sealed class Sound
         for (var row = from; row < to && row < _rows; row++)
             peak = MathF.Max(peak, _level[row]);
 
-        return peak;
+        return _loudest > 0f ? MathF.Sqrt(peak / _loudest) : 0f;
     }
 
-    private static async Task<Sound?> MeasureFileAsync(string path)
+    private static Sound? MeasureFile(
+        string path, double duration, double startAt, Action<Sound> publish, CancellationToken token)
     {
-        var pcm = await DecodeAsync(path);
+        using var decoder = new MaDecoder();
+        var config = decoder.GetConfig(ma_format.f32, 1, 0);
 
-        // The transcoder writes a RIFF header before the samples; reading it as
-        // audio would put a click at the start of every track.
-        return Parse(pcm) is { } wave ? Measure(pcm, wave) : null;
-    }
+        // The wide call matters here: the MiniAudioEx decoder helper opens paths
+        // in the ANSI code page on Windows, so a tagged album folder in Chinese
+        // would fail to open even though the player itself opens it fine.
+        var opened = OperatingSystem.IsWindows()
+            ? decoder.InitializeFromFileW(path, config)
+            : decoder.InitializeFromFile(path, config);
 
-    /// <summary>Any codec the system can read, through the same WAV.</summary>
-    private static async Task<byte[]> DecodeAsync(string path)
-    {
+        if (opened != ma_result.success) return null;
+        if (decoder.GetDataFormat(out _, out _, out var rateValue, default, 0) != ma_result.success || rateValue == 0)
+            return null;
+        if (decoder.GetLengthInPCMFrames(out var frames) != ma_result.success || frames == 0)
+            return null;
+
+        var rate = (int)rateValue;
+
+        var seconds = frames / (double)rate;
+        if (seconds > MaxSeconds) return null;
+        if (duration <= 0) duration = seconds;
+
+        // Taking every Nth sample is far cheaper than making the decoder resample
+        // the track, and 8 kHz is already more than a bar chart can show.
+        var factor = Math.Max(1, rate / TargetRate);
+        var decRate = rate / factor;
+        var decTotal = (long)frames / factor;
+        if (decTotal < Window) return null;
+
+        var rows = (int)Math.Min(FrameCap, Math.Max(1, seconds * RowsPerSecond));
+        var hop = (int)Math.Max(1, (decTotal - Window) / rows);
+        rows = (int)((decTotal - Window) / hop + 1);
+
+        var sound = new Sound(rows, hop, decRate);
+        var raw = new float[ChunkFrames * factor];
+        var buffer = new float[Window + ChunkFrames];
+        var pinned = GCHandle.Alloc(raw, GCHandleType.Pinned);
+
         try
         {
-            var file = await StorageFile.GetFileFromPathAsync(path);
+            // A restored session starts mid-track: measure that window first so
+            // the bars move on the first frame instead of waiting for the scan.
+            if (startAt >= PreviewSeconds)
+            {
+                var from = (long)(startAt * rate);
+                var until = Math.Min((long)frames, from + (long)(PreviewSeconds * rate));
+                sound.Decode(decoder, pinned, raw, buffer, factor, from, until, publish, token);
+            }
 
-            using var source = await file.OpenReadAsync();
-            using var destination = new InMemoryRandomAccessStream();
-
-            var profile = MediaEncodingProfile.CreateWav(AudioEncodingQuality.Low);
-            var transcoder = new MediaTranscoder { HardwareAccelerationEnabled = false };
-            var prepared = await transcoder.PrepareStreamTranscodeAsync(source, destination, profile);
-
-            if (!prepared.CanTranscode) return [];
-
-            await prepared.TranscodeAsync();
-
-            // Reading the whole stream is the expensive part; a track this long
-            // is not worth the megabytes for a bar chart.
-            if (destination.Size > MaxBytes) return [];
-
-            var size = (uint)destination.Size;
-            destination.Seek(0);
-
-            using var reader = new DataReader(destination.GetInputStreamAt(0));
-            await reader.LoadAsync(size);
-
-            var pcm = new byte[(int)size];
-            reader.ReadBytes(pcm);
-            return pcm;
+            sound.Decode(decoder, pinned, raw, buffer, factor, 0, (long)frames, publish, token);
         }
-        catch
+        finally
         {
-            return [];
+            pinned.Free();
+        }
+
+        return sound;
+    }
+
+    /// <summary>
+    /// Reads frames in <c>factor</c>-strided chunks and measures every row whose
+    /// window is fully buffered. Rows are absolute (<c>row * hop</c>), so the
+    /// mid-track preview and the full pass can write the same table.
+    /// </summary>
+    private void Decode(
+        MaDecoder decoder, GCHandle pinned, float[] raw, float[] buffer, int factor,
+        long fromFrame, long untilFrame, Action<Sound> publish, CancellationToken token)
+    {
+        if (decoder.SeekToPCMFrame((ulong)fromFrame) != ma_result.success) return;
+
+        var frame = fromFrame;
+        var produced = fromFrame / factor;
+        var bufferStart = produced;
+        var nextRow = (int)Math.Min(_rows, (bufferStart + _hop - 1) / _hop);
+        var fill = 0;
+
+        while (true)
+        {
+            token.ThrowIfCancellationRequested();
+
+            var remaining = untilFrame - frame;
+            if (remaining <= 0) break;
+
+            var want = (int)Math.Min(raw.Length, remaining) / factor * factor;
+            if (want <= 0) break;
+
+            var result = MiniAudioNative.ma_decoder_read_pcm_frames(
+                decoder.Handle, pinned.AddrOfPinnedObject(), (ulong)want, IntPtr.Zero);
+
+            decoder.GetCursorInPCMFrames(out var cursor);
+            var frames = (long)cursor - frame;
+            frame = (long)cursor;
+
+            if (frames <= 0) break;
+
+            // A partial final group of samples is dropped; the phase shift is a
+            // handful of samples and this table only feeds a spectrum drawing.
+            var count = (int)(frames / factor);
+            for (var sample = 0; sample < count; sample++)
+            {
+                var from = sample * factor;
+                var sum = 0f;
+
+                for (var k = 0; k < factor; k++) sum += raw[from + k];
+                buffer[fill + sample] = sum / factor;
+            }
+
+            fill += count;
+            produced += count;
+
+            var last = (int)Math.Min(_rows - 1, (produced - Window) / _hop);
+            var first = Math.Max(nextRow, (int)((bufferStart + _hop - 1) / _hop));
+
+            if (last >= first)
+            {
+                Measure(buffer, bufferStart, first, last);
+                nextRow = last + 1;
+                publish(this);
+            }
+
+            if (result != ma_result.success || frames < want) break;
+
+            var keep = Math.Min(fill, Window - 1);
+            if (keep > 0) Array.Copy(buffer, fill - keep, buffer, 0, keep);
+            fill = keep;
+            bufferStart = produced - keep;
         }
     }
 
-    /// <summary>PCM inside the RIFF the transcoder wrote: where it starts and what it is.</summary>
-    private static Wave? Parse(byte[] file)
+    /// <summary>Measures rows <paramref name="first"/>..<paramref name="last"/>, inclusive.</summary>
+    private void Measure(float[] buffer, long bufferStart, int first, int last)
     {
-        if (file.Length < 12) return null;
-        if (!IsChunk(file, 0, "RIFF") || !IsChunk(file, 8, "WAVE")) return null;
-
-        var rate = 0;
-        var channels = 0;
-        var at = 12;
-
-        while (at + 8 <= file.Length)
+        var options = new ParallelOptions
         {
-            var length = BinaryPrimitives.ReadInt32LittleEndian(file.AsSpan(at + 4));
-            if (length < 0 || at + 8 + length > file.Length) break;
+            MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount - 1),
+        };
 
-            if (IsChunk(file, at, "fmt "))
-            {
-                var tag = BinaryPrimitives.ReadInt16LittleEndian(file.AsSpan(at + 8));
-                channels = BinaryPrimitives.ReadInt16LittleEndian(file.AsSpan(at + 10));
-                rate = BinaryPrimitives.ReadInt32LittleEndian(file.AsSpan(at + 12));
-                var bits = BinaryPrimitives.ReadInt16LittleEndian(file.AsSpan(at + 22));
+        Parallel.For(first, last + 1, options, () => new Scratch(), (row, _, scratch) =>
+        {
+            MeasureRow(row, buffer, (int)(row * _hop - bufferStart), scratch);
+            return scratch;
+        }, _ => { });
 
-                // The profile asks for PCM; anything else would read as noise.
-                if (tag != 1 || bits != 16 || channels <= 0 || rate <= 0) return null;
-            }
-            else if (IsChunk(file, at, "data"))
-            {
-                return rate > 0 ? new Wave(rate, channels, at + 8, length) : null;
-            }
+        for (var row = first; row <= last; row++)
+        {
+            var cell = row * Bands;
+            var low = 0f;
 
-            at += 8 + length + (length & 1);
+            for (var band = 0; band < Bands; band++)
+                _peak[band] = MathF.Max(_peak[band], _cells[cell + band]);
+
+            for (var band = 0; band < LowBands; band++) low += _cells[cell + band];
+
+            _low[row] = low / LowBands;
+            _loudest = MathF.Max(_loudest, _level[row]);
         }
 
-        return null;
+        for (var row = first; row <= last; row++)
+        {
+            var before = row >= OnsetGap && row - OnsetGap >= 0 ? _low[row - OnsetGap] : _low[row];
+            var onset = MathF.Min(1f, MathF.Max(0f, _low[row] - before) * 5f);
+            var previous = row > 0 ? _attack[row - 1] : 0f;
+
+            _attack[row] = MathF.Max(onset, previous * OnsetDecay);
+        }
     }
 
-    private static bool IsChunk(byte[] file, int at, string id) =>
-        file[at] == id[0] && file[at + 1] == id[1] && file[at + 2] == id[2] && file[at + 3] == id[3];
-
-    private static Sound? Measure(byte[] pcm, Wave wave)
+    private void MeasureRow(int row, float[] buffer, int at, Scratch scratch)
     {
-        var frames = wave.Length / (wave.Channels * 2);
-        if (frames < Window) return null;
-
-        var seconds = frames / (double)wave.Rate;
-        if (seconds > MaxSeconds) return null;
-
-        // A three-minute single keeps one row every 20 ms; a long file uses fewer
-        // rows per second so the table never grows past FrameCap.
-        var rows = Math.Min(FrameCap, Math.Max(1, (int)(seconds * RowsPerSecond)));
-        var hop = Math.Max(1, (frames - Window) / rows);
-        rows = (frames - Window) / hop + 1;
-
-        var cells = new float[rows * Bands];
-        var level = new float[rows];
-        var attack = new float[rows];
-        var hann = new float[Window];
-        var edges = BandEdges(wave.Rate);
-        var step = wave.Channels * 2;
+        var re = scratch.Re;
+        var im = scratch.Im;
+        var energy = 0f;
 
         for (var i = 0; i < Window; i++)
-            hann[i] = 0.5f - 0.5f * MathF.Cos(Tau * i / (Window - 1));
-
-        void MeasureRow(int row, float[] re, float[] im)
         {
-            var start = wave.Start + row * hop * step;
-            var energy = 0f;
+            var sample = buffer[at + i];
 
-            for (var i = 0; i < Window; i++)
-            {
-                var frame = start + i * step;
-                var sum = 0f;
-
-                for (var channel = 0; channel < wave.Channels; channel++)
-                    sum += BinaryPrimitives.ReadInt16LittleEndian(pcm.AsSpan(frame + channel * 2)) / 32768f;
-
-                var sample = sum / wave.Channels;
-
-                re[i] = sample * hann[i];
-                im[i] = 0f;
-                energy += sample * sample;
-            }
-
-            level[row] = MathF.Sqrt(energy / Window);
-            Transform(re, im);
-
-            var cell = row * Bands;
-            for (var band = 0; band < Bands; band++)
-            {
-                var first = edges[band];
-                var last = Math.Max(first + 1, edges[band + 1]);
-                var sum = 0f;
-
-                for (var bin = first; bin < last; bin++)
-                    sum += MathF.Sqrt(re[bin] * re[bin] + im[bin] * im[bin]);
-
-                cells[cell + band] = sum / (last - first);
-            }
+            re[i] = sample * Hann[i];
+            im[i] = 0f;
+            energy += sample * sample;
         }
 
-        // The rows are independent, and a whole track is a few seconds of maths:
-        // one core less than the machine keeps the frame loop smooth meanwhile.
-        var options = new ParallelOptions { MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount - 1) };
+        _level[row] = MathF.Sqrt(energy / Window);
+        Transform(re, im);
 
-        Parallel.For(0, rows, options, () => new Scratch(),
-            (row, _, scratch) =>
-            {
-                MeasureRow(row, scratch.Re, scratch.Im);
-                return scratch;
-            },
-            _ => { });
-
-        Normalize(cells, level, rows);
-        Transients(cells, attack, rows);
-
-        return new Sound(cells, level, attack, rows);
-    }
-
-    /// <summary>
-    /// Loudness is scaled to the track's loudest moment; each band to its own,
-    /// because on one shared scale the bass would flatten the treble into the
-    /// floor and half the bars would never move.
-    /// </summary>
-    private static void Normalize(float[] cells, float[] level, int rows)
-    {
-        var bandPeak = new float[Bands];
-
-        for (var row = 0; row < rows; row++)
-        {
-            var cell = row * Bands;
-
-            for (var band = 0; band < Bands; band++)
-                bandPeak[band] = MathF.Max(bandPeak[band], cells[cell + band]);
-        }
-
+        var cell = row * Bands;
         for (var band = 0; band < Bands; band++)
         {
-            var peak = bandPeak[band];
-            if (peak <= 0f) continue;
-
-            for (var row = 0; row < rows; row++)
-            {
-                var cell = row * Bands + band;
-                cells[cell] = MathF.Sqrt(cells[cell] / peak);
-            }
-        }
-
-        var loudest = 0f;
-        foreach (var value in level) loudest = MathF.Max(loudest, value);
-
-        if (loudest <= 0f) return;
-
-        for (var row = 0; row < rows; row++)
-            level[row] = MathF.Sqrt(level[row] / loudest);
-    }
-
-    /// <summary>
-    /// A hit is the bass getting louder between two rows; a short tail keeps it
-    /// on screen for the few frames a ring needs to be born.
-    /// </summary>
-    private static void Transients(float[] cells, float[] attack, int rows)
-    {
-        var low = new float[rows];
-
-        for (var row = 0; row < rows; row++)
-        {
-            var cell = row * Bands;
+            var start = _edges[band];
+            var end = Math.Max(start + 1, _edges[band + 1]);
             var sum = 0f;
 
-            for (var band = 0; band < LowBands; band++) sum += cells[cell + band];
-            low[row] = sum / LowBands;
-        }
+            for (var bin = start; bin < end; bin++)
+                sum += MathF.Sqrt(re[bin] * re[bin] + im[bin] * im[bin]);
 
-        var envelope = 0f;
-        for (var row = 0; row < rows; row++)
-        {
-            var before = row >= OnsetGap ? low[row - OnsetGap] : low[row];
-            var onset = MathF.Min(1f, MathF.Max(0f, low[row] - before) * 5f);
-
-            envelope = MathF.Max(onset, envelope * OnsetDecay);
-            attack[row] = envelope;
+            _cells[cell + band] = sum / (end - start);
         }
     }
 
@@ -2320,9 +2889,13 @@ internal sealed class Sound
     {
         var edges = new int[Bands + 1];
 
+        // Decimating puts the ceiling near 4 kHz; never ask for a bin past
+        // Nyquist just because the visualizer's name says 7 kHz.
+        var top = MathF.Max(MinHz * 1.1f, MathF.Min(MaxHz, rate * 0.45f));
+
         for (var band = 0; band <= Bands; band++)
         {
-            var hz = MinHz * MathF.Pow(MaxHz / MinHz, band / (float)Bands);
+            var hz = MinHz * MathF.Pow(top / MinHz, band / (float)Bands);
             var bin = Math.Clamp((int)MathF.Round(hz * Window / rate), 1, Window / 2 - 1);
 
             // Below the window's first few bins several bands share one; the
@@ -2333,38 +2906,56 @@ internal sealed class Sound
         return edges;
     }
 
-    /// <summary>An in-place radix-2 FFT: the row loop allocates nothing.</summary>
-    private static void Transform(float[] re, float[] im)
+    private static float[] BuildHann()
     {
-        var n = re.Length;
+        var window = new float[Window];
 
-        for (int i = 1, j = 0; i < n; i++)
+        for (var i = 0; i < Window; i++)
+            window[i] = 0.5f - 0.5f * MathF.Cos(Tau * i / (Window - 1));
+
+        return window;
+    }
+
+    private static int[] BuildReversal()
+    {
+        var reversed = new int[Window];
+
+        for (int i = 1, j = 0; i < Window; i++)
         {
-            var bit = n >> 1;
+            var bit = Window >> 1;
             for (; (j & bit) != 0; bit >>= 1) j ^= bit;
             j ^= bit;
+            reversed[i] = j;
+        }
 
+        return reversed;
+    }
+
+    /// <summary>An in-place radix-2 FFT over precomputed tables: no allocation per row.</summary>
+    private static void Transform(float[] re, float[] im)
+    {
+        for (var i = 1; i < Window; i++)
+        {
+            var j = Reversed[i];
             if (i >= j) continue;
 
             (re[i], re[j]) = (re[j], re[i]);
             (im[i], im[j]) = (im[j], im[i]);
         }
 
-        for (var length = 2; length <= n; length <<= 1)
+        for (var length = 2; length <= Window; length <<= 1)
         {
-            var angle = -Tau / length;
-            var stepRe = MathF.Cos(angle);
-            var stepIm = MathF.Sin(angle);
             var half = length / 2;
 
-            for (var start = 0; start < n; start += length)
+            for (var start = 0; start < Window; start += length)
             {
-                float turnRe = 1f, turnIm = 0f;
-
                 for (var k = 0; k < half; k++)
                 {
                     var at = start + k;
                     var mirror = at + half;
+
+                    var turnRe = TwiddleRe[half + k];
+                    var turnIm = TwiddleIm[half + k];
 
                     var vRe = re[mirror] * turnRe - im[mirror] * turnIm;
                     var vIm = re[mirror] * turnIm + im[mirror] * turnRe;
@@ -2376,17 +2967,10 @@ internal sealed class Sound
                     im[at] = uIm + vIm;
                     re[mirror] = uRe - vRe;
                     im[mirror] = uIm - vIm;
-
-                    (turnRe, turnIm) = (
-                        turnRe * stepRe - turnIm * stepIm,
-                        turnRe * stepIm + turnIm * stepRe);
                 }
             }
         }
     }
-
-    /// <summary>Where the samples start, and the rate they were written at.</summary>
-    private readonly record struct Wave(int Rate, int Channels, int Start, int Length);
 
     /// <summary>Two windows a worker reuses, so a whole track does not churn the heap.</summary>
     private sealed class Scratch
@@ -2976,12 +3560,12 @@ internal static class Format
     public static string Length(double seconds) => seconds > 0 ? Time(seconds) : "--:--";
 
     /// <summary>"Artist · Album", or whichever half the tags actually gave us.</summary>
-    public static string Credit(Track track) => (track.Artist.Length, track.Album.Length) switch
+    public static string Credit(string artist, string album) => (artist.Length, album.Length) switch
     {
         (0, 0) => "Unknown artist",
-        (0, _) => track.Album,
-        (_, 0) => track.Artist,
-        _ => $"{track.Artist} · {track.Album}",
+        (0, _) => album,
+        (_, 0) => artist,
+        _ => $"{artist} · {album}",
     };
 
     /// <summary>"1992 · Rock · 320 kbps · Track 4", skipping whatever the tags left out.</summary>

@@ -430,9 +430,27 @@ public sealed class Editor(Notes notes) : Component
 In a bare `CuiApp.Run` callback, the same rules by hand: start the task, keep a field, and call
 `ui.RequestRedraw()` while it is in flight, because a sleeping window cannot be woken by a pool
 thread. The task never touches `Ui`; it assigns a field, and the UI thread reads it next frame.
-Assignment of a reference or an enum is atomic, so no lock is needed. For streaming input, a
-background producer writes into a field or a `ConcurrentQueue`, `Draw` drains it, and
-`RequestRedraw` keeps frames coming.
+Assignment of a reference or an enum is atomic, so no lock is needed.
+
+For work that reports more than once — a scan's count, bytes, a spectrum table, a live feed — use
+`Progressive<T>` instead of hand-rolling a `CancellationTokenSource`, a `Volatile.Write` and a
+`RequestWakeup` cadence. The work calls `publish` as it goes and `Draw` reads the latest value:
+
+```csharp
+private readonly Progressive<ScanResult> _scan = new(scanner.ScanAsync) { FrameRate = 5 };
+
+if (ui.Button("Scan")) _scan.Run();
+if (_scan.Latest is { } result) Draw(result);
+
+// Input changed (another track/folder): supersede the old run rather than let it publish late.
+_scan.Restart((token, publish) => scanner.ScanAsync(next, token, publish));
+```
+
+`Latest` is a volatile reference, so a report between frames is dropped on purpose: the frame wants
+the newest state, not every step. A `ConcurrentQueue` drained by `Draw` is the shape when every
+report matters. `T` is a class (publishing a reference is atomic); `FrameRate` throttles the wake-up
+and defaults to the window's own pace. The frame boundary belongs to the host, so `Mutation`'s apply
+callback and a progressive run's wake-up work in a plain `CuiApp.Run` app as well as a hosted one.
 
 ## Where it renders
 

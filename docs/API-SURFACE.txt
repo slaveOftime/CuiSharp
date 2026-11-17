@@ -669,7 +669,10 @@ class CuiSharp.CuiApp
   property String Backend { get; }
   property Ui Ui { get; }
   static CuiApp Create(CuiAppOptions)
+  static Int32 Run(Component)
+  static Int32 Run(CuiAppOptions, Component)
   static Int32 Run(CuiAppOptions, DrawFn)
+  static Int32 Run(DrawFn)
 class CuiSharp.CuiAppOptions
   Boolean Equals(CuiAppOptions)
   Boolean Equals(Object)
@@ -1616,8 +1619,14 @@ class CuiSharp.Hosting.Component
   property Int32 PendingOperations { get; }
   property String Title { get; }
 class CuiSharp.Hosting.ComponentExtensions
+  static Boolean ActionButton(Ui, UiText, Mutation, ButtonOpts, UiText, UiText)
+  static Boolean ActionButton(Ui, UiText, Mutation<T>, ButtonOpts, UiText, UiText)
+  static Boolean ActionButton(Ui, UiText, Progressive<T>, ButtonOpts, UiText, UiText)
   static Void Component(Ui, Component)
 class CuiSharp.Hosting.ComponentExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
+  Boolean ActionButton(UiText, Mutation, ButtonOpts, UiText, UiText)
+  Boolean ActionButton(UiText, Mutation<T>, ButtonOpts, UiText, UiText)
+  Boolean ActionButton(UiText, Progressive<T>, ButtonOpts, UiText, UiText)
   Void Component(Component)
 class CuiSharp.Hosting.ComponentExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4+<M>$D152016828D0F2CB0A8B78500F4F70D3
 class CuiSharp.Hosting.CuiApplication
@@ -1629,6 +1638,7 @@ class CuiSharp.Hosting.CuiApplication
   static CuiApplicationBuilder CreateBuilder(String[])
 class CuiSharp.Hosting.CuiApplicationBuilder
   CuiApplication Build()
+  CuiApplicationBuilder AddPage()
   property CuiAppOptions Window { get; set; }
   property IServiceCollection Services { get; }
   property String[] Args { get; }
@@ -1705,20 +1715,46 @@ class CuiSharp.Hosting.HeadlessLoop
   static Int32 Run(DrawFn, CuiAppOptions, TextReader, TextWriter)
   static Int32 Run(HeadlessApp, TextReader, TextWriter)
 class CuiSharp.Hosting.Mutation
+  Void Cancel()
   Void Dispose()
+  Void Restart()
+  Void Restart(Func<CancellationToken, Task>)
   Void Run()
+  Void Run(Func<CancellationToken, Task>)
+  ctor()
+  ctor(Action)
   ctor(Func<CancellationToken, Task>)
   ctor(Func<CancellationToken, Task>, Action)
   property Boolean IsRunning { get; }
   property Exception Error { get; }
 class CuiSharp.Hosting.Mutation`1
   Boolean TryPublish(out T)
+  Void Cancel()
   Void Dispose()
+  Void Restart()
+  Void Restart(Func<CancellationToken, Task<T>>)
   Void Run()
+  Void Run(Func<CancellationToken, Task<T>>)
+  ctor()
+  ctor(Action<T>)
   ctor(Func<CancellationToken, Task<T>>)
   ctor(Func<CancellationToken, Task<T>>, Action<T>)
   property Boolean IsRunning { get; }
   property Exception Error { get; }
+  property T Latest { get; }
+class CuiSharp.Hosting.Progressive`1
+  Void Cancel()
+  Void Dispose()
+  Void Restart()
+  Void Restart(Func<CancellationToken, Action<T>, Task>, T)
+  Void Run()
+  Void Run(Func<CancellationToken, Action<T>, Task>, T)
+  ctor()
+  ctor(Func<CancellationToken, Action<T>, Task>)
+  property Boolean IsRunning { get; }
+  property Exception Error { get; }
+  property Single FrameRate { get; set; }
+  property T Latest { get; }
 struct CuiSharp.Hosting.WidgetTarget
   HeadlessApp ClickAndFrame()
   String ToString()
@@ -6813,6 +6849,8 @@ struct CuiSharp.Ui
   InputResult Search(UiText, ref String, InputOpts)
   InputResult TextArea(UiText, ref String, InputOpts)
   Int32 SelectionBar(UiText, Span<Boolean>, ReadOnlySpan<SelectionAction>, SelectionBarOpts)
+  KeyedScope<T> Keyed(IReadOnlyList<T>, Func<T, Int32>)
+  KeyedScope<T> Keyed(ReadOnlySpan<T>, Func<T, Int32>)
   KeyedScope<T> Keyed(T[], KeyFn<T>)
   LayoutScope ReorderItem(Int32)
   RectF RectOf(UInt32)
@@ -6897,6 +6935,7 @@ struct CuiSharp.UiText
   Void AppendFormatted(UiText)
   Void AppendLiteral(String)
   ctor(Int32, Int32)
+  property Boolean IsEmpty { get; }
 class CuiSharp.UptimeBarsUiExtensions
   static UptimeResult Uptime(Ui, UiText, ReadOnlySpan<UptimeService>, UptimeOpts)
 class CuiSharp.UptimeBarsUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4

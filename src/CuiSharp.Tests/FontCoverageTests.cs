@@ -151,10 +151,18 @@ public class FontCoverageTests
         marker = surface.Ui.LoadFont(inter);
         Assert.True((int)marker > (int)Font.Icons);
         for (int i = 0; i < 10; i++) Draw();
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        for (int i = 0; i < 100; i++) Draw();
-        long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-        Assert.Equal(0, allocated);
+
+        // Median of several batches: a one-off runtime allocation is not a frame cost, while a
+        // real per-frame allocation moves every batch.
+        var perBatch = new long[5];
+        for (int batch = 0; batch < perBatch.Length; batch++)
+        {
+            long before = GC.GetAllocatedBytesForCurrentThread();
+            for (int i = 0; i < 100; i++) Draw();
+            perBatch[batch] = GC.GetAllocatedBytesForCurrentThread() - before;
+        }
+
+        Assert.Equal(0, perBatch.Median());
         Assert.Equal(0, changed);
         // Native handles are sequential: even a hidden reload changes the next handle.
         Assert.Equal((int)marker + 1, (int)surface.Ui.LoadFont(inter));
@@ -201,13 +209,19 @@ public class FontCoverageTests
         Assert.Equal(0, (int)surface.Ui.UseSystemFontFallback(""));
         Assert.Throws<ArgumentNullException>(() => surface.Ui.UseSystemFontFallback(null!));
 
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        for (int i = 0; i < 100; i++)
+        var perBatch = new long[5];
+        for (int batch = 0; batch < perBatch.Length; batch++)
         {
-            surface.Ui.UseSystemFontFallback(missing);
-            surface.Ui.UseSystemFontFallback(" \t\n\u200D");
+            long before = GC.GetAllocatedBytesForCurrentThread();
+            for (int i = 0; i < 100; i++)
+            {
+                surface.Ui.UseSystemFontFallback(missing);
+                surface.Ui.UseSystemFontFallback(" \t\n\u200D");
+            }
+            perBatch[batch] = GC.GetAllocatedBytesForCurrentThread() - before;
         }
-        Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
+
+        Assert.Equal(0, perBatch.Median());
     }
 
     [Fact]

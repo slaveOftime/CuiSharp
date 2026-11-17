@@ -1,7 +1,8 @@
-#:package CuiSharp@*
+#:project ../src/CuiSharp/CuiSharp.csproj
 
 // The properties below are what make `dotnet publish stock.cs -c Release -o .`
 // leave one small native executable beside this file, with no .NET on the target.
+// The size profile, including the diagnostics below, comes from CuiSharp.Size.targets.
 #:property PublishAot=true
 #:property OptimizationPreference=Size
 #:property InvariantGlobalization=true
@@ -9,12 +10,6 @@
 #:property DebugType=none
 #:property OutputType=WinExe
 #:property ApplicationIcon=stock.ico
-#:property EventSourceSupport=false
-#:property HttpActivityPropagationSupport=false
-#:property MetadataUpdaterSupport=false
-#:property UseSystemResourceKeys=true
-#:property StackTraceSupport=false
-#:property MetricsSupport=false
 
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -76,6 +71,11 @@ internal sealed class Dashboard(MarketTracker tracker)
     public void Draw(Ui ui)
     {
         SquareCorners(ui);
+
+        // Company names and cached labels can arrive in any script, and a name may carry an
+        // emoji; the bundled faces are Latin, and a missing glyph draws nothing. Cached after
+        // the first call.
+        ui.UseSystemFontFallbacks();
 
         var snapshot = tracker.Current;
         var (width, height) = ui.ViewportSize();

@@ -74,26 +74,18 @@ public sealed class MarketsPage(MarketFeed feed) : Component
             ui.Secondary("Simulated feed, 50 ticks a second per symbol");
             ui.Spacer();
 
-            if (_load.Error is { } error)
-            {
-                ui.Badge(error.Message, new() { Tone = Tone.Danger });
-
-                if (ui.Button("Retry history", new() { Variant = ButtonVariant.Danger }))
-                {
-                    _load.Run();
-                }
-            }
-            else if (_load.IsRunning)
-            {
-                ui.Button("Loading history", new() { Loading = true });
-            }
-            else if (feed.Live)
+            if (feed.Live && !_load.IsRunning && _load.Error is null)
             {
                 ui.Badge("live", new() { Tone = Tone.Success, Dot = true });
             }
-            else if (ui.Button("Load history", new() { Variant = ButtonVariant.Primary }))
+            else
             {
-                _load.Run();
+                ui.ActionButton(
+                    "Load history",
+                    _load,
+                    new() { Variant = ButtonVariant.Primary },
+                    loadingLabel: "Loading history",
+                    retryLabel: "Retry history");
             }
         }
     }

@@ -2,10 +2,10 @@
 
   <PropertyGroup>
     <!--
-      Test harness for CuiSharp apps. net10.0 only, like the library: it drives the same
-      software renderer, so a test sees the pixels a window would show.
+      Test harness for CuiSharp apps. Multi-targeted for net10.0 and net11.0 like the core
+      library: it drives the same software renderer, so a test sees the pixels a window would show.
     -->
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks>$(CuiSharpTargetFrameworks)</TargetFrameworks>
     <RootNamespace>CuiSharp.Testing</RootNamespace>
     <AssemblyName>CuiSharp.Testing</AssemblyName>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>

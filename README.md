@@ -5,7 +5,7 @@
 CuiSharp binds [CUI](https://github.com/yappologistic/CUI), a 160-component UI library written in C99 that draws
 every widget itself. You describe the screen again each frame; your fields are the state.
 
-![.NET 10](https://img.shields.io/badge/.NET-10-512bd4)
+![.NET](https://img.shields.io/badge/.NET-10%20%7C%2011-512bd4)
 ![NativeAOT](https://img.shields.io/badge/one%20file-3.0%20MB-success)
 ![alloc](https://img.shields.io/badge/steady--state-0%20B%2Fframe-success)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
@@ -39,7 +39,8 @@ that publish one file of about 1.2 MB, and says so at the top. It starts with
 generating to pin a version. Its counter and theme switch use the same frame API as a full app;
 `CUISHARP_HEADLESS=1` runs it without a window for automation.
 
-Also `dotnet add package CuiSharp` for an existing project. Requires the .NET 10 SDK.
+Also `dotnet add package CuiSharp` for an existing project. The packages target `net10.0` and
+`net11.0`, so they run on the .NET 10 SDK or newer.
 
 ## The one idea
 
@@ -303,6 +304,9 @@ pwsh native/build-native.ps1     # or ./native/build-native.sh
 dotnet run --project samples/CuiSharp.Gallery
 ```
 
+Building this repository needs the .NET 10 **and** .NET 11 SDKs; see
+[Contributing](#contributing) for the version check and the gates CI runs.
+
 The browser-hosted gallery and GitHub Pages build are documented in
 [`samples/CuiSharp.Gallery.Browser/README.md`](samples/CuiSharp.Gallery.Browser/README.md).
 
@@ -353,6 +357,13 @@ nothing but the tool installed — tell it to run `dotnet cui docs`, which carri
 `pwsh tools/regen.ps1`; the rest of the folder is hand-written or generated from the headers.
 
 ## Contributing
+
+**Both SDKs are required.** Install the .NET 10 SDK **and** the .NET 11 SDK; `dotnet --list-sdks`
+must list a `10.0.*` and an `11.0.*`. `CuiSharp`, `CuiSharp.Testing` and `CuiSharp.Tools`
+multi-target `net10.0;net11.0` when the .NET 11 SDK is present, which is how CI builds and tests
+them; with only the .NET 10 SDK they build `net10.0` alone, which is enough to run the suite but
+not the multi-target gate. A current .NET 11 SDK also provides the `net11.0` targeting pack that
+the file-based samples use.
 
 ```sh
 dotnet build CuiSharp.slnx -c Release -warnaserror

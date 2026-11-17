@@ -86,6 +86,7 @@ public sealed unsafe class CuiApp : IDisposable
     private Theme _theme;
     private Accent _accent;
     private bool _themeDirty;
+    private bool _inFrame;
     private readonly nint _ctx;
     private readonly UiFrameState _frame = new();
 
@@ -162,6 +163,12 @@ public sealed unsafe class CuiApp : IDisposable
     {
         if (_handle == 0) return false;
 
+        // The caller drew since the last call. Spend what that frame asked for before the native
+        // loop blocks, so work that finished on a pool thread wakes a sleeping window. Null when
+        // the app never constructed a component or a background operation, and skipped before the
+        // first frame has been entered.
+        if (_inFrame) FrameHooks.Current?.Leave(_ctx);
+
         if (_themeDirty)
         {
             Native.SetTheme(_ctx, _theme);
@@ -181,6 +188,11 @@ public sealed unsafe class CuiApp : IDisposable
 
         // Everything the last frame copied for argument strings is dead now.
         Utf8.BeginFrame();
+
+        // The next frame begins here, so work that finished meanwhile is applied before the
+        // caller draws it.
+        if (alive) FrameHooks.Current?.Enter();
+        _inFrame = alive;
 
         return alive;
     }
@@ -220,6 +232,12 @@ public sealed unsafe class CuiApp : IDisposable
     }
 
     /// <summary>
+    /// Creates a window with default <see cref="CuiAppOptions"/> and calls <paramref name="draw"/>
+    /// once per frame until the window closes.
+    /// </summary>
+    public static int Run(DrawFn draw) => Run(new CuiAppOptions(), draw, args: null);
+
+    /// <summary>
     /// Creates a window and calls <paramref name="draw"/> once per frame until
     /// the window closes. This is the whole host: no XAML, no dispatcher.
     /// </summary>
@@ -236,6 +254,54 @@ public sealed unsafe class CuiApp : IDisposable
     /// </code>
     /// </example>
     public static int Run(CuiAppOptions options, DrawFn draw) => Run(options, draw, args: null);
+
+    /// <summary>
+    /// Runs a root <see cref="Component"/> in a window using <see cref="Component.Title"/> as the
+    /// default window title, without requiring a dependency injection container.
+    /// </summary>
+    public static int Run(Component root)
+    {
+        ArgumentNullException.ThrowIfNull(root);
+        return Run(new CuiAppOptions { Title = root.Title }, root, args: null);
+    }
+
+    /// <summary>
+    /// Runs a root <see cref="Component"/> in a window with its error boundary,
+    /// <see cref="FrameStats"/> and <see cref="Component.WantsFrames"/> contract, without requiring
+    /// a dependency injection container.
+    /// </summary>
+    public static int Run(CuiAppOptions options, Component root) => Run(options, root, args: null);
+
+    /// <summary>
+    /// Runs a root <see cref="Component"/> with explicit command-line arguments.
+    /// </summary>
+    internal static int Run(CuiAppOptions options, Component root, string[]? args)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(root);
+
+        try
+        {
+            return Run(options, ui => HostComponent(root, ui), args);
+        }
+        finally
+        {
+            FrameTrace.Close();
+        }
+    }
+
+    // One frame of a root component: draw the tree, record what it cost. The frame boundary —
+    // applying finished work and keeping the loop awake — belongs to RunThunk.
+    private static void HostComponent(Component root, Ui ui)
+    {
+        long allocated = FrameStats.Begin();
+
+        root.Render(ui);
+
+        FrameStats.End(allocated);
+
+        FrameTrace.Frame();
+    }
 
     /// <summary>
     /// <see cref="Run(CuiAppOptions, DrawFn)"/>, told the arguments the app itself was started
@@ -378,7 +444,18 @@ public sealed unsafe class CuiApp : IDisposable
         if (Features.Live) state.Live?.EnterFrame();
         try
         {
-            state.Draw(new Ui(ui, state.Frame));
+            // Every window frame enters and leaves through the same boundary: apply what finished
+            // on the pool, draw, then wake the loop if work is still in flight or a component is
+            // live. Null when the app never constructed a component or a background operation.
+            FrameHooks.Current?.Enter();
+            try
+            {
+                state.Draw(new Ui(ui, state.Frame));
+            }
+            finally
+            {
+                FrameHooks.Current?.Leave(ui);
+            }
         }
         finally
         {
@@ -420,6 +497,7 @@ public sealed unsafe class CuiApp : IDisposable
         HotReloadWake.Detach(NativeWindow);
         Native.AppDestroy(_handle);
         _handle = 0;
+        _inFrame = false;
         _frame.Reset();
         _frame.Release();
     }

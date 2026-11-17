@@ -71,14 +71,13 @@ public sealed class TodoPage(TodoService todos) : Component
     private void Items(Ui ui)
     {
         var shown = 0;
-        var items = todos.Items;
 
         using (ui.Scroll(new() { Id = "items", Height = Size.Fill, Gap = 4, Pad = 2 }))
         {
-            // Indexed rather than foreach: enumerating IReadOnlyList<T> boxes its enumerator every frame.
-            for (var i = 0; i < items.Count; i++)
+            // ui.Keyed indexes IReadOnlyList<T> without boxing an enumerator and scopes each
+            // row's widget state to item.Id so duplicate titles never collide.
+            foreach (var item in ui.Keyed(todos.Items, static item => item.Id))
             {
-                var item = items[i];
                 if (IsHidden(item))
                 {
                     continue;
@@ -86,8 +85,6 @@ public sealed class TodoPage(TodoService todos) : Component
 
                 shown++;
 
-                // Key each row by item.Id so duplicate titles never collide in CUI's widget state.
-                using (ui.Id(item.Id))
                 using (ui.Row(new() { Gap = 10, Align = Align.Center, PadY = 5 }))
                 {
                     var done = item.Done;
@@ -127,23 +124,12 @@ public sealed class TodoPage(TodoService todos) : Component
     {
         using (ui.Row(new() { Gap = 8, Justify = Justify.End, Align = Align.Center }))
         {
-            if (_save.Error is { } error)
-            {
-                ui.Badge(error.Message, new() { Tone = Tone.Danger });
-
-                if (ui.Button("Retry save", new() { Variant = ButtonVariant.Danger }))
-                {
-                    _save.Run();
-                }
-            }
-            else if (_save.IsRunning)
-            {
-                ui.Button("Saving", new() { Loading = true });
-            }
-            else if (ui.Button("Save", new() { Icon = Icons.Save }))
-            {
-                _save.Run();
-            }
+            ui.ActionButton(
+                "Save",
+                _save,
+                new() { Icon = Icons.Save },
+                loadingLabel: "Saving",
+                retryLabel: "Retry save");
 
             var clear = new ButtonOpts { Variant = ButtonVariant.Ghost, Disabled = todos.DoneCount is 0 };
             if (ui.Button("Clear completed", clear))

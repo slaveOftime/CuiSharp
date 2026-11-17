@@ -72,6 +72,7 @@ public sealed unsafe partial class CuiSurface : IDisposable
         _height = height;
         _scale = scale;
         Kind = kind;
+        PendingWork.MarkDrawn();
     }
 
     /// <summary>The native context, for the input surface this type also exposes.</summary>
@@ -233,6 +234,7 @@ public sealed unsafe partial class CuiSurface : IDisposable
         // The frame boundary is the only place work from a pool thread may be
         // applied, so a frame never sees a half-applied result.
         Completions.Drain();
+        Component.BeginFrame();
 
         // A component's error boundary reports into the surface that is drawing it,
         // so a test can assert that a page rendered without throwing.
@@ -264,6 +266,7 @@ public sealed unsafe partial class CuiSurface : IDisposable
             // Closed before CUI lays out and paints, and before the recorder picks the frame's
             // text apart: these numbers are the app's own draw, which is what a budget is about.
             LastFrame = FrameStats.End(_frameAllocated);
+            PendingWork.MarkDrawn();
             using (_frame.EnterPaint()) Native.EndFrame(_ctx);
         }
         finally

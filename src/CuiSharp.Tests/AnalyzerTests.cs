@@ -133,8 +133,14 @@ public class AnalyzerTests
 
         // .Result, .Wait() and Thread.Sleep: three blocking calls, three reports.
         Assert.Equal(3, found.Count(f => f.StartsWith("CUI001", StringComparison.Ordinal)));
-        Assert.All(found.Where(f => f.StartsWith("CUI001", StringComparison.Ordinal)),
-            f => Assert.Contains("Mutation", f, StringComparison.Ordinal));
+        Assert.All(found.Where(f => f.StartsWith("CUI001", StringComparison.Ordinal)), f =>
+        {
+            // The advice names types that exist: a Mutation for one result, a Progressive for
+            // reports that arrive as the work runs. "Query" used to name nothing.
+            Assert.Contains("Mutation", f, StringComparison.Ordinal);
+            Assert.Contains("Progressive", f, StringComparison.Ordinal);
+            Assert.DoesNotContain("Query", f, StringComparison.Ordinal);
+        });
     }
 
     [Fact]
@@ -177,6 +183,42 @@ public class AnalyzerTests
             """);
 
         Assert.DoesNotContain(found, f => f.StartsWith("CUI001", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task BackgroundWorkInsideAMutationOrProgressiveIsNotReportedAsInFrame()
+    {
+        string[] found = await AnalyzeAsync(Prologue + """
+            public sealed class Page : Component
+            {
+                private readonly Progressive<string> _scan = new((token, publish) =>
+                {
+                    if (Directory.Exists(".")) publish(new string('a', 3) + "!");
+                    return Task.CompletedTask;
+                });
+
+                public override void Draw(Ui ui)
+                {
+                    if (ui.Button("Scan"))
+                    {
+                        _scan.Run((token, publish) =>
+                        {
+                            if (File.Exists("a.txt")) publish(new string('b', 3) + "!");
+                            return Task.CompletedTask;
+                        });
+                    }
+                }
+
+                private Task<string> LoadAsync(System.Threading.CancellationToken token)
+                {
+                    _ = Directory.Exists(".");
+                    return Task.FromResult(new string('c', 3) + "!");
+                }
+            }
+            """);
+
+        Assert.DoesNotContain(found, f => f.StartsWith("CUI001", StringComparison.Ordinal));
+        Assert.DoesNotContain(found, f => f.StartsWith("CUI007", StringComparison.Ordinal));
     }
 
     // ---- CUI008 -------------------------------------------------------------
@@ -371,6 +413,12 @@ public class AnalyzerTests
                     {
                         using (ui.Id(i)) ui.Input("name", ref rows[i]);
                     }
+
+                    for (int i = 0; i < rows.Length; i++)
+                    {
+                        using var _ = ui.Id(i);
+                        ui.Input("name", ref rows[i]);
+                    }
                 }
             }
             """);
@@ -477,17 +525,28 @@ public class AnalyzerTests
         string[] found = await AnalyzeAsync(Prologue + """
             public static class Page
             {
-                public static void Draw(Ui ui, int count)
+                public static void Draw(Ui ui, int count, System.Collections.Generic.IReadOnlyList<int> items)
                 {
                     var values = new float[count];
                     var label = "rows: " + count;
                     ui.Text(label);
                     _ = values;
+
+                    foreach (int item in items)
+                    {
+                        _ = item;
+                    }
+
+                    foreach (int item in ui.Keyed(items, static x => x))
+                    {
+                        _ = item;
+                    }
                 }
             }
             """);
 
-        Assert.Equal(2, found.Count(f => f.StartsWith("CUI007", StringComparison.Ordinal)));
+        // Array, string concatenation and interface-enumerator foreach: three reports; ui.Keyed is 0 B.
+        Assert.Equal(3, found.Count(f => f.StartsWith("CUI007", StringComparison.Ordinal)));
     }
 
     [Fact]

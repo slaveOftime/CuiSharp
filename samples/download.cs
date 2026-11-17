@@ -1,8 +1,9 @@
-#:package CuiSharp@*
 #:package MonoTorrent@3.0.2
+#:project ../src/CuiSharp/CuiSharp.csproj
 
 // The properties below are what make `dotnet publish download.cs -c Release -o .`
 // leave one small native executable beside this file, with no .NET on the target.
+// The size profile, including the diagnostics below, comes from CuiSharp.Size.targets.
 #:property PublishAot=true
 #:property OptimizationPreference=Size
 #:property InvariantGlobalization=true
@@ -10,12 +11,6 @@
 #:property DebugType=none
 #:property OutputType=WinExe
 #:property ApplicationIcon=download.ico
-#:property EventSourceSupport=false
-#:property HttpActivityPropagationSupport=false
-#:property MetadataUpdaterSupport=false
-#:property UseSystemResourceKeys=true
-#:property StackTraceSupport=false
-#:property MetricsSupport=false
 
 // Mono.Nat is MonoTorrent's optional UPnP helper. This app leaves port mapping
 // off (outbound peers, DHT and trackers are enough), so the package's trim
@@ -24,16 +19,19 @@
 #:property NoWarn=IL2104
 
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Net.Sockets;
 using System.Text.Json;
 using CuiSharp;
 using Microsoft.Win32.SafeHandles;
 using MonoTorrent;
 using MonoTorrent.Client;
+using MonoTorrent.Dht;
 
 // ---------------------------------------------------------------------------
 // Downloads — a native CuiSharp download manager for magnet links and plain
@@ -72,10 +70,15 @@ internal sealed class DownloadApp(DownloadManager downloads)
     private const float WideWidth = 940f;
     private const float CompactWidth = 560f;
     private const float CompactHeight = 520f;
+    private const float QueueRowHeight = 60f;
+    private const float QueueRowGap = 6f;
 
     private static readonly string[] Filters = ["All", "Active", "Done"];
+    private static readonly string[] SwarmLabels = ["Seeds", "Leechers", "Known"];
 
     private readonly DownloadManager _downloads = downloads;
+    private readonly Series[] _rateSeries = new Series[2];
+    private readonly float[] _swarmValues = new float[3];
 
     private string _url = "";
     private string _error = "";
@@ -89,6 +92,7 @@ internal sealed class DownloadApp(DownloadManager downloads)
     private long? _free;
     private long _freeAt;
     private string _freeFor = "";
+    private bool _styled;
 
     public CuiAppOptions Options { get; } = new()
     {
@@ -104,6 +108,20 @@ internal sealed class DownloadApp(DownloadManager downloads)
 
     public void Draw(Ui ui)
     {
+        // A download's name and its folder can be written in any script, and a name may carry
+        // an emoji; the bundled faces are Latin, and a missing glyph draws nothing. Cached after
+        // the first call.
+        ui.UseSystemFontFallbacks();
+
+        if (!_styled)
+        {
+            var style = ui.Style;
+            style.RadiusControl = 0;
+            style.RadiusPanel = 0;
+            style.RadiusSurface = 0;
+            _styled = true;
+        }
+
         var (width, height) = ui.ViewportSize();
         var wide = width >= WideWidth && height >= 420f;
 
@@ -143,7 +161,6 @@ internal sealed class DownloadApp(DownloadManager downloads)
             {
                 Width = Size.Px(42),
                 Height = Size.Px(42),
-                Radius = 13,
                 Bg = Color.SurfaceMuted,
                 Align = Align.Center,
                 Justify = Justify.Center,
@@ -190,6 +207,10 @@ internal sealed class DownloadApp(DownloadManager downloads)
             }
 
             ui.Spacer();
+
+            // One glance at the shape of the last minute, beside the live total.
+            if (wide && Format.HasSignal(_downloads.TotalHistory))
+                ui.Sparkline(_downloads.TotalHistory, Size.Px(136), 36f, Color.Accent);
 
             if (down > 0 && active > 0)
             {
@@ -247,10 +268,26 @@ internal sealed class DownloadApp(DownloadManager downloads)
                 Clearable = true,
                 AutoFocus = focus,
                 Error = _error.Length > 0 ? _error : null,
+                Size = ControlSize.Sm,
                 Width = Size.Fill,
             });
 
             if (input.Changed) _error = "";
+
+            if (ui.IconButton(Icons.Clipboard, new ButtonOpts
+            {
+                Tooltip = "Paste from clipboard",
+                Size = ControlSize.Sm,
+                Variant = ButtonVariant.Ghost,
+            }))
+            {
+                var pasted = ui.GetClipboard()?.Trim() ?? "";
+                if (pasted.Length > 0)
+                {
+                    _url = pasted;
+                    _error = "";
+                }
+            }
 
             var add = input.Submitted;
             if (width >= 620f)
@@ -258,6 +295,7 @@ internal sealed class DownloadApp(DownloadManager downloads)
                 if (ui.Button("Add", new ButtonOpts
                 {
                     Icon = Icons.Plus,
+                    Size = ControlSize.Sm,
                     Variant = ButtonVariant.Primary,
                     Width = Size.Px(88),
                     Disabled = _url.Trim().Length == 0,
@@ -268,6 +306,7 @@ internal sealed class DownloadApp(DownloadManager downloads)
             }
             else if (ui.IconButton(Icons.Plus, new ButtonOpts
             {
+                Size = ControlSize.Sm,
                 Variant = ButtonVariant.Primary,
                 Tooltip = "Add download",
                 Disabled = _url.Trim().Length == 0,
@@ -295,7 +334,7 @@ internal sealed class DownloadApp(DownloadManager downloads)
 
     private void Body(Ui ui, float width, float height)
     {
-        var detailsWidth = Math.Clamp(width * 0.30f, 318f, 402f);
+        var detailsWidth = Math.Clamp(width * 0.33f, 340f, 440f);
 
         using (ui.Row(new Box
         {
@@ -354,16 +393,16 @@ internal sealed class DownloadApp(DownloadManager downloads)
                 return;
             }
 
-            using (ui.Scroll(new ScrollOpts
+            using (ui.VirtualList(
+                "queue",
+                visible.Count,
+                QueueRowHeight + QueueRowGap,
+                Size.Fill,
+                out var first,
+                out var last))
             {
-                Id = "queue",
-                Width = Size.Fill,
-                Height = Size.Fill,
-                Gap = 6,
-            }))
-            using (ui.Column(new Box { Gap = 6, Width = Size.Fill }))
-            {
-                foreach (var item in visible) Row(ui, item, wide, compact);
+                for (var i = first; i < last && i < visible.Count; i++)
+                    Row(ui, visible[i], wide, compact);
             }
         }
     }
@@ -407,10 +446,21 @@ internal sealed class DownloadApp(DownloadManager downloads)
         var tone = ToneOf(item);
         var color = Color.For(tone);
 
+        using (ui.Box(new Box
+        {
+            Width = Size.Fill,
+            Height = Size.Px(QueueRowHeight + QueueRowGap),
+            PadBottom = QueueRowGap,
+        }))
+        // The row's own widgets must not collide with the same labels in another
+        // row. Without this scope every Pause button shares one native id and a
+        // click lands on all of them.
+        using (ui.Id(item.Id))
         using (ui.Card(new Card
         {
             Id = "row:" + item.Id,
             Width = Size.Fill,
+            Height = Size.Fill,
             Pad = 9,
             Gap = 10,
             Dir = Dir.Row,
@@ -423,7 +473,6 @@ internal sealed class DownloadApp(DownloadManager downloads)
             {
                 Width = Size.Px(36),
                 Height = Size.Px(36),
-                Radius = 10,
                 Bg = Color.SurfaceMuted,
                 Align = Align.Center,
                 Justify = Justify.Center,
@@ -443,6 +492,7 @@ internal sealed class DownloadApp(DownloadManager downloads)
                         Size = 13,
                         NoWrap = true,
                     });
+                    ui.Tooltip(item.Name);
 
                     if (!compact && item.Status != DownloadStatus.Downloading)
                     {
@@ -460,7 +510,8 @@ internal sealed class DownloadApp(DownloadManager downloads)
                     Width = Size.Fill,
                     Height = 4,
                     Tone = tone,
-                    Indeterminate = item.Status is DownloadStatus.Connecting or DownloadStatus.Metadata,
+                    Indeterminate = (item.Status is DownloadStatus.Connecting or DownloadStatus.Metadata)
+                                    && !item.MetadataStalled,
                 });
 
                 ui.Text(MetaText(item), new TextOpts
@@ -472,6 +523,17 @@ internal sealed class DownloadApp(DownloadManager downloads)
             }
 
             var acted = false;
+
+            if (ui.IconButton(Icons.Copy, new ButtonOpts
+            {
+                Tooltip = "Copy original link",
+                Size = ControlSize.Sm,
+                Variant = ButtonVariant.Ghost,
+            }))
+            {
+                acted = true;
+                CopyLink(ui, item);
+            }
 
             if (ui.IconButton(item.Status switch
             {
@@ -533,6 +595,16 @@ internal sealed class DownloadApp(DownloadManager downloads)
                 ui.Spacer();
                 if (Find() is { } item)
                 {
+                    if (ui.IconButton(Icons.Copy, new ButtonOpts
+                    {
+                        Tooltip = "Copy original link",
+                        Size = ControlSize.Sm,
+                        Variant = ButtonVariant.Ghost,
+                    }))
+                    {
+                        CopyLink(ui, item);
+                    }
+
                     ui.Badge(item.Kind == DownloadKind.Torrent ? "MAGNET" : "HTTP", new BadgeOpts
                     {
                         Tone = Tone.Neutral,
@@ -565,13 +637,19 @@ internal sealed class DownloadApp(DownloadManager downloads)
             {
                 Id = "details",
                 Width = Size.Fill,
-                Height = Size.Fill,
+                Height = Size.Grow(1),
                 Gap = 10,
+                FadeEdges = true,
             }))
             using (ui.Column(new Box { Gap = 10, Width = Size.Fill }))
             {
-                DetailBody(ui, selected, viewportHeight, dialog: false);
+                DetailBody(ui, selected, viewportHeight, dialog: false, actions: false);
             }
+
+            // The actions stay put while the details scroll: pausing a download
+            // should never require finding the bottom of a long pane.
+            ui.Separator();
+            Actions(ui, selected, dialog: false);
         }
     }
 
@@ -623,21 +701,50 @@ internal sealed class DownloadApp(DownloadManager downloads)
 
         if (item.Status is DownloadStatus.Connecting or DownloadStatus.Metadata)
         {
-            using (ui.Row(new Box
+            using (ui.Column(new Box
             {
                 Width = Size.Fill,
-                Height = Size.Px(108),
+                Height = Size.Px(126),
                 Align = Align.Center,
                 Justify = Justify.Center,
-                Gap = 10,
+                Gap = 6,
             }))
             {
-                ui.Spinner(18);
-                ui.Text(StatusText(item), new TextOpts
+                using (ui.Row(new Box { Gap = 9, Align = Align.Center, Justify = Justify.Center }))
                 {
-                    Size = 12,
-                    Color = Color.TextSecondary,
-                });
+                    if (item.MetadataStalled) ui.Icon(Icons.CircleAlert, 18, Color.Warning);
+                    else ui.Spinner(18);
+
+                    ui.Text(StatusText(item), new TextOpts
+                    {
+                        Size = 12,
+                        Color = item.MetadataStalled ? Color.Warning : Color.TextSecondary,
+                    });
+                }
+
+                if (item.MetadataStalled)
+                {
+                    ui.Text($"No peer answered in {item.MetadataAge.TotalSeconds:0}s", new TextOpts
+                    {
+                        Size = 10,
+                        Color = Color.Warning,
+                    });
+                    ui.Text("The swarm may be empty — retry, or copy the link to check it.", new TextOpts
+                    {
+                        Size = 10,
+                        Color = Color.TextMuted,
+                        Align = TextAlign.Center,
+                        Width = Size.Fill,
+                    });
+                }
+                else
+                {
+                    ui.Text($"DHT {_downloads.DhtLabel} · asking trackers and peers", new TextOpts
+                    {
+                        Size = 10,
+                        Color = Color.TextMuted,
+                    });
+                }
             }
         }
         else
@@ -645,48 +752,75 @@ internal sealed class DownloadApp(DownloadManager downloads)
             using (ui.Row(new Box
             {
                 Width = Size.Fill,
-                Height = Size.Px(108),
                 Align = Align.Center,
-                Justify = Justify.Center,
+                Gap = 14,
             }))
             {
-                ui.ProgressRing("Progress", (float)item.Progress, 104);
+                ui.ProgressRing("Progress", (float)item.Progress, 96);
+
+                using (ui.Column(new Box { Width = Size.Fill, MinWidth = 0, Gap = 5 }))
+                {
+                    ui.Text(Format.Size(item.DoneBytes), new TextOpts
+                    {
+                        Font = Font.Medium,
+                        Size = 20,
+                        Tabular = true,
+                    });
+
+                    ui.Text("of " + Format.Size(item.TotalBytes), new TextOpts
+                    {
+                        Size = 10,
+                        Color = Color.TextMuted,
+                        NoWrap = true,
+                    });
+
+                    using (ui.Row(new Box { Gap = 5, Align = Align.Center }))
+                    {
+                        ui.Icon(Icons.ArrowDown, 12, Color.Success);
+                        ui.Text(Format.Rate(item.Rate), new TextOpts
+                        {
+                            Size = 11,
+                            Tabular = true,
+                            Color = Color.TextSecondary,
+                        });
+                    }
+
+                    using (ui.Row(new Box { Gap = 5, Align = Align.Center }))
+                    {
+                        ui.Icon(Icons.ArrowUp, 12, Color.TextMuted);
+                        ui.Text(Format.Rate(item.UploadRate), new TextOpts
+                        {
+                            Size = 11,
+                            Tabular = true,
+                            Color = Color.TextMuted,
+                        });
+                    }
+
+                    if (item.Status != DownloadStatus.Completed)
+                    {
+                        ui.Text($"{Format.Eta(item)} left", new TextOpts
+                        {
+                            Size = 10,
+                            Color = Color.TextMuted,
+                        });
+                    }
+                }
             }
-        }
 
-        if (item.Status is not (DownloadStatus.Connecting or DownloadStatus.Metadata))
-        {
-            using (ui.Row(new Box { Width = Size.Fill, Align = Align.Center, Gap = 8 }))
+            if (Format.HasSignal(item.History) || Format.HasSignal(item.UploadHistory))
+                RateChart(ui, item);
+            else
             {
-                ui.Text(Format.Size(item.DoneBytes), new TextOpts
+                ui.Text("Throughput · waiting for the first samples", new TextOpts
                 {
-                    Size = 12,
-                    Font = Font.Medium,
-                    Tabular = true,
-                });
-
-                ui.Text("of " + Format.Size(item.TotalBytes), new TextOpts
-                {
-                    Size = 11,
+                    Size = 10,
                     Color = Color.TextMuted,
                 });
-
-                ui.Spacer();
             }
         }
-
-        ui.Text("Speed · last 60 seconds", new TextOpts
-        {
-            Size = 10,
-            Color = Color.TextMuted,
-        });
-
-        ui.Sparkline(item.History, Size.Fill, 42f, Color.For(ToneOf(item)));
 
         ui.Separator();
 
-        Fact(ui, "Speed", item.Rate > 0 ? Format.Rate(item.Rate) : "—");
-        Fact(ui, "Time left", item.Status == DownloadStatus.Completed ? "Done" : Format.Eta(item));
         Fact(ui, "Peers", PeerText(item));
         Fact(ui, "Type", item.Kind == DownloadKind.Torrent
             ? item.FileCount > 0
@@ -697,8 +831,8 @@ internal sealed class DownloadApp(DownloadManager downloads)
         if (item.Kind == DownloadKind.Torrent && item.InfoHash.Length > 0)
             Fact(ui, "Info hash", Format.ShortHash(item.InfoHash), item.InfoHash);
 
-        if (!dialog && item.Kind == DownloadKind.Torrent && item.Tracker.Length > 0)
-            Fact(ui, "Tracker", item.Tracker);
+        if (item.Kind == DownloadKind.Torrent)
+            Fact(ui, "Tracker", item.Tracker.Length > 0 ? item.Tracker : "DHT + public trackers");
 
         Fact(ui, "Folder", Format.Leaf(item.SaveDirectory), item.SaveDirectory);
 
@@ -713,11 +847,55 @@ internal sealed class DownloadApp(DownloadManager downloads)
         if (!dialog && height >= 660f && item.Kind == DownloadKind.Http)
             Fact(ui, "Source", Format.Host(item.Source), item.Source);
 
+        if (item.Kind == DownloadKind.Torrent && item.Peers + item.Seeds + item.Available > 0)
+            SwarmChart(ui, item);
+
         if (actions)
         {
             ui.Separator();
             Actions(ui, item, dialog);
         }
+    }
+
+    /// <summary>A live download/upload chart in KB/s. Reuses its series array every frame.</summary>
+    private void RateChart(Ui ui, DownloadItem item)
+    {
+        _rateSeries[0] = new Series("Download", item.History, 0, Color.Accent);
+        _rateSeries[1] = new Series("Upload", item.UploadHistory, 0, Color.Success);
+
+        ui.Text("Throughput · KB/s · last 60 seconds", new TextOpts
+        {
+            Size = 10,
+            Color = Color.TextMuted,
+        });
+
+        ui.LineChart("rate:" + item.Id, _rateSeries, new ChartOpts
+        {
+            Width = Size.Fill,
+            Height = 122,
+            Area = true,
+            Smooth = true,
+            Format = "%.0f",
+        });
+    }
+
+    /// <summary>How the swarm around this torrent is split: seeds, leechers and known peers.</summary>
+    private void SwarmChart(Ui ui, DownloadItem item)
+    {
+        var seeds = Math.Max(0, item.Seeds);
+        var leechers = Math.Max(0, item.Peers - seeds);
+        var known = Math.Max(0, item.Available - item.Peers);
+
+        _swarmValues[0] = seeds;
+        _swarmValues[1] = leechers;
+        _swarmValues[2] = known;
+
+        ui.Text("Swarm", new TextOpts { Size = 10, Color = Color.TextMuted });
+        ui.DonutChart("swarm:" + item.Id, _swarmValues, SwarmLabels, new ChartOpts
+        {
+            Width = Size.Fill,
+            Height = 150,
+        });
     }
 
     private void Actions(Ui ui, DownloadItem item, bool dialog)
@@ -729,6 +907,7 @@ internal sealed class DownloadApp(DownloadManager downloads)
             if (ui.Button("Show in Explorer", new ButtonOpts
             {
                 Icon = Icons.FolderOpen,
+                Size = ControlSize.Sm,
                 FullWidth = full,
                 Variant = ButtonVariant.Secondary,
             }))
@@ -736,21 +915,23 @@ internal sealed class DownloadApp(DownloadManager downloads)
                 Shell.Reveal(item.SavePath);
             }
         }
-        else if (item.Status == DownloadStatus.Failed)
+        else if (item.Status == DownloadStatus.Failed || item.MetadataStalled)
         {
             if (ui.Button("Try again", new ButtonOpts
             {
                 Icon = Icons.RotateCcw,
+                Size = ControlSize.Sm,
                 FullWidth = full,
                 Variant = ButtonVariant.Primary,
             }))
             {
-                _downloads.Toggle(item);
+                _downloads.Retry(item);
             }
         }
         else if (ui.Button(item.UserPaused ? "Resume" : "Pause", new ButtonOpts
         {
             Icon = item.UserPaused ? Icons.Play : Icons.Pause,
+            Size = ControlSize.Sm,
             FullWidth = full,
             Variant = ButtonVariant.Secondary,
         }))
@@ -758,17 +939,69 @@ internal sealed class DownloadApp(DownloadManager downloads)
             _downloads.Toggle(item);
         }
 
-        if (ui.Button(dialog ? "Remove" : "Remove from list", new ButtonOpts
+        using (ui.Row(new Box { Gap = 8, Width = Size.Fill }))
         {
-            Icon = Icons.Trash2,
-            FullWidth = full,
-            Variant = ButtonVariant.Ghost,
-            Color = Color.Danger,
-        }))
-        {
-            _downloads.Remove(item);
-            if (dialog) _detailsOpen = false;
+            if (dialog)
+            {
+                // The dialog footer also holds the primary action and Close;
+                // icon-only secondary actions keep all four readable narrow.
+                if (ui.IconButton(Icons.Copy, new ButtonOpts
+                {
+                    Tooltip = "Copy original link",
+                    Size = ControlSize.Sm,
+                    Variant = ButtonVariant.Secondary,
+                }))
+                {
+                    CopyLink(ui, item);
+                }
+
+                if (ui.IconButton(Icons.Trash2, new ButtonOpts
+                {
+                    Tooltip = "Remove from list",
+                    Size = ControlSize.Sm,
+                    Variant = ButtonVariant.Ghost,
+                    Color = Color.Danger,
+                }))
+                {
+                    _downloads.Remove(item);
+                    _detailsOpen = false;
+                }
+            }
+            else
+            {
+                if (ui.Button("Copy link", new ButtonOpts
+                {
+                    Icon = Icons.Copy,
+                    Size = ControlSize.Sm,
+                    Variant = ButtonVariant.Secondary,
+                }))
+                {
+                    CopyLink(ui, item);
+                }
+
+                if (ui.Button("Remove from list", new ButtonOpts
+                {
+                    Icon = Icons.Trash2,
+                    Size = ControlSize.Sm,
+                    Variant = ButtonVariant.Ghost,
+                    Color = Color.Danger,
+                }))
+                {
+                    _downloads.Remove(item);
+                }
+            }
         }
+    }
+
+    private void CopyLink(Ui ui, DownloadItem item)
+    {
+        ui.SetClipboard(item.Source);
+        ui.Toast("Link copied", new ToastOpts
+        {
+            Description = Format.Clip(item.Source, 64),
+            Tone = Tone.Success,
+            Duration = 3,
+        });
     }
 
     private void DetailDialog(Ui ui, float height)
@@ -782,10 +1015,11 @@ internal sealed class DownloadApp(DownloadManager downloads)
             return;
         }
 
+        var (viewportWidth, _) = ui.ViewportSize();
         using var dialog = ui.Dialog(item.Name, ref _detailsOpen, new DialogOpts
         {
             Description = "Download details",
-            Width = 460,
+            Width = Math.Clamp(viewportWidth - 32f, 320f, 460f),
         });
 
         if (dialog.Open)
@@ -794,7 +1028,7 @@ internal sealed class DownloadApp(DownloadManager downloads)
             {
                 Id = "dialog-details",
                 Width = Size.Fill,
-                Height = Size.Px(Math.Clamp(height - 300f, 220f, 520f)),
+                Height = Size.Px(Math.Clamp(height - 380f, 220f, 500f)),
                 Gap = 10,
                 FadeEdges = true,
             }))
@@ -806,7 +1040,7 @@ internal sealed class DownloadApp(DownloadManager downloads)
             using (ui.DialogFooter())
             {
                 Actions(ui, item, dialog: true);
-                if (ui.Button("Close")) _detailsOpen = false;
+                if (ui.Button("Close", new ButtonOpts { Size = ControlSize.Sm })) _detailsOpen = false;
             }
         }
     }
@@ -825,12 +1059,12 @@ internal sealed class DownloadApp(DownloadManager downloads)
 
             ui.Spacer();
 
-            if (width >= 760f && _downloads.DhtNodes > 0)
+            if (width >= 760f)
             {
-                ui.Text($"DHT {Format.Number(_downloads.DhtNodes)} nodes", new TextOpts
+                ui.Text($"DHT {_downloads.DhtLabel}", new TextOpts
                 {
                     Size = 10,
-                    Color = Color.TextMuted,
+                    Color = _downloads.DhtReady || !_downloads.IsBusy ? Color.TextMuted : Color.Warning,
                 });
             }
 
@@ -918,7 +1152,7 @@ internal sealed class DownloadApp(DownloadManager downloads)
     {
         DownloadStatus.Queued => "Queued",
         DownloadStatus.Connecting => item.Kind == DownloadKind.Torrent ? "Connecting" : "Resolving",
-        DownloadStatus.Metadata => "Metadata",
+        DownloadStatus.Metadata => item.MetadataStalled ? "No peers" : "Metadata",
         DownloadStatus.Downloading => "Downloading",
         DownloadStatus.Checking => "Checking",
         DownloadStatus.Paused => "Paused",
@@ -930,10 +1164,17 @@ internal sealed class DownloadApp(DownloadManager downloads)
     {
         DownloadStatus.Failed => item.Error ?? "The download stopped unexpectedly.",
         DownloadStatus.Completed => $"Finished {Format.Ago(item.CompletedAt ?? item.AddedAt)}",
-        DownloadStatus.Metadata => "Fetching the torrent metadata from peers…",
+        DownloadStatus.Metadata when item.MetadataStalled =>
+            $"No peer answered in {item.MetadataAge.TotalSeconds:0}s. The swarm may be empty, or this link may need a tracker.",
+        DownloadStatus.Metadata => item.Tracker.Length > 0
+            ? $"Fetching metadata via {item.Tracker} and the DHT…"
+            : "Fetching metadata from DHT peers…",
         DownloadStatus.Connecting => item.Kind == DownloadKind.Torrent
             ? "Contacting trackers and the DHT…"
             : "Asking the server for the file size…",
+        DownloadStatus.Downloading => item.Kind == DownloadKind.Torrent
+            ? "Downloading from the swarm"
+            : "Downloading over HTTP",
         DownloadStatus.Checking => "Checking the files already on disk…",
         DownloadStatus.Paused => "Paused · resume whenever you like",
         DownloadStatus.Queued => "Waiting to start…",
@@ -947,7 +1188,9 @@ internal sealed class DownloadApp(DownloadManager downloads)
         DownloadStatus.Failed =>
             $"Failed · {item.Error ?? "unknown error"}",
         DownloadStatus.Paused =>
-            $"{Format.Size(item.DoneBytes)} of {Format.Size(item.TotalBytes)} · paused",
+            $"{item.Progress * 100:0}% · {Format.Size(item.DoneBytes)} of {Format.Size(item.TotalBytes)} · paused",
+        DownloadStatus.Metadata when item.MetadataStalled =>
+            $"{Format.Size(item.TotalBytes)} · no peers after {item.MetadataAge.TotalSeconds:0}s",
         DownloadStatus.Metadata =>
             $"{Format.Size(item.TotalBytes)} · fetching metadata · {Format.Number(item.Peers)} peers",
         DownloadStatus.Connecting =>
@@ -961,6 +1204,7 @@ internal sealed class DownloadApp(DownloadManager downloads)
 
     private static string DownloadText(DownloadItem item)
     {
+        var percent = item.TotalBytes > 0 ? $"{item.Progress * 100:0}% · " : "";
         var size = item.TotalBytes > 0
             ? $"{Format.Size(item.DoneBytes)} of {Format.Size(item.TotalBytes)}"
             : Format.Size(item.DoneBytes);
@@ -971,7 +1215,7 @@ internal sealed class DownloadApp(DownloadManager downloads)
             : "";
         var eta = item.Rate > 0 ? $" · {Format.Eta(item)}" : "";
 
-        return size + rate + peers + eta;
+        return percent + size + rate + peers + eta;
     }
 
     private static string PeerText(DownloadItem item)
@@ -980,6 +1224,12 @@ internal sealed class DownloadApp(DownloadManager downloads)
             return "—";
 
         if (item.Kind == DownloadKind.Http) return $"{Math.Max(1, item.Connections)} connections";
+        if (item.Status == DownloadStatus.Metadata)
+        {
+            return item.Peers > 0
+                ? $"{Format.Number(item.Peers)} connected · fetching metadata"
+                : item.MetadataStalled ? "No peers yet" : "Searching DHT and trackers";
+        }
         if (item.Peers == 0 && item.Seeds == 0) return "Waiting for peers";
 
         return $"{Format.Number(item.Peers)} connected · {Format.Number(item.Seeds)} seeds";
@@ -990,6 +1240,7 @@ internal sealed class DownloadApp(DownloadManager downloads)
         DownloadStatus.Completed => Tone.Success,
         DownloadStatus.Failed => Tone.Danger,
         DownloadStatus.Paused => Tone.Neutral,
+        DownloadStatus.Metadata when item.MetadataStalled => Tone.Warning,
         DownloadStatus.Connecting or DownloadStatus.Metadata or DownloadStatus.Checking =>
             Tone.Info,
         _ => Tone.Accent,
@@ -1005,13 +1256,38 @@ internal sealed class DownloadManager : IAsyncDisposable
     private const int HistoryLength = 60;
     private static readonly long SaveEvery = Stopwatch.Frequency * 5;
 
+    // MonoTorrent 3.0.2 bootstraps from router.bittorrent.com only, which is
+    // not reliably reachable. Seeding the engine with live nodes is what makes
+    // magnet metadata arrive instead of spinning forever.
+    private static readonly (string Host, int Port)[] DhtBootstrap =
+    [
+        ("dht.transmissionbt.com", 6881),
+        ("dht.libtorrent.org", 25401),
+        ("dht.aelitis.com", 6881),
+        ("router.bittorrent.com", 6881),
+        ("router.utorrent.com", 6881),
+    ];
+
+    private static readonly string[] FallbackTrackers =
+    [
+        "udp://tracker.opentrackr.org:1337/announce",
+        "udp://open.stealth.si:80/announce",
+        "udp://tracker.torrent.eu.org:451/announce",
+        "udp://exodus.desync.com:6969/announce",
+        "udp://tracker.openbittorrent.com:6969/announce",
+        "http://tracker.openbittorrent.com:80/announce",
+    ];
+
     private readonly SavedState _state;
     private readonly List<DownloadItem> _items = [];
     private readonly Queue<string> _completed = new();
+    private readonly float[] _totalHistory = new float[HistoryLength];
 
     private readonly ClientEngine? _engine;
+    private readonly IDhtEngine? _dht;
     private readonly string? _engineError;
     private readonly TorrentSettings _torrentSettings;
+    private Task? _dhtSeed;
 
     private long _lastSample;
     private long _lastSave;
@@ -1047,14 +1323,24 @@ internal sealed class DownloadManager : IAsyncDisposable
             AllowPeerExchange = true,
         }.ToSettings();
 
+        var dht = new DhtEngine();
+        _dht = dht;
+
         try
         {
-            _engine = new ClientEngine(builder.ToSettings());
+            _engine = new ClientEngine(
+                builder.ToSettings(),
+                Factories.Default.WithDhtCreator(() => dht));
         }
         catch (Exception error)
         {
             _engineError = error.Message;
+            dht.Dispose();
         }
+
+        // Resolve the bootstrap hosts while the window is still starting, so a
+        // magnet added a second later does not wait on DNS before it can start.
+        _ = EnsureDhtAsync();
 
         foreach (var saved in state.Items)
         {
@@ -1089,6 +1375,40 @@ internal sealed class DownloadManager : IAsyncDisposable
             }
         }
     }
+
+    public DhtState DhtState
+    {
+        get
+        {
+            try
+            {
+                return _engine?.Dht?.State ?? DhtState.NotReady;
+            }
+            catch
+            {
+                return DhtState.NotReady;
+            }
+        }
+    }
+
+    public bool DhtReady => DhtState == DhtState.Ready;
+
+    public string DhtLabel
+    {
+        get
+        {
+            var nodes = DhtNodes;
+            return DhtState switch
+            {
+                DhtState.Ready => nodes > 0 ? $"ready · {Format.Number(nodes)} nodes" : "ready",
+                DhtState.Initialising => "bootstrapping",
+                _ when !IsBusy => "idle",
+                _ => "offline",
+            };
+        }
+    }
+
+    public float[] TotalHistory => _totalHistory;
 
     public void SetDestination(string path)
     {
@@ -1138,6 +1458,8 @@ internal sealed class DownloadManager : IAsyncDisposable
                 return false;
             }
 
+            magnet = WithTrackers(magnet);
+
             kind = DownloadKind.Torrent;
             name = Format.Display(magnet.Name, "Magnet download");
             infoHash = magnet.InfoHashes.V1OrV2?.ToHex() ?? "";
@@ -1186,8 +1508,102 @@ internal sealed class DownloadManager : IAsyncDisposable
     {
         if (item.Status == DownloadStatus.Completed) return;
 
-        if (item.Status is DownloadStatus.Paused or DownloadStatus.Failed) Resume(item);
+        if (item.Status == DownloadStatus.Paused) Resume(item);
+        else if (item.Status == DownloadStatus.Failed) Retry(item);
         else Pause(item);
+    }
+
+    /// <summary>Drop the current engine entry and ask the swarm again.</summary>
+    public void Retry(DownloadItem item)
+    {
+        if (item.Status is DownloadStatus.Completed or DownloadStatus.Connecting || item.Removed) return;
+
+        item.Error = null;
+        item.UserPaused = false;
+        item.MetadataSince = null;
+        _dirty = true;
+
+        if (item.Kind == DownloadKind.Http)
+        {
+            Resume(item);
+            return;
+        }
+
+        item.Status = DownloadStatus.Connecting;
+        _ = RestartTorrentAsync(item);
+    }
+
+    private async Task RestartTorrentAsync(DownloadItem item)
+    {
+        if (item.Torrent is { } manager)
+        {
+            item.Torrent = null;
+            await ForgetAsync(manager).ConfigureAwait(false);
+        }
+
+        if (!item.Removed)
+            await StartTorrentAsync(item).ConfigureAwait(false);
+    }
+
+    /// <summary>Keep the user's trackers, then add public ones that may know the swarm.</summary>
+    private static MagnetLink WithTrackers(MagnetLink magnet)
+    {
+        var trackers = new List<string>(magnet.AnnounceUrls);
+        foreach (var tracker in FallbackTrackers)
+        {
+            if (!trackers.Contains(tracker, StringComparer.OrdinalIgnoreCase))
+                trackers.Add(tracker);
+        }
+
+        return trackers.Count == magnet.AnnounceUrls.Count
+            ? magnet
+            : new MagnetLink(magnet.InfoHashes, magnet.Name, trackers, magnet.Webseeds, magnet.Size);
+    }
+
+    /// <summary>Resolve the live DHT bootstrap hosts once, before the first torrent starts.</summary>
+    private Task EnsureDhtAsync()
+    {
+        if (_engine is null || _dht is null) return Task.CompletedTask;
+        return _dhtSeed ??= SeedDhtAsync(_dht);
+    }
+
+    private static async Task SeedDhtAsync(IDhtEngine dht)
+    {
+        var nodes = new List<ReadOnlyMemory<byte>>(8);
+
+        foreach (var (host, port) in DhtBootstrap)
+        {
+            try
+            {
+                var addresses = await Dns.GetHostAddressesAsync(host).ConfigureAwait(false);
+                foreach (var address in addresses)
+                {
+                    if (address.AddressFamily != AddressFamily.InterNetwork) continue;
+
+                    // DHT "compact node" form: 20-byte id, 4-byte IPv4, 2-byte port.
+                    var compact = new byte[26];
+                    Random.Shared.NextBytes(compact.AsSpan(0, 20));
+                    address.GetAddressBytes().CopyTo(compact, 20);
+                    BinaryPrimitives.WriteUInt16BigEndian(compact.AsSpan(24, 2), (ushort)port);
+                    nodes.Add(compact);
+                }
+            }
+            catch
+            {
+                // One dead bootstrap host must not stop the rest.
+            }
+        }
+
+        if (nodes.Count == 0) return;
+
+        try
+        {
+            dht.Add(nodes);
+        }
+        catch
+        {
+            // A cached routing table can still be enough on its own.
+        }
     }
 
     public void Pause(DownloadItem item)
@@ -1264,7 +1680,12 @@ internal sealed class DownloadManager : IAsyncDisposable
 
         try
         {
-            var magnet = MagnetLink.Parse(item.Source);
+            await EnsureDhtAsync().ConfigureAwait(false);
+
+            var magnet = WithTrackers(MagnetLink.Parse(item.Source));
+            if (item.Tracker.Length == 0)
+                item.Tracker = Format.Host(magnet.AnnounceUrls.FirstOrDefault() ?? "");
+
             var manager = await _engine.AddAsync(magnet, item.SaveDirectory, _torrentSettings).ConfigureAwait(false);
 
             item.Torrent = manager;
@@ -1347,6 +1768,7 @@ internal sealed class DownloadManager : IAsyncDisposable
         if (sample)
         {
             var elapsed = Math.Max(0.001, (now - _lastSample) / (double)Stopwatch.Frequency);
+            var totalDown = 0L;
 
             foreach (var item in _items)
             {
@@ -1357,9 +1779,12 @@ internal sealed class DownloadManager : IAsyncDisposable
                 }
 
                 item.LastDone = item.DoneBytes;
-                Push(item, item.Rate);
+                Push(item.History, item.Rate);
+                Push(item.UploadHistory, item.UploadRate);
+                totalDown += item.Rate;
             }
 
+            Push(_totalHistory, totalDown);
             _lastSample = now;
         }
 
@@ -1406,10 +1831,25 @@ internal sealed class DownloadManager : IAsyncDisposable
         item.UploadRate = manager.Monitor.UploadRate;
         item.Peers = manager.OpenConnections;
         item.Seeds = manager.Peers.Seeds;
+        item.Available = manager.Peers.Available;
         item.Error = manager.Error?.Exception?.Message ?? manager.Error?.Reason.ToString();
 
         if (item.Status != DownloadStatus.Completed)
-            item.Status = Map(manager, item.UserPaused);
+        {
+            var previous = item.Status;
+            var next = Map(manager, item.UserPaused);
+
+            if (next == DownloadStatus.Metadata)
+            {
+                if (previous != DownloadStatus.Metadata) item.MetadataSince = DateTime.Now;
+            }
+            else
+            {
+                item.MetadataSince = null;
+            }
+
+            item.Status = next;
+        }
 
         if (manager.Complete && item.CompletedAt is null) Finish(item);
     }
@@ -1442,7 +1882,9 @@ internal sealed class DownloadManager : IAsyncDisposable
         item.UploadRate = 0;
         item.Peers = 0;
         item.Seeds = 0;
+        item.Available = 0;
         item.Connections = 0;
+        item.MetadataSince = null;
         item.Error = null;
         item.UserPaused = false;
 
@@ -1467,11 +1909,13 @@ internal sealed class DownloadManager : IAsyncDisposable
         }
     }
 
-    private static void Push(DownloadItem item, long rate)
+    private static void Push(float[] history, long rate)
     {
-        var history = item.History;
         Array.Copy(history, 1, history, 0, history.Length - 1);
-        history[^1] = rate;
+
+        // Kilobytes per second keeps the chart labels readable while the model
+        // still keeps exact byte rates.
+        history[^1] = rate / 1024f;
     }
 
     public bool TryTakeCompleted(out string name)
@@ -1543,6 +1987,8 @@ internal enum DownloadStatus
 
 internal sealed class DownloadItem
 {
+    private static readonly TimeSpan MetadataTimeout = TimeSpan.FromSeconds(30);
+
     public required string Id { get; init; }
     public required string Source { get; init; }
     public required string Name { get; set; }
@@ -1551,11 +1997,14 @@ internal sealed class DownloadItem
     public required float[] History { get; init; }
     public required DateTime AddedAt { get; init; }
 
+    public float[] UploadHistory { get; } = new float[60];
+
     public string SavePath { get; set; } = "";
     public string InfoHash { get; set; } = "";
     public string Tracker { get; set; } = "";
     public string? Error { get; set; }
     public DateTime? CompletedAt { get; set; }
+    public DateTime? MetadataSince { get; set; }
 
     public DownloadStatus Status { get; set; }
     public long TotalBytes { get; set; }
@@ -1564,6 +2013,7 @@ internal sealed class DownloadItem
     public long UploadRate { get; set; }
     public int Peers { get; set; }
     public int Seeds { get; set; }
+    public int Available { get; set; }
     public int Connections { get; set; }
     public int FileCount { get; set; }
     public long LastDone { get; set; }
@@ -1586,6 +2036,14 @@ internal sealed class DownloadItem
         : TotalBytes <= 0
             ? 0
             : Math.Clamp(DoneBytes / (double)TotalBytes, 0, 1);
+
+    public TimeSpan MetadataAge => MetadataSince is { } since ? DateTime.Now - since : TimeSpan.Zero;
+
+    public bool MetadataStalled => Status == DownloadStatus.Metadata
+        && Peers == 0
+        && Seeds == 0
+        && MetadataSince is { } since
+        && DateTime.Now - since >= MetadataTimeout;
 
     public static DownloadItem? Restore(SavedItem saved)
     {
@@ -2309,6 +2767,16 @@ internal static class Format
     };
 
     public static string Rate(long bytes) => bytes <= 0 ? "0 B/s" : $"{Size(bytes)}/s";
+
+    public static bool HasSignal(float[] values)
+    {
+        foreach (var value in values)
+        {
+            if (value > 0.01f) return true;
+        }
+
+        return false;
+    }
 
     public static string Eta(DownloadItem item)
     {
