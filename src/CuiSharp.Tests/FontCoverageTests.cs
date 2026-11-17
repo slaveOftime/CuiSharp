@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
-using System.Text;
 using CuiSharp.Hosting;
+using CuiSharp.Interop;
 using CuiSharp.Testing;
 
 namespace CuiSharp.Tests;
@@ -112,7 +112,7 @@ public class FontCoverageTests
         if (drawable.Count == 0) return;
 
         using var surface = CuiSurface.Create(240, 60);
-        Assert.True(surface.Ui.UseSystemFontFallbacks() > 0, "the set installed nothing on a machine with a face");
+        Assert.True(InstallSystemFallbacks(surface) > 0, "the set installed nothing on a machine with a face");
 
         byte[] blank = Render(surface, " ");
 
@@ -123,6 +123,55 @@ public class FontCoverageTests
                 Assert.True(HasInk(Render(surface, rune.ToString()), blank),
                     $"UseSystemFontFallbacks installed no face that draws {rune} in {sample}");
         }
+    }
+
+    [Fact]
+    public void TheFrameThatAsksSearchesAndALaterFrameInstalls()
+    {
+        using var surface = CuiSurface.Create(240, 60);
+        string inter = Path.Combine(RepositoryRoot, "native", "CUI", "assets", "fonts", "Inter-Regular.ttf");
+
+        // The frame that asks starts the search and loads nothing: the window paints the bundled
+        // faces now, and the pixels probe — a font load and a render per candidate — runs on the pool.
+        Assert.Equal(0, Ask(surface));
+        Assert.True(surface.Ui.SystemFontFallbacks.Searching, "asking starts the search");
+        Assert.NotEqual(0, Native.NeedsRedraw(surface.Handle));
+
+        // Native handles are sequential, so an unbroken pair says no face was loaded onto this
+        // context by asking.
+        Font marker = surface.Ui.LoadFont(inter);
+        Assert.Equal((int)marker + 1, (int)surface.Ui.LoadFont(inter));
+
+        // A later frame installs what the search found, and from then on the count is the answer
+        // and an idle window goes back to sleep.
+        int installed = InstallSystemFallbacks(surface);
+        Assert.False(surface.Ui.SystemFontFallbacks.Searching, "the search landed");
+        if (installed > 0) Assert.NotEqual(0, Native.NeedsRedraw(surface.Handle));
+        Assert.Equal(installed, Ask(surface));
+        Assert.Equal(0, Native.NeedsRedraw(surface.Handle));
+        Assert.Equal(installed, Ask(surface));
+    }
+
+    [Fact]
+    public void AHeadlessAppSettlesThePoolSearchAndRedrawsLabelsDrawnBeforeTheCall()
+    {
+        using var reference = CuiSurface.Create(240, 60);
+        byte[] blank = Render(reference, " ");
+
+        int installed = 0;
+        using var app = TestApp.Start(ui =>
+        {
+            // Drawn before UseSystemFontFallbacks so the frame that installs the faces has to ask
+            // for one more frame before this label is shaped with them.
+            ui.Label("中文");
+            installed = ui.UseSystemFontFallbacks();
+        }, 240, 60);
+
+        int frames = app.Settle();
+        Assert.InRange(frames, 1, 3);
+        Assert.False(app.Animating);
+        if (installed > 0 && SystemFonts.Probes.Any(path => File.Exists(path) && FontProbe.Paints(path, "中文")))
+            Assert.True(HasInk(app.RawPixels.ToArray(), blank));
     }
 
     [Fact]
@@ -147,6 +196,9 @@ public class FontCoverageTests
             surface.EndFrame();
         }
 
+        // The search answers from the pool, so the first frames see it still out: settle the set
+        // before measuring, because "installed once" is what the rest of this test is about.
+        InstallSystemFallbacks(surface);
         Draw();
         marker = surface.Ui.LoadFont(inter);
         Assert.True((int)marker > (int)Font.Icons);
@@ -177,7 +229,7 @@ public class FontCoverageTests
             string inter = Path.Combine(RepositoryRoot, "native", "CUI", "assets", "fonts", "Inter-Regular.ttf");
             Font before = first.Ui.LoadFont(inter);
             Font chinese = first.Ui.UseSystemFontFallback("中文");
-            expected = first.Ui.UseSystemFontFallbacks();
+            expected = InstallSystemFallbacks(first);
             Assert.Equal(expected, first.Ui.UseSystemFontFallbacks());
             if (chinese != 0)
             {
@@ -188,7 +240,7 @@ public class FontCoverageTests
         }
 
         using var second = CuiSurface.Create(240, 60);
-        Assert.Equal(expected, second.Ui.UseSystemFontFallbacks());
+        Assert.Equal(expected, InstallSystemFallbacks(second));
         byte[] blank = Render(second, " ");
         if (expected > 0)
         {
@@ -229,37 +281,63 @@ public class FontCoverageTests
     {
         using var surface = CuiSurface.Create(240, 120);
         surface.RecordWidgets = true;
-        surface.BeginFrame();
-        UiText saved = "keep this text across the font probe";
-        surface.Ui.Label(saved);
-        long frames = FrameStats.Frames;
-        int arenaBytes = Utf8.FrameBytes;
-        surface.Ui.UseSystemFontFallbacks();
-        Assert.Equal(frames, FrameStats.Frames);
-        Assert.Equal(arenaBytes, Utf8.FrameBytes);
-        Assert.Equal("keep this text across the font probe", Marshal.PtrToStringUTF8(Utf8.Get(saved)));
-        surface.Ui.Label("after the probe");
-        surface.EndFrame();
-        Assert.Equal(["keep this text across the font probe", "after the probe"],
-            surface.Widgets.Select(w => w.Text).ToArray());
+
+        void AssertFramePreserved(Action<Ui> action)
+        {
+            surface.BeginFrame();
+            UiText saved = "keep this text across the font probe";
+            surface.Ui.Label(saved);
+            long frames = FrameStats.Frames;
+            int arenaBytes = Utf8.FrameBytes;
+            action(surface.Ui);
+            Assert.Equal(frames, FrameStats.Frames);
+            Assert.Equal(arenaBytes, Utf8.FrameBytes);
+            Assert.Equal("keep this text across the font probe", Marshal.PtrToStringUTF8(Utf8.Get(saved)));
+            surface.Ui.Label("after the probe");
+            surface.EndFrame();
+            Assert.Equal(["keep this text across the font probe", "after the probe"],
+                surface.Widgets.Select(w => w.Text).ToArray());
+        }
+
+        // Frame 1 starts the pool search and runs a synchronous single-sample probe in-frame;
+        // Frame 2 installs the finished pool search in-frame.
+        AssertFramePreserved(ui =>
+        {
+            ui.UseSystemFontFallbacks();
+            ui.UseSystemFontFallback("中文");
+        });
+        Assert.True(surface.Ui.SystemFontFallbacks.Wait());
+        AssertFramePreserved(ui => ui.UseSystemFontFallbacks());
     }
 
     [Fact]
     public void ProbingDoesNotRetireCallbacksRegisteredEarlierInTheFrame()
     {
         using var surface = CuiSurface.Create(240, 60);
-        surface.BeginFrame();
-        string key = Guid.NewGuid().ToString("N");
-        Func<int, string?> label = static _ => "kept";
-        nint handle = FrameCallbacks.Rent(key, label);
-        object? holder = GCHandle.FromIntPtr(handle).Target;
-        Assert.NotNull(holder);
-        surface.Ui.UseSystemFontFallbacks();
-        // Rent again before inspecting: if a buggy probe freed the old GCHandle, dereferencing it
-        // directly could crash rather than produce a useful assertion failure.
-        nint after = FrameCallbacks.Rent(key, label);
-        Assert.Same(holder, GCHandle.FromIntPtr(after).Target);
-        surface.EndFrame();
+
+        void AssertCallbacksPreserved(Action<Ui> action)
+        {
+            surface.BeginFrame();
+            string key = Guid.NewGuid().ToString("N");
+            Func<int, string?> label = static _ => "kept";
+            nint handle = FrameCallbacks.Rent(key, label);
+            object? holder = GCHandle.FromIntPtr(handle).Target;
+            Assert.NotNull(holder);
+            action(surface.Ui);
+            // Rent again before inspecting: if a buggy probe freed the old GCHandle, dereferencing it
+            // directly could crash rather than produce a useful assertion failure.
+            nint after = FrameCallbacks.Rent(key, label);
+            Assert.Same(holder, GCHandle.FromIntPtr(after).Target);
+            surface.EndFrame();
+        }
+
+        AssertCallbacksPreserved(ui =>
+        {
+            ui.UseSystemFontFallbacks();
+            ui.UseSystemFontFallback("中文");
+        });
+        Assert.True(surface.Ui.SystemFontFallbacks.Wait());
+        AssertCallbacksPreserved(ui => ui.UseSystemFontFallbacks());
     }
 
     [Fact]
@@ -268,6 +346,29 @@ public class FontCoverageTests
         string icons = Path.Combine(RepositoryRoot, "native", "CUI", "assets", "fonts", "Lucide-CUI.ttf");
         Assert.True(File.Exists(icons));
         Assert.False(FontProbe.Paints(icons, "Hello"));
+    }
+
+    /// <summary>
+    /// Draws frames until the search lands and returns what it installed. Asking is pixels, and the
+    /// search runs on the pool instead of in the frame that asks for it, so a test that asserts on
+    /// the answer has to let it arrive.
+    /// </summary>
+    private static int InstallSystemFallbacks(CuiSurface surface)
+    {
+        int count = Ask(surface);
+        if (surface.Ui.SystemFontFallbacks.Searching && surface.Ui.SystemFontFallbacks.Wait())
+            count = Ask(surface);
+
+        return count;
+    }
+
+    /// <summary>One frame that asks for the set, and the count that frame saw.</summary>
+    private static int Ask(CuiSurface surface)
+    {
+        surface.BeginFrame();
+        int count = surface.Ui.UseSystemFontFallbacks();
+        surface.EndFrame();
+        return count;
     }
 
     private static byte[] Render(CuiSurface surface, string text)

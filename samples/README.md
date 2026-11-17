@@ -14,8 +14,10 @@ The icon beside each file is what the published window uses.
 
 All four call `ui.UseSystemFontFallbacks()` every frame: the bundled faces are Latin, and a
 folder name, a download name or a music tag can be written in any script — or carry an emoji — so
-the apps install the faces the machine has instead of drawing those glyphs as nothing. The call
-initializes once per UI context and then returns the cached result, so there is no flag to keep.
+the apps install the faces the machine has instead of drawing those glyphs as nothing. Asking is
+pixels, so the search runs on the pool: the first frames draw every label in the bundled faces, the
+first frame after it lands installs the faces it found, and every call after that is a cached read
+returning the count, so there is no flag to keep.
 
 ## Run
 

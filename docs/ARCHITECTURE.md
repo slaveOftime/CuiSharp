@@ -165,7 +165,12 @@ Forwarding managed fields or stack locals at begin would leave native with dangl
   `SeriesDecimator` is public for custom canvases.
 - System-font fallback searches belong to `UiFrameState` for the native context's lifetime, not
   to a component's startup flag or a process-wide native-pointer cache. Both helpers reuse loaded
-  files and cache misses; an unconditional call in Draw is a no-op after initialization. Pixel
+  files and cache misses; an unconditional call in Draw is a no-op after initialization. Asking is
+  pixels — a font load and a render per candidate, which used to be half a second of the frame that
+  asked, with a blank window behind it — so `UseSystemFontFallbacks` decides on the pool and installs
+  on the frame that finds the answer. The probe never runs inside a frame, and while one is out the
+  frame asks for the next one (`cui_request_redraw`, which is how an animating widget keeps a window
+  awake), so an app that would otherwise sleep still draws the frame that installs the faces. Pixel
   probes use isolated native contexts and an arena scope, never a nested managed frame: resetting
   the caller's arena or retiring its callbacks while Draw is running would invalidate live data.
 - `[assembly: DisableRuntimeMarshalling]`, `IsAotCompatible`, `IsTrimmable`.

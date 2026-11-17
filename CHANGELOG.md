@@ -4,6 +4,24 @@ Every user-visible change, newest first. Pre-1.0 the minor number carries new su
 carries fixes. The section for a tag is what the GitHub release publishes, so the two cannot say
 different things.
 
+## [0.4.5] — unreleased
+
+### Changed
+
+- **`ui.UseSystemFontFallbacks()` no longer stalls the first frame.** Asking which face draws each
+  script is a font load and a render per candidate — around half a second — and it used to run
+  inside the frame that asked, so a window opened onto a blank surface and painted nothing until the
+  search was over. The search now runs on the pool (opening each candidate font file once across all
+  scripts instead of once per script) and the first frame that finds its answer loads the faces it
+  chose, so the window paints immediately in the bundled faces and the other scripts appear as soon
+  as it lands. The return value is still the number of installed faces, and 0 on the frames before
+  the search lands; `ui.UseSystemFontFallback("中文")` is unchanged and still answers inside the
+  frame. While the search is out — and on the frame that installs a face, in case text was drawn
+  earlier in that frame — the call asks CUI for the next frame so an otherwise idle window keeps
+  drawing until the faces are applied, and `HeadlessApp.Settle` waits for an in-flight search
+  before spending its frame budget. A minimal AOT app that asks for system faces is about 45 KB
+  larger, because background work brings the thread pool in.
+
 ## [0.4.4] — 2026-11-17
 
 ### Added

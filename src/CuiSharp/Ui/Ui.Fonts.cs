@@ -1,5 +1,5 @@
 using System.Globalization;
-using System.IO;
+using System.Numerics;
 using System.Text;
 using CuiSharp.Interop;
 
@@ -94,10 +94,16 @@ public static unsafe class FontUiExtensions
         /// <para>
         /// The bundled faces are Latin. A glyph no loaded face has draws nothing at all, with no box
         /// and no warning, and a folder, a download or a music tag is exactly the kind of text that
-        /// arrives in a script the app was not built for. Call this directly in Draw before text:
-        /// it initializes once per UI context, then returns the cached result with no IO, font
-        /// loading or managed allocation, so there is no initialization flag to keep. Searches that
-        /// find no usable face are cached too.
+        /// arrives in a script the app was not built for. Call this directly in Draw before text.
+        /// </para>
+        /// <para>
+        /// Asking is pixels — an isolated context, a font load and a render per candidate — so the
+        /// search runs on the pool rather than in a frame. The first call starts it and installs
+        /// nothing; the frames that follow draw the bundled faces, so a window opens immediately
+        /// instead of waiting on the search; and the first frame that finds the answer loads the
+        /// files it chose and returns the count. From then on the call is a cached read — no IO, no
+        /// font loading, no managed allocation — so there is no initialization flag to keep.
+        /// Searches that find no usable face are cached too.
         /// </para>
         /// <para>
         /// A sample the bundled faces already paint is left alone, and so is a sample no face on
@@ -106,8 +112,9 @@ public static unsafe class FontUiExtensions
         /// </para>
         /// </remarks>
         /// <returns>
-        /// The number of system faces installed by these helpers on this context, stable on repeated
-        /// calls. 0 means no suitable additional face was found. This is not a coverage guarantee.
+        /// The number of system faces these helpers have installed on this context: 0 on the frames
+        /// before the search lands, then the final count, unchanged on later calls. 0 is also the
+        /// answer for a machine with no suitable additional face. This is not a coverage guarantee.
         /// </returns>
         public int UseSystemFontFallbacks() => ui.SystemFontFallbacks.EnsureAll(ui);
     }
@@ -254,8 +261,30 @@ internal static unsafe class FontProbe
     /// <summary>True only when every visible scalar paints, without borrowing another face's glyphs.</summary>
     internal static bool Paints(string? path, string sample)
     {
-        if (string.IsNullOrEmpty(sample) || !HasVisibleScalars(sample)) return false;
-        if (path is not null && !File.Exists(path)) return false;
+        if (string.IsNullOrEmpty(sample)) return false;
+        return PaintsMask(path, new ReadOnlySpan<string>(in sample), 1u) != 0;
+    }
+
+    /// <summary>
+    /// Which of <paramref name="samples"/> (indexed by the set bits of <paramref name="pending"/>)
+    /// have every visible scalar painted by <paramref name="path"/>, or by the bundled faces when
+    /// <paramref name="path"/> is null — all in one isolated context so a multi-megabyte font
+    /// collection is loaded once instead of once per script.
+    /// </summary>
+    internal static uint PaintsMask(string? path, ReadOnlySpan<string> samples, uint pending)
+    {
+        if (pending == 0) return 0;
+        if (path is not null && !File.Exists(path)) return 0;
+
+        uint candidates = 0;
+        for (uint bits = pending; bits != 0; bits &= bits - 1)
+        {
+            int index = BitOperations.TrailingZeroCount(bits);
+            if (!string.IsNullOrEmpty(samples[index]) && HasVisibleScalars(samples[index]))
+                candidates |= 1u << index;
+        }
+
+        if (candidates == 0) return 0;
 
         // Do not use CuiSurface.BeginFrame here: this helper runs inside Draw, and a nested managed
         // frame would reset the caller's arena, free its callbacks, drain work and skew FrameStats.
@@ -274,27 +303,41 @@ internal static unsafe class FontProbe
             if (path is not null)
             {
                 Font face = Native.FontLoadFile(ctx, Utf8.Get(path));
-                if ((int)face <= (int)Font.Icons) return false;
+                if ((int)face <= (int)Font.Icons) return 0;
                 Native.FontSetRole(ctx, Font.Body, face);
             }
 
             byte[] blank = new byte[128 * 96 * 4];
             byte[] painted = new byte[blank.Length];
             Render(ctx, sw, null, blank);
-            foreach (Rune rune in sample.EnumerateRunes())
+
+            uint matched = 0;
+            for (uint bits = candidates; bits != 0; bits &= bits - 1)
             {
-                if (!IsVisible(rune)) continue;
-                Render(ctx, sw, rune.ToString(), painted);
-                if (painted.AsSpan().SequenceEqual(blank)) return false;
+                int index = BitOperations.TrailingZeroCount(bits);
+                if (PaintsSample(ctx, sw, samples[index], blank, painted))
+                    matched |= 1u << index;
             }
 
-            return true;
+            return matched;
         }
         finally
         {
             if (ctx != 0) Native.Destroy(ctx);
             Native.SwDestroy(sw);
         }
+    }
+
+    private static bool PaintsSample(nint ctx, nint sw, string sample, byte[] blank, byte[] painted)
+    {
+        foreach (Rune rune in sample.EnumerateRunes())
+        {
+            if (!IsVisible(rune)) continue;
+            Render(ctx, sw, rune.ToString(), painted);
+            if (painted.AsSpan().SequenceEqual(blank)) return false;
+        }
+
+        return true;
     }
 
     private static void Render(nint ctx, nint sw, string? text, byte[] pixels)
