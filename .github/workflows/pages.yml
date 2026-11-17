@@ -45,10 +45,9 @@ jobs:
 
       - name: Install browser workloads
         working-directory: samples/CuiSharp.Gallery.Browser
-        # The .NET 11 SDK band installs the net11 packs from `wasm-tools`; the browser sample
-        # targets net10.0 on purpose (its Emscripten band must match its runtime pack), so the
-        # `-net10` forms add the net10.0 packs the sample resolves.
-        run: dotnet workload install wasm-tools wasm-experimental wasm-tools-net10 wasm-experimental-net10
+        # Both SDKs are installed; this sample's global.json pins its SDK band, because a wasm
+        # workload belongs to the feature band that installed it and the app targets net10.0.
+        run: dotnet workload install wasm-tools wasm-experimental
 
       - uses: actions/setup-python@v6
         with:
