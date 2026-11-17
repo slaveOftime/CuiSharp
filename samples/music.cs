@@ -97,7 +97,6 @@ internal sealed class MusicApp
     private int _summaryFolders = -1;
     private int _summarySeconds = -1;
     private string _summaryText = "";
-    private bool _fonts;
 
     public MusicApp(Library library, Player player, Preferences preferences)
     {
@@ -133,13 +132,9 @@ internal sealed class MusicApp
 
     public void Draw(Ui ui)
     {
-        if (!_fonts)
-        {
-            // Half a music library is tagged in a script the bundled faces do not carry, and a
-            // folder name can be in another one or carry an emoji.
-            ui.UseSystemFontFallbacks();
-            _fonts = true;
-        }
+        // Half a music library is tagged in a script the bundled faces do not carry, and a folder
+        // name can be in another one or carry an emoji. Cached after the first call.
+        ui.UseSystemFontFallbacks();
 
         _player.Pump();
         _player.SetQueue(_library.Queue);

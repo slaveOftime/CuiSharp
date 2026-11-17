@@ -61,7 +61,6 @@ internal sealed class DiskApp(Browser browser, DiskScanner scanner)
 
     private readonly MapPanel _map = new();
     private readonly FolderPicker _picker = new();
-    private bool _fonts;
 
     public CuiAppOptions Options { get; } = new()
     {
@@ -76,13 +75,10 @@ internal sealed class DiskApp(Browser browser, DiskScanner scanner)
     public void Draw(Ui ui)
     {
         SquareCorners(ui);
-        if (!_fonts)
-        {
-            // Folder and file names come from whatever the disk holds: any script, and emoji; the
-            // bundled faces are Latin, and a missing glyph draws nothing.
-            ui.UseSystemFontFallbacks();
-            _fonts = true;
-        }
+
+        // Folder and file names come from whatever the disk holds: any script, and emoji; the
+        // bundled faces are Latin, and a missing glyph draws nothing. Cached after the first call.
+        ui.UseSystemFontFallbacks();
 
         var result = scanner.Current;
         var (width, height) = ui.ViewportSize();

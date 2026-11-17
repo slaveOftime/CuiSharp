@@ -12,9 +12,10 @@ The icon beside each file is what the published window uses.
 | [`music.cs`](music.cs) | A music player over your folders: library, transport, seek bar and real-audio visualizers. |
 | [`download.cs`](download.cs) | A magnet + HTTP download manager: newest-first queue, peers, speed and a details pane. |
 
-All four call `ui.UseSystemFontFallbacks()` once at startup: the bundled faces are Latin, and a
+All four call `ui.UseSystemFontFallbacks()` every frame: the bundled faces are Latin, and a
 folder name, a download name or a music tag can be written in any script — or carry an emoji — so
-the apps install the faces the machine has instead of drawing those glyphs as nothing.
+the apps install the faces the machine has instead of drawing those glyphs as nothing. The call
+initializes once per UI context and then returns the cached result, so there is no flag to keep.
 
 ## Run
 

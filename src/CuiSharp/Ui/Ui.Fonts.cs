@@ -96,7 +96,8 @@ public static unsafe class FontUiExtensions
         /// and no warning, and a folder, a download or a music tag is exactly the kind of text that
         /// arrives in a script the app was not built for. Call this directly in Draw before text:
         /// it initializes once per UI context, then returns the cached result with no IO, font
-        /// loading or managed allocation. Searches that find no usable face are cached too.
+        /// loading or managed allocation, so there is no initialization flag to keep. Searches that
+        /// find no usable face are cached too.
         /// </para>
         /// <para>
         /// A sample the bundled faces already paint is left alone, and so is a sample no face on

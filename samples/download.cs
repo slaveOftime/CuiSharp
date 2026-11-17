@@ -92,7 +92,6 @@ internal sealed class DownloadApp(DownloadManager downloads)
     private long? _free;
     private long _freeAt;
     private string _freeFor = "";
-    private bool _fonts;
     private bool _styled;
 
     public CuiAppOptions Options { get; } = new()
@@ -109,13 +108,10 @@ internal sealed class DownloadApp(DownloadManager downloads)
 
     public void Draw(Ui ui)
     {
-        if (!_fonts)
-        {
-            // A download's name and its folder can be written in any script, and a name may carry
-            // an emoji; the bundled faces are Latin, and a missing glyph draws nothing.
-            ui.UseSystemFontFallbacks();
-            _fonts = true;
-        }
+        // A download's name and its folder can be written in any script, and a name may carry
+        // an emoji; the bundled faces are Latin, and a missing glyph draws nothing. Cached after
+        // the first call.
+        ui.UseSystemFontFallbacks();
 
         if (!_styled)
         {
