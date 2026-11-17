@@ -63,6 +63,7 @@
     <EventSourceSupport Condition="'$(EventSourceSupport)' == ''">false</EventSourceSupport>
     <MetadataUpdaterSupport Condition="'$(MetadataUpdaterSupport)' == ''">false</MetadataUpdaterSupport>
     <HttpActivityPropagationSupport Condition="'$(HttpActivityPropagationSupport)' == ''">false</HttpActivityPropagationSupport>
+    <MetricsSupport Condition="'$(MetricsSupport)' == ''">false</MetricsSupport>
   </PropertyGroup>
 
 </Project>

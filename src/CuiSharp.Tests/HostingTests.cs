@@ -40,13 +40,90 @@ public class HostingTests
         Assert.False(mutation.TryPublish(out _));   // still running
 
         work.Finish(42);
-        SpinUntil(() => !mutation.IsRunning && Component.PendingOperations == 0);
+        SpinUntil(() => !mutation.IsRunning);
+        Assert.Equal(42, mutation.Latest);
         Assert.True(mutation.TryPublish(out var result));
         Assert.Equal(42, result);
+        Assert.Equal(42, mutation.Latest);
         Assert.Equal(0, Component.PendingOperations);
         Assert.False(mutation.IsRunning);
 
         mutation.Dispose();
+    }
+
+    [Fact]
+    public void AMutationCanRestartWithNewWorkAndCancelWithoutFailing()
+    {
+        var first = new SlowWork();
+        var second = new SlowWork();
+        using var mutation = new Mutation<int>();
+
+        mutation.Run(_ => first.Task);
+        Assert.True(mutation.IsRunning);
+
+        mutation.Restart(_ => second.Task);
+        first.Finish(1);
+        Thread.Sleep(30);
+        Assert.Null(mutation.Error);
+        Assert.Equal(0, mutation.Latest);
+        Assert.True(mutation.IsRunning);
+
+        second.Finish(9);
+        SpinUntil(() => !mutation.IsRunning);
+        Assert.Equal(9, mutation.Latest);
+
+        mutation.Cancel();
+        Assert.Equal(0, mutation.Latest);
+        Assert.Null(mutation.Error);
+    }
+
+    [Fact]
+    public void ActionButtonAndAddPageWireComponentsAndOperationsCleanly()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        var builder = CuiApplication.CreateBuilder();
+        builder.AddPage<Asleep>();
+        builder.AddPage<Live>();
+        using var built = builder.Build();
+
+        var pages = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions
+            .GetServices<Component>(built.Services)
+            .ToArray();
+        Assert.Equal(2, pages.Length);
+        Assert.Same(
+            Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Asleep>(built.Services),
+            pages[0]);
+
+        int runs = 0;
+        bool fail = true;
+        using var save = new Mutation(_ =>
+        {
+            Interlocked.Increment(ref runs);
+            return fail
+                ? System.Threading.Tasks.Task.FromException(new InvalidOperationException("disk full"))
+                : System.Threading.Tasks.Task.CompletedTask;
+        });
+
+        using var app = HeadlessApp.Start(ui =>
+        {
+            ui.ActionButton("Save", save, loadingLabel: "Saving", retryLabel: "Retry save");
+        }, 320, 160);
+
+        app.FindButton("Save").ClickAndFrame();
+        SpinUntil(() => !save.IsRunning);
+        app.Frame();
+
+        Assert.Equal(1, runs);
+        Assert.Contains(app.Tree.Descendants(), node => node.Kind == "Badge" && node.Text == "disk full");
+
+        fail = false;
+        app.FindButton("Retry save").ClickAndFrame();
+        SpinUntil(() => !save.IsRunning);
+        app.Frame();
+
+        Assert.Equal(2, runs);
+        Assert.Null(save.Error);
     }
 
     [Fact]

@@ -1,8 +1,8 @@
 // Explicit, not inherited from the enclosing namespace: `dotnet new` renames
 // CuiSharp.App to the chosen name, and then `Ui` no longer resolves through nesting.
 using CuiSharp;
-using CuiSharp.App.Pages;
 using CuiSharp.Hosting;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CuiSharp.App;
 
@@ -14,14 +14,31 @@ namespace CuiSharp.App;
 /// reads as three regions: <c>dotnet cui tree</c> nests each control under the one it belongs to,
 /// and the layout state behind each region has an id that survives a resize.
 /// </remarks>
-public sealed class App(TodoPage todos, MarketsPage markets) : Component
+public sealed class App : Component
 {
     private static readonly string[] Modes = ["Light", "Dark"];
     private static readonly string[] ModeIcons = [Icons.Sun, Icons.Moon];
 
-    private readonly Component[] _pages = [todos, markets];
-    private readonly string[] _titles = [todos.Title, markets.Title];
+    private readonly Component[] _pages;
+    private readonly string[] _titles;
     private int _index;
+
+    /// <summary>Creates the shell from the given screens.</summary>
+    public App(params ReadOnlySpan<Component> pages)
+    {
+        _pages = [.. pages];
+        _titles = new string[_pages.Length];
+        for (var i = 0; i < _pages.Length; i++)
+        {
+            _titles[i] = _pages[i].Title;
+        }
+    }
+
+    /// <summary>Resolves every screen registered with <see cref="CuiApplicationBuilder.AddPage{TPage}"/>.</summary>
+    [ActivatorUtilitiesConstructor]
+    public App(IEnumerable<Component> pages) : this([.. pages])
+    {
+    }
 
     protected override void Draw(Ui ui)
     {

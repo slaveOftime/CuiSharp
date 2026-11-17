@@ -136,13 +136,98 @@ public abstract class Component : IDisposable
     }
 }
 
-/// <summary>Draws one component inside the current container.</summary>
+/// <summary>Draws a child component or a background-operation button inside the current container.</summary>
 public static class ComponentExtensions
 {
     extension(Ui ui)
     {
         /// <summary>Draws <paramref name="component"/>, with its own error boundary.</summary>
         public void Component(Component component) => component.Render(ui);
+
+        /// <summary>
+        /// Draws a button bound to <paramref name="mutation"/>: shows a spinner while running,
+        /// surfaces <see cref="Mutation.Error"/> as a danger badge with a retry button when it
+        /// fails, and calls <see cref="Mutation.Run()"/> when clicked.
+        /// </summary>
+        public bool ActionButton(
+            UiText label,
+            Mutation mutation,
+            ButtonOpts opts = default,
+            UiText loadingLabel = default,
+            UiText retryLabel = default)
+        {
+            ArgumentNullException.ThrowIfNull(mutation);
+            if (!DrawActionButton(ui, label, mutation.IsRunning, mutation.Error, opts, loadingLabel, retryLabel))
+                return false;
+
+            mutation.Run();
+            return true;
+        }
+
+        /// <summary>
+        /// Draws a button bound to <paramref name="mutation"/>: shows a spinner while running,
+        /// surfaces <see cref="Mutation{T}.Error"/> as a danger badge with a retry button when it
+        /// fails, and calls <see cref="Mutation{T}.Run()"/> when clicked.
+        /// </summary>
+        public bool ActionButton<T>(
+            UiText label,
+            Mutation<T> mutation,
+            ButtonOpts opts = default,
+            UiText loadingLabel = default,
+            UiText retryLabel = default)
+        {
+            ArgumentNullException.ThrowIfNull(mutation);
+            if (!DrawActionButton(ui, label, mutation.IsRunning, mutation.Error, opts, loadingLabel, retryLabel))
+                return false;
+
+            mutation.Run();
+            return true;
+        }
+
+        /// <summary>
+        /// Draws a button bound to <paramref name="progressive"/>: shows a spinner while running,
+        /// surfaces <see cref="Progressive{T}.Error"/> as a danger badge with a retry button when
+        /// it fails, and calls <see cref="Progressive{T}.Run()"/> when clicked.
+        /// </summary>
+        public bool ActionButton<T>(
+            UiText label,
+            Progressive<T> progressive,
+            ButtonOpts opts = default,
+            UiText loadingLabel = default,
+            UiText retryLabel = default)
+            where T : class
+        {
+            ArgumentNullException.ThrowIfNull(progressive);
+            if (!DrawActionButton(ui, label, progressive.IsRunning, progressive.Error, opts, loadingLabel, retryLabel))
+                return false;
+
+            progressive.Run();
+            return true;
+        }
+    }
+
+    private static bool DrawActionButton(
+        Ui ui,
+        UiText label,
+        bool isRunning,
+        Exception? error,
+        ButtonOpts opts,
+        UiText loadingLabel,
+        UiText retryLabel)
+    {
+        if (error is not null)
+        {
+            ui.Badge(error.Message, new() { Tone = Tone.Danger });
+            return ui.Button(retryLabel.IsEmpty ? label : retryLabel, opts with { Variant = ButtonVariant.Danger });
+        }
+
+        if (isRunning)
+        {
+            ui.Button(loadingLabel.IsEmpty ? label : loadingLabel, opts with { Loading = true });
+            return false;
+        }
+
+        return ui.Button(label, opts);
     }
 }
 

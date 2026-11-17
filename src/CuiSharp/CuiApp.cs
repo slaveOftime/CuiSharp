@@ -232,6 +232,12 @@ public sealed unsafe class CuiApp : IDisposable
     }
 
     /// <summary>
+    /// Creates a window with default <see cref="CuiAppOptions"/> and calls <paramref name="draw"/>
+    /// once per frame until the window closes.
+    /// </summary>
+    public static int Run(DrawFn draw) => Run(new CuiAppOptions(), draw, args: null);
+
+    /// <summary>
     /// Creates a window and calls <paramref name="draw"/> once per frame until
     /// the window closes. This is the whole host: no XAML, no dispatcher.
     /// </summary>
@@ -248,6 +254,54 @@ public sealed unsafe class CuiApp : IDisposable
     /// </code>
     /// </example>
     public static int Run(CuiAppOptions options, DrawFn draw) => Run(options, draw, args: null);
+
+    /// <summary>
+    /// Runs a root <see cref="Component"/> in a window using <see cref="Component.Title"/> as the
+    /// default window title, without requiring a dependency injection container.
+    /// </summary>
+    public static int Run(Component root)
+    {
+        ArgumentNullException.ThrowIfNull(root);
+        return Run(new CuiAppOptions { Title = root.Title }, root, args: null);
+    }
+
+    /// <summary>
+    /// Runs a root <see cref="Component"/> in a window with its error boundary,
+    /// <see cref="FrameStats"/> and <see cref="Component.WantsFrames"/> contract, without requiring
+    /// a dependency injection container.
+    /// </summary>
+    public static int Run(CuiAppOptions options, Component root) => Run(options, root, args: null);
+
+    /// <summary>
+    /// Runs a root <see cref="Component"/> with explicit command-line arguments.
+    /// </summary>
+    internal static int Run(CuiAppOptions options, Component root, string[]? args)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(root);
+
+        try
+        {
+            return Run(options, ui => HostComponent(root, ui), args);
+        }
+        finally
+        {
+            FrameTrace.Close();
+        }
+    }
+
+    // One frame of a root component: draw the tree, record what it cost. The frame boundary —
+    // applying finished work and keeping the loop awake — belongs to RunThunk.
+    private static void HostComponent(Component root, Ui ui)
+    {
+        long allocated = FrameStats.Begin();
+
+        root.Render(ui);
+
+        FrameStats.End(allocated);
+
+        FrameTrace.Frame();
+    }
 
     /// <summary>
     /// <see cref="Run(CuiAppOptions, DrawFn)"/>, told the arguments the app itself was started

@@ -9,12 +9,6 @@
 #:property DebugType=none
 #:property OutputType=WinExe
 #:property ApplicationIcon=disk.ico
-#:property EventSourceSupport=false
-#:property HttpActivityPropagationSupport=false
-#:property MetadataUpdaterSupport=false
-#:property UseSystemResourceKeys=true
-#:property StackTraceSupport=false
-#:property MetricsSupport=false
 
 using System.Diagnostics;
 using System.Globalization;

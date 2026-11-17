@@ -2,10 +2,11 @@
 
   <PropertyGroup>
     <!--
-      net10.0 only. The library is statically linked into the app by NativeAOT,
-      so a net10 build also serves an app that targets a later TFM.
+      Multi-targeted for net10.0 and net11.0 so both .NET 10 LTS and .NET 11 apps
+      (including file-based apps on the .NET 11 SDK) compile and link against their
+      native target framework.
     -->
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks>$(CuiSharpTargetFrameworks)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>CuiSharp</RootNamespace>
     <AssemblyName>CuiSharp</AssemblyName>
@@ -137,7 +138,7 @@
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);CuiSharpPackNativeProvenance</TargetsForTfmSpecificContentInPackage>
   </PropertyGroup>
 
-  <Target Name="CuiSharpPackNativeProvenance">
+  <Target Name="CuiSharpPackNativeProvenance" Condition="'$(TargetFramework)' == 'net10.0'">
     <ItemGroup>
       <_CuiPackagedNative Include="$(_CuiNativeWin)cui.dll" Condition="'$(_CuiNativeWin)' != '' And Exists('$(_CuiNativeWin)cui.dll')" Rid="win-x64" />
       <_CuiPackagedNative Include="$(_CuiNativeWin)cui.lib" Condition="'$(_CuiNativeWin)' != '' And Exists('$(_CuiNativeWin)cui.lib')" Rid="win-x64" />

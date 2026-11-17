@@ -47,7 +47,8 @@ public sealed class FrameAnalyzer : DiagnosticAnalyzer
             // CUI007: allocations in a frame method.
             start.RegisterSyntaxNodeAction(ctx => CheckAllocation(ctx, types),
                 SyntaxKind.ArrayCreationExpression, SyntaxKind.ImplicitArrayCreationExpression,
-                SyntaxKind.ObjectCreationExpression, SyntaxKind.AddExpression);
+                SyntaxKind.ObjectCreationExpression, SyntaxKind.AddExpression,
+                SyntaxKind.ForEachStatement);
         });
     }
 
@@ -199,6 +200,12 @@ public sealed class FrameAnalyzer : DiagnosticAnalyzer
                 ITypeSymbol? right = context.SemanticModel.GetTypeInfo(binary.Right, context.CancellationToken).Type;
                 if (left?.SpecialType != SpecialType.System_String && right?.SpecialType != SpecialType.System_String) return;
                 context.ReportDiagnostic(Diagnostic.Create(Diagnostics.AllocationInFrame, binary.GetLocation(), "string concatenation"));
+                break;
+            case ForEachStatementSyntax forEach:
+                ForEachStatementInfo info = context.SemanticModel.GetForEachStatementInfo(forEach);
+                if (info.GetEnumeratorMethod?.ReturnType.TypeKind != TypeKind.Interface) return;
+                context.ReportDiagnostic(Diagnostic.Create(Diagnostics.AllocationInFrame, forEach.Expression.GetLocation(),
+                    "foreach over an interface enumerator (use ui.Keyed or an indexed for loop)"));
                 break;
         }
     }

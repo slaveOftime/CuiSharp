@@ -8,13 +8,22 @@ different things.
 
 ### Added
 
-- **`Progressive<T>`** is the many-report sibling of `Mutation` for work with no single result: a
-  scan's counts, a download's bytes, a spectrum table, a live feed. The producer runs on the pool and
-  calls `publish` as it goes; `Draw` reads `Latest` with a volatile load, so there is no
-  `CancellationTokenSource`, `Volatile` field or `RequestWakeup` cadence to hand-roll. `Run` starts
-  if idle, `Restart` supersedes a stale producer (with an optional initial snapshot), `Cancel` stops
-  a run while keeping the instance reusable, `FrameRate` throttles the wake-up, and a completion
-  wakes the window and draws one final frame. `hosting.md` and `SKILL.md` show it beside `Mutation`.
+- **`Progressive<T>` and unified `Mutation` lifecycle.** `Progressive<T>` is the many-report sibling
+  of `Mutation` for work with no single result: a scan's counts, a download's bytes, a spectrum
+  table, a live feed. The producer runs on the pool and calls `publish` as it goes; `Draw` reads
+  `Latest` with a volatile load, so there is no `CancellationTokenSource`, `Volatile` field or
+  `RequestWakeup` cadence to hand-roll. Both `Mutation` and `Progressive<T>` now share the same
+  verbs (`Run`, `Restart`, `Cancel`, `Dispose`, `Latest`, `IsRunning`, `Error`), and
+  `ui.ActionButton(label, op)` binds a button's loading, error badge and retry states in one call.
+- **Zero-allocation `ui.Keyed` over `IReadOnlyList<T>` and `ReadOnlySpan<T>`.** `ui.Keyed(items, static x => x.Id)`
+  now accepts `IReadOnlyList<T>`, `List<T>` and `ReadOnlySpan<T>` (with an optional `Func<T, int>`
+  selector or index fallback), indexing lists directly so `foreach` never boxes an interface
+  enumerator. CUI007 now flags bare `foreach` over an interface enumerator in a frame.
+- **Component hosting without DI (`CuiApp.Run([options,] component)`) and `builder.AddPage<TPage>()`.**
+  A single-file or mini app can run a `Component` directly through `CuiApp.Run` without pulling in
+  the DI container, and a hosted multi-page app registers screens once with `builder.AddPage<TPage>()`.
+- **Multi-targeted for `net10.0` and `net11.0`.** `CuiSharp`, `CuiSharp.Testing` and `CuiSharp.Tools`
+  now ship native `net10.0` and `net11.0` targets.
 - **`ui.UseSystemFontFallbacks()`** installs this machine's faces for CJK, Cyrillic, Greek, Arabic,
   Hebrew, Thai, Devanagari and emoji in one call, so a folder name, a download name or a music tag
   written in another script draws instead of disappearing. A script the bundled Latin faces already

@@ -4,6 +4,7 @@
 // leave one small native executable beside this file, with no .NET on the target.
 // The Windows target is what brings in the MediaPlayer this app plays through.
 #:property TargetFramework=net10.0-windows10.0.19041.0
+#:property LangVersion=preview
 #:property PublishAot=true
 #:property OptimizationPreference=Size
 #:property InvariantGlobalization=true
@@ -11,12 +12,6 @@
 #:property DebugType=none
 #:property OutputType=WinExe
 #:property ApplicationIcon=music.ico
-#:property EventSourceSupport=false
-#:property HttpActivityPropagationSupport=false
-#:property MetadataUpdaterSupport=false
-#:property UseSystemResourceKeys=true
-#:property StackTraceSupport=false
-#:property MetricsSupport=false
 
 using System.Buffers.Binary;
 using System.Diagnostics;

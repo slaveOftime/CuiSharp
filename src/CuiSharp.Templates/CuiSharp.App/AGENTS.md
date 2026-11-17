@@ -5,19 +5,17 @@ terminal.
 
 ## Add a screen
 
-Four edits, and the compiler names what is left:
+Two edits, and the shell picks the new screen up in registration order:
 
 1. `Pages/<Name>Page.cs` — a `Component` whose state is fields and whose `Draw(Ui ui)` draws them.
-2. `Program.cs` — `builder.Services.AddSingleton<<Name>Page>();`
-3. `App.cs` — the page in the primary constructor, then in `_pages` and `_titles`.
-4. `*.Tests` — every `new App(...)` in the tests takes the new page (the compiler lists them).
+2. `Program.cs` — `builder.AddPage<<Name>Page>();`
 
 ## Rules
 
-1. **`Draw(Ui ui)` is synchronous and allocates 0 B in steady state.** Never `await`, block (`.Result`, `.Wait()`, `Thread.Sleep`), use LINQ, allocate per-frame arrays/closures, or format strings before passing them (`$"..."` in a `UiText` argument formats into the frame arena). Iterate `IReadOnlyList<T>` by index (`for`), not `foreach`.
+1. **`Draw(Ui ui)` is synchronous and allocates 0 B in steady state.** Never `await`, block (`.Result`, `.Wait()`, `Thread.Sleep`), use LINQ, allocate per-frame arrays/closures, or format strings before passing them (`$"..."` in a `UiText` argument formats into the frame arena). Iterate `IReadOnlyList<T>` with `foreach (var item in ui.Keyed(items, static x => x.Id))` or by index (`for`) — never bare `foreach` over an interface, which boxes its enumerator (CUI007).
 2. **State lives in component fields.** Mutate fields directly; the next frame draws the change. The theme is the exception, because CUI owns it: `ui.Theme` / `ui.ToggleTheme()`.
-3. **Scopes & widget IDs.** Dispose every layout/container/id scope with `using`. Guard conditional scopes (`OpenScope` from `Dialog`, `Menu`, `Table`, …) with `if (scope)`. Inside a loop, wrap repeating rows in `using (ui.Id(item.Id))` (or `using (ui.Automation("..."))` when only a stable automation id is needed).
-4. **Async work uses `Mutation` / `Mutation<T>`.** Hold it in a `readonly` field, start with `Run()`, read `IsRunning` and `Error` in `Draw`, and let the `apply` callback change state on the UI thread before the next frame.
+3. **Scopes & widget IDs.** Dispose every layout/container/id scope with `using`. Guard conditional scopes (`OpenScope` from `Dialog`, `Menu`, `Table`, …) with `if (scope)`. Inside a loop, use `ui.Keyed(items, static item => item.Id)` or wrap repeating rows in `using (ui.Id(item.Id))` (or `using (ui.Automation("..."))` when only a stable automation id is needed).
+4. **Async work uses `Mutation` / `Mutation<T>` (one result) or `Progressive<T>` (reports as it runs).** Hold it in a `readonly` field, bind a button with `ui.ActionButton("Save", _save)` or start with `Run()` / `Restart(...)`, and read `Latest`, `IsRunning` and `Error` in `Draw` (or pass an `apply` callback to `Mutation<T>`).
 5. **Self-updating screens set `protected override bool WantsFrames => true`.** Otherwise the window sleeps between inputs.
 6. **Name the container that bounds a region** (`header`, `page`, `footer`, `preferences`), so `dotnet cui tree` nests its controls under it and a query can reach it. Do not reuse a control's word: a `Tab "Settings"` outranks a `Column "settings"` in a query, so bare queries no longer identify the region reliably. Use distinct region names.
 

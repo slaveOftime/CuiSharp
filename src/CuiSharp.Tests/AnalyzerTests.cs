@@ -413,6 +413,12 @@ public class AnalyzerTests
                     {
                         using (ui.Id(i)) ui.Input("name", ref rows[i]);
                     }
+
+                    for (int i = 0; i < rows.Length; i++)
+                    {
+                        using var _ = ui.Id(i);
+                        ui.Input("name", ref rows[i]);
+                    }
                 }
             }
             """);
@@ -519,17 +525,28 @@ public class AnalyzerTests
         string[] found = await AnalyzeAsync(Prologue + """
             public static class Page
             {
-                public static void Draw(Ui ui, int count)
+                public static void Draw(Ui ui, int count, System.Collections.Generic.IReadOnlyList<int> items)
                 {
                     var values = new float[count];
                     var label = "rows: " + count;
                     ui.Text(label);
                     _ = values;
+
+                    foreach (int item in items)
+                    {
+                        _ = item;
+                    }
+
+                    foreach (int item in ui.Keyed(items, static x => x))
+                    {
+                        _ = item;
+                    }
                 }
             }
             """);
 
-        Assert.Equal(2, found.Count(f => f.StartsWith("CUI007", StringComparison.Ordinal)));
+        // Array, string concatenation and interface-enumerator foreach: three reports; ui.Keyed is 0 B.
+        Assert.Equal(3, found.Count(f => f.StartsWith("CUI007", StringComparison.Ordinal)));
     }
 
     [Fact]

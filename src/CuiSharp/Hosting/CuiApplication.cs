@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CuiSharp.Hosting;
@@ -43,15 +44,19 @@ public sealed class CuiApplication : IDisposable
     public CuiWindow? Window { get; private set; }
 
     /// <summary>
-    /// Resolves the root component and runs the UI loop on the calling thread until
-    /// the window closes. The window owns the loop: CUI's callback drives every
-    /// frame, including the frames the OS asks for while a window is being resized.
+    /// Resolves the root component (or constructs it from the container's services) and runs the
+    /// UI loop on the calling thread until the window closes. The window owns the loop: CUI's
+    /// callback drives every frame, including the frames the OS asks for while a window is being resized.
     /// </summary>
-    public int Run<TRoot>() where TRoot : Component
+    public int Run<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TRoot>()
+        where TRoot : Component
     {
-        // The container owns the root: it was registered in it, so disposing the
-        // application disposes the component exactly once.
-        var root = _services.GetRequiredService<TRoot>();
+        // When the root was registered in the container, the container owns and disposes it;
+        // otherwise construct it from the container's services and dispose it when the run ends.
+        if (_services.GetService<TRoot>() is { } registered)
+            return Run(registered);
+
+        using var root = ActivatorUtilities.CreateInstance<TRoot>(_services);
         return Run(root);
     }
 
@@ -88,7 +93,7 @@ public sealed class CuiApplication : IDisposable
             },
         };
 
-        return CuiApp.Run(window, ui => Host(root, ui), _args);
+        return CuiApp.Run(window, root, _args);
     }
 
     /// <inheritdoc />
@@ -96,19 +101,6 @@ public sealed class CuiApplication : IDisposable
     {
         FrameTrace.Close();
         _services.Dispose();
-    }
-
-    // One frame: draw the tree, record what it cost. The frame boundary — applying finished work
-    // and keeping the loop awake — belongs to CuiApp.Run, which wraps every draw callback alike.
-    private static void Host(Component root, Ui ui)
-    {
-        long allocated = FrameStats.Begin();
-
-        root.Render(ui);
-
-        FrameStats.End(allocated);
-
-        FrameTrace.Frame();
     }
 }
 
@@ -127,6 +119,19 @@ public sealed class CuiApplicationBuilder
 
     /// <summary>Window options: title, size, renderer, theme, accent.</summary>
     public CuiAppOptions Window { get; set; } = new();
+
+    /// <summary>
+    /// Registers <typeparamref name="TPage"/> as a singleton both under its own type and as a
+    /// <see cref="Component"/>, so a shell that takes <see cref="IEnumerable{T}"/> of
+    /// <see cref="Component"/> receives every registered page in order without listing them twice.
+    /// </summary>
+    public CuiApplicationBuilder AddPage<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TPage>()
+        where TPage : Component
+    {
+        _services.AddSingleton<TPage>();
+        _services.AddSingleton<Component>(static sp => sp.GetRequiredService<TPage>());
+        return this;
+    }
 
     /// <summary>Builds the container. The window itself is created by <see cref="CuiApplication.Run{TRoot}"/>.</summary>
     public CuiApplication Build() => new(_services.BuildServiceProvider(new ServiceProviderOptions

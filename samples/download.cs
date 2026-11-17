@@ -10,12 +10,6 @@
 #:property DebugType=none
 #:property OutputType=WinExe
 #:property ApplicationIcon=download.ico
-#:property EventSourceSupport=false
-#:property HttpActivityPropagationSupport=false
-#:property MetadataUpdaterSupport=false
-#:property UseSystemResourceKeys=true
-#:property StackTraceSupport=false
-#:property MetricsSupport=false
 
 // Mono.Nat is MonoTorrent's optional UPnP helper. This app leaves port mapping
 // off (outbound peers, DHT and trackers are enough), so the package's trim

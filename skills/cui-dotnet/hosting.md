@@ -18,10 +18,12 @@ return app.Run<TodoPage>();
 | Type | Purpose |
 |---|---|
 | `CuiApplication` | `CreateBuilder`, `Build`, `Run<TRoot>()` / `Run(component)` on the calling thread |
-| `CuiApplicationBuilder` | `Services`, `Configuration`, `Logging`, `Window`, `Args` |
+| `CuiApplicationBuilder` | `Services`, `AddPage<TPage>()`, `Window`, `Args` |
 | `Component` | `Draw(Ui)`, `OnInitialized`, `ComponentToken`, an inline error boundary, `WantsFrames` |
+| `CuiApp.Run([options,] component)` | runs a root `Component` in a window without a DI container |
 | `ui.Component(child)` | draws a child component inside the current container |
-| `Mutation` / `Mutation<T>` | one async operation: `Run`, `IsRunning`, `Error`, `TryPublish` |
+| `ui.ActionButton(label, op, ...)` | draws a button bound to a `Mutation` or `Progressive` (loading, error badge, retry) |
+| `Mutation` / `Mutation<T>` | one async operation: `Run` / `Restart` / `Cancel`, `Latest`, `IsRunning`, `Error` |
 | `Progressive<T>` | work that reports as it runs: `Run` / `Restart` / `Cancel`, `Latest`, `IsRunning`, `Error`, `FrameRate` |
 
 A component is the screen: fields for state, a `Draw(Ui)` method, and the mutations it owns. There
@@ -75,11 +77,17 @@ public sealed class Editor(Notes notes) : Component
 
     protected override void Draw(Ui ui)
     {
-        if (ui.Button("Save", new() { Loading = _save.IsRunning })) _save.Run();
-        if (_save.Error is { } error) ui.Badge(error.Message, new() { Tone = Tone.Danger });
+        ui.ActionButton("Save", _save, new() { Icon = Icons.Save });
     }
 }
 ```
+
+`ui.ActionButton` draws the button, turns its spinner on while `_save.IsRunning`, and when
+`_save.Error` is set draws a danger badge plus a retry button. When custom markup is needed, read
+`IsRunning`, `Error` and `Latest` directly (`if (ui.Button("Save", new() { Loading = _save.IsRunning })) _save.Run();`).
+Like `Progressive<T>`, a `Mutation` also supports `Run(work)`, `Restart()`, `Restart(work)` and
+`Cancel()`, and `Mutation<T>.Latest` holds the last completed result so a component that does not
+need an `apply` callback can read `_load.Latest` straight from `Draw`.
 
 The work runs on the pool — `Run` hands it to `Task.Run`, so even the synchronous prefix of an
 `async` method (a parse, a file read before the first `await`) is off the frame. It never touches

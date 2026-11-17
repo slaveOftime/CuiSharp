@@ -93,7 +93,26 @@ public unsafe ref partial struct Ui
     /// <summary>Enumerates items, each inside its own id scope derived from <paramref name="key"/>.</summary>
     public KeyedScope<T> Keyed<T>(T[] items, KeyFn<T> key)
     {
+        ArgumentNullException.ThrowIfNull(items);
         ArgumentNullException.ThrowIfNull(key);
+        return new KeyedScope<T>(Handle, items, key);
+    }
+
+    /// <summary>
+    /// Enumerates a span of items, each inside its own id scope derived from <paramref name="key"/>
+    /// (or the item index when <paramref name="key"/> is omitted).
+    /// </summary>
+    public KeyedScope<T> Keyed<T>(ReadOnlySpan<T> items, Func<T, int>? key = null) =>
+        new(Handle, items, key);
+
+    /// <summary>
+    /// Enumerates a read-only list of items without boxing an enumerator, each inside its own id
+    /// scope derived from <paramref name="key"/> (or the item index when <paramref name="key"/> is
+    /// omitted). Pass a <c>static</c> lambda (<c>static item =&gt; item.Id</c>) to allocate 0 B.
+    /// </summary>
+    public KeyedScope<T> Keyed<T>(IReadOnlyList<T> items, Func<T, int>? key = null)
+    {
+        ArgumentNullException.ThrowIfNull(items);
         return new KeyedScope<T>(Handle, items, key);
     }
 
