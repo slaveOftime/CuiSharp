@@ -369,6 +369,7 @@ public class HeadlessApp : IDisposable
         int drawn = 0;
         while (drawn < maxFrames)
         {
+            _surface.WaitForSystemFonts();
             Frame(1, dt);
             drawn++;
             if (!Animating) break;

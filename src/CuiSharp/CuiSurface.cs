@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using CuiSharp.Hosting;
 using CuiSharp.Interop;
 
@@ -77,6 +76,13 @@ public sealed unsafe partial class CuiSurface : IDisposable
 
     /// <summary>The native context, for the input surface this type also exposes.</summary>
     internal nint Handle => _ctx;
+
+    /// <summary>
+    /// Waits for an in-flight system-font search before a headless settle loop draws its next
+    /// frame: <see cref="Hosting.HeadlessApp.Settle"/> advances simulated time without wall-clock
+    /// pauses, so without this it would burn its frame budget before the pool finished probing.
+    /// </summary>
+    internal void WaitForSystemFonts() => _frame.SystemFontFallbacks?.Wait();
 
     /// <summary>A fresh stack-only drawing context for the current frame.</summary>
     public Ui Ui

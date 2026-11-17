@@ -544,11 +544,15 @@ public void Draw(Ui ui)
 }
 ```
 
-The first call probes candidate system files for CJK, Cyrillic, Greek, Arabic, Hebrew, Thai,
-Devanagari and emoji, skipping samples the bundled faces already draw. Later calls on the same
-UI context do no IO, load no fonts and allocate 0 B — no `_fonts` flag is needed. Each new window
-or test surface initializes independently. `ui.UseSystemFontFallback("中文")` searches for one
-sample and also caches its result, reusing faces installed by either helper.
+Asking is pixels — a font load and a render per candidate, because a missing glyph still reports a
+`.notdef` advance — so the search runs on the pool instead of in the frame that asks for it. The
+first call starts it and returns 0; the frames that follow draw the bundled faces, so the window
+opens at once instead of waiting with nothing on screen; and the frame after the search lands loads
+the faces it chose for CJK, Cyrillic, Greek, Arabic, Hebrew, Thai, Devanagari and emoji. Later calls
+on the same UI context do no IO, load no fonts and allocate 0 B — no `_fonts` flag is needed. Each
+new window or test surface searches independently, and a script the bundled faces already draw is
+skipped. `ui.UseSystemFontFallback("中文")` is the synchronous single-sample form: it searches for
+one sample inside the frame and caches the result, reusing faces installed by either helper.
 
 A loaded face costs memory for the life of the window. Searches that find nothing are cached for
 that lifetime too; fonts installed on the OS later are picked up by a new context. The return value
@@ -747,9 +751,9 @@ not in the app's folder.
   is exactly the answer you asked for.
 - Text in a script the bundled Latin faces do not cover draws nothing at all, with no box and no
   warning. `ui.UseSystemFontFallbacks()` installs this machine's faces for CJK, Cyrillic, Greek,
-  Arabic, Hebrew, Thai, Devanagari and emoji; call directly in Draw (cached per context) and check
-  the scripts you ship.
-  `ui.UseSystemFontFallback("中文")` is the single-sample form.
+  Arabic, Hebrew, Thai, Devanagari and emoji; call directly in Draw (the search runs on the pool the
+  first time and is a cached read per context after) and check the scripts you ship.
+  `ui.UseSystemFontFallback("中文")` is the synchronous single-sample form.
 - The app serves this itself (`CUISHARP_HEADLESS=1`), so any app works — `dotnet cui` passes
   `-p:CuiSharpHeadless=true` to the builds it runs. A **published** app carries the channel only when
   it was published for it, because the package compiles it out of a self-contained AOT publish to
