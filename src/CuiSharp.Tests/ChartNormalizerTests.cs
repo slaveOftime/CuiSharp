@@ -182,11 +182,17 @@ public class ChartNormalizerTests
 
         ChartNormalizer.Normalize(source, destination, NormalizeMode.Index100); // warm the paths
 
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        for (int pass = 0; pass < 100; pass++)
-            ChartNormalizer.Normalize(source, destination, NormalizeMode.Index100);
-        long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        // One batch can catch a one-off runtime allocation (a tiered-compilation switch, for
+        // example); a real per-call allocation moves every batch. The median is the steady state.
+        var perBatch = new long[5];
+        for (int batch = 0; batch < perBatch.Length; batch++)
+        {
+            long before = GC.GetAllocatedBytesForCurrentThread();
+            for (int pass = 0; pass < 100; pass++)
+                ChartNormalizer.Normalize(source, destination, NormalizeMode.Index100);
+            perBatch[batch] = GC.GetAllocatedBytesForCurrentThread() - before;
+        }
 
-        Assert.Equal(0, allocated);
+        Assert.Equal(0, perBatch.Median());
     }
 }

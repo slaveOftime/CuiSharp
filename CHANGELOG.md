@@ -38,6 +38,10 @@ different things.
 
 ### Fixed
 
+- **A completion and the running count are observed in a fixed order.** `PendingWork.Settle` now
+  records the one frame a completion is owed before it drops the running count, so a host that sees
+  `PendingOperations == 0` also sees `PendingWork.Any`; the two counters could be read the other way
+  on a fast scheduler, which is what made the hosting test flaky on `ubuntu-latest`.
 - **The frame boundary is the host's, not a component's.** `Mutation`'s `apply` callback now runs
   in a plain `CuiApp.Run` app and in the manual `CuiApp.Create`/`Frame` loop, not only in
   `CuiApplication` and tests: every host enters a frame through the same drain/wake/reset pair, so a

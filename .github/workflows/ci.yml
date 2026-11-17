@@ -78,8 +78,8 @@ jobs:
         uses: actions/setup-dotnet@v6.1.0
         with:
           dotnet-version: |
-            8.0.x
             10.0.x
+            11.0.x
 
       - name: Check Linux dependency provisioning
         if: matrix.os == 'ubuntu-latest'
@@ -130,6 +130,18 @@ jobs:
       - name: Build
         run: dotnet build CuiSharp.slnx --configuration Release --no-restore -warnaserror
 
+      # setup-dotnet installs both SDKs and the muxer selects the newest, so the multi-target
+      # projects must have produced both assemblies. Without this, a runner that silently kept
+      # a .NET 10-only band would still build, and the net11.0 half would never be compiled.
+      - name: Both target frameworks compiled
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $missing = 'net10.0', 'net11.0' | Where-Object {
+            -not (Test-Path "src/CuiSharp/bin/Release/$_/CuiSharp.dll")
+          }
+          if ($missing) { throw "CuiSharp did not build: $($missing -join ', ')" }
+
       - name: Test
         run: dotnet test CuiSharp.slnx --configuration Release --no-build
 
@@ -178,7 +190,9 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v6.1.0
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: |
+            10.0.x
+            11.0.x
 
       - name: Ensure Linux dependencies
         if: runner.os == 'Linux'
@@ -258,7 +272,9 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v6.1.0
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: |
+            10.0.x
+            11.0.x
 
       - name: Submodule revision
         id: cui
@@ -392,7 +408,9 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v6.1.0
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: |
+            10.0.x
+            11.0.x
 
       - name: Submodule revision
         id: cui
@@ -485,7 +503,9 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v6.1.0
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: |
+            10.0.x
+            11.0.x
 
       - name: Ensure Linux AOT dependencies
         if: runner.os == 'Linux'
@@ -595,7 +615,9 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v6.1.0
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: |
+            10.0.x
+            11.0.x
 
       - name: Build native
         shell: pwsh
@@ -637,7 +659,9 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v6.1.0
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: |
+            10.0.x
+            11.0.x
 
       - name: Regenerate from the pinned headers and verify
         run: pwsh tools/regen.ps1 -NoNative -NoDiff -NoTest

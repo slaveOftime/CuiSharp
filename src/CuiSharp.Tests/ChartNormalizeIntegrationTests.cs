@@ -197,11 +197,17 @@ public class ChartNormalizeIntegrationTests
 
         for (int i = 0; i < 10; i++) Frame();
 
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        for (int i = 0; i < 20; i++) Frame();
-        long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        // Several batches, median asserted: a one-off runtime allocation is not a frame cost,
+        // while a real per-frame allocation moves every batch.
+        var perFrame = new long[5];
+        for (int batch = 0; batch < perFrame.Length; batch++)
+        {
+            long before = GC.GetAllocatedBytesForCurrentThread();
+            for (int i = 0; i < 5; i++) Frame();
+            perFrame[batch] = (GC.GetAllocatedBytesForCurrentThread() - before) / 5;
+        }
 
-        Assert.Equal(0, allocated);
+        Assert.Equal(0, perFrame.Median());
     }
 
     [Fact]

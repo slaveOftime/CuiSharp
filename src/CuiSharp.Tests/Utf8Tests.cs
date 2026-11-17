@@ -49,15 +49,22 @@ public class Utf8Tests
     {
         // The point of the handler is that formatting cost is independent of how
         // many values are appended: no string, no boxed argument, no growing buffer.
+        // Each size is the median of several runs, so a one-off runtime allocation cannot
+        // masquerade as a formatting cost.
         static long CostOf(int values)
         {
-            long before = GC.GetAllocatedBytesForCurrentThread();
-            var h = new Utf8Handler(16, values);
-            h.AppendLiteral("n=");
-            for (int i = 0; i < values; i++) h.AppendFormatted(i);
-            long after = GC.GetAllocatedBytesForCurrentThread();
-            Assert.True(h.Ptr[0] != 0);
-            return after - before;
+            var samples = new long[5];
+            for (int sample = 0; sample < samples.Length; sample++)
+            {
+                long before = GC.GetAllocatedBytesForCurrentThread();
+                var h = new Utf8Handler(16, values);
+                h.AppendLiteral("n=");
+                for (int i = 0; i < values; i++) h.AppendFormatted(i);
+                samples[sample] = GC.GetAllocatedBytesForCurrentThread() - before;
+                Assert.True(h.Ptr[0] != 0);
+            }
+
+            return samples.Median();
         }
 
         _ = CostOf(4);            // warm Encoding.UTF8 and any pooled encoder

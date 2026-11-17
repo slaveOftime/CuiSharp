@@ -282,16 +282,20 @@ internal static class PendingWork
             Refresh();
         }
 
-        Interlocked.Decrement(ref _running);
-
         // Only a run that finished while still current owes a completion frame; a run cancelled
         // by Restart, Cancel or Dispose was abandoned on purpose and must not force an unthrottled
         // redraw or leave a headless surface looking live.
+        //
+        // The completion is recorded before the running count falls, so a caller that spins
+        // until PendingOperations is 0 also observes PendingWork.Any: it can never conclude
+        // that nothing is left to draw while the frame owed to this completion is unrecorded.
         if (completed)
         {
             Interlocked.Increment(ref _finished);
             HotReloadWake.Wake();
         }
+
+        Interlocked.Decrement(ref _running);
     }
 
     internal static bool Any => Volatile.Read(ref _running) > 0 || Volatile.Read(ref _finished) > 0;
