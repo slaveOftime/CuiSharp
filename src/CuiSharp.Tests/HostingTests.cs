@@ -132,7 +132,7 @@ public class HostingTests
         var mutation = new Mutation<int>(_ => System.Threading.Tasks.Task.FromException<int>(new InvalidOperationException("boom")));
         mutation.Run();
 
-        SpinUntil(() => mutation.Error is not null);
+        SpinUntil(() => mutation.Error is not null && !mutation.IsRunning);
         Assert.False(mutation.TryPublish(out _));
         Assert.Equal("boom", mutation.Error?.Message);
         Assert.Equal(0, Component.PendingOperations);
@@ -372,7 +372,7 @@ public class HostingTests
         using var progressive = new Progressive<Snapshot>();
         progressive.Run((_, _) => throw new InvalidOperationException("boom"));
 
-        SpinUntil(() => progressive.Error is not null);
+        SpinUntil(() => progressive.Error is not null && !progressive.IsRunning);
 
         Assert.Equal("boom", progressive.Error?.Message);
         Assert.Null(progressive.Latest);
@@ -535,8 +535,9 @@ public class HostingTests
         mutation.Run();
 
         // The failure lands on the completing thread, so `Error` is what to wait for: a frame that
-        // reads it is never a frame too early.
-        SpinUntil(() => mutation.Error is not null);
+        // reads it is never a frame too early. IsRunning is the fence for the settled counters and
+        // for a later Run: Error is published just before the run stops counting itself.
+        SpinUntil(() => mutation.Error is not null && !mutation.IsRunning);
 
         // No TryPublish in Draw needed: Error is current as soon as the work ends.
         Assert.Equal("nope", mutation.Error?.Message);
@@ -544,7 +545,7 @@ public class HostingTests
 
         // Running again clears the previous failure, then reports it again.
         mutation.Run();
-        SpinUntil(() => mutation.Error is not null);
+        SpinUntil(() => mutation.Error is not null && !mutation.IsRunning);
         Assert.Equal("nope", mutation.Error?.Message);   // same faulting delegate, reported again
         mutation.Dispose();
     }
@@ -557,7 +558,7 @@ public class HostingTests
         var mutation = new Mutation(_ => throw new InvalidOperationException("sync boom"));
         mutation.Run();
 
-        SpinUntil(() => mutation.Error is not null);
+        SpinUntil(() => mutation.Error is not null && !mutation.IsRunning);
         Assert.Equal("sync boom", mutation.Error?.Message);
         Assert.False(mutation.IsRunning);
         Assert.Equal(0, Component.PendingOperations);
