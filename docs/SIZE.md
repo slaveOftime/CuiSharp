@@ -52,18 +52,21 @@ way:
 | `dotnet new cui-app`, published | — | 2 282 496 |
 | `dotnet new cui-mini`, published | — | 1 198 080 |
 
-Those are historical profile measurements, not a same-library comparison with 0.4.3.
+Those are historical profile measurements, not a same-library comparison with 0.4.4.
 The current shipped snapshot is:
 
-| App | 0.4.3, shipped |
+| App | 0.4.4, shipped |
 |---|---|
 | minimal app | 1 176 064 B |
 | gallery, 32 pages | 3 177 984 B |
-| `dotnet new cui-app`, published | 2 306 048 B |
-| `dotnet new cui-mini`, published | 1 201 664 B |
+| `dotnet new cui-app`, published | 2 355 712 B |
+| `dotnet new cui-mini`, published | 1 206 784 B |
 
 The gallery adds 223 232 B over 0.4.2 with thirty-six new C functions, thirty-two structs and
 three new pages. That cross-revision growth does not measure the size profile's effectiveness.
+0.4.4 holds the gallery at that same 3 177 984 B and moves the two template rows instead: the
+scaffolded app by 49 664 B and the file-based one by 5 120 B, both measured on this machine rather
+than attributed to a component.
 
 Nearly all of it is the headless channel: `System.IO`, `Console`, `Encoding` and the reflection
 over an enum the command lexer reads arrive with it, and a switch only removes them when the
