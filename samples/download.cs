@@ -1,5 +1,6 @@
+#:package CuiSharp@*
+// #:project ../src/CuiSharp/CuiSharp.csproj
 #:package MonoTorrent@3.0.2
-#:project ../src/CuiSharp/CuiSharp.csproj
 
 // The properties below are what make `dotnet publish download.cs -c Release -o .`
 // leave one small native executable beside this file, with no .NET on the target.
