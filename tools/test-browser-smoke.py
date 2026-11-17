@@ -63,7 +63,10 @@ def evaluate(ws, expression: str, command_id: int, deadline: float, errors: list
         method = message.get("method")
         if method == "Runtime.exceptionThrown":
             details = message.get("params", {}).get("exceptionDetails", {})
-            errors.append(details.get("text", "browser JavaScript exception"))
+            # The description carries the JS stack when the rejection is an Error; `text` alone
+            # is often just "Uncaught (in promise)".
+            description = details.get("exception", {}).get("description")
+            errors.append(description or details.get("text", "browser JavaScript exception"))
         elif method == "Runtime.consoleAPICalled":
             params = message.get("params", {})
             if params.get("type") == "error":

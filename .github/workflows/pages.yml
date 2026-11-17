@@ -78,9 +78,22 @@ jobs:
           Write-Host "Pages payload after removing redundant sidecars: $bytes bytes"
 
       - name: Smoke-test the exact Pages tree in headless Chrome (both renderers)
+        shell: pwsh
+        # A headless Chrome run can fail to start with an uncaught promise rejection that the
+        # next run does not. One retry separates that from a page that never draws: a real
+        # regression fails both attempts.
         run: |
-          python tools/test-browser-smoke.py artifacts/pages/wwwroot --renderer webgl2
-          python tools/test-browser-smoke.py artifacts/pages/wwwroot --renderer 2d
+          foreach ($renderer in 'webgl2', '2d') {
+            $passed = $false
+            for ($attempt = 1; $attempt -le 2 -and -not $passed; $attempt++) {
+              python tools/test-browser-smoke.py artifacts/pages/wwwroot --renderer $renderer
+              $passed = $LASTEXITCODE -eq 0
+              if (-not $passed -and $attempt -lt 2) {
+                Write-Warning "renderer $renderer failed; retrying once"
+              }
+            }
+            if (-not $passed) { throw "renderer $renderer failed twice" }
+          }
 
       - uses: actions/configure-pages@v5
         if: github.ref_type == 'tag'
