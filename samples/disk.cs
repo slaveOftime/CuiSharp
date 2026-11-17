@@ -1,7 +1,8 @@
-#:package CuiSharp@*
+#:project ../src/CuiSharp/CuiSharp.csproj
 
 // The properties below are what make `dotnet publish disk.cs -c Release -o .`
 // leave one small native executable beside this file, with no .NET on the target.
+// The size profile, including the diagnostics below, comes from CuiSharp.Size.targets.
 #:property PublishAot=true
 #:property OptimizationPreference=Size
 #:property InvariantGlobalization=true
@@ -60,6 +61,7 @@ internal sealed class DiskApp(Browser browser, DiskScanner scanner)
 
     private readonly MapPanel _map = new();
     private readonly FolderPicker _picker = new();
+    private bool _fonts;
 
     public CuiAppOptions Options { get; } = new()
     {
@@ -74,6 +76,13 @@ internal sealed class DiskApp(Browser browser, DiskScanner scanner)
     public void Draw(Ui ui)
     {
         SquareCorners(ui);
+        if (!_fonts)
+        {
+            // Folder and file names come from whatever the disk holds: any script, and emoji; the
+            // bundled faces are Latin, and a missing glyph draws nothing.
+            ui.UseSystemFontFallbacks();
+            _fonts = true;
+        }
 
         var result = scanner.Current;
         var (width, height) = ui.ViewportSize();
