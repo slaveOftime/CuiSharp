@@ -55,7 +55,7 @@ way:
 Those are historical profile measurements, not a same-library comparison with 0.4.4.
 The current shipped snapshot is:
 
-| App | 0.4.4, shipped |
+| App | 0.4.5, shipped |
 |---|---|
 | minimal app | 1 176 064 B |
 | gallery, 32 pages | 3 177 984 B |
@@ -64,9 +64,10 @@ The current shipped snapshot is:
 
 The gallery adds 223 232 B over 0.4.2 with thirty-six new C functions, thirty-two structs and
 three new pages. That cross-revision growth does not measure the size profile's effectiveness.
-0.4.4 holds the gallery at that same 3 177 984 B and moves the two template rows instead: the
-scaffolded app by 49 664 B and the file-based one by 5 120 B, both measured on this machine rather
-than attributed to a component.
+0.4.4 moved the two template rows and left the gallery alone; 0.4.5 moves none of the four. Its
+work — the system-font search that left the first frame — costs a size only in an app that asks for
+system faces, because the thread pool comes in with the background search: roughly 45 KB in a
+minimal AOT app, and nothing in the shapes measured here, none of which asks.
 
 Nearly all of it is the headless channel: `System.IO`, `Console`, `Encoding` and the reflection
 over an enum the command lexer reads arrive with it, and a switch only removes them when the
