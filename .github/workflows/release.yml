@@ -173,6 +173,13 @@ jobs:
       # blame-hang turns a silent wedge into a failure that names the test: one
       # release run lost seventeen minutes to a leg that printed nothing, and the
       # dump it leaves behind is the evidence a rerun would just burn again.
+      # The packaging tests pack this project with --no-build, so every framework it declares has
+      # to be on disk already: `dotnet test` on the suite builds net10.0 alone, and the day the
+      # library gained net11.0 the pack stopped at NU5026 for a dll that was never built. Building
+      # the project here covers whatever frameworks it declares, rather than naming them.
+      - name: Build the packaged library for every target framework
+        run: dotnet build -c Release src/CuiSharp/CuiSharp.csproj
+
       - name: Test
         timeout-minutes: 15
         shell: pwsh
