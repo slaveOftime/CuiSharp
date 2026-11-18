@@ -65,6 +65,7 @@ internal sealed class Dashboard(MarketTracker tracker)
     };
 
     private const float WideBreakpoint = 1000f;
+    private const float MiniBreakpoint = 660f;
 
     private readonly DashboardState _state = new();
     private readonly ChartPanel _chart = new();
@@ -81,7 +82,8 @@ internal sealed class Dashboard(MarketTracker tracker)
         var snapshot = tracker.Current;
         var (width, height) = ui.ViewportSize();
 
-        if (width >= WideBreakpoint) DrawWide(ui, snapshot, width, height);
+        if (width < MiniBreakpoint) MiniView.Draw(ui, snapshot, _state);
+        else if (width >= WideBreakpoint) DrawWide(ui, snapshot, width, height);
         else DrawNarrow(ui, snapshot, height);
 
         // The tracker publishes on a background thread; poll once a second so the
@@ -586,6 +588,164 @@ internal static class RankingPanel
 }
 
 // ---------------------------------------------------------------------------
+// Mini: the five largest companies as one-line cards, each with its own
+// six-month sparkline, for a window too narrow for the chart and the table.
+// ---------------------------------------------------------------------------
+
+internal static class MiniView
+{
+    private const int TopRows = 5;
+
+    public static void Draw(Ui ui, Snapshot? snapshot, DashboardState state)
+    {
+        using (ui.Column(new Box { Pad = 10, Gap = 8, Height = Size.Fill }))
+        {
+            DrawHeader(ui);
+
+            if (snapshot is null || snapshot.Rows.Length == 0)
+            {
+                using (ui.Row(new Box { Height = Size.Fill, Align = Align.Center, Justify = Justify.Center, Gap = 8 }))
+                {
+                    ui.Spinner(16);
+                    ui.Muted("Loading global markets...");
+                }
+
+                return;
+            }
+
+            var count = Math.Min(TopRows, snapshot.Rows.Length);
+            var anySelected = state.AnySelected(snapshot.Rows, snapshot.Rows.Length);
+            var stats = SummaryStats.Of(snapshot.Rows, count);
+
+            ui.Muted($"top {count} · {Format.Money(stats.Total)} combined · {Format.Percent(stats.Weighted)} today");
+
+            using (ui.Scroll(new ScrollOpts { Height = Size.Fill, Width = Size.Fill, Pad = 0, Gap = 0 }))
+            using (ui.Column(new Box { Gap = 6, Width = Size.Fill }))
+            {
+                for (var i = 0; i < count; i++)
+                {
+                    var row = snapshot.Rows[i];
+                    var selected = state.IsSelected(row.Company);
+
+                    if (DrawRow(ui, i + 1, row, snapshot, selected, anySelected && !selected))
+                        state.Toggle(row.Company);
+                }
+            }
+
+            var updated = FooterView.UpdatedLabel(snapshot);
+            if (updated.Length > 0) ui.FooterTime(updated);
+        }
+    }
+
+    private static void DrawHeader(Ui ui)
+    {
+        using (ui.Row(new Box { Align = Align.Center, Gap = 8 }))
+        {
+            ui.Text("GLOBAL MARKETS", new TextOpts
+            {
+                Font = Font.Medium,
+                Size = 10,
+                Color = Color.Accent,
+            });
+
+            ui.Spacer();
+
+            ui.Badge("6 months · USD", new BadgeOpts
+            {
+                Tone = Tone.Neutral,
+                Size = ControlSize.Sm,
+            });
+        }
+
+        using (ui.Column(new Box { Gap = 2 }))
+        {
+            ui.Heading("Top 5 market cap", 2);
+            ui.Muted("Market cap over the last six months");
+        }
+    }
+
+    private static bool DrawRow(
+        Ui ui, int rank, QuoteRow row, Snapshot snapshot, bool selected, bool dimmed)
+    {
+        var company = row.Company;
+        var values = snapshot.CapSeries.GetValueOrDefault(company.Key);
+
+        using (ui.Card(new Card
+        {
+            Id = "mini:" + company.Ticker,
+            Hoverable = true,
+            Selected = selected,
+            Width = Size.Fill,
+            PadX = 8,
+            PadY = 5,
+            Dir = Dir.Row,
+            Gap = 8,
+            Align = Align.Center,
+        }, out var clicked))
+        {
+            ui.Text(rank.ToString(CultureInfo.InvariantCulture), new TextOpts
+            {
+                Size = 11,
+                Tabular = true,
+                Color = Color.TextMuted,
+                Width = Size.Px(14),
+            });
+
+            using (ui.Column(new Box { Width = Size.Fill, MinWidth = 0, Gap = 1 }))
+            {
+                ui.Text(company.Ticker, new TextOpts
+                {
+                    Font = Font.Medium,
+                    Size = 12,
+                    NoWrap = true,
+                    Color = dimmed ? Color.TextSecondary : Color.Foreground,
+                });
+
+                ui.Text(company.Market, new TextOpts
+                {
+                    Size = 10,
+                    NoWrap = true,
+                    Color = dimmed ? Color.TextMuted : Color.TextSecondary,
+                });
+            }
+
+            if (values is { Length: >= 2 })
+            {
+                ui.Sparkline(values, Size.Px(160), 26f,
+                    dimmed ? Palette.Dim(company) : Palette.ColorOf(company));
+            }
+            else
+            {
+                // Keep the column aligned when a company has no history yet.
+                using (ui.Box(new Box { Width = Size.Px(84), Height = Size.Px(26) })) { }
+            }
+
+            using (ui.Column(new Box { Width = Size.Px(62), Gap = 1, Align = Align.End }))
+            {
+                ui.Text(Format.Money(row.CapUsd), new TextOpts
+                {
+                    Size = 12,
+                    Font = Font.Medium,
+                    Tabular = true,
+                    Align = TextAlign.Right,
+                    Color = dimmed ? Color.TextSecondary : Color.Foreground,
+                });
+
+                ui.Text(Format.Percent(row.Pct), new TextOpts
+                {
+                    Size = 10,
+                    Tabular = true,
+                    Align = TextAlign.Right,
+                    Color = dimmed ? Color.TextMuted : Format.PercentColor(row.Pct),
+                });
+            }
+
+            return clicked;
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Footer: where the numbers come from, and how old they are.
 // ---------------------------------------------------------------------------
 
@@ -618,7 +778,7 @@ internal static class FooterView
         }
     }
 
-    private static string UpdatedLabel(Snapshot? snapshot) => snapshot switch
+    internal static string UpdatedLabel(Snapshot? snapshot) => snapshot switch
     {
         null => "",
         { Cached: true } cached => $"Cached · {cached.UpdatedUtc.ToLocalTime():MMM d, HH:mm}",
