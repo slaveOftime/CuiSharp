@@ -1,67 +1,100 @@
 # CuiSharp.App
 
-Native desktop app in plain C# built on [CuiSharp](https://www.nuget.org/packages/CuiSharp) — no XAML, no WPF/Avalonia, no web view. Publishes to a single NativeAOT executable.
-
-## Quick start
+Native desktop app in plain C# built on [CuiSharp](https://www.nuget.org/packages/CuiSharp).
 
 ```sh
-dotnet run --project CuiSharp.App # run (JIT)
-dotnet watch --project CuiSharp.App # hot reload on save
-dotnet test # service + headless UI tests
-dotnet publish CuiSharp.App -c Release -r win-x64 # single-file NativeAOT exe (drops the driving channels: see below)
-dotnet run --project CuiSharp.App -- --check # renderer, backend, native ABI, then exit
-CUI_TRACE=trace.txt dotnet run --project CuiSharp.App # frame/draw/alloc stats every 60 frames
+dotnet run --project CuiSharp.App             # opens on Todos
+dotnet watch --project CuiSharp.App           # edit with hot reload
+dotnet test                                  # service and headless UI tests
 ```
 
-## Drive the app from a terminal
+## Follow one interaction: add a todo
 
-Nothing is added to the app for this (install once: `dotnet tool install -g CuiSharp.Tools`). A
-command builds the app in **Release** and runs it headless, so `--no-build` is only useful after a
-Release build of your own — `dotnet build` alone produces Debug.
+The list is in memory; closing the app resets it.
+
+1. [`Pages/TodoComposer.cs`](CuiSharp.App/Pages/TodoComposer.cs) owns the unfinished draft. Typing
+   changes that field, not the list. Enter (`input.Submitted`) and the Add button both return an
+   `AddRequested` carrying the draft.
+2. [`Pages/TodoPage.cs`](CuiSharp.App/Pages/TodoPage.cs) handles that request and draws the applied
+   items. [`TodoService.Add`](CuiSharp.App/Services/TodoService.cs) trims the title and either adds
+   an item or rejects a blank title. The composer clears the draft only on acceptance; on rejection
+   it keeps the draft and shows feedback. The page requests a follow-up frame because the header
+   and input were already drawn when the result arrived.
+3. [`PageInteractionTests.cs`](CuiSharp.App.Tests/Pages/PageInteractionTests.cs) drives the same
+   input. `EnterAddsTheDraftAndClearsItAfterAcceptance` checks the model and the recorded frame;
+   `ARejectedDraftStaysInTheInputAndShowsFeedback` checks that spaces stay in the draft and no item
+   is added.
 
 ```sh
-dotnet cui tree -p CuiSharp.App # the frame's controls, nested
-dotnet cui tree --details -p CuiSharp.App # …with role, automation id, value and state
-dotnet cui click 'Tab "Markets"' -p CuiSharp.App # click one, print the frame that reacted
-dotnet cui png shot.png -p CuiSharp.App # the frame as an image
-dotnet cui layout -p CuiSharp.App # rectangles, and anything that overflowed
-dotnet cui session -p CuiSharp.App --script steps.txt # many commands, one process
-dotnet cui doctor -p CuiSharp.App # check tool/package version, icon and AOT setup
-dotnet cui docs # the framework guide, offline
+dotnet test --filter EnterAddsTheDraftAndClearsItAfterAcceptance
+dotnet tool install -g CuiSharp.Tools          # once, if not installed
+dotnet cui session -p CuiSharp.App --script todo.steps.txt
 ```
 
-- **Each headless invocation starts a fresh app.** A click on a tab does not survive into the
-  next command: a flow that needs the previous step is a `session`, whose lines share one app.
-  `png` inside a session photographs the page the earlier lines reached.
-- Session lines are protocol commands: `click Tab "Markets"`, then `png shot.png`. Quotes are literal; a
-  line that fails stops the rest of the session, so read the top of its output first.
-- Disambiguate by kind (`Tab "Markets"`), role (`--role button Save`), value (`--value Milk`),
-  id (`--id draft`), or container path (`dotnet cui click 'theme > Segment "Dark"' -p CuiSharp.App`).
-  Only the final path step names a kind.
-- `-a` drives a window that is already open, which `LiveAttach` in `Program.cs` enables:
-  start the app, then `dotnet cui click 'theme > Dark' -a`.
-  Live commands preserve its state and leave
-  it open; `dotnet cui quit -a` closes it. A headless run has no window to attach to.
-- A published exe keeps neither channel unless it was published for it — a Release publish strips
-  both to keep the binary small: `-p:CuiSharpHeadless=true` for `--app`, `-p:CuiSharpLive=true` for
-  `-a`.
-- `dotnet cui api <Name>` answers for the `CuiSharp` catalog only: `HeadlessApp` is in it,
-  `TestApp` (the alias in the separate `CuiSharp.Testing` package) is not.
+[`todo.steps.txt`](todo.steps.txt) clicks `id:draft`, types `Milk`, and presses Enter. The two
+`tree details` outputs show the draft before submission and the applied item after it (excerpts):
 
-## Project structure
+```text
+    Column "todo-composer" role=container state=enabled
+      Input "todo-title" role=textbox id=draft value="Milk" state=enabled
+      Button "Add" role=button id=add-todo state=enabled
+```
 
-| Path | Purpose |
-|---|---|
-| `CuiSharp.App/Program.cs` | Composition root: DI container, window options, `--check`, live attach |
-| `CuiSharp.App/App.cs` | Shell: named `header`/`page`/`footer` regions, page tabs (`Ctrl+Tab`), theme (`Ctrl+J`) |
-| `CuiSharp.App/Pages/TodoPage.cs` | Form & list screen: `ref` input, keyed row loop, async `Mutation` save |
-| `CuiSharp.App/Pages/MarketsPage.cs` | Live 50 Hz dashboard: `WantsFrames`, sparklines, decimated `LineChart` |
-| `CuiSharp.App/Services/*` | Pure C# domain & feed logic (`TodoService`, `PriceHistory`, `MarketFeed`) |
-| `CuiSharp.App/CuiSharp.App.ico` | App and window icon — replace this file and rebuild to rebrand |
-| `CuiSharp.App.Tests/TestHarness.cs` | `FakeClock`, snapshot fixtures, and the 0 B/frame allocation gate |
-| `CuiSharp.App.Tests/Pages/*` | Headless render, interaction, and allocation tests |
-| `CuiSharp.App.Tests/Services/*` | Unit tests for domain rules, ring buffer wrap-around, and feed cadence |
+```text
+    Column "todo-composer" role=container state=enabled
+      Input "todo-title" role=textbox id=draft value="" state=enabled
+      Button "Add" role=button id=add-todo state=enabled
+    Scroll "items" role=container state=enabled
+      …
+      Checkbox "Milk" role=checkbox id=#4 value="false" state=enabled
+```
 
-Tests drive the app through `HeadlessApp` (in `CuiSharp.Hosting`, already referenced), and
-`TestHarness.AssertZeroAllocations` is the 0 B/frame gate. See [AGENTS.md](AGENTS.md) for the
-immediate-mode rules and how a screen is extended.
+- `todo-title` is the input's **widget key**: CUI uses it for native focus and editing state.
+  `ui.Id` and `ui.Keyed` scope native identity and also give the recorder IDs (e.g. `#4` above).
+- `draft` and `add-todo` are **automation IDs** from `ui.Automation`. Use `id:draft` in a tool
+  query or `FindById("draft")` in a test. This scope only names the recorded control; it does not
+  change native identity.
+- `Task` and `Add` are **visible labels**. Translate the labels, not the IDs. The input records its
+  key rather than its visible label; a label-based query like `Button "Add"` is handy for exploration
+  but depends on the current wording.
+
+Each headless invocation starts a fresh app. Use a `session` for steps that share state.
+`dotnet cui tree --details -p CuiSharp.App` inspects a fresh frame. Add `--no-build` only if you
+already have a Release build. For a window you opened with `dotnet run`, `dotnet cui tree -a`
+uses the listener enabled in [`Program.cs`](CuiSharp.App/Program.cs). See [AGENTS.md](AGENTS.md)
+for frame scheduling and `dotnet cui docs` for the full guide.
+
+<!--#if (!NoMarkets) -->
+## Beyond Todo: Markets
+
+Open the **Markets** tab, or inspect it without opening a window. The shell knows each tab's
+name at startup but creates its page on first visit, then keeps it so switching tabs preserves state:
+
+```sh
+dotnet cui click 'Tab "Markets"' -p CuiSharp.App
+```
+
+[`MarketsPage.cs`](CuiSharp.App/Pages/MarketsPage.cs) is the advanced example: a `Mutation` loads
+history, a clock drives the live feed, and the table and chart reuse sample buffers. Select a
+symbol to change the chart. [`MarketsPageTests.cs`](CuiSharp.App.Tests/Pages/MarketsPageTests.cs)
+checks 0 B per steady draw, including with a non-default symbol selected. The first-visit test
+reports the draw that constructs the page and starts the history load separately from 31 warmed
+live draws. It measures managed draw time and allocations, not the async wait or presentation:
+
+```sh
+dotnet test -c Release --filter TheFirstMarketsVisitShowsLoadingThenTheLiveChart --logger "console;verbosity=detailed"
+```
+
+For a Todo-only starting point, generate a fresh app with `dotnet new cui-app -n MyTodo --no-markets`.
+<!--#endif -->
+
+## Publish and diagnose
+
+```sh
+dotnet run --project CuiSharp.App -- --check
+dotnet publish CuiSharp.App -c Release -r win-x64
+```
+
+The NativeAOT publish omits the driving channels unless you keep them with
+`-p:CuiSharpHeadless=true` (for `--app`) or `-p:CuiSharpLive=true` (for `-a`). Replace
+`CuiSharp.App/CuiSharp.App.ico` to rebrand the executable and window.

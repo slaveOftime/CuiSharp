@@ -106,17 +106,4 @@ public class TodoServiceTests
         Assert.Equal(total - 1, todos.Items.Count);
         Assert.DoesNotContain(todos.Items, item => item.Done);
     }
-
-    [Fact]
-    public async Task SaveAsyncCompletesAndHonoursCancellation()
-    {
-        var todos = new TodoService();
-
-        await todos.SaveAsync();
-
-        using var cancel = new CancellationTokenSource();
-        cancel.Cancel();
-
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => todos.SaveAsync(cancel.Token));
-    }
 }

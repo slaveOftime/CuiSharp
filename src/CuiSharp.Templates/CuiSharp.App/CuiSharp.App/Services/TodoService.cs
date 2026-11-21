@@ -76,19 +76,4 @@ public sealed class TodoService
 
     /// <summary>Removes every completed item and returns how many were removed.</summary>
     public int ClearCompleted() => _items.RemoveAll(item => item.Done);
-
-    /// <summary>
-    /// Asynchronous save operation. Captures a snapshot before awaiting so pool continuation code
-    /// never reads mutable UI-thread state.
-    /// </summary>
-    public async Task SaveAsync(CancellationToken cancellationToken = default)
-    {
-        var snapshot = _items.ToArray();
-        await Task.Delay(700, cancellationToken).ConfigureAwait(false);
-
-        if (snapshot.Length is 0)
-        {
-            throw new InvalidOperationException("Nothing to save.");
-        }
-    }
 }

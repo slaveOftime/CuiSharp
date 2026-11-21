@@ -10,7 +10,7 @@ public class MarketFeedTests
     [Fact]
     public void NothingTicksBeforeHistoryIsApplied()
     {
-        var (feed, clock) = TestHarness.CreateMarketFeed();
+        var (feed, clock) = MarketTestData.CreateMarketFeed();
 
         for (var i = 0; i < 10; i++)
         {
@@ -26,7 +26,7 @@ public class MarketFeedTests
     [Fact]
     public void AFramesShareOfTicksFollowsTheClockNotTheFrameCount()
     {
-        var (feed, clock) = TestHarness.CreateMarketFeed(historyPoints: 200);
+        var (feed, clock) = MarketTestData.CreateMarketFeed(historyPoints: 200);
         feed.Advance();
 
         for (var i = 0; i < 60; i++)
@@ -43,7 +43,7 @@ public class MarketFeedTests
     [Fact]
     public void AStallIsCountedOnceAndNotReplayed()
     {
-        var (feed, clock) = TestHarness.CreateMarketFeed(historyPoints: 200);
+        var (feed, clock) = MarketTestData.CreateMarketFeed(historyPoints: 200);
         feed.Advance();
 
         clock.Advance(2000);
@@ -64,7 +64,7 @@ public class MarketFeedTests
     [Fact]
     public void ABusyFrameIsCappedAndSurplusDebtIsDropped()
     {
-        var (feed, clock) = TestHarness.CreateMarketFeed(historyPoints: 200);
+        var (feed, clock) = MarketTestData.CreateMarketFeed(historyPoints: 200);
         feed.Advance();
 
         clock.Advance(150);
@@ -87,8 +87,8 @@ public class MarketFeedTests
     [Fact]
     public void ApplyingHistoryContinuesWalkFromItsLastPrice()
     {
-        var (feed, clock) = TestHarness.CreateMarketFeed();
-        var snapshot = TestHarness.CreateSnapshot(points: 200);
+        var (feed, clock) = MarketTestData.CreateMarketFeed();
+        var snapshot = MarketTestData.CreateSnapshot(points: 200);
 
         feed.Apply(snapshot);
         clock.Advance(16.6);

@@ -19,6 +19,19 @@
             "**/[Bb]in/**",
             "**/[Oo]bj/**"
           ]
+        },
+        {
+          "condition": "(NoMarkets)",
+          "exclude": [
+            "CuiSharp.App/Pages/MarketsPage.cs",
+            "CuiSharp.App/Services/MarketFeed.cs",
+            "CuiSharp.App/Services/PriceFeed.cs",
+            "CuiSharp.App/Services/PriceHistory.cs",
+            "CuiSharp.App.Tests/MarketTestData.cs",
+            "CuiSharp.App.Tests/Pages/MarketsPageTests.cs",
+            "CuiSharp.App.Tests/Services/MarketFeedTests.cs",
+            "CuiSharp.App.Tests/Services/PriceHistoryTests.cs"
+          ]
         }
       ]
     }
@@ -30,7 +43,13 @@
       "replaces": "__CUISHARP_VERSION__",
       "defaultValue": "0.4.6",
       "description": "The CuiSharp package version the generated solution references. Defaults to the version this template shipped with."
+    },
+    "NoMarkets": {
+      "type": "parameter",
+      "datatype": "bool",
+      "defaultValue": "false",
+      "description": "Generate only the Todo starter, without the Markets example or its tests."
     }
   },
-  "description": "A native desktop app in plain C# with CUI: no XAML, no WPF, no Avalonia. Immediate-mode components with dependency injection, a live-data page that draws with zero allocation, a service layer testable without a window, and a test project to copy the pattern from."
+  "description": "A native desktop app in plain C# with CUI. Follow a Todo interaction from source to UI tree and headless test; explore the separate Markets tab for live data and zero-allocation draws."
 }

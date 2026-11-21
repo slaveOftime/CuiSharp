@@ -2,7 +2,6 @@
 // CuiSharp.App to the chosen name, and then `Ui` no longer resolves through nesting.
 using CuiSharp;
 using CuiSharp.Hosting;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace CuiSharp.App;
 
@@ -19,30 +18,30 @@ public sealed class App : Component
     private static readonly string[] Modes = ["Light", "Dark"];
     private static readonly string[] ModeIcons = [Icons.Sun, Icons.Moon];
 
-    private readonly Component[] _pages;
+    private readonly Lazy<Component>[] _pages;
     private readonly string[] _titles;
     private int _index;
 
-    /// <summary>Creates the shell from the given screens.</summary>
-    public App(params ReadOnlySpan<Component> pages)
+    /// <summary>Names the tabs without constructing their pages until first shown.</summary>
+    public App(params ReadOnlySpan<(string Title, Func<Component> Create)> pages)
     {
-        _pages = [.. pages];
-        _titles = new string[_pages.Length];
-        for (var i = 0; i < _pages.Length; i++)
+        if (pages.IsEmpty)
         {
-            _titles[i] = _pages[i].Title;
+            throw new ArgumentException("The shell needs at least one page.", nameof(pages));
         }
-    }
 
-    /// <summary>Resolves every screen registered with <see cref="CuiApplicationBuilder.AddPage{TPage}"/>.</summary>
-    [ActivatorUtilitiesConstructor]
-    public App(IEnumerable<Component> pages) : this([.. pages])
-    {
+        _pages = new Lazy<Component>[pages.Length];
+        _titles = new string[pages.Length];
+        for (var i = 0; i < pages.Length; i++)
+        {
+            _titles[i] = pages[i].Title;
+            _pages[i] = new Lazy<Component>(pages[i].Create);
+        }
     }
 
     protected override void Draw(Ui ui)
     {
-        if (!ui.WantsKeyboard && ui.Shortcut(Mods.Ctrl, Key.Tab))
+        if (_pages.Length > 1 && !ui.WantsKeyboard && ui.Shortcut(Mods.Ctrl, Key.Tab))
         {
             _index = (_index + 1) % _pages.Length;
         }
@@ -56,9 +55,9 @@ public sealed class App : Component
         {
             Header(ui);
 
-            using (ui.Column(new() { Id = "page", Width = Size.Fill, Height = Size.Fill, Gap = 10 }))
+            using (ui.Column(new() { Id = "page", Width = Size.Fill, Height = Size.Fill, Gap = 10, Pad = 20 }))
             {
-                ui.Component(_pages[_index]);
+                ui.Component(_pages[_index].Value);
             }
 
             Footer(ui);
@@ -72,7 +71,11 @@ public sealed class App : Component
             ui.Heading("CuiSharp starter", 3);
             ui.Spacer();
 
-            ui.Tabs("pages", _titles, ref _index, new() { Variant = TabsVariant.Pill });
+            if (_pages.Length > 1)
+            {
+                ui.Tabs("pages", _titles, ref _index, new() { Variant = TabsVariant.Pill });
+            }
+
             ThemeSwitch(ui);
         }
 
@@ -88,7 +91,7 @@ public sealed class App : Component
         }
     }
 
-    private static void Footer(Ui ui)
+    private void Footer(Ui ui)
     {
         // FrameStats is updated around every Draw call; CUI_TRACE=trace.txt logs the same numbers.
         using (ui.Row(new() { Id = "footer", Gap = 12, Align = Align.Center }))
@@ -108,7 +111,7 @@ public sealed class App : Component
             ui.Secondary($"frame {FrameStats.FrameMs:0.0} ms");
             ui.Secondary($"alloc {FrameStats.AllocatedBytes} B");
             ui.Spacer();
-            ui.Secondary("Ctrl+Tab next page · Ctrl+J theme");
+            ui.Secondary(_pages.Length > 1 ? "Ctrl+Tab next page · Ctrl+J theme" : "Ctrl+J theme");
         }
     }
 
