@@ -4,33 +4,42 @@ using CuiSharp.Hosting;
 
 namespace CuiSharp.App.Pages;
 
-/// <summary>
-/// Todo screen: state in fields, async save via <see cref="Mutation"/>, and a <see cref="Draw"/>
-/// pass that rebuilds the view every frame.
-/// </summary>
+/// <summary>Draws the applied todo list and handles requests from the draft composer.</summary>
 public sealed class TodoPage(TodoService todos) : Component
 {
+    public const string PageTitle = "Todos";
+
     private static readonly string[] Filters = ["All", "Open", "Done"];
 
-    private readonly Mutation _save = new(todos.SaveAsync);
+    private readonly TodoComposer _composer = new();
 
-    private string _draft = string.Empty;
     private int _filter;
 
-    public override string Title => "Todos";
+    public override string Title => PageTitle;
 
     protected override void Draw(Ui ui)
     {
         using (ui.Row(new() { Width = Size.Fill, Height = Size.Fill, Justify = Justify.Center }))
         using (ui.Column(new() { Width = Size.Fill, MaxWidth = 640, Height = Size.Fill, Gap = 14 }))
-        using (ui.Card(new() { Gap = 12, Height = Size.Fill }))
         {
             Header(ui);
-            Composer(ui);
+            if (_composer.Draw(ui) is { } request)
+            {
+                var accepted = todos.Add(request.Title) is not null;
+                _composer.ResolveSubmission(accepted);
+                if (accepted)
+                {
+                    _filter = 0;
+                }
+
+                // The header and input were already drawn; ask the host to show the result next frame.
+                ui.RequestRedraw();
+            }
+
             ui.Separator();
             Items(ui);
             ui.Separator();
-            Actions(ui);
+            ClearCompleted(ui);
         }
     }
 
@@ -38,7 +47,7 @@ public sealed class TodoPage(TodoService todos) : Component
     {
         using (ui.Row(new() { Gap = 10, Align = Align.Center }))
         {
-            ui.Heading("Todos", 2);
+            ui.Heading(PageTitle, 2);
 
             if (todos.OpenCount is 0)
             {
@@ -51,20 +60,6 @@ public sealed class TodoPage(TodoService todos) : Component
 
             ui.Spacer();
             ui.Segmented("filter", Filters, ref _filter, new() { Size = ControlSize.Sm });
-        }
-    }
-
-    private void Composer(Ui ui)
-    {
-        using (ui.Row(new() { Gap = 8 }))
-        {
-            var result = ui.Input("draft", ref _draft, new() { Placeholder = "What needs doing?" });
-            var add = ui.Button("Add", new() { Variant = ButtonVariant.Primary, Icon = Icons.Plus });
-
-            if (add || result.Submitted)
-            {
-                Add();
-            }
         }
     }
 
@@ -120,34 +115,13 @@ public sealed class TodoPage(TodoService todos) : Component
         }
     }
 
-    private void Actions(Ui ui)
+    private void ClearCompleted(Ui ui)
     {
-        using (ui.Row(new() { Gap = 8, Justify = Justify.End, Align = Align.Center }))
+        using var row = ui.Row(new() { Justify = Justify.End });
+        if (ui.Button("Clear completed", new() { Variant = ButtonVariant.Ghost, Disabled = todos.DoneCount is 0 }))
         {
-            ui.ActionButton(
-                "Save",
-                _save,
-                new() { Icon = Icons.Save },
-                loadingLabel: "Saving",
-                retryLabel: "Retry save");
-
-            var clear = new ButtonOpts { Variant = ButtonVariant.Ghost, Disabled = todos.DoneCount is 0 };
-            if (ui.Button("Clear completed", clear))
-            {
-                todos.ClearCompleted();
-            }
+            todos.ClearCompleted();
         }
-    }
-
-    private void Add()
-    {
-        if (todos.Add(_draft) is null)
-        {
-            return;
-        }
-
-        _draft = string.Empty;
-        _filter = 0;
     }
 
     /// <summary>Whether the current filter hides <paramref name="item"/>.</summary>

@@ -10,6 +10,8 @@ namespace CuiSharp.App.Pages;
 /// </summary>
 public sealed class MarketsPage(MarketFeed feed) : Component
 {
+    public const string PageTitle = "Markets";
+
     private const int WindowSamples = 1_200;
     private const int SparkSamples = 120;
     private const float ChartHeight = 240;
@@ -26,10 +28,9 @@ public sealed class MarketsPage(MarketFeed feed) : Component
         new("Trend", Size.Fill),
     ];
 
-    private int _windowLength;
     private int _selected;
 
-    public override string Title => "Markets";
+    public override string Title => PageTitle;
 
     protected override bool WantsFrames => feed.Live;
 
@@ -44,7 +45,6 @@ public sealed class MarketsPage(MarketFeed feed) : Component
     protected override void Draw(Ui ui)
     {
         feed.Advance();
-        _windowLength = feed.History.CopyTail(_selected, _window);
 
         using (ui.Column(new() { Gap = 14 }))
         {
@@ -70,7 +70,7 @@ public sealed class MarketsPage(MarketFeed feed) : Component
     {
         using (ui.Row(new() { Gap = 10, Align = Align.Center }))
         {
-            ui.Heading("Markets", 2);
+            ui.Heading(PageTitle, 2);
             ui.Secondary("Simulated feed, 50 ticks a second per symbol");
             ui.Spacer();
 
@@ -137,7 +137,9 @@ public sealed class MarketsPage(MarketFeed feed) : Component
 
     private void Chart(Ui ui)
     {
+        // SymbolTable can change the selection in this frame. Read the name and samples together.
         var symbol = PriceFeed.Symbols[_selected];
+        var windowLength = feed.History.CopyTail(_selected, _window);
 
         using (ui.Card(new() { Gap = 10 }))
         {
@@ -146,18 +148,18 @@ public sealed class MarketsPage(MarketFeed feed) : Component
                 ui.Heading(symbol.Name, 4);
                 ui.Badge(symbol.Ticker, new() { Tone = Tone.Accent, Size = ControlSize.Sm });
                 ui.Spacer();
-                ui.Secondary($"{feed.History.Count(_selected):N0} samples buffered, {_windowLength} drawn");
+                ui.Secondary($"{feed.History.Count(_selected):N0} samples buffered, {windowLength} drawn");
             }
 
             // Reserve ChartHeight while loading so the card does not jump when history arrives.
-            if (_windowLength is 0)
+            if (windowLength is 0)
             {
                 Placeholder(ui);
                 return;
             }
 
             // LineChart decimates spans longer than MaxPoints into min/max pairs in the frame arena.
-            ui.LineChart("prices", _window.AsSpan(0, _windowLength),
+            ui.LineChart("prices", _window.AsSpan(0, windowLength),
                 new() { Height = ChartHeight, Area = true, Width = Size.Fill, Format = "%.2f" }, Color.Accent);
         }
     }

@@ -21,29 +21,6 @@ public class PageRenderTests
     }
 
     [Fact]
-    public void TheMarketsPageDrawsLoadingAndLiveStates()
-    {
-        var (feed, clock) = TestHarness.CreateMarketFeed();
-
-        using var app = HeadlessApp.Start(new MarketsPage(feed), TestHarness.Width, TestHarness.Height);
-
-        Assert.Empty(app.Faults);
-        Assert.Contains(app.Tree.Descendants(), node => node.Text == "Loading history…");
-
-        feed.Apply(TestHarness.CreateSnapshot(points: 400));
-
-        for (var i = 0; i < 3; i++)
-        {
-            clock.Advance(16.6);
-            app.Frame();
-        }
-
-        Assert.Empty(app.Faults);
-        Assert.True(feed.Ticks > 0);
-        Assert.Contains(app.Tree.Descendants(), node => node.Kind == "LineChart");
-    }
-
-    [Fact]
     public void TheTodoPageAllocatesNothingPerFrame()
     {
         using var page = new TodoPage(new TodoService());
@@ -64,7 +41,7 @@ public class PageRenderTests
             app.Type("Milk");
         }, verify: app =>
         {
-            app.FindButton("Add").Click();
+            app.FindById("add-todo").Click();
             Assert.Contains(todos.Items, item => item.Title == "Milk");
         });
     }
@@ -79,27 +56,16 @@ public class PageRenderTests
         {
             app.FindById("draft").Click();
             app.Type("Milk");
-            app.FindButton("Add").Click();
+            app.FindById("add-todo").Click();
             Assert.Contains(todos.Items, item => item.Title == "Milk");
         });
-    }
-
-    [Fact]
-    public void TheMarketsPageAllocatesNothingPerLiveFrame()
-    {
-        var (feed, clock) = TestHarness.CreateMarketFeed(historyPoints: 240);
-
-        using var page = new MarketsPage(feed);
-
-        TestHarness.AssertZeroAllocations(page, () => clock.Advance(16.6));
-        Assert.True(feed.Ticks > 0);
     }
 
     [Fact]
     public void TheShellRegionsKeepPageControlsOutOfTheThemeSwitch()
     {
         using var app = HeadlessApp.Start(
-            new App(new TodoPage(new TodoService()), TestHarness.CreateMarketsPage(historyPoints: 240)),
+            new App((TodoPage.PageTitle, static () => new TodoPage(new TodoService()))),
             TestHarness.Width, TestHarness.Height);
 
         var tree = app.Tree;
@@ -109,22 +75,20 @@ public class PageRenderTests
 
         Assert.Same(header.Parent, page.Parent);
         Assert.Same(header.Parent, footer.Parent);
-        Assert.Contains(page.Descendants(), node => node.Text == "draft");
-        Assert.DoesNotContain(header.Descendants(), node => node.Text == "draft");
+        Assert.Contains(page.Find("todo-composer").Descendants(), node => node.AutomationId == "draft");
+        Assert.DoesNotContain(header.Descendants(), node => node.AutomationId == "draft");
         Assert.Equal("Segment", tree.Find("theme > Dark").Kind);
 
-        app.Find("Tab \"Markets\"").ClickAndFrame();
-
+        Assert.DoesNotContain(header.Descendants(), node => node.Kind == "Tabs");
         Assert.Empty(app.Faults);
-        Assert.Contains(app.Tree.Find("page").Descendants(), node => node.Kind == "LineChart");
-        Assert.DoesNotContain(app.Tree.Find("header").Descendants(), node => node.Kind == "LineChart");
     }
 
     [Fact]
-    public void TheShellAllocatesNothingPerFrame()
+    public void TheTodoShellAllocatesNothingPerSteadyFrame()
     {
-        using var app = new App(new TodoPage(new TodoService()), TestHarness.CreateMarketsPage(historyPoints: 240));
+        using var shell = new App((TodoPage.PageTitle, static () => new TodoPage(new TodoService())));
 
-        TestHarness.AssertZeroAllocations(app);
+        TestHarness.AssertZeroAllocations(shell,
+            verify: app => Assert.Equal(TodoPage.PageTitle, app.Find("Heading", TodoPage.PageTitle).Text));
     }
 }

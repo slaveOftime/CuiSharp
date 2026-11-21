@@ -10,8 +10,8 @@
 
     Steps:
       1. pack CuiSharp and CuiSharp.Templates into a temporary folder
-      2. install the template, `dotnet new cui-app`, and point the app at that folder
-      3. build, test, and (unless -NoPublish) publish a NativeAOT single file
+      2. install the template, generate both cui-app variants, and point them at that folder
+      3. build, test and drive both Todo sessions, and (unless -NoPublish) publish the default variant with NativeAOT
       4. generate cui-mini, run its named .cs file and check its button through the headless protocol,
          then drive the same .cs file through the built tool, and install the packed tool into an
          isolated --tool-path folder to check the command name it ships
@@ -37,8 +37,9 @@ Push-Location $root
 $work = Join-Path ([System.IO.Path]::GetTempPath()) ("cui-template-" + [guid]::NewGuid().ToString('N').Substring(0, 8))
 $packages = Join-Path $work 'packages'
 $app = Join-Path $work 'TodoApp'
+$todoOnly = Join-Path $work 'OnlyTodos'
 $miniApp = Join-Path $work 'mini'
-$templateInstalled = $false
+$templateHive = @('--debug:custom-hive', (Join-Path $work 'template-hive'))
 $elapsed = [System.Diagnostics.Stopwatch]::StartNew()
 
 function Step([string] $text) { Write-Host "==> $text" -ForegroundColor Cyan }
@@ -51,11 +52,13 @@ function Invoke-Tool {
         [string] $Exe,
         [string[]] $Arguments,
         [int] $TimeoutSeconds = 180,
-        [hashtable] $Environment = @{}
+        [hashtable] $Environment = @{},
+        [string] $WorkingDirectory
     )
 
     $psi = [System.Diagnostics.ProcessStartInfo]::new($Exe)
     $psi.UseShellExecute = $false
+    if ($WorkingDirectory) { $psi.WorkingDirectory = $WorkingDirectory }
     $psi.RedirectStandardOutput = $true
     $psi.RedirectStandardError = $true
     $psi.StandardOutputEncoding = [System.Text.UTF8Encoding]::new($false, $true)
@@ -145,14 +148,14 @@ try {
     if (-not $templatePackage) { throw 'the template package is missing from the pack output' }
 
     Step "generating an app from $($templatePackage.Name)"
-    & dotnet new install $templatePackage.FullName | Out-Null
+    # Do not replace (or uninstall) the developer's own copy of the template.
+    & dotnet new install $templatePackage.FullName @templateHive | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'installing the template failed' }
-    $templateInstalled = $true
 
     # Scaffolded at this build's version rather than the released default the template pins: every
     # later command, including `dotnet cui`, then restores the package this run just packed. That the
     # default tracks the release is TemplateVersionTests' job, not this gate's.
-    & dotnet new cui-app -n TodoApp -o $app --CuiSharpVersion $version | Out-Null
+    & dotnet new cui-app -n TodoApp -o $app --CuiSharpVersion $version @templateHive | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'generating the app failed' }
 
     # A generated app has no NuGet.config; give it one that can see the local packages.
@@ -177,6 +180,20 @@ try {
     Step 'testing'
     & dotnet test $solution -c $Configuration --no-build $versionArg
     if ($LASTEXITCODE -ne 0) { throw 'the generated app has failing tests' }
+
+    Step 'generating, building and testing the Todo-only variant'
+    & dotnet new cui-app -n OnlyTodos -o $todoOnly --CuiSharpVersion $version --no-markets @templateHive | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw 'generating the Todo-only app failed' }
+    $leftoverFiles = Get-ChildItem $todoOnly -Recurse -File | Where-Object { $_.Name -match 'Market|PriceFeed|PriceHistory' }
+    $leftoverDocs = Get-ChildItem $todoOnly -File -Filter '*.md' | Select-String -Pattern 'Markets'
+    if ($leftoverFiles -or $leftoverDocs) { throw '--no-markets left Markets files or documentation behind' }
+
+    Copy-Item (Join-Path $app 'NuGet.config') (Join-Path $todoOnly 'NuGet.config')
+    $todoSolution = Join-Path $todoOnly 'OnlyTodos.slnx'
+    & dotnet build $todoSolution -c $Configuration -warnaserror $versionArg
+    if ($LASTEXITCODE -ne 0) { throw 'the generated Todo-only app does not build' }
+    & dotnet test $todoSolution -c $Configuration --no-build $versionArg
+    if ($LASTEXITCODE -ne 0) { throw 'the generated Todo-only app has failing tests' }
 
     if (-not $NoPublish) {
         # The host's own RID, so this gate says something on Linux and macOS too: the
@@ -329,6 +346,27 @@ internal static class AnalyzerProbe
             throw "dotnet cui did not dispatch to the installed tool: $dispatchHelp"
         }
 
+        # Run the README's flow against both generated solutions, using their shipped scripts.
+        foreach ($name in 'TodoApp', 'OnlyTodos') {
+            Step "running the documented Todo session ($name)"
+            $session = Invoke-Tool 'dotnet' @('cui', 'session', '-p', $name, '--script', 'todo.steps.txt') -WorkingDirectory (Join-Path $work $name)
+            if ($session.Code -ne 0) { throw "the Todo session failed: $($session.Err)" }
+            # Click/type/key also print plain trees; inspect only the two explicit tree details replies.
+            $details = @($session.Out -csplit '(?m)(?=^Frame(?: role=frame)?\r?$)' |
+                Where-Object { $_.StartsWith('Frame role=frame', [StringComparison]::Ordinal) })
+            if ($details.Count -ne 2 -or
+                $details[0] -cnotmatch 'Input "todo-title" role=textbox id=draft value="Milk"' -or
+                $details[0] -cmatch 'Checkbox "Milk"' -or
+                $details[1] -cnotmatch 'Input "todo-title" role=textbox id=draft value=""' -or
+                $details[1] -cnotmatch 'Checkbox "Milk" role=checkbox') {
+                throw "the Todo session did not show a draft becoming a list item: $($session.Out)"
+            }
+            if ($name -eq 'OnlyTodos' -and $session.Out -match 'Tab "Markets"|Tabs "pages"') {
+                throw '--no-markets left page navigation in the Todo-only shell'
+            }
+            Write-Host '    Enter added Milk to the recorded list and cleared the draft' -ForegroundColor Green
+        }
+
         # The offline catalog must be inside the packed tool, not just beside the repo's source.
         # Run from the package scratch folder, which has no app project and no cui.dll, then read
         # the installed tool's JSON answer as strict UTF-8.
@@ -392,7 +430,7 @@ internal static class AnalyzerProbe
 
     Step 'generating and running a file-based app'
     $defaultMini = Join-Path $work 'demo1'
-    & dotnet new cui-mini -o $defaultMini | Out-Null
+    & dotnet new cui-mini -o $defaultMini @templateHive | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'generating the default mini app failed' }
     $defaultFiles = @(Get-ChildItem $defaultMini -Recurse -File | Sort-Object Name)
     if ($defaultFiles.Count -ne 2 -or ($defaultFiles.Name -join ',') -cne 'demo1.cs,demo1.ico' -or
@@ -402,7 +440,7 @@ internal static class AnalyzerProbe
     # An explicit -n also names the file and gives the native window a unique title.
     $miniName = 'CuiMini' + [guid]::NewGuid().ToString('N')
     $miniFile = "$miniName.cs"
-    & dotnet new cui-mini -n $miniName -o $miniApp --CuiSharpVersion $version | Out-Null
+    & dotnet new cui-mini -n $miniName -o $miniApp --CuiSharpVersion $version @templateHive | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'generating the mini app failed' }
     $generated = @(Get-ChildItem $miniApp -Recurse -File)
     if ($generated.Count -ne 2 -or -not ($generated.Name -ccontains $miniFile) -or
@@ -436,18 +474,19 @@ internal static class AnalyzerProbe
         # Drain both streams while building/restoring; neither pipe may block the child.
         $stdout = $mini.StandardOutput.ReadToEndAsync()
         $stderr = $mini.StandardError.ReadToEndAsync()
-        $mini.StandardInput.WriteLine("tree`nclick Increment`ntree`nquit")
+        $mini.StandardInput.WriteLine("tree`nclick Increment`ntree details`nclick Increment`nwaittext 10 Clicked 1 times`ntree details`nquit")
         $mini.StandardInput.Close()
         if (-not $mini.WaitForExit(180000)) { throw "dotnet run $miniFile timed out" }
         $output = $stdout.GetAwaiter().GetResult()
         $errors = $stderr.GetAwaiter().GetResult()
         if ($mini.ExitCode -ne 0) { throw "dotnet run $miniFile failed: $errors $output" }
         if ($output -notmatch 'CUI-READY 480 320' -or $output -match 'CUI-ERR' -or
-            ([regex]::Matches($output, 'CUI-OK ').Count -ne 4) -or
-            $output -notmatch 'Clicked 0 times' -or $output -notmatch 'Clicked 1 times') {
-            throw "the file-based app did not draw and react to its button: $output"
+            ([regex]::Matches($output, 'CUI-OK ').Count -ne 7) -or
+            $output -cnotmatch '(?m)^ +Button "Increment" role=button\r?\n +Text "Clicked 0 times"' -or
+            $output -cnotmatch '(?m)^ +Button "Increment" role=button state=enabled\r?\n +Text "Clicked 1 times"') {
+            throw "the file-based app did not disable Increment while waiting and re-enable it after one increment: $output"
         }
-        Write-Host "    $miniFile drew a frame and Increment changed its state" -ForegroundColor Green
+        Write-Host "    $miniFile disabled Increment while waiting, then re-enabled it with the count at 1" -ForegroundColor Green
     }
     finally {
         if (-not $mini.HasExited) { $mini.Kill($true); $mini.WaitForExit() }
@@ -455,35 +494,18 @@ internal static class AnalyzerProbe
     }
 
     # The template's other promise: `dotnet cui` drives that same file with no csproj anywhere.
-    # This is the whole tool path on a file-based app — Release build through the SDK's file
-    # handling, a headless launch, one command — checked on the app the template actually ships.
-    Step 'driving the file-based app with dotnet cui'
-    $fileToolInfo = [System.Diagnostics.ProcessStartInfo]::new('dotnet')
-    $fileToolInfo.WorkingDirectory = $miniApp
-    foreach ($argument in @('cui', 'tree', '--project', $miniFile, '--frames', '2')) { $fileToolInfo.ArgumentList.Add($argument) }
-    $fileToolInfo.UseShellExecute = $false
-    $fileToolInfo.RedirectStandardOutput = $true
-    $fileToolInfo.RedirectStandardError = $true
-    $fileToolInfo.StandardOutputEncoding = [System.Text.UTF8Encoding]::new($false, $true)
-    $fileToolInfo.StandardErrorEncoding = [System.Text.UTF8Encoding]::new($false, $true)
-    $fileToolInfo.Environment['PATH'] = "$toolPath$([System.IO.Path]::PathSeparator)$env:PATH"
-    $fileTool = [System.Diagnostics.Process]::Start($fileToolInfo)
-    try {
-        $stdout = $fileTool.StandardOutput.ReadToEndAsync()
-        $stderr = $fileTool.StandardError.ReadToEndAsync()
-        if (-not $fileTool.WaitForExit(300000)) { throw 'dotnet cui tree on the file-based app timed out after 5 minutes' }
-        $tree = $stdout.GetAwaiter().GetResult()
-        $errors = $stderr.GetAwaiter().GetResult()
-        if ($fileTool.ExitCode -ne 0) { throw "dotnet cui tree on $miniFile failed: $errors" }
-        if ($tree -notmatch 'Frame' -or $tree -notmatch 'Increment' -or -not $tree.Contains('保存')) {
-            throw "the installed dotnet cui did not build and render the file-based app as UTF-8: $tree"
-        }
-        Write-Host "    installed dotnet cui built and drove $miniFile; Unicode label round-tripped as UTF-8" -ForegroundColor Green
+    # Run the two commands from the generated file's header against the same process.
+    Step 'running the documented Mini session'
+    Set-Content (Join-Path $miniApp 'steps.txt') -Value @('click Increment', 'waittext 10 Clicked 1 times')
+    $miniEnv = @{ PATH = "$toolPath$([System.IO.Path]::PathSeparator)$env:PATH" }
+    $fileSession = Invoke-Tool 'dotnet' @('cui', 'session', '-p', $miniFile, '--script', 'steps.txt') 300 $miniEnv $miniApp
+    if ($fileSession.Code -ne 0) { throw "dotnet cui session on $miniFile failed: $($fileSession.Err)" }
+    $frames = @($fileSession.Out -csplit '(?m)(?=^Frame\r?$)' | Where-Object { $_.StartsWith('Frame', [StringComparison]::Ordinal) })
+    if ($frames.Count -ne 2 -or $frames[0] -notmatch 'Clicked 0 times' -or
+        $frames[1] -notmatch 'Clicked 1 times' -or -not $frames[1].Contains('保存')) {
+        throw "the installed dotnet cui did not show the delayed count and Unicode label: $($fileSession.Out)"
     }
-    finally {
-        if (-not $fileTool.HasExited) { $fileTool.Kill($true); $fileTool.WaitForExit() }
-        $fileTool.Dispose()
-    }
+    Write-Host "    installed dotnet cui drove $miniFile from count 0 to 1; Unicode label round-tripped" -ForegroundColor Green
 
     # Redirected diagnostics are UTF-8 too. A non-existent filename that itself contains
     # non-ASCII text checks stderr independently from the successful Unicode tree payload.
@@ -607,16 +629,20 @@ public static class CuiMiniWindowProbe
             # LiveAttach in the template is what makes `-a` find it, and clicking is what proves the
             # pipe drives this app and not a copy of it. The window title carries a GUID, so the
             # target is unambiguous even when another live CuiSharp window runs on this machine.
-            $liveTree = Invoke-Tool 'dotnet' @('cui', 'tree', '-a', $miniName) 120 @{ PATH = "$toolPath$([System.IO.Path]::PathSeparator)$env:PATH" }
+            $liveEnv = @{ PATH = "$toolPath$([System.IO.Path]::PathSeparator)$env:PATH" }
+            $liveTree = Invoke-Tool 'dotnet' @('cui', 'tree', '-a', $miniName) 120 $liveEnv
             if ($liveTree.Code -ne 0) { throw "dotnet cui tree -a failed on the open window: $($liveTree.Err)" }
             if ($liveTree.Out -notmatch 'Increment') { throw "dotnet cui tree -a printed no Increment button: $($liveTree.Out)" }
 
-            $liveClick = Invoke-Tool 'dotnet' @('cui', 'click', 'Increment', '-a', $miniName) 120 @{ PATH = "$toolPath$([System.IO.Path]::PathSeparator)$env:PATH" }
-            if ($liveClick.Code -ne 0) { throw "dotnet cui click -a failed on the open window: $($liveClick.Err)" }
-            if ($liveClick.Out -notmatch 'Clicked 1 times') {
-                throw "clicking the open window did not reach its state: $($liveClick.Out)"
+            $liveClick = Invoke-Tool 'dotnet' @('cui', 'click', 'Increment', '-a', $miniName) 120 $liveEnv
+            if ($liveClick.Code -ne 0 -or $liveClick.Out -notmatch 'Clicked 0 times') {
+                throw "the live click did not start a delayed increment: $($liveClick.Err) $($liveClick.Out)"
             }
-            Write-Host '    the open window answered dotnet cui tree -a and click -a' -ForegroundColor Green
+            $liveDone = Invoke-Tool 'dotnet' @('cui', 'tree', '-a', $miniName, '--wait-text', 'Clicked 1 times', '--details') 120 $liveEnv
+            if ($liveDone.Code -ne 0 -or $liveDone.Out -notmatch 'Button "Increment" role=button state=enabled') {
+                throw "the live increment did not complete and re-enable the button: $($liveDone.Err) $($liveDone.Out)"
+            }
+            Write-Host '    the open window accepted a click and showed the delayed result' -ForegroundColor Green
 
             if (-not [CuiMiniWindowProbe]::PostMessage($window, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero)) {
                 throw 'could not send WM_CLOSE to the mini app window'
@@ -635,7 +661,6 @@ public static class CuiMiniWindowProbe
     Write-Host ('templates verified in {0:N1} seconds' -f $elapsed.Elapsed.TotalSeconds) -ForegroundColor Green
 }
 finally {
-    if ($templateInstalled) { & dotnet new uninstall CuiSharp.Templates | Out-Null }
     if ($ownPackageCache) { Remove-Item Env:NUGET_PACKAGES -ErrorAction SilentlyContinue }
     Pop-Location
     if ($Keep) { Write-Host "kept: $work" } else { Remove-Item $work -Recurse -Force -ErrorAction SilentlyContinue }

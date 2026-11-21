@@ -20,11 +20,12 @@ public class PageInteractionTests
 
         app.FindById("draft").Click();
         app.Type("Milk");
-        app.FindButton("Add").ClickAndFrame();
+        app.FindById("add-todo").ClickAndFrame();
 
         Assert.Equal(before + 1, todos.Items.Count);
         Assert.Equal("Milk", todos.Items[^1].Title);
-        Assert.Contains(app.Tree.Descendants(), node => node.Text == "Milk");
+        Assert.Equal("Milk", app.Find("Checkbox", "Milk").Text);
+        Assert.Equal(string.Empty, app.FindById("draft").Value);
     }
 
     [Fact]
@@ -57,39 +58,101 @@ public class PageInteractionTests
         Assert.DoesNotContain(app.Tree.Descendants(), node => node.Text == "Sketch the onboarding flow");
         Assert.Contains(app.Tree.Descendants(), node => node.Text == "Nothing done yet");
 
-        app.Find("Segment", "All").ClickAndFrame();
+        app.FindById("draft").Click();
+        app.Type("Milk");
+        app.FindById("add-todo").ClickAndFrame();
+
         Assert.Contains(app.Tree.Descendants(), node => node.Text == "Sketch the onboarding flow");
+        Assert.Equal("Milk", app.Find("Checkbox", "Milk").Text);
     }
 
     [Fact]
-    public void SubmittingTheDraftWithEnterAddsAnItemAndResetsTheFilter()
+    public void EnterAddsTheDraftAndClearsItAfterAcceptance()
     {
         var todos = new TodoService();
-
+        var before = todos.Items.Count;
         using var app = HeadlessApp.Start(new TodoPage(todos), TestHarness.Width, TestHarness.Height);
 
-        app.Find("Segment", "Done").ClickAndFrame();
-        Assert.Contains(app.Tree.Descendants(), node => node.Text == "Nothing done yet");
+        app.FindById("draft").Click();
+        app.Type("Milk");
+        Assert.Equal("Milk", app.FindById("draft").Value);
+        Assert.Equal(before, todos.Items.Count);
+
+        app.Key(Key.Enter);
+
+        Assert.Equal(before + 1, todos.Items.Count);
+        Assert.Equal("Milk", todos.Items[^1].Title);
+        Assert.Equal("Milk", app.Find("Checkbox", "Milk").Text);
+        Assert.Equal(string.Empty, app.FindById("draft").Value);
+    }
+
+    [Fact]
+    public void ARejectedDraftStaysInTheInputAndShowsFeedback()
+    {
+        var todos = new TodoService();
+        var before = todos.Items.Count;
+        using var app = HeadlessApp.Start(new TodoPage(todos), TestHarness.Width, TestHarness.Height);
 
         app.FindById("draft").Click();
-        app.Type("Ship 1.0").Key(Key.Enter);
+        app.Type("   ").Key(Key.Enter);
 
-        Assert.Equal("Ship 1.0", todos.Items[^1].Title);
-        Assert.Contains(app.Tree.Descendants(), node => node.Text == "Ship 1.0");
-        Assert.DoesNotContain(app.Tree.Descendants(), node => node.Text == "Nothing done yet");
+        Assert.Equal(before, todos.Items.Count);
+        Assert.Equal("   ", app.FindById("draft").Value);
+        Assert.Contains(app.Tree.Descendants(), node => node.Text == "Enter a task before adding it.");
+    }
+
+    [Fact]
+    public void PagesAreCreatedOnFirstVisitAndKeepTheirStateWhenRevisited()
+    {
+        var todoCreations = 0;
+        var otherCreations = 0;
+        using var shell = new App((TodoPage.PageTitle, CreateTodos), (OtherPage.PageTitle, CreateOther));
+        Assert.Equal(0, todoCreations);
+        Assert.Equal(0, otherCreations);
+
+        using var app = HeadlessApp.Start(shell, TestHarness.Width, TestHarness.Height);
+        Assert.Equal(1, todoCreations);
+        Assert.Equal(0, otherCreations);
+
+        app.FindById("draft").Click();
+        app.Type("Milk");
+        app.Find("Tab", OtherPage.PageTitle).ClickAndFrame();
+        Assert.Equal(1, otherCreations);
+        Assert.Equal(OtherPage.PageTitle, app.Find("Heading", OtherPage.PageTitle).Text);
+
+        app.Find("Tab", "Todos").ClickAndFrame();
+        Assert.Equal("Milk", app.FindById("draft").Value);
+        Assert.Equal(1, todoCreations);
+        app.Find("Tab", OtherPage.PageTitle).ClickAndFrame();
+        Assert.Equal(1, otherCreations);
+        Assert.Empty(app.Faults);
+
+        TodoPage CreateTodos()
+        {
+            todoCreations++;
+            return new TodoPage(new TodoService());
+        }
+
+        OtherPage CreateOther()
+        {
+            otherCreations++;
+            return new OtherPage();
+        }
     }
 
     [Fact]
     public void TheShellSwitchesPagesAndThemeByClickAndShortcut()
     {
-        var shell = new App(new TodoPage(new TodoService()), TestHarness.CreateMarketsPage(historyPoints: 120));
+        var shell = new App(
+            (TodoPage.PageTitle, static () => new TodoPage(new TodoService())),
+            (OtherPage.PageTitle, static () => new OtherPage()));
 
         using var app = HeadlessApp.Start(shell, TestHarness.Width, TestHarness.Height);
 
         Assert.Contains(app.Tree.Descendants(), node => node.Kind == "Heading" && node.Text == "Todos");
 
-        app.Find("Tab", "Markets").ClickAndFrame();
-        Assert.Contains(app.Tree.Descendants(), node => node.Kind == "Heading" && node.Text == "Markets");
+        app.Find("Tab", OtherPage.PageTitle).ClickAndFrame();
+        Assert.Equal(OtherPage.PageTitle, app.Find("Heading", OtherPage.PageTitle).Text);
 
         app.Key(Key.Tab, Mods.Ctrl);
         Assert.Contains(app.Tree.Descendants(), node => node.Kind == "Heading" && node.Text == "Todos");
@@ -127,5 +190,12 @@ public class PageInteractionTests
 
         Assert.Equal(7, applied);
         Assert.Null(mutation.Error);
+    }
+
+    private sealed class OtherPage : Component
+    {
+        public const string PageTitle = "Other page";
+
+        protected override void Draw(Ui ui) => ui.Heading(PageTitle, 2);
     }
 }

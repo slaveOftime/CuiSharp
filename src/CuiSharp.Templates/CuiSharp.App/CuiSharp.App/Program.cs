@@ -14,13 +14,20 @@ if (args.Contains("--check"))
 
 var builder = CuiApplication.CreateBuilder(args);
 
-builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<TodoService>();
+builder.Services.AddSingleton<TodoPage>();
+#if (!NoMarkets)
+builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<PriceFeed>();
 builder.Services.AddSingleton<MarketFeed>();
-builder.AddPage<TodoPage>();
-builder.AddPage<MarketsPage>();
-builder.Services.AddSingleton<App>();
+builder.Services.AddSingleton<MarketsPage>();
+#endif
+builder.Services.AddSingleton<App>(services => new App([
+    (TodoPage.PageTitle, () => services.GetRequiredService<TodoPage>()),
+#if (!NoMarkets)
+    (MarketsPage.PageTitle, () => services.GetRequiredService<MarketsPage>()),
+#endif
+]));
 
 builder.Window.Title = "CuiSharp.App";
 builder.Window.Width = 980;
@@ -32,10 +39,10 @@ builder.Window.Theme = Theme.Light;
 builder.Window.WindowCreated = window => Console.WriteLine(CuiDiagnostics.Report(window));
 
 // `dotnet cui tree -p CuiSharp.App` builds and runs a fresh headless app for each invocation;
-// `dotnet cui session -p CuiSharp.App --script cmds.txt` keeps a multi-step flow in one app.
+// `dotnet cui session -p CuiSharp.App --script todo.steps.txt` keeps the Todo flow in one app.
 // `dotnet cui tree -a` instead drives the existing window, preserving its state between commands.
 // LiveAttach enables that listener; it does not open another window.
 builder.Window.LiveAttach = true;
 
 using var app = builder.Build();
-return app.Run<App>();
+return app.Run(app.Services.GetRequiredService<App>());
