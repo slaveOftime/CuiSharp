@@ -1,5 +1,4 @@
 #:package CuiSharp@*
-// #:project ../src/CuiSharp/CuiSharp.csproj
 #:package JAJ.Packages.MiniAudioEx@4.0.1
 #:package TagLibSharp@2.3.0
 #:package StbImageSharp@2.30.16
