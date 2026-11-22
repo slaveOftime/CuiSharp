@@ -1,0 +1,5 @@
+click id:draft
+type Milk
+tree details
+key Enter
+tree details

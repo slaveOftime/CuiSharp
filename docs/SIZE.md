@@ -55,19 +55,21 @@ way:
 Those are historical profile measurements, not a same-library comparison with 0.4.4.
 The current shipped snapshot is:
 
-| App | 0.4.5, shipped |
+| App | 0.4.6, shipped |
 |---|---|
 | minimal app | 1 176 064 B |
 | gallery, 32 pages | 3 177 984 B |
-| `dotnet new cui-app`, published | 2 355 712 B |
-| `dotnet new cui-mini`, published | 1 206 784 B |
+| `dotnet new cui-app`, published | 2 312 704 B |
+| `dotnet new cui-mini`, published | 1 384 960 B |
 
 The gallery adds 223 232 B over 0.4.2 with thirty-six new C functions, thirty-two structs and
 three new pages. That cross-revision growth does not measure the size profile's effectiveness.
-0.4.4 moved the two template rows and left the gallery alone; 0.4.5 moves none of the four. Its
-work — the system-font search that left the first frame — costs a size only in an app that asks for
-system faces, because the thread pool comes in with the background search: roughly 45 KB in a
-minimal AOT app, and nothing in the shapes measured here, none of which asks.
+0.4.6 reworks the templates to teach one interaction end to end, and the two rows move in opposite
+directions: the scaffolded app loses 43 008 B to the simpler pages it now shows, while the
+file-based app gains 178 176 B because its example is now a `Mutation` — a three-second delay with
+a spinner — and background work brings the async machinery and the thread pool into the executable.
+The teaching example is the cost, not the framework: an app that never starts background work pays
+nothing of it.
 
 Nearly all of it is the headless channel: `System.IO`, `Console`, `Encoding` and the reflection
 over an enum the command lexer reads arrive with it, and a switch only removes them when the

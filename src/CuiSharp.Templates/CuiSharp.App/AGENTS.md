@@ -1,41 +1,40 @@
 # AGENTS.md — CuiSharp.App
 
-See [README.md](README.md) for the file map, the run commands and how to drive the app from a
-terminal.
+Start with [the Todo walkthrough](README.md#follow-one-interaction-add-a-todo): follow
+`TodoComposer.Draw` → `AddRequested` → `TodoPage.Draw` → `TodoService.Add`, then run
+`todo.steps.txt` and the matching headless test.
 
-## Add a screen
+## State and frames
 
-Two edits, and the shell picks the new screen up in registration order:
+- **Local state** belongs to the control that edits it. A button can increment its own counter
+  directly; the Todo composer owns the draft. Across an ownership boundary, report what the user
+  asked for (`AddRequested`), let the owner accept or reject it, and only then clear the draft.
+  The page draws **applied state** from `TodoService.Items`.
+- **The host owns frames.** A window gets frames for input. Call `ui.RequestRedraw()` during
+  drawing when you need a follow-up frame, as Todo does after drawing the input. A rendered
+  component uses `WantsFrames` while it is live or animating, not to subscribe to external events.
+- **External notifications are not animation.** Changing a field on a worker does not request a
+  frame. Use `Mutation<T>` for app-started background work with a UI-thread apply callback, or
+  `Progressive<T>` for snapshots while work runs. The host requests frames while such work is
+  pending; on Windows it can also post a wake to the window on completion. Do not assume arbitrary
+  external events wake a sleeping window across backends. `HeadlessApp.Frame()` forces a draw and
+  does not test that wake path. Never call `Ui` from a worker thread.
 
-1. `Pages/<Name>Page.cs` — a `Component` whose state is fields and whose `Draw(Ui ui)` draws them.
-2. `Program.cs` — `builder.AddPage<<Name>Page>();`
+## Drawing and selectors
 
-## Rules
+- Draw synchronously; never store `Ui` or a scope, or `await` or block in `Draw`. Use `using` for
+  scopes and guard conditional scopes with `if (scope)`.
+- Name meaningful regions (`page`, `todo-composer`) so the tree shows where controls live. Keep
+  widget keys stable for native state. Key dynamic rows by item ID (`ui.Keyed` or `ui.Id`); the
+  row's title need not be unique. `ui.Automation` gives a stable test selector, not a native key.
+  Translate visible labels, not keys or automation IDs.
+- Keep steady draw at 0 B: avoid LINQ and temporary arrays/closures, use `ui.Keyed` or index lists,
+  and pass interpolation directly to `UiText`. Creating an item or editing text can allocate.
+  `TestHarness.AssertZeroAllocations` measures draw, not input setup or tree snapshots. Use
+  `prepare` to reach a visible state (e.g. a filled draft) and `verify` to check it after measurement.
 
-1. **`Draw(Ui ui)` is synchronous and allocates 0 B in steady state.** Never `await`, block (`.Result`, `.Wait()`, `Thread.Sleep`), use LINQ, allocate per-frame arrays/closures, or format strings before passing them (`$"..."` in a `UiText` argument formats into the frame arena). Iterate `IReadOnlyList<T>` with `foreach (var item in ui.Keyed(items, static x => x.Id))` or by index (`for`) — never bare `foreach` over an interface, which boxes its enumerator (CUI007).
-2. **State lives in component fields.** Mutate fields directly; the next frame draws the change. The theme is the exception, because CUI owns it: `ui.Theme` / `ui.ToggleTheme()`.
-3. **Scopes & widget IDs.** Dispose every layout/container/id scope with `using`. Guard conditional scopes (`OpenScope` from `Dialog`, `Menu`, `Table`, …) with `if (scope)`. Inside a loop, use `ui.Keyed(items, static item => item.Id)` or wrap repeating rows in `using (ui.Id(item.Id))` (or `using (ui.Automation("..."))` when only a stable automation id is needed).
-4. **Async work uses `Mutation` / `Mutation<T>` (one result) or `Progressive<T>` (reports as it runs).** Hold it in a `readonly` field, bind a button with `ui.ActionButton("Save", _save)` or start with `Run()` / `Restart(...)`, and read `Latest`, `IsRunning` and `Error` in `Draw` (or pass an `apply` callback to `Mutation<T>`).
-5. **Self-updating screens set `protected override bool WantsFrames => true`.** Otherwise the window sleeps between inputs.
-6. **Name the container that bounds a region** (`header`, `page`, `footer`, `preferences`), so `dotnet cui tree` nests its controls under it and a query can reach it. Do not reuse a control's word: a `Tab "Settings"` outranks a `Column "settings"` in a query, so bare queries no longer identify the region reliably. Use distinct region names.
-
-## Tests
-
-`TestHarness.AssertZeroAllocations(page)` measures the page's own draw, so a page that allocates
-fails it — fix the page, never the gate. Pass `prepare: app => …` to measure a state a user reaches
-(the gate draws the untouched page otherwise, and an allocation that only appears after an edit
-would pass). Keep that state during measurement; use `verify: app => …` to assert it afterward. Input is `app.FindById("draft").Click()` then `app.Type("Milk")` — the click is what
-focuses the field; `Key(Key.Enter)` submits. Assert on the model (`todos.Items`) or on the recorded
-frame (`app.Tree`), never on how the page is written.
-
-## Style
-
-Modern C#: `var` when the type is apparent, collection expressions (`[]`, `[..]`), switch
-expressions for branching on a value, primary constructors for pages and services. Every
-`if`/`else`/`for`/`foreach`/`while` body is braced, and a method returns early rather than nesting.
-
-## Verification
-
-`dotnet test` and `dotnet build -warnaserror` after every change. When the question is what the app
-really draws, `dotnet cui tree -p CuiSharp.App` is one build and one answer, and
-`dotnet cui session -p CuiSharp.App --script cmds.txt` keeps a multi-step flow in one process.
+To add a screen, create a `Component` in `Pages/`, register it as a singleton in `Program.cs`,
+and add a `(title, factory)` entry to the `App` registration. Keep the title separate so the
+shell can draw every tab without constructing inactive pages. The first visit creates the page;
+later visits reuse it. Run `dotnet build -warnaserror` and `dotnet test`. Use the model and
+`app.Tree` to assert behavior; use pixels to verify appearance.

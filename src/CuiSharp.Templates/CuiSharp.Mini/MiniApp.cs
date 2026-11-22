@@ -4,16 +4,22 @@
 //   dotnet run MiniApp.cs
 //   dotnet publish MiniApp.cs -c Release -o .
 //
-// The publish leaves one ~1.2 MB exe that needs no .NET runtime on the target machine, and it
-// compiles the two driving channels out to keep it that size: add -p:CuiSharpHeadless=true and
-// -p:CuiSharpLive=true when a tool has to drive that exe.
+// The publish leaves one executable that needs no .NET runtime on the target machine.
+// It compiles the two driving channels out to save space: add -p:CuiSharpHeadless=true and
+// -p:CuiSharpLive=true when a tool has to drive that executable.
 //
 // Install `dotnet cui` once (dotnet tool install -g CuiSharp.Tools), then drive this app with no
 // window of your own — the tool builds it, runs it headless and prints the frame:
 //   dotnet cui tree -p MiniApp.cs
-//   dotnet cui click Increment -p MiniApp.cs
-//   dotnet cui session -p MiniApp.cs --script steps.txt
 //   dotnet cui docs
+//
+// Create steps.txt with these two lines:
+//   click Increment
+//   waittext 10 Clicked 1 times
+// Run both steps in the same app:
+//   dotnet cui session -p MiniApp.cs --script steps.txt
+// The click starts a 3-second delay: the button shows a spinner and is disabled, and the count
+// stays at 0. When the delay ends, the count reaches 1 and the button is enabled again.
 //
 // One command is one process, starting at frame 1; a session keeps its lines in one process, so
 // state carries from one to the next. `-a` drives the window you are watching instead, left open —
@@ -30,6 +36,7 @@
 #:property DebugType=none
 
 using CuiSharp;
+using CuiSharp.Hosting;
 
 var options = new CuiAppOptions
 {
@@ -42,6 +49,10 @@ var options = new CuiAppOptions
 };
 
 var clicks = 0;
+// Wait without blocking Draw, then update the local counter on the UI thread.
+using var increment = new Mutation(
+    static token => Task.Delay(TimeSpan.FromSeconds(3), token),
+    onSuccess: () => clicks++);
 
 return CuiApp.Run(options, ui =>
 {
@@ -49,9 +60,9 @@ return CuiApp.Run(options, ui =>
     {
         ui.Heading("MiniApp", 1);
 
-        if (ui.Button("Increment", new ButtonOpts { Variant = ButtonVariant.Primary }))
+        using (ui.Disabled(increment.IsRunning))
         {
-            clicks++;
+            ui.ActionButton("Increment", increment, new() { Variant = ButtonVariant.Primary, Icon = Icons.Plus });
         }
 
         ui.Text($"Clicked {clicks} times");

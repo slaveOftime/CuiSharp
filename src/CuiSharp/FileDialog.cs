@@ -7,8 +7,9 @@ namespace CuiSharp;
 /// instead of a bool and an empty string.
 /// <para>
 /// Native dialogs are modal and blocking on every platform, so call this from a button's click in a
-/// frame, never from work that has to keep drawing. The default implementation asks the OS through
-/// CUI; a test replaces it, so a picker flow can be exercised without a display or a dialog.
+/// frame, never from work that has to keep drawing. The default implementation asks the OS — CUI's
+/// dialogs for a file or a save path, the shell's own picker for a folder — and a test replaces it,
+/// so a picker flow can be exercised without a display or a dialog.
 /// </para>
 /// </summary>
 public interface IFileDialogProvider
@@ -52,7 +53,7 @@ public sealed record FilePickResult
     public override string ToString() => Picked ? Path : Error is null ? "cancelled" : "failed: " + Error;
 }
 
-/// <summary>The OS dialog, through CUI. This is what an app gets unless it supplies its own.</summary>
+/// <summary>The OS dialog. This is what an app gets unless it supplies its own.</summary>
 public sealed class NativeFileDialogProvider : IFileDialogProvider
 {
     /// <summary>Shares the one implementation, which holds no state.</summary>
@@ -64,6 +65,22 @@ public sealed class NativeFileDialogProvider : IFileDialogProvider
         ArgumentNullException.ThrowIfNull(window);
 
         if (window.NativeWindow == 0) return FilePickResult.Failed("there is no window yet");
+
+        // A folder is the one choice CUI answers on Windows with the legacy SHBrowseForFolderW tree,
+        // so the shell's own folder picker is opened instead: the same question, asked by the dialog
+        // Explorer uses. Files and save paths stay with CUI, which asks the same shell dialogs.
+        if (OperatingSystem.IsWindows() && options.Kind == FileDialogKind.Folder)
+        {
+            try
+            {
+                string? folder = Interop.ShellFolderDialog.Pick(window.NativeWindow, options.Title);
+                return folder is null ? FilePickResult.CancelledResult : FilePickResult.Chosen(folder);
+            }
+            catch (System.Runtime.InteropServices.ExternalException error)
+            {
+                return FilePickResult.Failed(error.Message);
+            }
+        }
 
         // PATH_MAX on Linux, and Windows paths are far shorter: one buffer for both.
         const int Capacity = 4096;

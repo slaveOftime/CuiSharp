@@ -1,71 +1,13 @@
 using CuiSharp;
-using CuiSharp.App.Pages;
-using CuiSharp.App.Services;
 using CuiSharp.Hosting;
 
 namespace CuiSharp.App.Tests;
 
-/// <summary>
-/// Manual millisecond clock so time-driven tests never sleep or wait on the wall clock.
-/// </summary>
-internal sealed class FakeClock : TimeProvider
-{
-    private long _ms;
-
-    public override long TimestampFrequency => 1000;
-
-    public override long GetTimestamp() => _ms;
-
-    public override DateTimeOffset GetUtcNow() => DateTimeOffset.UnixEpoch.AddMilliseconds(_ms);
-
-    public void Advance(double milliseconds) => _ms += (long)milliseconds;
-}
-
-/// <summary>
-/// Shared fixtures for market feed and page tests, plus the steady-state 0 B/frame budget gate.
-/// </summary>
+/// <summary>Shared viewport and steady-state 0 B/frame budget gate.</summary>
 internal static class TestHarness
 {
     public const int Width = 640;
     public const int Height = 480;
-
-    public static (MarketFeed Feed, FakeClock Clock) CreateMarketFeed(int historyPoints = 0)
-    {
-        var clock = new FakeClock();
-        var feed = new MarketFeed(new PriceFeed(), clock);
-
-        if (historyPoints > 0)
-        {
-            feed.Apply(CreateSnapshot(historyPoints));
-        }
-
-        return (feed, clock);
-    }
-
-    public static MarketsPage CreateMarketsPage(int historyPoints = 0) =>
-        new(CreateMarketFeed(historyPoints).Feed);
-
-    public static MarketSnapshot CreateSnapshot(int points)
-    {
-        var history = new float[PriceFeed.Symbols.Count][];
-        var last = new float[PriceFeed.Symbols.Count];
-
-        for (var s = 0; s < PriceFeed.Symbols.Count; s++)
-        {
-            history[s] = new float[points];
-            var price = PriceFeed.Symbols[s].Start;
-
-            for (var i = 0; i < points; i++)
-            {
-                price *= 1.001f;
-                history[s][i] = price;
-            }
-
-            last[s] = price;
-        }
-
-        return new MarketSnapshot(history, last);
-    }
 
     /// <summary>
     /// Draws frames until the page is warm and asserts the steady state allocates 0 B: the median

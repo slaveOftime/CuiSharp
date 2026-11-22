@@ -1,5 +1,4 @@
 #:package CuiSharp@*
-// #:project ../src/CuiSharp/CuiSharp.csproj
 #:package MonoTorrent@3.0.2
 
 // The properties below are what make `dotnet publish download.cs -c Release -o .`

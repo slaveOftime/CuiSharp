@@ -4,6 +4,15 @@ Every user-visible change, newest first. Pre-1.0 the minor number carries new su
 carries fixes. The section for a tag is what the GitHub release publishes, so the two cannot say
 different things.
 
+## [0.4.6] — 2026-11-21
+
+### Changed
+
+- **The shell's own folder picker on Windows.** `window.PickFile` with `FileDialogKind.Folder` used
+  to open CUI's legacy `SHBrowseForFolderW` tree; it now opens the dialog Explorer itself uses
+  (`IFileOpenDialog` with `FOS_PICKFOLDERS`), in managed code. The native library is unchanged, and
+  files and save paths stay with CUI's dialogs, which already ask the shell.
+
 ## [0.4.5] — 2026-11-17
 
 ### Changed

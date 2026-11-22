@@ -1,5 +1,4 @@
 #:package CuiSharp@*
-// #:project ../src/CuiSharp/CuiSharp.csproj
 
 // The properties below are what make `dotnet publish disk.cs -c Release -o .`
 // leave one small native executable beside this file, with no .NET on the target.
