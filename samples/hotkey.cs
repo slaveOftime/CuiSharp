@@ -1,4 +1,4 @@
-#:package CuiSharp@*
+﻿#:package CuiSharp@*
 
 // Hotkey — a minimal Windows hotkey manager.
 //
@@ -25,6 +25,7 @@
 
 using System.Buffers.Binary;
 using System.Collections.Concurrent;
+using System.Collections.Frozen;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -54,13 +55,26 @@ internal sealed class HotkeyApp : IDisposable
         @"C:\Users\woo\Documents\Code\Slaveoftime\CuiSharp\samples\disk.exe";
 
     private static readonly string[] TabNames = ["Bindings", "Shortcuts", "Activity"];
-    private static readonly string[] PayloadNames =
+    private static readonly string[] CaptureNames =
         ["Nothing", "Selected text", "Clipboard", "Selected files and folders"];
 
     private readonly bool _diskExampleExists = File.Exists(DiskExample);
     private readonly ActivityLog _log = new();
     private readonly HotkeyHost _host;
     private readonly List<Binding> _bindings = ConfigStore.Load();
+
+    // The quick launcher lives in a second, small window. Its bridge is the only thing shared
+    // across the two UI threads; actions queued here land on this window's thread before a frame.
+    private readonly LauncherBridge _launcherBridge = new();
+    private readonly LauncherWindow _launcher;
+    private readonly ConcurrentQueue<Action> _uiActions = new();
+
+    // The key-value editor edits this array in place. It is loaded from the draft on Select and
+    // written back to Binding.Env on Save; _envDirty makes an edit show up as an unsaved change.
+    private const int MaxEnvPairs = 32;
+    private readonly KeyValue[] _envPairs = new KeyValue[MaxEnvPairs];
+    private int _envCount;
+    private bool _envDirty;
 
     private ShortcutInfo[] _shortcuts = [];
     private bool _scanStarted;
@@ -83,6 +97,14 @@ internal sealed class HotkeyApp : IDisposable
     public HotkeyApp()
     {
         _host = new HotkeyHost(_log, () => _hwnd);
+        _launcher = new LauncherWindow(_launcherBridge, _log);
+        _launcherBridge.WakeMain = Wake;
+        _host.ShowLauncher = () => _launcher.Show();
+        _host.LauncherPayload = payload => _launcher.Complete(payload);
+        _host.LauncherHandle = () => _launcher.Handle;
+        // Last-access bookkeeping and config writes belong on this window's thread.
+        _host.Triggered = id => _uiActions.Enqueue(() => NoteTrigger(id));
+
         Options = new CuiAppOptions
         {
             Title = "Hotkey",
@@ -99,15 +121,25 @@ internal sealed class HotkeyApp : IDisposable
                 _host.WakeWindow = _hwnd;
                 _tray = new TrayIcon(_hwnd);
                 if (!_tray.Visible) _log.Add("Tray", "Could not add the tray icon.", false);
+
+                // Build the launcher now, not on the first hotkey: its window, GPU context and
+                // fonts are then warm by the time Ctrl+Space arrives. In headless runs this
+                // callback never fires, so no second message loop is started there.
+                _launcher.Start();
             },
         };
 
         if (_bindings.Count > 0) Select(0);
         _host.SetBindings(_bindings);
+        RefreshLauncher();
     }
 
     public void Draw(Ui ui)
     {
+        // The hotkey thread and the launcher thread never touch the model; they hand work back here.
+        while (_uiActions.TryDequeue(out Action? action)) action();
+        foreach (string id in _launcherBridge.DrainTriggered()) NoteTrigger(id);
+
         ui.UseSystemFontFallbacks();
 
         // A denser rhythm than the stock theme: tighter corners, small controls, and every default
@@ -195,12 +227,7 @@ internal sealed class HotkeyApp : IDisposable
         {
             if (latest is { } entry)
             {
-                ui.Badge(entry.Ok ? "ok" : "error", new BadgeOpts
-                {
-                    Tone = entry.Ok ? Tone.Success : Tone.Danger,
-                    Size = ControlSize.Sm,
-                    Dot = true,
-                });
+                DrawResultBadge(ui, entry.Ok);
                 ui.Text($"{entry.When:HH:mm:ss}", new TextOpts(12, Color.TextMuted));
                 ui.Text(entry.Binding, new TextOpts(12, Color.TextSecondary));
                 ui.Text(entry.Text, new TextOpts(12, Color.TextMuted) { NoWrap = true });
@@ -226,99 +253,7 @@ internal sealed class HotkeyApp : IDisposable
     {
         using (ui.Row(new Box { Gap = 14, Width = Size.Fill, Height = Size.Fill, Align = Align.Stretch }))
         {
-            using (ui.Column(new Box { Width = Size.Px(196), Height = Size.Fill, Gap = 6 }))
-            {
-                using (ui.Row(new Box { Gap = 6, Align = Align.Center, Width = Size.Fill, PadX = 2 }))
-                {
-                    ui.Label("Bindings");
-                    ui.Badge(_bindings.Count.ToString(), new BadgeOpts { Size = ControlSize.Sm, Tone = Tone.Neutral });
-                    ui.Spacer();
-                    if (ui.Button("+", new ButtonOpts
-                    {
-                        Variant = ButtonVariant.Ghost,
-                        Size = ControlSize.Sm,
-                        Tooltip = "New binding",
-                    }))
-                    {
-                        AddBinding();
-                    }
-                }
-
-                using (ui.Scroll(new ScrollOpts { Height = Size.Fill, Gap = 5 }))
-                {
-                    if (_bindings.Count == 0)
-                    {
-                        using (ui.Card(new Card { Pad = 12, Gap = 8, Width = Size.Fill }))
-                        {
-                            ui.Label("No bindings yet");
-                            ui.Muted("Give an application a global hotkey and choose what it receives.");
-                            if (ui.Button("New binding", new ButtonOpts
-                            {
-                                Variant = ButtonVariant.Primary,
-                                Size = ControlSize.Sm,
-                            }))
-                            {
-                                AddBinding();
-                            }
-
-                            if (_diskExampleExists && ui.Button("Add the disk.exe example", new ButtonOpts
-                            {
-                                Variant = ButtonVariant.Ghost,
-                                Size = ControlSize.Sm,
-                            }))
-                            {
-                                AddDiskExample();
-                            }
-                        }
-                    }
-
-                    for (int i = 0; i < _bindings.Count; i++)
-                    {
-                        Binding b = _bindings[i];
-                        string status = _host.Status(i);
-                        string combo = KeyMap.Text(b.Mods, (Key)b.Key);
-                        string target = b.Command.Length > 0 ? Path.GetFileName(b.Command) : "";
-                        if (target.Length == 0) target = b.Command;
-
-                        using (ui.Id(i))
-                        {
-                            bool clicked;
-                            using (ui.Card(new Card
-                            {
-                                PadX = 10,
-                                PadY = 8,
-                                Gap = 4,
-                                Width = Size.Fill,
-                                Hoverable = true,
-                                Selected = i == _selected,
-                                Muted = !b.Enabled,
-                            }, out clicked))
-                            {
-                                using (ui.Row(new Box { Gap = 8, Align = Align.Center, Width = Size.Fill }))
-                                {
-                                    ui.Label(b.Name.Length > 0 ? b.Name : "Untitled");
-                                    ui.Spacer();
-                                    ui.Kbd(combo);
-                                }
-
-                                using (ui.Row(new Box { Gap = 6, Align = Align.Center, Width = Size.Fill }))
-                                {
-                                    ui.Badge(ShortStatus(status), new BadgeOpts
-                                    {
-                                        Tone = StatusTone(status),
-                                        Size = ControlSize.Sm,
-                                        Dot = true,
-                                    });
-                                    ui.Text(target.Length > 0 ? target : "no command",
-                                        new TextOpts(12, Color.TextMuted) { NoWrap = true });
-                                }
-                            }
-
-                            if (clicked) Select(i);
-                        }
-                    }
-                }
-            }
+            DrawBindingList(ui);
 
             using (ui.Box(new Box { Width = Size.Px(1), Height = Size.Fill, Bg = Color.Border })) { }
 
@@ -330,6 +265,109 @@ internal sealed class HotkeyApp : IDisposable
                 if (_selected >= 0 && _draft is not null) DrawEditor(ui);
                 else DrawEmpty(ui);
             }
+        }
+    }
+
+    private void DrawBindingList(Ui ui)
+    {
+        using (ui.Column(new Box { Width = Size.Px(196), Height = Size.Fill, Gap = 6 }))
+        {
+            using (ui.Row(new Box { Gap = 6, Align = Align.Center, Width = Size.Fill, PadX = 2 }))
+            {
+                ui.Label("Bindings");
+                ui.Badge(_bindings.Count.ToString(), new BadgeOpts { Size = ControlSize.Sm, Tone = Tone.Neutral });
+                ui.Spacer();
+                if (ui.Button("+", new ButtonOpts
+                {
+                    Variant = ButtonVariant.Ghost,
+                    Size = ControlSize.Sm,
+                    Tooltip = "New binding",
+                }))
+                {
+                    AddBinding();
+                }
+            }
+
+            using (ui.Scroll(new ScrollOpts { Height = Size.Fill, Gap = 5 }))
+            {
+                if (_bindings.Count == 0) DrawEmptyBindingList(ui);
+
+                for (int i = 0; i < _bindings.Count; i++) DrawBindingCard(ui, i);
+            }
+        }
+    }
+
+    private void DrawEmptyBindingList(Ui ui)
+    {
+        using (ui.Card(new Card { Pad = 12, Gap = 8, Width = Size.Fill }))
+        {
+            ui.Label("No bindings yet");
+            ui.Muted("Give an application a global hotkey and choose what it receives.");
+            if (ui.Button("New binding", new ButtonOpts
+            {
+                Variant = ButtonVariant.Primary,
+                Size = ControlSize.Sm,
+            }))
+            {
+                AddBinding();
+            }
+
+            if (_diskExampleExists && ui.Button("Add the disk.exe example", new ButtonOpts
+            {
+                Variant = ButtonVariant.Ghost,
+                Size = ControlSize.Sm,
+            }))
+            {
+                AddDiskExample();
+            }
+        }
+    }
+
+    private void DrawBindingCard(Ui ui, int index)
+    {
+        Binding binding = _bindings[index];
+        string status = _host.Status(index);
+        string combo = KeyMap.Text(binding.Mods, (Key)binding.Key);
+        string target = binding.Command.Length > 0 ? Path.GetFileName(binding.Command) : "";
+        if (target.Length == 0) target = binding.Command;
+
+        using (ui.Id(index))
+        {
+            bool clicked;
+            using (ui.Card(new Card
+            {
+                PadX = 10,
+                PadY = 8,
+                Gap = 4,
+                Width = Size.Fill,
+                Hoverable = true,
+                Selected = index == _selected,
+                Muted = !binding.Enabled,
+            }, out clicked))
+            {
+                using (ui.Row(new Box { Gap = 8, Align = Align.Center, Width = Size.Fill }))
+                {
+                    ui.Label(binding.Name.Length > 0 ? binding.Name : "Untitled");
+                    if (binding.BuiltIn)
+                        ui.Badge("built-in", new BadgeOpts { Size = ControlSize.Sm, Tone = Tone.Info });
+                    ui.Spacer();
+                    ui.Kbd(combo);
+                }
+
+                using (ui.Row(new Box { Gap = 6, Align = Align.Center, Width = Size.Fill }))
+                {
+                    ui.Badge(ShortStatus(status), new BadgeOpts
+                    {
+                        Tone = StatusTone(status),
+                        Size = ControlSize.Sm,
+                        Dot = true,
+                    });
+                    ui.Text(target.Length > 0 ? target : "no command",
+                        new TextOpts(12, Color.TextMuted) { NoWrap = true });
+                }
+            }
+
+            if (clicked) Select(index);
         }
     }
 
@@ -364,146 +402,198 @@ internal sealed class HotkeyApp : IDisposable
 
     private void DrawEditor(Ui ui)
     {
-        Binding b = _draft!;
+        Binding binding = _draft!;
+        bool builtIn = binding.BuiltIn;
         bool dirty = IsDirty();
         string status = dirty ? "Unsaved" : _host.Status(_selected);
 
         using (ui.Column(new Box { Gap = 0, Width = Size.Fill, Height = Size.Fill }))
         {
-            using (ui.Row(new Box { Gap = 10, Align = Align.Center, Width = Size.Fill, PadBottom = 8, PadX = 2 }))
-            {
-                ui.Heading(b.Name.Length > 0 ? b.Name : "Untitled binding", 3);
-                ui.Badge(status, new BadgeOpts
-                {
-                    Tone = dirty ? Tone.Warning : StatusTone(status),
-                    Size = ControlSize.Sm,
-                    Dot = !dirty,
-                });
-                ui.Spacer();
-                ui.Kbd(KeyMap.Text(b.Mods, (Key)b.Key));
-            }
+            DrawEditorHeader(ui, binding, builtIn, dirty, status);
 
             using (ui.Scroll(new ScrollOpts { Height = Size.Fill, Gap = 0, Pad = 2, FadeEdges = true }))
             using (ui.Column(new Box { Width = Size.Fill, Gap = 8 }))
             {
-                using (ui.Card(new Card { Pad = 12, Gap = 8, Width = Size.Fill }))
+                DrawTriggerCard(ui);
+
+                if (builtIn) DrawBuiltInCard(ui);
+                else DrawApplicationCard(ui, binding);
+            }
+
+            DrawEditorFooter(ui, binding, builtIn, dirty);
+        }
+    }
+
+    private void DrawEditorHeader(Ui ui, Binding binding, bool builtIn, bool dirty, string status)
+    {
+        using (ui.Row(new Box { Gap = 10, Align = Align.Center, Width = Size.Fill, PadBottom = 8, PadX = 2 }))
+        {
+            ui.Heading(binding.Name.Length > 0 ? binding.Name : "Untitled binding", 3);
+            if (builtIn)
+                ui.Badge("built-in", new BadgeOpts { Tone = Tone.Info, Size = ControlSize.Sm });
+            ui.Badge(status, new BadgeOpts
+            {
+                Tone = dirty ? Tone.Warning : StatusTone(status),
+                Size = ControlSize.Sm,
+                Dot = !dirty,
+            });
+            ui.Spacer();
+            ui.Kbd(KeyMap.Text(binding.Mods, (Key)binding.Key));
+        }
+    }
+
+    private void DrawTriggerCard(Ui ui)
+    {
+        using (ui.Card(new Card { Pad = 12, Gap = 8, Width = Size.Fill }))
+        {
+            ui.Label("Trigger");
+            using (ui.Row(new Box { Gap = 8, Align = Align.Center, Wrap = true, Width = Size.Fill }))
+            {
+                if (ui.ShortcutRecorder("edit.combo", ref _combo, new ShortcutRecorderOpts
                 {
-                    ui.Label("Trigger");
-                    using (ui.Row(new Box { Gap = 8, Align = Align.Center, Wrap = true, Width = Size.Fill }))
-                    {
-                        if (ui.ShortcutRecorder("edit.combo", ref _combo, new ShortcutRecorderOpts
-                        {
-                            Width = Size.Px(260),
-                            Placeholder = "Click, then press keys",
-                        }))
-                        {
-                            _probe = "";
-                        }
-
-                        if (ui.Button("Check", new ButtonOpts { Variant = ButtonVariant.Ghost })) Probe();
-                        if (_probe.Length > 0)
-                            ui.Badge(_probe, new BadgeOpts { Tone = _probeTone, Size = ControlSize.Sm });
-                    }
-
-                    ui.Muted("Check registers it briefly. Windows does not expose other applications' hotkeys.");
+                    Width = Size.Px(260),
+                    Placeholder = "Click, then press keys",
+                }))
+                {
+                    _probe = "";
                 }
 
-                using (ui.Card(new Card { Pad = 12, Gap = 8, Width = Size.Fill }))
+                if (ui.Button("Check", new ButtonOpts { Variant = ButtonVariant.Ghost })) Probe();
+                if (_probe.Length > 0)
+                    ui.Badge(_probe, new BadgeOpts { Tone = _probeTone, Size = ControlSize.Sm });
+            }
+
+            ui.Muted("Check registers it briefly. Windows does not expose other applications' hotkeys.");
+        }
+    }
+
+    private void DrawApplicationCard(Ui ui, Binding binding)
+    {
+        using (ui.Card(new Card { Pad = 12, Gap = 8, Width = Size.Fill }))
+        {
+            ui.Label("Application");
+            ui.Input("edit.name", ref binding.Name, new InputOpts
+            {
+                Label = "Name",
+                Width = Size.Grow(1),
+            });
+            ui.Input("edit.workdir", ref binding.WorkDir, new InputOpts
+            {
+                Label = "Working directory",
+                Placeholder = "optional",
+                Width = Size.Grow(1),
+            });
+            ui.Input("edit.command", ref binding.Command, new InputOpts
+            {
+                Label = "Command",
+                Width = Size.Fill,
+                Placeholder = @"notepad  or  C:\Tools\disk.exe",
+                Hint = "A name found on PATH, or a full path. Environment variables are expanded.",
+            });
+
+            using (ui.Row(new Box { Gap = 8, Wrap = true }))
+            {
+                if (ui.Button("Browse…", new ButtonOpts { Variant = ButtonVariant.Outline })) Browse();
+                if (_diskExampleExists && ui.Button("Use disk.exe", new ButtonOpts
                 {
-                    ui.Label("Application");
-                    ui.Input("edit.name", ref b.Name, new InputOpts
-                    {
-                        Label = "Name",
-                        Width = Size.Grow(1),
-                    });
-                    ui.Input("edit.workdir", ref b.WorkDir, new InputOpts
-                    {
-                        Label = "Working directory",
-                        Placeholder = "optional",
-                        Width = Size.Grow(1),
-                    });
-                    ui.Input("edit.command", ref b.Command, new InputOpts
-                    {
-                        Label = "Command",
-                        Width = Size.Fill,
-                        Placeholder = @"notepad  or  C:\Tools\disk.exe",
-                        Hint = "A name found on PATH, or a full path. Environment variables are expanded.",
-                    });
-
-                    using (ui.Row(new Box { Gap = 8, Wrap = true }))
-                    {
-                        if (ui.Button("Browse…", new ButtonOpts { Variant = ButtonVariant.Outline })) Browse();
-                        if (_diskExampleExists && ui.Button("Use disk.exe", new ButtonOpts
-                        {
-                            Variant = ButtonVariant.Ghost,
-                        }))
-                        {
-                            UseDiskExample();
-                        }
-                    }
-
-                    int capture = (int)b.Capture;
-                    if (ui.Select("edit.capture", PayloadNames, ref capture,
-                            new SelectOpts { Label = "Capture before launch", Width = Size.Fill }))
-                    {
-                        b.Capture = (PayloadMode)capture;
-                    }
-                    ui.Muted(PayloadHint(b.Capture));
-
-                    ui.TextArea("edit.args", ref b.Args, new InputOpts
-                    {
-                        Label = "Arguments",
-                        Width = Size.Fill,
-                        Height = 52,
-                        Placeholder = "-n \"{text}\"",
-                        Hint = "Tokens: {text} {clipboard} {files} {file} {dir}. A captured value with no token is appended.",
-                    });
-
-                    ui.TextArea("edit.env", ref b.Env, new InputOpts
-                    {
-                        Label = "Environment",
-                        Width = Size.Fill,
-                        Height = 52,
-                        Placeholder = "KEY=value\nPATH+=C:\\Tools",
-                        Hint = "One KEY=value per line. KEY+=value appends to the existing value.",
-                    });
-                }
-                using (ui.Card(new Card { Pad = 12, Gap = 6, Width = Size.Fill }))
+                    Variant = ButtonVariant.Ghost,
+                }))
                 {
-                    ui.Label("Test");
-                    ui.Muted("Reads the clipboard as it is now; the saved hotkey captures a live selection.");
+                    UseDiskExample();
                 }
             }
 
-            using (ui.Row(new Box { Gap = 8, Align = Align.Center, Width = Size.Fill, PadY = 10, PadX = 2 }))
+            int capture = (int)binding.Capture;
+            if (ui.Select("edit.capture", CaptureNames, ref capture,
+                    new SelectOpts { Label = "Capture before launch", Width = Size.Fill }))
             {
-                if (_message.Length > 0)
-                    ui.Badge(_message, new BadgeOpts { Tone = _messageTone, Size = ControlSize.Sm });
-                else if (dirty)
-                    ui.Muted("Unsaved changes");
+                binding.Capture = (CaptureMode)capture;
+            }
+            ui.Muted(CaptureHint(binding.Capture));
 
-                ui.Spacer();
+            ui.TextArea("edit.args", ref binding.Args, new InputOpts
+            {
+                Label = "Arguments",
+                Width = Size.Fill,
+                Height = 52,
+                Placeholder = "-n \"{text}\"",
+                Hint = "Tokens: {text} {clipboard} {files} {file} {dir}. {dir} is the captured folder (or a " +
+                       "captured file's parent), falling back to Working directory. A captured value with no token is appended.",
+            });
 
-                ui.Switch("Enabled", ref b.Enabled, new CheckOpts());
-                ui.Gap(6);
+            DrawEnvEditor(ui);
+        }
 
-                if (ui.Button("Test", new ButtonOpts { Variant = ButtonVariant.Ghost, Size = ControlSize.Sm }))
-                {
-                    TestDraft();
-                }
-                if (ui.Button("Delete", new ButtonOpts
-                {
-                    Variant = ButtonVariant.Ghost,
-                    Color = Color.Danger,
-                    Size = ControlSize.Sm,
-                }))
-                {
-                    DeleteDraft();
-                }
-                if (ui.Button("Save", new ButtonOpts { Variant = ButtonVariant.Primary, Size = ControlSize.Sm }))
-                {
-                    SaveDraft();
-                }
+        using (ui.Card(new Card { Pad = 12, Gap = 6, Width = Size.Fill }))
+        {
+            ui.Label("Test");
+            ui.Muted("Reads the clipboard as it is now; the saved hotkey captures a live selection.");
+        }
+    }
+
+    private void DrawEnvEditor(Ui ui)
+    {
+        ui.Label("Environment");
+        int envCount = _envCount;
+        if (ui.KvEditor("edit.env", _envPairs, ref envCount, new KvEditorOpts
+        {
+            Width = Size.Fill,
+            KeyPlaceholder = "Variable",
+            ValuePlaceholder = "Value",
+        }))
+        {
+            _envCount = envCount;
+            _envDirty = true;
+        }
+        ui.Muted("The launched process inherits the system and user environment. " +
+                 "Each enabled row overrides one variable; end a name with + to append " +
+                 "to its current value (NAME+ adds to NAME). %VARIABLE% expands from this process.");
+    }
+
+    private void DrawBuiltInCard(Ui ui)
+    {
+        using (ui.Card(new Card { Pad = 12, Gap = 8, Width = Size.Fill }))
+        {
+            ui.Label("Quick launcher");
+            ui.Secondary("This hotkey opens a 300 × 400 window listing every available binding, " +
+                         "ordered by when it was last used. Type to filter, use ↑ and ↓ to move, " +
+                         "and press Enter to run the selected binding.");
+            ui.Muted("Shift+Tab switches to the captured text, where file and folder paths can be " +
+                     "edited before Enter returns to the list. This binding cannot be deleted, " +
+                     "but it can be disabled or given a different hotkey.");
+        }
+    }
+
+    private void DrawEditorFooter(Ui ui, Binding binding, bool builtIn, bool dirty)
+    {
+        using (ui.Row(new Box { Gap = 8, Align = Align.Center, Width = Size.Fill, PadY = 10, PadX = 2 }))
+        {
+            if (_message.Length > 0)
+                ui.Badge(_message, new BadgeOpts { Tone = _messageTone, Size = ControlSize.Sm });
+            else if (dirty)
+                ui.Muted("Unsaved changes");
+
+            ui.Spacer();
+
+            ui.Switch("Enabled", ref binding.Enabled, new CheckOpts());
+            ui.Gap(6);
+
+            if (!builtIn && ui.Button("Test", new ButtonOpts { Variant = ButtonVariant.Ghost, Size = ControlSize.Sm }))
+            {
+                TestDraft();
+            }
+            if (!builtIn && ui.Button("Delete", new ButtonOpts
+            {
+                Variant = ButtonVariant.Ghost,
+                Color = Color.Danger,
+                Size = ControlSize.Sm,
+            }))
+            {
+                DeleteDraft();
+            }
+            if (ui.Button("Save", new ButtonOpts { Variant = ButtonVariant.Primary, Size = ControlSize.Sm }))
+            {
+                SaveDraft();
             }
         }
     }
@@ -522,17 +612,7 @@ internal sealed class HotkeyApp : IDisposable
 
         using (ui.Column(new Box { Gap = 8, Width = Size.Fill, Height = Size.Fill }))
         {
-            using (ui.Row(new Box { Gap = 8, Align = Align.Center, Width = Size.Fill, PadX = 2 }))
-            {
-                ui.Label("Shortcut hotkeys");
-                if (_scanning)
-                    ui.Badge("Scanning", new BadgeOpts { Tone = Tone.Info, Dot = true, Size = ControlSize.Sm });
-                if (_message.Length > 0 && _tab == 1)
-                    ui.Badge(_message, new BadgeOpts { Tone = _messageTone, Size = ControlSize.Sm });
-                ui.Spacer();
-                if (ui.Button("Rescan", new ButtonOpts { Variant = ButtonVariant.Outline, Size = ControlSize.Sm }))
-                    ScanShortcuts();
-            }
+            DrawShortcutsHeader(ui);
 
             ui.Muted("Hotkeys stored in .lnk shortcuts on the desktop and in the Start menu. An edit is written " +
                      "into the shortcut file when it allows it; hotkeys that running programs register are " +
@@ -540,54 +620,74 @@ internal sealed class HotkeyApp : IDisposable
 
             using (ui.Scroll(new ScrollOpts { Height = Size.Fill, Gap = 8, Pad = 2, FadeEdges = true }))
             {
-                if (_shortcuts.Length == 0 && !_scanning)
-                {
-                    using (ui.Card(new Card { Pad = 12, Gap = 6, Width = Size.Fill }))
-                    {
-                        ui.Label("No shortcut hotkeys");
-                        ui.Muted("No shortcut on the desktop or in the Start menu carries a hotkey yet.");
-                    }
-                }
+                if (_shortcuts.Length == 0 && !_scanning) DrawNoShortcuts(ui);
 
-                foreach (ShortcutInfo shortcut in _shortcuts)
-                {
-                    using (ui.Id(shortcut.Path))
-                    using (ui.Card(new Card { PadX = 10, PadY = 8, Gap = 6, Width = Size.Fill }))
-                    {
-                        using (ui.Row(new Box { Gap = 10, Align = Align.Center, Width = Size.Fill }))
-                        {
-                            using (ui.Column(new Box { Gap = 2, Width = Size.Fill }))
-                            {
-                                ui.Label(shortcut.Name);
-                                ui.Muted(shortcut.Folder);
-                            }
-
-                            ui.Kbd(KeyMap.Text(shortcut.Mods, shortcut.HotKey));
-                            if (!shortcut.Writable)
-                                ui.Badge("read-only", new BadgeOpts { Tone = Tone.Warning, Size = ControlSize.Sm });
-                        }
-
-                        var combo = new KeyCombo(shortcut.Mods, shortcut.HotKey);
-                        if (ui.ShortcutRecorder("sc.combo", ref combo, new ShortcutRecorderOpts
-                        {
-                            Width = Size.Px(240),
-                            Placeholder = "No hotkey",
-                        }))
-                        {
-                            string outcome = ShortcutStore.Write(shortcut, combo);
-                            if (outcome.StartsWith("Saved", StringComparison.Ordinal))
-                            {
-                                shortcut.Mods = combo.Mods;
-                                shortcut.HotKey = combo.Key;
-                            }
-
-                            SetMessage(outcome, outcome.StartsWith("Saved", StringComparison.Ordinal)
-                                ? Tone.Success
-                                : Tone.Danger);
-                        }
-                    }
-                }
+                foreach (ShortcutInfo shortcut in _shortcuts) DrawShortcutCard(ui, shortcut);
             }
+        }
+    }
+
+    private void DrawShortcutsHeader(Ui ui)
+    {
+        using (ui.Row(new Box { Gap = 8, Align = Align.Center, Width = Size.Fill, PadX = 2 }))
+        {
+            ui.Label("Shortcut hotkeys");
+            if (_scanning)
+                ui.Badge("Scanning", new BadgeOpts { Tone = Tone.Info, Dot = true, Size = ControlSize.Sm });
+            if (_message.Length > 0 && _tab == 1)
+                ui.Badge(_message, new BadgeOpts { Tone = _messageTone, Size = ControlSize.Sm });
+            ui.Spacer();
+            if (ui.Button("Rescan", new ButtonOpts { Variant = ButtonVariant.Outline, Size = ControlSize.Sm }))
+                ScanShortcuts();
+        }
+    }
+
+    private static void DrawNoShortcuts(Ui ui)
+    {
+        using (ui.Card(new Card { Pad = 12, Gap = 6, Width = Size.Fill }))
+        {
+            ui.Label("No shortcut hotkeys");
+            ui.Muted("No shortcut on the desktop or in the Start menu carries a hotkey yet.");
+        }
+    }
+
+    private void DrawShortcutCard(Ui ui, ShortcutInfo shortcut)
+    {
+        using (ui.Id(shortcut.Path))
+        using (ui.Card(new Card { PadX = 10, PadY = 8, Gap = 6, Width = Size.Fill }))
+        {
+            using (ui.Row(new Box { Gap = 10, Align = Align.Center, Width = Size.Fill }))
+            {
+                using (ui.Column(new Box { Gap = 2, Width = Size.Fill }))
+                {
+                    ui.Label(shortcut.Name);
+                    ui.Muted(shortcut.Folder);
+                }
+
+                ui.Kbd(KeyMap.Text(shortcut.Mods, shortcut.HotKey));
+                if (!shortcut.Writable)
+                    ui.Badge("read-only", new BadgeOpts { Tone = Tone.Warning, Size = ControlSize.Sm });
+            }
+
+            var combo = new KeyCombo(shortcut.Mods, shortcut.HotKey);
+            if (!ui.ShortcutRecorder("sc.combo", ref combo, new ShortcutRecorderOpts
+            {
+                Width = Size.Px(240),
+                Placeholder = "No hotkey",
+            }))
+            {
+                return;
+            }
+
+            string outcome = ShortcutStore.Write(shortcut, combo);
+            bool saved = outcome.StartsWith("Saved", StringComparison.Ordinal);
+            if (saved)
+            {
+                shortcut.Mods = combo.Mods;
+                shortcut.HotKey = combo.Key;
+            }
+
+            SetMessage(outcome, saved ? Tone.Success : Tone.Danger);
         }
     }
 
@@ -601,13 +701,7 @@ internal sealed class HotkeyApp : IDisposable
 
         using (ui.Column(new Box { Gap = 8, Width = Size.Fill, Height = Size.Fill }))
         {
-            using (ui.Row(new Box { Gap = 8, Align = Align.Center, Width = Size.Fill, PadX = 2 }))
-            {
-                ui.Label("Activity");
-                ui.Spacer();
-                if (ui.Button("Clear", new ButtonOpts { Variant = ButtonVariant.Outline, Size = ControlSize.Sm }))
-                    _log.Clear();
-            }
+            DrawActivityHeader(ui);
 
             if (entries.Length == 0)
             {
@@ -622,39 +716,62 @@ internal sealed class HotkeyApp : IDisposable
             {
                 for (int i = entries.Length - 1; i >= 0; i--)
                 {
-                    LogEntry entry = entries[i];
-                    using (ui.Id(i))
-                    using (ui.Card(new Card { PadX = 10, PadY = 8, Gap = 6, Width = Size.Fill }))
-                    {
-                        using (ui.Row(new Box { Gap = 8, Align = Align.Center, Width = Size.Fill }))
-                        {
-                            ui.Badge(entry.Ok ? "ok" : "error", new BadgeOpts
-                            {
-                                Tone = entry.Ok ? Tone.Success : Tone.Danger,
-                                Size = ControlSize.Sm,
-                                Dot = true,
-                            });
-                            ui.Label(entry.Binding);
-                            ui.Spacer();
-                            ui.Text(entry.When.ToString("HH:mm:ss"), new TextOpts(12, Color.TextMuted));
-                        }
-
-                        ui.Secondary(entry.Text);
-                    }
+                    using (ui.Id(i)) DrawLogCard(ui, entries[i]);
                 }
             }
         }
     }
 
+    private void DrawActivityHeader(Ui ui)
+    {
+        using (ui.Row(new Box { Gap = 8, Align = Align.Center, Width = Size.Fill, PadX = 2 }))
+        {
+            ui.Label("Activity");
+            ui.Spacer();
+            if (ui.Button("Clear", new ButtonOpts { Variant = ButtonVariant.Outline, Size = ControlSize.Sm }))
+                _log.Clear();
+        }
+    }
+
+    private static void DrawLogCard(Ui ui, LogEntry entry)
+    {
+        using (ui.Card(new Card { PadX = 10, PadY = 8, Gap = 6, Width = Size.Fill }))
+        {
+            using (ui.Row(new Box { Gap = 8, Align = Align.Center, Width = Size.Fill }))
+            {
+                DrawResultBadge(ui, entry.Ok);
+                ui.Label(entry.Binding);
+                ui.Spacer();
+                ui.Text(entry.When.ToString("HH:mm:ss"), new TextOpts(12, Color.TextMuted));
+            }
+
+            ui.Secondary(entry.Text);
+        }
+    }
+
+    private static void DrawResultBadge(Ui ui, bool ok) =>
+        ui.Badge(ok ? "ok" : "error", new BadgeOpts
+        {
+            Tone = ok ? Tone.Success : Tone.Danger,
+            Size = ControlSize.Sm,
+            Dot = true,
+        });
+
     // -----------------------------------------------------------------------
     // Actions
     // -----------------------------------------------------------------------
 
+    private void RefreshLauncher()
+    {
+        _launcherBridge.SetItems(_bindings);
+    }
+
     private void AddBinding()
     {
-        var binding = new Binding { Name = "New binding", Capture = PayloadMode.SelectedText };
+        var binding = new Binding { Name = "New binding", Capture = CaptureMode.SelectedText };
         _bindings.Add(binding);
         Select(_bindings.Count - 1);
+        RefreshLauncher();
         SetMessage("Record a hotkey, then Save.", Tone.Info);
     }
 
@@ -664,13 +781,14 @@ internal sealed class HotkeyApp : IDisposable
         {
             Name = "Disk usage",
             Command = DiskExample,
-            Capture = PayloadMode.SelectedFiles,
+            Capture = CaptureMode.SelectedFiles,
             Mods = (int)(Mods.Ctrl | Mods.Alt),
             Key = (int)Key.D,
         };
         _bindings.Add(binding);
         Select(_bindings.Count - 1);
         SaveDraft();
+        RefreshLauncher();
     }
 
     private void UseDiskExample()
@@ -679,7 +797,7 @@ internal sealed class HotkeyApp : IDisposable
         _draft.Name = "Disk usage";
         _draft.Command = DiskExample;
         _draft.Args = "";
-        _draft.Capture = PayloadMode.SelectedFiles;
+        _draft.Capture = CaptureMode.SelectedFiles;
         _combo = new KeyCombo((int)(Mods.Ctrl | Mods.Alt), Key.D);
         SetMessage("disk.exe receives the selected folders as arguments. Save to bind it.", Tone.Info);
     }
@@ -698,8 +816,34 @@ internal sealed class HotkeyApp : IDisposable
             _combo = default;
         }
 
+        LoadEnv(_draft?.Env ?? "");
         _message = "";
         _probe = "";
+    }
+
+    /// <summary>Loads the saved KEY=value text into the key-value editor's array.</summary>
+    private void LoadEnv(string text)
+    {
+        _envCount = 0;
+        foreach (EnvEntry entry in EnvText.Parse(text))
+        {
+            if (_envCount >= _envPairs.Length) break;
+            _envPairs[_envCount++] = new KeyValue(entry.Key, entry.Value, entry.Enabled);
+        }
+        _envDirty = false;
+    }
+
+    /// <summary>Writes the editor's rows back to the saved KEY=value text format.</summary>
+    private string SaveEnv()
+    {
+        var entries = new List<EnvEntry>(_envCount);
+        for (int i = 0; i < _envCount; i++)
+        {
+            KeyValue pair = _envPairs[i];
+            if (string.IsNullOrWhiteSpace(pair.Key)) continue;
+            entries.Add(new EnvEntry(pair.Key!, pair.Value ?? "", pair.Enabled));
+        }
+        return EnvText.Format(entries);
     }
 
     private bool IsDirty()
@@ -714,6 +858,7 @@ internal sealed class HotkeyApp : IDisposable
                || _draft.Env != saved.Env
                || _draft.Capture != saved.Capture
                || _draft.Enabled != saved.Enabled
+               || _envDirty
                || _combo.Mods != saved.Mods
                || (int)_combo.Key != saved.Key;
     }
@@ -722,7 +867,8 @@ internal sealed class HotkeyApp : IDisposable
     {
         if (_draft is null || _selected < 0) return;
 
-        if (_draft.Command.Trim().Length == 0)
+        // The built-in has no external application: it opens the quick launcher instead.
+        if (!_draft.BuiltIn && _draft.Command.Trim().Length == 0)
         {
             SetMessage("Choose an application first.", Tone.Danger);
             return;
@@ -751,9 +897,12 @@ internal sealed class HotkeyApp : IDisposable
 
         _draft.Mods = _combo.Mods;
         _draft.Key = (int)_combo.Key;
+        _draft.Env = SaveEnv();
+        _envDirty = false;
         _bindings[_selected] = _draft.Clone();
         string? saveError = ConfigStore.Save(_bindings);
         _host.SetBindings(_bindings);
+        RefreshLauncher();
         if (saveError is null) SetMessage("Saved. Registration refreshed.", Tone.Success);
         else SetMessage("Saved in memory, but the file could not be written: " + saveError, Tone.Warning);
         _probe = "";
@@ -779,11 +928,17 @@ internal sealed class HotkeyApp : IDisposable
     private void DeleteDraft()
     {
         if (_selected < 0 || _draft is null) return;
+        if (_draft.BuiltIn)
+        {
+            SetMessage("The quick launcher is built in. You can disable it, but not delete it.", Tone.Warning);
+            return;
+        }
 
         string name = _bindings[_selected].Name;
         _bindings.RemoveAt(_selected);
         string? saveError = ConfigStore.Save(_bindings);
         _host.SetBindings(_bindings);
+        RefreshLauncher();
         Select(Math.Min(_selected, _bindings.Count - 1));
         SetMessage(saveError is null
                 ? $"Deleted \"{name}\"."
@@ -849,6 +1004,20 @@ internal sealed class HotkeyApp : IDisposable
         if (hwnd != 0) Win32.PostMessage(hwnd, 0, 0, 0);
     }
 
+    /// <summary>
+    /// Called on the UI thread after a binding fired from either the hotkey thread or the launcher.
+    /// The timestamp is persisted and the launcher's snapshot is refreshed for the next open.
+    /// </summary>
+    private void NoteTrigger(string id)
+    {
+        int index = _bindings.FindIndex(b => b.Id == id);
+        if (index < 0) return;
+
+        _bindings[index].LastAccess = DateTime.UtcNow.Ticks;
+        ConfigStore.Save(_bindings);
+        RefreshLauncher();
+    }
+
     private static Tone StatusTone(string status) => status switch
     {
         "Active" => Tone.Success,
@@ -868,13 +1037,13 @@ internal sealed class HotkeyApp : IDisposable
         _ => status,
     };
 
-    private static string PayloadHint(PayloadMode mode) => mode switch
+    private static string CaptureHint(CaptureMode mode) => mode switch
     {
-        PayloadMode.SelectedText =>
+        CaptureMode.SelectedText =>
             "Presses Ctrl+C in the foreground application, reads the copied text, then restores the clipboard.",
-        PayloadMode.Clipboard =>
+        CaptureMode.Clipboard =>
             "Reads the clipboard as it is, without touching the foreground application.",
-        PayloadMode.SelectedFiles =>
+        CaptureMode.SelectedFiles =>
             "Presses Ctrl+C in Explorer or on the desktop, reads the selected file and folder paths, then restores the clipboard.",
         _ => "Starts the application with only the arguments above.",
     };
@@ -883,6 +1052,7 @@ internal sealed class HotkeyApp : IDisposable
     {
         _tray?.Dispose();
         _tray = null;
+        _launcher.Dispose();
         _host.Dispose();
     }
 }
@@ -891,7 +1061,7 @@ internal sealed class HotkeyApp : IDisposable
 // Model and storage
 // ---------------------------------------------------------------------------
 
-internal enum PayloadMode
+internal enum CaptureMode
 {
     None = 0,
     SelectedText = 1,
@@ -899,8 +1069,49 @@ internal enum PayloadMode
     SelectedFiles = 3,
 }
 
+internal readonly record struct EnvEntry(string Key, string Value, bool Enabled);
+
+/// <summary>The saved environment format: one KEY=value per line, with # disabling a row.</summary>
+internal static class EnvText
+{
+    public static IEnumerable<EnvEntry> Parse(string text)
+    {
+        foreach (string raw in text.Split('\n'))
+        {
+            string line = raw.Trim();
+            if (line.Length == 0) continue;
+
+            bool enabled = !line.StartsWith('#');
+            if (!enabled) line = line[1..].TrimStart();
+
+            int equals = line.IndexOf('=');
+            if (equals <= 0) continue;
+
+            string key = line[..equals].Trim();
+            if (key.Length == 0) continue;
+
+            yield return new EnvEntry(key, line[(equals + 1)..].Trim(), enabled);
+        }
+    }
+
+    public static string Format(IEnumerable<EnvEntry> entries)
+    {
+        var text = new StringBuilder();
+        foreach (EnvEntry entry in entries)
+        {
+            if (string.IsNullOrWhiteSpace(entry.Key)) continue;
+            if (!entry.Enabled) text.Append('#');
+            text.Append(entry.Key).Append('=').Append(entry.Value).Append('\n');
+        }
+        return text.ToString();
+    }
+}
+
 internal sealed class Binding
 {
+    // A stable id lets the launcher report a trigger back to the owner even after the list was
+    // reordered or another binding was added; array indices are not stable across edits.
+    public string Id = Guid.NewGuid().ToString("N");
     public string Name = "";
     public int Mods;
     public int Key;
@@ -908,15 +1119,21 @@ internal sealed class Binding
     public string Args = "";
     public string WorkDir = "";
     public string Env = "";
-    public PayloadMode Capture = PayloadMode.SelectedText;
+    public CaptureMode Capture = CaptureMode.SelectedText;
     public bool Enabled = true;
+
+    // The quick launcher is a built-in binding: it can be disabled and re-keyed, never deleted.
+    public bool BuiltIn;
+
+    // Ticks of the last time this binding fired. The launcher orders by this (most recent first).
+    public long LastAccess;
 
     public Binding Clone() => (Binding)MemberwiseClone();
 }
 
 internal sealed class Config
 {
-    public List<Binding> Bindings = [];
+    public List<Binding> Bindings { get; set; } = [];
 }
 
 [JsonSourceGenerationOptions(WriteIndented = true, IncludeFields = true)]
@@ -925,26 +1142,56 @@ internal partial class ConfigJson : JsonSerializerContext
 {
 }
 
+/// <summary>Where the settings and the activity log live: %APPDATA%\hotkey.</summary>
+internal static class AppData
+{
+    public static string Folder => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "hotkey");
+}
+
 internal static class ConfigStore
 {
-    private static string FilePath => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "hotkey",
-        "bindings.json");
+    private static string FilePath => Path.Combine(AppData.Folder, "bindings.json");
 
     public static List<Binding> Load()
     {
+        List<Binding> bindings;
         try
         {
-            if (!File.Exists(FilePath)) return [];
-            string json = File.ReadAllText(FilePath);
-            return JsonSerializer.Deserialize(json, ConfigJson.Default.Config)?.Bindings ?? [];
+            if (!File.Exists(FilePath))
+            {
+                bindings = [];
+            }
+            else
+            {
+                string json = File.ReadAllText(FilePath);
+                bindings = JsonSerializer.Deserialize(json, ConfigJson.Default.Config)?.Bindings ?? [];
+            }
         }
         catch
         {
-            return [];
+            bindings = [];
         }
+
+        // The built-in is re-created when missing, so editing the JSON by hand cannot delete it.
+        if (!bindings.Any(b => b.BuiltIn))
+        {
+            bindings.Insert(0, CreateBuiltIn());
+            Save(bindings);
+        }
+
+        return bindings;
     }
+
+    public static Binding CreateBuiltIn() => new()
+    {
+        Name = "Quick launcher",
+        Mods = (int)Mods.Ctrl,
+        Key = (int)Key.Space,
+        Capture = CaptureMode.Clipboard,
+        Enabled = true,
+        BuiltIn = true,
+    };
 
     public static string? Save(List<Binding> bindings)
     {
@@ -998,9 +1245,7 @@ internal sealed class ActivityLog
     {
         try
         {
-            string directory = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "hotkey");
+            string directory = AppData.Folder;
             Directory.CreateDirectory(directory);
             return Path.Combine(directory, "activity.log");
         }
@@ -1036,10 +1281,12 @@ internal sealed class ActivityLog
 
 internal sealed class HotkeyHost : IDisposable
 {
-    private const uint WmApp = 0x8000;
-    private const uint WmHotkey = 0x0312;
-    private const uint ModNoRepeat = 0x4000;
     private const int ProbeId = 0x3FFF;
+    private const int ErrorAlreadyRegistered = 1409;
+
+    // RegisterHotKey can report a press the keyboard hook already handled; ignore its copy when
+    // it arrives right behind the hook's message.
+    private const long HookDebounceMs = 250;
 
     private readonly Thread _thread;
     private readonly ManualResetEventSlim _ready = new();
@@ -1050,6 +1297,10 @@ internal sealed class HotkeyHost : IDisposable
 
     private uint _threadId;
     private volatile nint _wakeWindow;
+    private nint _keyboardHook;
+    private Win32.KeyboardProc? _keyboardProc;
+    private int _hookHeldVk = -1;
+    private long _hookTick;
     private Binding[] _active = [];
     private string[] _status = [];
     private bool _disposed;
@@ -1058,6 +1309,18 @@ internal sealed class HotkeyHost : IDisposable
     {
         set => _wakeWindow = value;
     }
+
+    /// <summary>Shows the quick launcher immediately; the payload follows once it is captured.</summary>
+    public Action? ShowLauncher { get; set; }
+
+    /// <summary>Fills the launcher with the captured payload and gives it keyboard focus.</summary>
+    public Action<Payload>? LauncherPayload { get; set; }
+
+    /// <summary>Reports a binding id after it fired, for last-access bookkeeping on the UI thread.</summary>
+    public Action<string>? Triggered { get; set; }
+
+    /// <summary>The launcher window, whose own focus must still receive ordinary keys.</summary>
+    public Func<nint>? LauncherHandle { get; set; }
 
     public HotkeyHost(ActivityLog log, Func<nint> window)
     {
@@ -1110,14 +1373,14 @@ internal sealed class HotkeyHost : IDisposable
                 return ($"Used by \"{other.Name}\"", Tone.Info);
         }
 
-        if (Win32.RegisterHotKey(0, ProbeId, KeyMap.ToWin32(combo.Mods) | ModNoRepeat, (uint)vk) != 0)
+        if (Win32.RegisterHotKey(0, ProbeId, KeyMap.ToWin32(combo.Mods) | HotkeyModifiers.NoRepeat, (uint)vk) != 0)
         {
             Win32.UnregisterHotKey(0, ProbeId);
             return ("Available", Tone.Success);
         }
 
         int error = Marshal.GetLastWin32Error();
-        return error == 1409
+        return error == ErrorAlreadyRegistered
             ? ("Taken by another application", Tone.Danger)
             : ($"Not available (error {error})", Tone.Warning);
     }
@@ -1128,16 +1391,8 @@ internal sealed class HotkeyHost : IDisposable
 
         try
         {
-            // Create this thread's message queue before announcing readiness: PostThreadMessage fails
-            // for a thread that has not made one yet, and the first SetBindings arrives immediately.
-            Win32.PeekMessage(out _, 0, 0, 0, 0);
-            _ready.Set();
-
-            while (Win32.GetMessage(out Win32.MSG message, 0, 0, 0) > 0)
-            {
-                if (message.message == WmApp) Drain();
-                else if (message.message == WmHotkey) OnHotkey((int)message.wParam);
-            }
+            StartThread();
+            PumpMessages();
 
             // Falling out of the loop means every registration is gone with this thread, so the
             // bindings silently stop firing while the window still lists them as Active.
@@ -1151,6 +1406,49 @@ internal sealed class HotkeyHost : IDisposable
         {
             try { _ready.Set(); } catch (ObjectDisposedException) { }
             Wake();
+        }
+    }
+
+    /// <summary>
+    /// Creates this thread's message queue and installs the keyboard hook before announcing
+    /// readiness: PostThreadMessage fails for a thread that has not made a queue yet, and the
+    /// first SetBindings arrives immediately.
+    /// </summary>
+    private void StartThread()
+    {
+        Win32.PeekMessage(out _, 0, 0, 0, 0);
+
+        // The hook runs on this thread, so the message loop is already in place. It swallows
+        // the keystroke before the foreground app sees it and posts the trigger back here.
+        _keyboardProc = OnKeyboardHook;
+        _keyboardHook = Win32.SetWindowsHookEx(
+            Win32.WhKeyboardLl, _keyboardProc, Win32.GetModuleHandle(null), 0);
+        if (_keyboardHook == 0)
+            _log.Add("Hotkey", "Could not install the key hook; hotkeys may reach other apps.", false);
+
+        _ready.Set();
+    }
+
+    private void PumpMessages()
+    {
+        while (Win32.GetMessage(out Win32.MSG message, 0, 0, 0) > 0) Dispatch(message);
+    }
+
+    private void Dispatch(in Win32.MSG message)
+    {
+        if (message.message == Win32.WmApp)
+        {
+            Drain();
+        }
+        else if (message.message == Win32.WmHookHotkey)
+        {
+            _hookTick = Environment.TickCount64;
+            OnHotkey((int)message.wParam);
+        }
+        else if (message.message == Win32.WmHotkey)
+        {
+            // RegisterHotKey can still report a press the hook already handled.
+            if (Environment.TickCount64 - _hookTick >= HookDebounceMs) OnHotkey((int)message.wParam);
         }
     }
 
@@ -1177,59 +1475,160 @@ internal sealed class HotkeyHost : IDisposable
 
         _active = bindings;
         var status = new string[bindings.Length];
-
-        for (int i = 0; i < bindings.Length; i++)
-        {
-            Binding binding = bindings[i];
-            if (!binding.Enabled)
-            {
-                status[i] = "Disabled";
-                continue;
-            }
-
-            int vk = KeyMap.ToVk((Key)binding.Key);
-            if (vk == 0 || binding.Mods == 0)
-            {
-                status[i] = "Needs a hotkey";
-                continue;
-            }
-
-            int id = i + 1;
-            string combo = KeyMap.Text(binding.Mods, (Key)binding.Key);
-            if (Win32.RegisterHotKey(0, id, KeyMap.ToWin32(binding.Mods) | ModNoRepeat, (uint)vk) != 0)
-            {
-                _registered.Add(id);
-                status[i] = "Active";
-                _log.Add(binding.Name, $"Registered {combo}", true);
-            }
-            else
-            {
-                int error = Marshal.GetLastWin32Error();
-                status[i] = error == 1409
-                    ? "Taken by another app"
-                    : "Registration failed";
-                _log.Add(binding.Name, error == 1409
-                    ? $"Could not register {combo}: another application already owns it"
-                    : $"Could not register {combo}: error {error}", false);
-            }
-        }
+        for (int i = 0; i < bindings.Length; i++) status[i] = Register(bindings[i], i + 1);
 
         _status = status;
         Wake();
     }
 
+    /// <summary>Registers one binding, logs the outcome, and returns the status shown in the list.</summary>
+    private string Register(Binding binding, int id)
+    {
+        if (!binding.Enabled) return "Disabled";
+
+        int vk = KeyMap.ToVk((Key)binding.Key);
+        if (vk == 0 || binding.Mods == 0) return "Needs a hotkey";
+
+        string combo = KeyMap.Text(binding.Mods, (Key)binding.Key);
+        if (Win32.RegisterHotKey(0, id, KeyMap.ToWin32(binding.Mods) | HotkeyModifiers.NoRepeat, (uint)vk) != 0)
+        {
+            _registered.Add(id);
+            _log.Add(binding.Name, $"Registered {combo}", true);
+            return "Active";
+        }
+
+        int error = Marshal.GetLastWin32Error();
+        _log.Add(binding.Name, error == ErrorAlreadyRegistered
+            ? $"Could not register {combo}: another application already owns it"
+            : $"Could not register {combo}: error {error}", false);
+        return error == ErrorAlreadyRegistered ? "Taken by another app" : "Registration failed";
+    }
+
+    /// <summary>
+    /// Called on the hotkey thread for every key event on the desktop. A combination belonging to
+    /// an enabled binding is consumed here, so the foreground application never gets to act on it
+    /// (Ctrl+Space is also an IME switch, for example). The trigger itself is posted back to this
+    /// thread's loop so no real work happens inside the time-critical hook callback.
+    /// </summary>
+    private nint OnKeyboardHook(int nCode, nint wParam, nint lParam)
+    {
+        if (nCode >= 0 && IsKeyEvent(wParam) && Consume(lParam, wParam)) return 1;
+        return Win32.CallNextHookEx(_keyboardHook, nCode, wParam, lParam);
+    }
+
+    private static bool IsKeyEvent(nint message) =>
+        message == Win32.WmKeyDown || message == Win32.WmSysKeyDown
+        || message == Win32.WmKeyUp || message == Win32.WmSysKeyUp;
+
+    /// <summary>Returns true when the key belongs to a binding and must not reach the foreground app.</summary>
+    private bool Consume(nint lParam, nint message)
+    {
+        Win32.KBDLLHOOKSTRUCT info = Marshal.PtrToStructure<Win32.KBDLLHOOKSTRUCT>(lParam);
+
+        // Ignore keys we injected ourselves (the simulated Ctrl+C used for capture).
+        if ((info.flags & Win32.LlkhfInjected) != 0) return false;
+
+        int vk = (int)info.vkCode;
+        bool down = message == Win32.WmKeyDown || message == Win32.WmSysKeyDown;
+
+        if (!down)
+        {
+            if (vk == _hookHeldVk) _hookHeldVk = -1;
+            return false;
+        }
+
+        int id = MatchBinding(vk, CurrentMods());
+        if (id <= 0 || vk == _hookHeldVk) return false;
+
+        _hookHeldVk = vk;
+        nint foreground = Win32.GetForegroundWindow();
+        nint own = _window();
+        nint launcher = LauncherHandle?.Invoke() ?? 0;
+
+        // In our own windows, leave keys alone so text fields keep their shortcuts.
+        if ((own == 0 || foreground != own) && (launcher == 0 || foreground != launcher))
+        {
+            Win32.PostThreadMessage(_threadId, Win32.WmHookHotkey, (nint)id, 0);
+            return true;
+        }
+
+        return false;
+    }
+
+    private int MatchBinding(int virtualKey, Mods mods)
+    {
+        Key key = KeyMap.FromVk(virtualKey);
+        if (key == Key.None) return -1;
+
+        Binding[] active = _active;
+        for (int i = 0; i < active.Length; i++)
+        {
+            Binding binding = active[i];
+            if (binding.Enabled && binding.Mods == (int)mods && binding.Key == (int)key)
+                return i + 1;
+        }
+        return -1;
+    }
+
+    private static Mods CurrentMods()
+    {
+        Mods mods = 0;
+        if (Win32.GetKeyState(VirtualKeys.Shift) < 0) mods |= Mods.Shift;
+        if (Win32.GetKeyState(VirtualKeys.Control) < 0) mods |= Mods.Ctrl;
+        if (Win32.GetKeyState(VirtualKeys.Menu) < 0) mods |= Mods.Alt;
+        if (Win32.GetKeyState(VirtualKeys.LeftWindows) < 0
+            || Win32.GetKeyState(VirtualKeys.RightWindows) < 0) mods |= Mods.Super;
+        return mods;
+    }
+
     private void OnHotkey(int id)
     {
-        nint own = _window();
-        bool ownForeground = own != 0 && Win32.GetForegroundWindow() == own;
-
         int index = id - 1;
         Binding[] active = _active;
         if ((uint)index >= (uint)active.Length) return;
 
+        nint own = _window();
+        bool ownForeground = own != 0 && Win32.GetForegroundWindow() == own;
         Binding binding = active[index];
         _log.Add(binding.Name, ownForeground ? "Hotkey pressed (this window is in front)" : "Hotkey pressed", true);
 
+        if (binding.BuiltIn) FireBuiltIn(binding, own, ownForeground);
+        else FireBinding(binding, own, ownForeground);
+
+        Wake();
+    }
+
+    private void FireBuiltIn(Binding binding, nint own, bool ownForeground)
+    {
+        try
+        {
+            // Show the window first: a simulated Ctrl+C can wait hundreds of milliseconds
+            // when the foreground application has no selection, and the launcher should not
+            // be held back by that. Showing without activation leaves that application in
+            // front, so its selection is still there to capture a moment later.
+            ShowLauncher?.Invoke();
+
+            Payload all;
+            try
+            {
+                all = PayloadCapture.CaptureAll(own, allowCopy: !ownForeground, maxWaitMs: 120);
+            }
+            catch
+            {
+                all = Payload.Empty; // a failed capture must not leave the window unfocused
+            }
+
+            LauncherPayload?.Invoke(all);
+            _log.Add(binding.Name, "Quick launcher opened", true);
+        }
+        catch (Exception error)
+        {
+            _log.Add(binding.Name, "Could not open the quick launcher: " + error.Message, false);
+        }
+    }
+
+    private void FireBinding(Binding binding, nint own, bool ownForeground)
+    {
         try
         {
             // Never send Ctrl+C into our own window. With our window in front there is no other
@@ -1237,18 +1636,17 @@ internal sealed class HotkeyHost : IDisposable
             Payload payload = PayloadCapture.Capture(binding.Capture, own, allowCopy: !ownForeground);
             string result = Launcher.Run(binding, payload);
             _log.Add(binding.Name, result, true);
+            Triggered?.Invoke(binding.Id);
         }
         catch (Exception error)
         {
             _log.Add(binding.Name, error.Message, false);
         }
-
-        Wake();
     }
 
     private void WakeHost()
     {
-        if (_threadId != 0) Win32.PostThreadMessage(_threadId, WmApp, 0, 0);
+        if (_threadId != 0) Win32.PostThreadMessage(_threadId, Win32.WmApp, 0, 0);
     }
 
     private void Wake()
@@ -1265,6 +1663,8 @@ internal sealed class HotkeyHost : IDisposable
         _commands.Enqueue(() => Win32.PostQuitMessage(0));
         WakeHost();
         _thread.Join(800);
+        if (_keyboardHook != 0) Win32.UnhookWindowsHookEx(_keyboardHook);
+        _keyboardProc = null;
         _ready.Dispose();
     }
 }
@@ -1273,84 +1673,16 @@ internal sealed class HotkeyHost : IDisposable
 // Capture: selected text, clipboard text, and file/folder paths
 // ---------------------------------------------------------------------------
 
-internal readonly struct Payload
+internal readonly record struct Payload(string Text, string[] Files)
 {
     public static readonly string[] NoFiles = [];
     public static readonly Payload Empty = new("", NoFiles);
-
-    public readonly string Text;
-    public readonly string[] Files;
-
-    public Payload(string text, string[] files)
-    {
-        Text = text;
-        Files = files;
-    }
 }
 
-internal static class PayloadCapture
+/// <summary>Reads and writes the two clipboard shapes this app understands: text and file lists.</summary>
+internal static class Clipboard
 {
-    private const int VkShift = 0x10;
-    private const int VkControl = 0x11;
-    private const int VkMenu = 0x12;
-    private const int VkLWin = 0x5B;
-    private const int VkRWin = 0x5C;
-    private const int VkC = 0x43;
-
-    public static Payload Capture(PayloadMode mode, nint ownWindow, bool allowCopy)
-    {
-        if (mode == PayloadMode.None) return Payload.Empty;
-
-        Payload payload;
-        if (mode == PayloadMode.Clipboard || !allowCopy)
-        {
-            payload = ReadClipboard();
-        }
-        else
-        {
-            nint foreground = Win32.GetForegroundWindow();
-            payload = foreground == 0 || foreground == ownWindow ? ReadClipboard() : CopySelection();
-        }
-
-        // A binding asks for one kind of selection: do not hand a text binding the file list
-        // (or the reverse) just because the clipboard happened to carry both.
-        return mode switch
-        {
-            PayloadMode.SelectedText => new Payload(payload.Text, Payload.NoFiles),
-            PayloadMode.SelectedFiles => new Payload("", payload.Files),
-            _ => payload,
-        };
-    }
-
-    private static Payload CopySelection()
-    {
-        // Take a copy of what the clipboard holds now, so the simulated Ctrl+C does not cost the
-        // user their clipboard. The copy is made with the plain clipboard API on purpose: the
-        // object OleGetClipboard returns is backed by the clipboard itself, so handing it back to
-        // OleSetClipboard and flushing makes OLE render it from the clipboard it is backing —
-        // a recursion that overflows the stack inside ole32 and takes the process down.
-        Payload previous = ReadClipboard();
-
-        try
-        {
-            uint sequence = Win32.GetClipboardSequenceNumber();
-            SendCopy();
-
-            for (int i = 0; i < 50; i++)
-            {
-                Thread.Sleep(10);
-                if (Win32.GetClipboardSequenceNumber() != sequence) break;
-            }
-
-            return ReadClipboard();
-        }
-        finally
-        {
-            RestoreClipboard(previous);
-        }
-    }
-
-    private static Payload ReadClipboard()
+    public static Payload Read()
     {
         for (int attempt = 0; attempt < 8; attempt++)
         {
@@ -1362,7 +1694,7 @@ internal static class PayloadCapture
 
             try
             {
-                return new Payload(ReadUnicodeText(), ReadDropFiles());
+                return new Payload(ReadText(), ReadFiles());
             }
             finally
             {
@@ -1373,34 +1705,34 @@ internal static class PayloadCapture
         return Payload.Empty;
     }
 
-    private static string ReadUnicodeText()
+    /// <summary>
+    /// Puts back what the clipboard held before the simulated Ctrl+C. Text and file lists are the
+    /// two kinds this app reads, so they are the two it can restore; anything else (an image, say)
+    /// stays replaced by the selection rather than being emptied out.
+    /// </summary>
+    public static void Write(Payload payload)
     {
-        nint handle = Win32.GetClipboardData(Win32.CfUnicodeText);
-        if (handle != 0)
-        {
-            nint pointer = Win32.GlobalLock(handle);
-            if (pointer != 0)
-            {
-                try
-                {
-                    return Marshal.PtrToStringUni(pointer) ?? "";
-                }
-                finally
-                {
-                    Win32.GlobalUnlock(handle);
-                }
-            }
-        }
+        if (payload.Files.Length > 0) WriteFiles(payload.Files);
+        else if (payload.Text.Length > 0) WriteText(payload.Text);
+    }
 
-        handle = Win32.GetClipboardData(Win32.CfText);
-        if (handle == 0) return "";
+    private static string ReadText()
+    {
+        nint handle = Win32.GetClipboardData(ClipboardFormat.UnicodeText);
+        if (handle != 0) return ReadString(handle, Marshal.PtrToStringUni);
 
-        nint ansi = Win32.GlobalLock(handle);
-        if (ansi == 0) return "";
+        handle = Win32.GetClipboardData(ClipboardFormat.Text);
+        return handle == 0 ? "" : ReadString(handle, Marshal.PtrToStringAnsi);
+    }
+
+    private static string ReadString(nint handle, Func<nint, string?> read)
+    {
+        nint pointer = Win32.GlobalLock(handle);
+        if (pointer == 0) return "";
 
         try
         {
-            return Marshal.PtrToStringAnsi(ansi) ?? "";
+            return read(pointer) ?? "";
         }
         finally
         {
@@ -1408,9 +1740,9 @@ internal static class PayloadCapture
         }
     }
 
-    private static string[] ReadDropFiles()
+    private static string[] ReadFiles()
     {
-        nint handle = Win32.GetClipboardData(Win32.CfHDrop);
+        nint handle = Win32.GetClipboardData(ClipboardFormat.HDrop);
         if (handle == 0) return Payload.NoFiles;
 
         uint count = Win32.DragQueryFileW(handle, 0xFFFFFFFF, null, 0);
@@ -1428,53 +1760,10 @@ internal static class PayloadCapture
         return files;
     }
 
-    private static void SendCopy()
+    private static void WriteText(string text)
     {
-        var inputs = new Win32.INPUT[9];
-        int n = 0;
-
-        // The hotkey's own modifiers are still physically down. Release them first, or the
-        // application receives Ctrl+Alt+C instead of Ctrl+C.
-        inputs[n++] = KeyInput(VkControl, up: true);
-        inputs[n++] = KeyInput(VkMenu, up: true);
-        inputs[n++] = KeyInput(VkShift, up: true);
-        inputs[n++] = KeyInput(VkLWin, up: true);
-        inputs[n++] = KeyInput(VkRWin, up: true);
-        inputs[n++] = KeyInput(VkControl, up: false);
-        inputs[n++] = KeyInput(VkC, up: false);
-        inputs[n++] = KeyInput(VkC, up: true);
-        inputs[n++] = KeyInput(VkControl, up: true);
-
-        uint inserted = Win32.SendInput((uint)n, inputs, Unsafe.SizeOf<Win32.INPUT>());
-        if (inserted != (uint)n)
-        {
-            throw new InvalidOperationException(
-                "Windows blocked the simulated Ctrl+C. The foreground application may be running elevated.");
-        }
-    }
-
-    private static Win32.INPUT KeyInput(int virtualKey, bool up) => new()
-    {
-        type = 1,
-        U = new Win32.InputUnion
-        {
-            ki = new Win32.KEYBDINPUT
-            {
-                wVk = (ushort)virtualKey,
-                dwFlags = up ? 0x0002u : 0u,
-            },
-        },
-    };
-
-    /// <summary>
-    /// Puts back what the clipboard held before the simulated Ctrl+C. Text and file lists are the
-    /// two kinds this app reads, so they are the two it can restore; anything else (an image, say)
-    /// stays replaced by the selection rather than being emptied out.
-    /// </summary>
-    private static void RestoreClipboard(Payload previous)
-    {
-        if (previous.Files.Length > 0) WriteFiles(previous.Files);
-        else if (previous.Text.Length > 0) WriteText(previous.Text);
+        // The trailing NUL is part of the clipboard text block.
+        WriteBlock(ClipboardFormat.UnicodeText, Encoding.Unicode.GetBytes(text + "\0"));
     }
 
     private static void WriteFiles(string[] files)
@@ -1498,13 +1787,18 @@ internal static class PayloadCapture
             offset += 2;
         }
 
+        WriteBlock(ClipboardFormat.HDrop, block);
+    }
+
+    private static void WriteBlock(ClipboardFormat format, byte[] block)
+    {
         if (Win32.OpenClipboard(0) == 0) return;
 
         nint memory = 0;
         try
         {
             // GMEM_MOVEABLE | GMEM_ZEROINIT, so the terminators are already zero.
-            memory = Win32.GlobalAlloc(0x0042, (nuint)block.Length);
+            memory = Win32.GlobalAlloc(Win32.GmemMoveable, (nuint)block.Length);
             if (memory == 0) return;
 
             nint target = Win32.GlobalLock(memory);
@@ -1514,40 +1808,9 @@ internal static class PayloadCapture
             Win32.GlobalUnlock(memory);
 
             Win32.EmptyClipboard();
-            if (Win32.SetClipboardData(Win32.CfHDrop, memory) != 0) memory = 0;
-        }
-        finally
-        {
-            if (memory != 0) Win32.GlobalFree(memory);
-            Win32.CloseClipboard();
-        }
-    }
-
-    private static void WriteText(string text)
-    {
-        if (text.Length == 0 || Win32.OpenClipboard(0) == 0) return;
-
-        nint memory = 0;
-        try
-        {
-            Win32.EmptyClipboard();
-            int bytes = (text.Length + 1) * 2;
-            memory = Win32.GlobalAlloc(0x0042, (nuint)bytes);
-            if (memory == 0) return;
-
-            nint target = Win32.GlobalLock(memory);
-            if (target == 0)
-            {
-                Win32.GlobalFree(memory);
-                memory = 0;
-                return;
-            }
-
-            Marshal.Copy(text.ToCharArray(), 0, target, text.Length);
-            Win32.GlobalUnlock(memory);
 
             // SetClipboardData takes ownership of the block on success.
-            if (Win32.SetClipboardData(Win32.CfUnicodeText, memory) != 0) memory = 0;
+            if (Win32.SetClipboardData(format, memory) != 0) memory = 0;
         }
         finally
         {
@@ -1555,6 +1818,109 @@ internal static class PayloadCapture
             Win32.CloseClipboard();
         }
     }
+}
+
+internal static class PayloadCapture
+{
+    public static Payload Capture(CaptureMode mode, nint ownWindow, bool allowCopy)
+    {
+        if (mode == CaptureMode.None) return Payload.Empty;
+
+        Payload payload = mode == CaptureMode.Clipboard
+            ? Clipboard.Read()
+            : CaptureAll(ownWindow, allowCopy); // ordinary bindings keep the 500 ms capture budget
+
+        // A binding asks for one kind of selection: do not hand a text binding the file list
+        // (or the reverse) just because the clipboard happened to carry both.
+        return mode switch
+        {
+            CaptureMode.SelectedText => new Payload(payload.Text, Payload.NoFiles),
+            CaptureMode.SelectedFiles => new Payload("", payload.Files),
+            _ => payload,
+        };
+    }
+
+    /// <summary>
+    /// Captures everything the selection or clipboard holds, without narrowing it to text or
+    /// files. The quick launcher uses this so its text area can edit either kind of payload.
+    /// </summary>
+    public static Payload CaptureAll(nint ownWindow, bool allowCopy, int maxWaitMs = 500)
+    {
+        if (!allowCopy) return Clipboard.Read();
+
+        nint foreground = Win32.GetForegroundWindow();
+        return foreground == 0 || foreground == ownWindow ? Clipboard.Read() : CopySelection(maxWaitMs);
+    }
+
+    private static Payload CopySelection(int maxWaitMs)
+    {
+        // Take a copy of what the clipboard holds now, so the simulated Ctrl+C does not cost the
+        // user their clipboard. The copy is made with the plain clipboard API on purpose: the
+        // object OleGetClipboard returns is backed by the clipboard itself, so handing it back to
+        // OleSetClipboard and flushing makes OLE render it from the clipboard it is backing —
+        // a recursion that overflows the stack inside ole32 and takes the process down.
+        Payload previous = Clipboard.Read();
+
+        try
+        {
+            uint sequence = Win32.GetClipboardSequenceNumber();
+            SendCopy();
+
+            // A foreground app with no selection never touches the clipboard. Waiting the full
+            // half second on every such press is what made the quick launcher feel slow, so the
+            // launcher asks for a short budget; an ordinary binding keeps the generous one.
+            long until = Environment.TickCount64 + maxWaitMs;
+            while (Environment.TickCount64 < until)
+            {
+                Thread.Sleep(10);
+                if (Win32.GetClipboardSequenceNumber() != sequence) break;
+            }
+
+            return Clipboard.Read();
+        }
+        finally
+        {
+            Clipboard.Write(previous);
+        }
+    }
+
+    private static void SendCopy()
+    {
+        var inputs = new Win32.INPUT[9];
+        int n = 0;
+
+        // The hotkey's own modifiers are still physically down. Release them first, or the
+        // application receives Ctrl+Alt+C instead of Ctrl+C.
+        inputs[n++] = KeyInput(VirtualKeys.Control, up: true);
+        inputs[n++] = KeyInput(VirtualKeys.Menu, up: true);
+        inputs[n++] = KeyInput(VirtualKeys.Shift, up: true);
+        inputs[n++] = KeyInput(VirtualKeys.LeftWindows, up: true);
+        inputs[n++] = KeyInput(VirtualKeys.RightWindows, up: true);
+        inputs[n++] = KeyInput(VirtualKeys.Control, up: false);
+        inputs[n++] = KeyInput(VirtualKeys.C, up: false);
+        inputs[n++] = KeyInput(VirtualKeys.C, up: true);
+        inputs[n++] = KeyInput(VirtualKeys.Control, up: true);
+
+        uint inserted = Win32.SendInput((uint)n, inputs, Unsafe.SizeOf<Win32.INPUT>());
+        if (inserted != (uint)n)
+        {
+            throw new InvalidOperationException(
+                "Windows blocked the simulated Ctrl+C. The foreground application may be running elevated.");
+        }
+    }
+
+    private static Win32.INPUT KeyInput(int virtualKey, bool up) => new()
+    {
+        type = Win32.InputKeyboard,
+        U = new Win32.InputUnion
+        {
+            ki = new Win32.KEYBDINPUT
+            {
+                wVk = (ushort)virtualKey,
+                dwFlags = up ? Win32.KeyEventKeyUp : 0u,
+            },
+        },
+    };
 }
 
 // ---------------------------------------------------------------------------
@@ -1591,11 +1957,29 @@ internal static class Launcher
         string workDir = Environment.ExpandEnvironmentVariables(binding.WorkDir.Trim().Trim('"'));
         if (workDir.Length > 0) start.WorkingDirectory = workDir;
 
-        foreach (string argument in BuildArguments(binding.Args, payload, workDir))
+        foreach (string argument in BuildArguments(binding.Args, payload, workDir, CapturedDirectory(payload)))
             start.ArgumentList.Add(argument);
 
-        foreach ((string key, string value) in ParseEnvironment(binding.Env))
-            start.Environment[key] = Environment.ExpandEnvironmentVariables(value);
+        // A ProcessStartInfo with UseShellExecute = false is seeded with this process's whole
+        // environment, which is the system and user variables. Keep that as the base: only the
+        // rows the binding names are overridden or appended below.
+        foreach (EnvEntry entry in EnvText.Parse(binding.Env))
+        {
+            if (!entry.Enabled) continue;
+
+            string key = entry.Key;
+            if (key.EndsWith('+'))
+            {
+                string name = key[..^1].TrimEnd();
+                start.Environment.TryGetValue(name, out string? existing);
+                string extra = Environment.ExpandEnvironmentVariables(entry.Value);
+                start.Environment[name] = string.IsNullOrEmpty(existing) ? extra : existing + ";" + extra;
+            }
+            else
+            {
+                start.Environment[key] = Environment.ExpandEnvironmentVariables(entry.Value);
+            }
+        }
 
         using Process process = Process.Start(start)
             ?? throw new InvalidOperationException("The application did not start.");
@@ -1622,7 +2006,7 @@ internal static class Launcher
                     nint window = process.MainWindowHandle;
                     if (window == 0) continue;
 
-                    Win32.ShowWindow(window, 9); // SW_RESTORE
+                    Win32.ShowWindow(window, ShowWindowCommand.Restore);
                     Win32.SetForegroundWindow(window);
                     return;
                 }
@@ -1668,7 +2052,20 @@ internal static class Launcher
         return null;
     }
 
-    private static List<string> BuildArguments(string template, Payload payload, string workDir)
+    /// <summary>
+    /// The folder a binding means by {dir}: a selected folder itself, or the parent of a selected
+    /// file. Empty when the capture carried no files, so the caller can fall back to WorkDir.
+    /// </summary>
+    private static string CapturedDirectory(Payload payload)
+    {
+        if (payload.Files.Length == 0) return "";
+
+        string first = payload.Files[0];
+        if (Directory.Exists(first)) return first;
+        return Path.GetDirectoryName(first) ?? "";
+    }
+
+    private static List<string> BuildArguments(string template, Payload payload, string workDir, string capturedDir)
     {
         var arguments = new List<string>();
         bool usedText = false;
@@ -1705,7 +2102,13 @@ internal static class Launcher
                     StringComparison.Ordinal);
             }
             if (argument.Contains("{dir}", StringComparison.Ordinal))
-                argument = argument.Replace("{dir}", workDir, StringComparison.Ordinal);
+            {
+                // A captured selection is consumed by {dir} just like {file}: substituting it
+                // must not also append the raw path at the end of the argument list.
+                argument = argument.Replace("{dir}",
+                    capturedDir.Length > 0 ? capturedDir : workDir, StringComparison.Ordinal);
+                if (capturedDir.Length > 0) usedFiles = true;
+            }
 
             if (argument.Length > 0 || token.Length > 0) arguments.Add(argument);
         }
@@ -1744,30 +2147,6 @@ internal static class Launcher
 
         if (current.Length > 0) yield return current.ToString();
     }
-
-    private static IEnumerable<(string Key, string Value)> ParseEnvironment(string text)
-    {
-        foreach (string raw in text.Split('\n'))
-        {
-            string line = raw.Trim();
-            if (line.Length == 0 || line.StartsWith('#')) continue;
-
-            int equals = line.IndexOf('=');
-            if (equals <= 0) continue;
-
-            string key = line[..equals].Trim();
-            string value = line[(equals + 1)..].Trim();
-
-            if (key.EndsWith('+'))
-            {
-                key = key[..^1].TrimEnd();
-                string existing = Environment.GetEnvironmentVariable(key) ?? "";
-                value = existing.Length > 0 ? existing + ";" + value : value;
-            }
-
-            if (key.Length > 0) yield return (key, value);
-        }
-    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1776,16 +2155,21 @@ internal static class Launcher
 
 internal sealed class ShortcutInfo
 {
-    public required string Path;
-    public required string Name;
-    public required string Folder;
-    public int Mods;
-    public Key HotKey;
-    public bool Writable;
+    public required string Path { get; init; }
+    public required string Name { get; init; }
+    public required string Folder { get; init; }
+    public int Mods { get; set; }
+    public Key HotKey { get; set; }
+    public bool Writable { get; init; }
 }
 
 internal static class ShortcutStore
 {
+    // The shell link header: 0x4C bytes, the CLSID at offset 4, and the hotkey field at 0x40.
+    private const int HeaderSize = 0x4C;
+    private const int HotKeyOffset = 0x40;
+    private const uint AllModifiers = (uint)(HotkeyModifiers.Alt | HotkeyModifiers.Control | HotkeyModifiers.Shift);
+
     private static readonly byte[] LinkClsid =
     [
         0x01, 0x14, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -1843,17 +2227,17 @@ internal static class ShortcutStore
         if (combo.Key != Key.None && virtualKey == 0)
             return "That key cannot be stored in a shortcut.";
 
-        if ((combo.Mods & 8) != 0)
+        if ((combo.Mods & (int)Mods.Super) != 0)
             return "Windows-key hotkeys cannot be stored in a shortcut.";
 
         ushort value = combo.Key == Key.None
             ? (ushort)0
-            : (ushort)(((KeyMap.ToWin32(combo.Mods) & 0x07) << 8) | (uint)virtualKey);
+            : (ushort)(((uint)KeyMap.ToWin32(combo.Mods) & AllModifiers) << 8 | (uint)virtualKey);
 
         try
         {
             using var stream = new FileStream(shortcut.Path, FileMode.Open, FileAccess.ReadWrite, FileShare.Read);
-            stream.Seek(0x40, SeekOrigin.Begin);
+            stream.Seek(HotKeyOffset, SeekOrigin.Begin);
             Span<byte> bytes = stackalloc byte[2];
             BinaryPrimitives.WriteUInt16LittleEndian(bytes, value);
             stream.Write(bytes);
@@ -1885,22 +2269,22 @@ internal static class ShortcutStore
         try
         {
             using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            if (stream.Length < 0x4C) return false;
+            if (stream.Length < HeaderSize) return false;
 
-            Span<byte> header = stackalloc byte[0x4C];
+            Span<byte> header = stackalloc byte[HeaderSize];
             stream.ReadExactly(header);
 
-            if (BinaryPrimitives.ReadUInt32LittleEndian(header) != 0x4C) return false;
+            if (BinaryPrimitives.ReadUInt32LittleEndian(header) != HeaderSize) return false;
             if (!header.Slice(4, 16).SequenceEqual(LinkClsid)) return false;
 
-            ushort hotkey = BinaryPrimitives.ReadUInt16LittleEndian(header.Slice(0x40, 2));
+            ushort hotkey = BinaryPrimitives.ReadUInt16LittleEndian(header.Slice(HotKeyOffset, 2));
             int virtualKey = hotkey & 0xFF;
             if (virtualKey == 0) return false;
 
             key = KeyMap.FromVk(virtualKey);
             if (key == Key.None) return false;
 
-            mods = KeyMap.FromWin32((hotkey >> 8) & 0x07);
+            mods = KeyMap.FromWin32((HotkeyModifiers)((hotkey >> 8) & 0x07));
             return true;
         }
         catch
@@ -1927,138 +2311,127 @@ internal static class ShortcutStore
 // Key names and virtual-key conversion
 // ---------------------------------------------------------------------------
 
+/// <summary>
+/// The modifier bits Windows understands. They deliberately do not line up with CuiSharp's
+/// <see cref="Mods"/> values, so every conversion goes through <see cref="KeyMap"/>.
+/// </summary>
+[Flags]
+internal enum HotkeyModifiers : uint
+{
+    Alt = 0x0001,
+    Control = 0x0002,
+    Shift = 0x0004,
+    Win = 0x0008,
+    NoRepeat = 0x4000,
+}
+
+/// <summary>Virtual-key codes this app asks about by name, as opposed to the full <see cref="KeyMap"/> table.</summary>
+internal static class VirtualKeys
+{
+    public const int Shift = 0x10;
+    public const int Control = 0x11;
+    public const int Menu = 0x12;
+    public const int LeftWindows = 0x5B;
+    public const int RightWindows = 0x5C;
+    public const int C = 0x43;
+}
+
 internal static class KeyMap
 {
+    private readonly record struct KeyInfo(Key Key, string Name, int VirtualKey);
+
+    // One table is the single source of truth for the three things a key needs: its CuiSharp
+    // value, the name shown in the UI, and the Windows virtual-key code.
+    private static readonly KeyInfo[] Keys = BuildKeys();
+
+    private static readonly FrozenDictionary<Key, KeyInfo> ByKey =
+        Keys.ToFrozenDictionary(info => info.Key);
+
+    private static readonly FrozenDictionary<int, Key> ByVirtualKey =
+        Keys.ToFrozenDictionary(info => info.VirtualKey, info => info.Key);
+
+    private static readonly (int CuiSharp, HotkeyModifiers Windows, string Name)[] Modifiers =
+    [
+        ((int)Mods.Ctrl, HotkeyModifiers.Control, "Ctrl"),
+        ((int)Mods.Alt, HotkeyModifiers.Alt, "Alt"),
+        ((int)Mods.Shift, HotkeyModifiers.Shift, "Shift"),
+        ((int)Mods.Super, HotkeyModifiers.Win, "Win"),
+    ];
+
     public static string Text(int mods, Key key)
     {
         if (key == Key.None) return "None";
 
         var text = new StringBuilder();
-        if ((mods & 2) != 0) text.Append("Ctrl+");
-        if ((mods & 4) != 0) text.Append("Alt+");
-        if ((mods & 1) != 0) text.Append("Shift+");
-        if ((mods & 8) != 0) text.Append("Win+");
+        foreach (var modifier in Modifiers)
+            if ((mods & modifier.CuiSharp) != 0) text.Append(modifier.Name).Append('+');
+
         text.Append(Name(key));
         return text.ToString();
     }
 
-    private static string Name(Key key)
-    {
-        int k = (int)key;
-        if (k >= (int)Key.A && k <= (int)Key.Z) return ((char)('A' + k - (int)Key.A)).ToString();
-        if (k >= (int)Key.D0 && k <= (int)Key.D9) return ((char)('0' + k - (int)Key.D0)).ToString();
-        if (k >= (int)Key.F1 && k <= (int)Key.F12) return "F" + (k - (int)Key.F1 + 1);
+    public static string Name(Key key) =>
+        ByKey.TryGetValue(key, out KeyInfo info) ? info.Name : "?";
 
-        return key switch
-        {
-            Key.Tab => "Tab",
-            Key.Enter => "Enter",
-            Key.Escape => "Esc",
-            Key.Backspace => "Backspace",
-            Key.Delete => "Delete",
-            Key.Space => "Space",
-            Key.Left => "Left",
-            Key.Right => "Right",
-            Key.Up => "Up",
-            Key.Down => "Down",
-            Key.Home => "Home",
-            Key.End => "End",
-            Key.PageUp => "PageUp",
-            Key.PageDown => "PageDown",
-            Key.Minus => "-",
-            Key.Equal => "=",
-            Key.Comma => ",",
-            Key.Period => ".",
-            Key.Slash => "/",
-            _ => "?",
-        };
-    }
-
-    // CuiSharp numbers the modifiers Shift = 1, Ctrl = 2, Alt = 4, Win = 8, while Windows uses
-    // MOD_ALT = 1, MOD_CONTROL = 2, MOD_SHIFT = 4, MOD_WIN = 8. Only Ctrl happens to line up, so
-    // anything leaving for Win32 — RegisterHotKey, the .lnk hotkey field — must be translated here
-    // or Ctrl+Alt+D is quietly registered as Ctrl+Shift+D.
-    public static uint ToWin32(int mods)
+    public static HotkeyModifiers ToWin32(int mods)
     {
-        uint result = 0;
-        if ((mods & 1) != 0) result |= 0x0004; // Shift
-        if ((mods & 2) != 0) result |= 0x0002; // Ctrl
-        if ((mods & 4) != 0) result |= 0x0001; // Alt
-        if ((mods & 8) != 0) result |= 0x0008; // Win
+        HotkeyModifiers result = 0;
+        foreach (var modifier in Modifiers)
+            if ((mods & modifier.CuiSharp) != 0) result |= modifier.Windows;
         return result;
     }
 
-    public static int FromWin32(int mods)
+    public static int FromWin32(HotkeyModifiers mods)
     {
         int result = 0;
-        if ((mods & 0x0004) != 0) result |= 1; // Shift
-        if ((mods & 0x0002) != 0) result |= 2; // Ctrl
-        if ((mods & 0x0001) != 0) result |= 4; // Alt
-        if ((mods & 0x0008) != 0) result |= 8; // Win
+        foreach (var modifier in Modifiers)
+            if ((mods & modifier.Windows) != 0) result |= modifier.CuiSharp;
         return result;
     }
 
-    public static int ToVk(Key key)
+    public static int ToVk(Key key) =>
+        ByKey.TryGetValue(key, out KeyInfo info) ? info.VirtualKey : 0;
+
+    public static Key FromVk(int virtualKey) =>
+        ByVirtualKey.TryGetValue(virtualKey, out Key key) ? key : Key.None;
+
+    private static KeyInfo[] BuildKeys()
     {
-        int k = (int)key;
-        if (k >= (int)Key.A && k <= (int)Key.Z) return 0x41 + k - (int)Key.A;
-        if (k >= (int)Key.D0 && k <= (int)Key.D9) return 0x30 + k - (int)Key.D0;
-        if (k >= (int)Key.F1 && k <= (int)Key.F12) return 0x70 + k - (int)Key.F1;
+        var keys = new List<KeyInfo>(26 + 10 + 12 + 19);
 
-        return key switch
-        {
-            Key.Tab => 0x09,
-            Key.Enter => 0x0D,
-            Key.Escape => 0x1B,
-            Key.Backspace => 0x08,
-            Key.Delete => 0x2E,
-            Key.Space => 0x20,
-            Key.Left => 0x25,
-            Key.Right => 0x27,
-            Key.Up => 0x26,
-            Key.Down => 0x28,
-            Key.Home => 0x24,
-            Key.End => 0x23,
-            Key.PageUp => 0x21,
-            Key.PageDown => 0x22,
-            Key.Minus => 0xBD,
-            Key.Equal => 0xBB,
-            Key.Comma => 0xBC,
-            Key.Period => 0xBE,
-            Key.Slash => 0xBF,
-            _ => 0,
-        };
-    }
+        for (int i = 0; i < 26; i++)
+            keys.Add(new((Key)((int)Key.A + i), ((char)('A' + i)).ToString(), 0x41 + i));
 
-    public static Key FromVk(int virtualKey)
-    {
-        if (virtualKey >= 0x41 && virtualKey <= 0x5A) return (Key)((int)Key.A + virtualKey - 0x41);
-        if (virtualKey >= 0x30 && virtualKey <= 0x39) return (Key)((int)Key.D0 + virtualKey - 0x30);
-        if (virtualKey >= 0x70 && virtualKey <= 0x7B) return (Key)((int)Key.F1 + virtualKey - 0x70);
+        for (int i = 0; i < 10; i++)
+            keys.Add(new((Key)((int)Key.D0 + i), ((char)('0' + i)).ToString(), 0x30 + i));
 
-        return virtualKey switch
-        {
-            0x09 => Key.Tab,
-            0x0D => Key.Enter,
-            0x1B => Key.Escape,
-            0x08 => Key.Backspace,
-            0x2E => Key.Delete,
-            0x20 => Key.Space,
-            0x25 => Key.Left,
-            0x27 => Key.Right,
-            0x26 => Key.Up,
-            0x28 => Key.Down,
-            0x24 => Key.Home,
-            0x23 => Key.End,
-            0x21 => Key.PageUp,
-            0x22 => Key.PageDown,
-            0xBD => Key.Minus,
-            0xBB => Key.Equal,
-            0xBC => Key.Comma,
-            0xBE => Key.Period,
-            0xBF => Key.Slash,
-            _ => Key.None,
-        };
+        for (int i = 0; i < 12; i++)
+            keys.Add(new((Key)((int)Key.F1 + i), "F" + (i + 1), 0x70 + i));
+
+        keys.AddRange(
+        [
+            new(Key.Tab, "Tab", 0x09),
+            new(Key.Enter, "Enter", 0x0D),
+            new(Key.Escape, "Esc", 0x1B),
+            new(Key.Backspace, "Backspace", 0x08),
+            new(Key.Delete, "Delete", 0x2E),
+            new(Key.Space, "Space", 0x20),
+            new(Key.Left, "Left", 0x25),
+            new(Key.Right, "Right", 0x27),
+            new(Key.Up, "Up", 0x26),
+            new(Key.Down, "Down", 0x28),
+            new(Key.Home, "Home", 0x24),
+            new(Key.End, "End", 0x23),
+            new(Key.PageUp, "PageUp", 0x21),
+            new(Key.PageDown, "PageDown", 0x22),
+            new(Key.Minus, "-", 0xBD),
+            new(Key.Equal, "=", 0xBB),
+            new(Key.Comma, ",", 0xBC),
+            new(Key.Period, ".", 0xBE),
+            new(Key.Slash, "/", 0xBF),
+        ]);
+
+        return keys.ToArray();
     }
 }
 
@@ -2069,26 +2442,11 @@ internal static class KeyMap
 
 internal sealed class TrayIcon : IDisposable
 {
-    private const uint TrayMessage = 0x8001; // WM_APP + 1
-    private const uint WmClose = 0x0010;
-    private const int SwHide = 0;
-    private const int SwShow = 5;
-    private const int SwRestore = 9;
-    private const uint NifMessage = 0x1;
-    private const uint NifIcon = 0x2;
-    private const uint NifTip = 0x4;
-    private const uint NimAdd = 0;
-    private const uint NimDelete = 2;
-    private const uint MfString = 0;
-    private const uint MfSeparator = 0x800;
-    private const uint TpmRightButton = 0x2;
-    private const uint TpmReturnCmd = 0x100;
     private const int OpenCommand = 1;
     private const int ExitCommand = 2;
 
     private readonly nint _hwnd;
-    private readonly Win32.WndProc _proc;
-    private nint _original;
+    private readonly WindowProcedure _hook;
     private nint _icon;
     private bool _added;
     private bool _exiting;
@@ -2096,8 +2454,7 @@ internal sealed class TrayIcon : IDisposable
     public TrayIcon(nint hwnd)
     {
         _hwnd = hwnd;
-        _proc = OnMessage;
-        _original = Win32.SetWindowLongPtr(hwnd, Win32.GwlpWndProc, Marshal.GetFunctionPointerForDelegate(_proc));
+        _hook = new WindowProcedure(hwnd, OnMessage);
         _icon = Win32.LoadAppIcon();
         Add();
     }
@@ -2111,13 +2468,13 @@ internal sealed class TrayIcon : IDisposable
             cbSize = Marshal.SizeOf<Win32.NOTIFYICONDATAW>(),
             hWnd = _hwnd,
             uID = 1,
-            uFlags = NifMessage | NifIcon | NifTip,
-            uCallbackMessage = TrayMessage,
+            uFlags = Win32.NifMessage | Win32.NifIcon | Win32.NifTip,
+            uCallbackMessage = Win32.TrayMessage,
             hIcon = _icon,
             szTip = "Hotkey — click to open, right-click to exit",
         };
 
-        _added = Win32.Shell_NotifyIconW(NimAdd, ref data) != 0;
+        _added = Win32.Shell_NotifyIconW(Win32.NimAdd, ref data) != 0;
     }
 
     private void Remove()
@@ -2131,7 +2488,7 @@ internal sealed class TrayIcon : IDisposable
             uID = 1,
         };
 
-        Win32.Shell_NotifyIconW(NimDelete, ref data);
+        Win32.Shell_NotifyIconW(Win32.NimDelete, ref data);
         _added = false;
     }
 
@@ -2140,13 +2497,13 @@ internal sealed class TrayIcon : IDisposable
         // The window's close button hides it: the hotkeys live on their own thread and keep
         // firing, and the tray icon is the way back. Without an icon the window must close for
         // real, or the app would be left running with no way to reach it.
-        if (message == WmClose && !_exiting && _added)
+        if (message == Win32.WmClose && !_exiting && _added)
         {
-            Win32.ShowWindow(hwnd, SwHide);
+            Win32.ShowWindow(hwnd, ShowWindowCommand.Hide);
             return 0;
         }
 
-        if (message == TrayMessage)
+        if (message == Win32.TrayMessage)
         {
             int mouse = (int)(lParam & 0xFFFF);
             if (mouse is Win32.WmLButtonUp or Win32.WmLButtonDblClk) Open();
@@ -2154,27 +2511,29 @@ internal sealed class TrayIcon : IDisposable
             return 0;
         }
 
-        return Win32.CallWindowProcW(_original, hwnd, message, wParam, lParam);
+        return _hook.CallPrevious(hwnd, message, wParam, lParam);
     }
 
     private void Open()
     {
-        Win32.ShowWindow(_hwnd, Win32.IsIconic(_hwnd) != 0 ? SwRestore : SwShow);
+        Win32.ShowWindow(_hwnd,
+            Win32.IsIconic(_hwnd) != 0 ? ShowWindowCommand.Restore : ShowWindowCommand.Show);
         Win32.SetForegroundWindow(_hwnd);
     }
 
     private void Menu()
     {
         nint menu = Win32.CreatePopupMenu();
-        Win32.AppendMenuW(menu, MfString, OpenCommand, "Open Hotkey");
-        Win32.AppendMenuW(menu, MfSeparator, 0, null);
-        Win32.AppendMenuW(menu, MfString, ExitCommand, "Exit");
+        Win32.AppendMenuW(menu, Win32.MfString, OpenCommand, "Open Hotkey");
+        Win32.AppendMenuW(menu, Win32.MfSeparator, 0, null);
+        Win32.AppendMenuW(menu, Win32.MfString, ExitCommand, "Exit");
 
         Win32.GetCursorPos(out Win32.POINT point);
 
         // Without foregrounding first, the menu stays open when the user clicks elsewhere.
         Win32.SetForegroundWindow(_hwnd);
-        int command = Win32.TrackPopupMenu(menu, TpmRightButton | TpmReturnCmd, point.X, point.Y, 0, _hwnd, 0);
+        int command = Win32.TrackPopupMenu(menu, Win32.TpmRightButton | Win32.TpmReturnCmd,
+            point.X, point.Y, 0, _hwnd, 0);
         Win32.DestroyMenu(menu);
         Win32.PostMessage(_hwnd, 0, 0, 0);
 
@@ -2187,18 +2546,13 @@ internal sealed class TrayIcon : IDisposable
         // Remove the icon before the window goes away: a dead hwnd leaves a ghost in the tray.
         Remove();
         _exiting = true;
-        Win32.PostMessage(_hwnd, WmClose, 0, 0);
+        Win32.PostMessage(_hwnd, Win32.WmClose, 0, 0);
     }
 
     public void Dispose()
     {
         Remove();
-
-        if (_original != 0)
-        {
-            Win32.SetWindowLongPtr(_hwnd, Win32.GwlpWndProc, _original);
-            _original = 0;
-        }
+        _hook.Dispose();
 
         if (_icon != 0)
         {
@@ -2209,17 +2563,677 @@ internal sealed class TrayIcon : IDisposable
 }
 
 // ---------------------------------------------------------------------------
-// Win32
+// Quick launcher: the built-in binding opens this second, small window.
 // ---------------------------------------------------------------------------
+
+internal sealed class LauncherItem
+{
+    public required string Id { get; init; }
+    public required Binding Binding { get; init; }   // a clone; the launcher never edits the live model
+    public required string Name { get; init; }
+    public required string Combo { get; init; }
+    public required string Search { get; init; }
+}
+
+/// <summary>
+/// The only state shared between the manager window and the quick-launcher window. The snapshot
+/// is replaced, never mutated, so the launcher can read it without holding the lock while drawing.
+/// </summary>
+internal sealed class LauncherBridge
+{
+    private readonly object _gate = new();
+    private LauncherItem[] _items = [];
+    private readonly ConcurrentQueue<string> _triggered = new();
+
+    public Action? WakeMain { get; set; }
+
+    public void SetItems(IReadOnlyList<Binding> bindings)
+    {
+        var items = new List<LauncherItem>(bindings.Count);
+        foreach (Binding b in bindings)
+        {
+            if (b.BuiltIn || !b.Enabled || b.Command.Trim().Length == 0) continue;
+            string combo = KeyMap.Text(b.Mods, (Key)b.Key);
+            items.Add(new LauncherItem
+            {
+                Id = b.Id,
+                Binding = b.Clone(),
+                Name = b.Name.Length > 0 ? b.Name : "Untitled",
+                Combo = combo,
+                Search = b.Name + "\n" + b.Command + "\n" + combo,
+            });
+        }
+
+        // Most recently used first; bindings that never fired keep their config order at the end.
+        items.Sort((a, b) => b.Binding.LastAccess.CompareTo(a.Binding.LastAccess));
+        lock (_gate) _items = items.ToArray();
+    }
+
+    public LauncherItem[] Items
+    {
+        get { lock (_gate) return _items; }
+    }
+
+    public void EnqueueTriggered(string id)
+    {
+        _triggered.Enqueue(id);
+        WakeMain?.Invoke();
+    }
+
+    public string[] DrainTriggered()
+    {
+        var ids = new List<string>();
+        while (_triggered.TryDequeue(out string? id)) ids.Add(id);
+        return ids.ToArray();
+    }
+}
+
+internal sealed class LauncherWindow : IDisposable
+{
+    private readonly LauncherBridge _bridge;
+    private readonly ActivityLog _log;
+    private readonly Thread _thread;
+    private readonly ManualResetEventSlim _ready = new();
+    private readonly object _gate = new();
+
+    private CuiWindow? _window;
+    private nint _hwnd;
+    private nint _previousForeground;
+    private WindowProcedure? _hook;
+    private volatile bool _armed;
+    private bool _started;
+    private bool _disposed;
+
+    // Handed from the hotkey thread to the launcher thread under _gate. Draw copies them into
+    // locals, then writes them back at the end of the frame.
+    private string _filter = "";
+    private string _payloadText = "";
+    private bool _hadFiles;
+    private int _selected;
+    private int _generation;
+    private LauncherView _view = LauncherView.List;
+
+    private enum LauncherView { List, Edit }
+
+    // Cached filtering: a visible launcher does not re-scan the snapshot on every frame.
+    private readonly List<LauncherItem> _visible = new();
+    private LauncherItem[] _builtItems = [];
+    private string _builtFilter = "";
+
+    public LauncherWindow(LauncherBridge bridge, ActivityLog log)
+    {
+        _bridge = bridge;
+        _log = log;
+        _thread = new Thread(Loop) { IsBackground = true, Name = "quick-launcher" };
+        if (OperatingSystem.IsWindows()) _thread.SetApartmentState(ApartmentState.STA);
+    }
+
+    public nint Handle => _hwnd;
+
+    /// <summary>Creates the hidden window ahead of the first hotkey so opening feels instant.</summary>
+    public void Start()
+    {
+        lock (_gate)
+        {
+            if (_disposed || _started) return;
+            _started = true;
+        }
+        _thread.Start();
+    }
+
+    /// <summary>
+    /// Shows the window without stealing focus. This returns in a couple of milliseconds; the
+    /// foreground application keeps its selection so it can still be captured afterwards.
+    /// </summary>
+    public void Show()
+    {
+        if (_disposed) return;
+
+        // Start() runs when the main window is created; this is only a guard for a hotkey that
+        // somehow arrives while that window is still coming up.
+        try { _ready.Wait(TimeSpan.FromSeconds(2)); }
+        catch (ObjectDisposedException) { return; }
+
+        lock (_gate)
+        {
+            if (_disposed) return;
+
+            // Clear the previous capture now; Complete fills in the real text a moment later.
+            _payloadText = "";
+            _hadFiles = false;
+            _filter = "";
+            _selected = 0;
+            _view = LauncherView.List;
+            _generation++;
+            _previousForeground = Win32.GetForegroundWindow();
+            _armed = false;
+        }
+
+        nint hwnd = _hwnd;
+        if (hwnd == 0) return;
+        CenterOnScreen(hwnd);
+        Win32.ShowWindow(hwnd, ShowWindowCommand.ShowNoActivate);
+        Win32.PostMessage(hwnd, 0, 0, 0); // wake the idle loop so the first frame is prompt
+    }
+
+    /// <summary>Delivers the captured selection and makes the window ready for typing.</summary>
+    public void Complete(Payload payload)
+    {
+        nint hwnd = _hwnd;
+        if (hwnd == 0) return;
+
+        lock (_gate)
+        {
+            if (_disposed) return;
+            _hadFiles = payload.Files.Length > 0;
+            _payloadText = _hadFiles ? string.Join("\n", payload.Files) : payload.Text;
+        }
+
+        Win32.SetForegroundWindow(hwnd);
+        Win32.PostMessage(hwnd, 0, 0, 0); // redraw with the captured text
+    }
+
+    private nint OnMessage(nint hwnd, uint message, nint wParam, nint lParam)
+    {
+        // Arm on real focus, not on Show(): the window is first shown without activation so the
+        // foreground application keeps its selection long enough to be captured.
+        if (message == Win32.WmSetFocus)
+            _armed = true;
+        else if (message == Win32.WmKillFocus && _armed)
+        {
+            _armed = false;
+            Close(restoreFocus: false);
+        }
+
+        // CUI still needs the message to keep its own focus state straight.
+        return _hook?.CallPrevious(hwnd, message, wParam, lParam) ?? 0;
+    }
+
+    /// <summary>Centers the window in the work area of the monitor the cursor is on.</summary>
+    private static void CenterOnScreen(nint hwnd)
+    {
+        if (!Win32.GetWindowRect(hwnd, out Win32.RECT rect)) return;
+
+        int width = rect.Right - rect.Left;
+        int height = rect.Bottom - rect.Top;
+        if (width <= 0 || height <= 0) return;
+
+        Win32.GetCursorPos(out Win32.POINT cursor);
+        nint monitor = Win32.MonitorFromPoint(cursor, MonitorDefault.ToNearest);
+        if (monitor == 0) return;
+
+        var info = new Win32.MONITORINFO { cbSize = Marshal.SizeOf<Win32.MONITORINFO>() };
+        if (!Win32.GetMonitorInfoW(monitor, ref info)) return;
+
+        int workWidth = info.rcWork.Right - info.rcWork.Left;
+        int workHeight = info.rcWork.Bottom - info.rcWork.Top;
+        if (workWidth <= 0 || workHeight <= 0) return;
+
+        int x = info.rcWork.Left + (workWidth - width) / 2;
+        int y = info.rcWork.Top + (workHeight - height) / 2;
+
+        // Move and raise to the top of the z-order (insertAfter = HWND_TOP = 0) so the window is
+        // visible right away, but do not activate: the foreground app must keep its selection
+        // until the capture in Complete() has read it.
+        Win32.SetWindowPos(hwnd, 0, x, y, 0, 0,
+            SetWindowPosFlags.NoSize | SetWindowPosFlags.NoActivate);
+    }
+
+    private void Loop()
+    {
+        try
+        {
+            CuiApp.Run(Options(), Draw);
+        }
+        catch (Exception error)
+        {
+            _log.Add("Quick launcher", "Window failed: " + error.Message, false);
+            _ready.Set();
+        }
+    }
+
+    private CuiAppOptions Options() => new()
+    {
+        Title = "Quick launcher",
+        Width = 380,
+        Height = 400,
+        MinWidth = 240,
+        MinHeight = 240,
+        Theme = Theme.Dark,
+        Accent = Accent.Violet,
+        Hidden = true,
+        WindowCreated = PrepareWindow,
+    };
+
+    private void PrepareWindow(CuiWindow window)
+    {
+        _window = window;
+        _hwnd = window.NativeWindow;
+
+        // Watch WM_KILLFOCUS so clicking another window dismisses the launcher.
+        _hook = new WindowProcedure(_hwnd, OnMessage);
+        RemoveSystemChrome(_hwnd);
+
+        _ready.Set();
+    }
+
+    /// <summary>
+    /// Drops the OS caption, system menu and resize border: the frame draws its own header and
+    /// close button, so a second title bar would only be noise.
+    /// </summary>
+    private static void RemoveSystemChrome(nint hwnd)
+    {
+        int style = Win32.GetWindowLong(hwnd, WindowLong.Style);
+        style = (style & ~(int)(WindowStyle.Caption | WindowStyle.ThickFrame | WindowStyle.SysMenu))
+                | (int)WindowStyle.Border;
+        Win32.SetWindowLongPtr(hwnd, WindowLong.Style, style);
+        Win32.SetWindowPos(hwnd, 0, 0, 0, 0, 0,
+            SetWindowPosFlags.NoSize | SetWindowPosFlags.NoMove
+            | SetWindowPosFlags.NoZOrder | SetWindowPosFlags.FrameChanged);
+    }
+
+    private void Draw(Ui ui)
+    {
+        ui.UseSystemFontFallbacks();
+
+        // Softer corners and a slightly taller control scale make this small window feel like a
+        // modern launcher rather than a compact form. Tokens live in the theme, not at call sites.
+        ThemeStyle style = ui.Style;
+        style.RadiusControl = 8;
+        style.RadiusPanel = 10;
+        style.RadiusSurface = 12;
+        style.ControlMd = 34;
+        style.ControlSm = 28;
+
+        string filter;
+        string payloadText;
+        int generation;
+        int selected;
+        int view;
+        bool hadFiles;
+        lock (_gate)
+        {
+            filter = _filter;
+            payloadText = _payloadText;
+            generation = _generation;
+            selected = _selected;
+            view = (int)_view;
+            hadFiles = _hadFiles;
+        }
+
+        RefreshVisible(filter);
+
+        selected = Math.Clamp(selected, 0, Math.Max(0, _visible.Count - 1));
+
+        // Read keys before a widget can consume them. Navigation belongs to the launcher, not to
+        // the filter field or the text area that happens to hold the focus.
+        HandleKeys(ui, payloadText, ref selected, ref view);
+
+        // A fresh id per open and per view gives the focused field AutoFocus, so typing starts in
+        // the filter each time the hotkey fires and again when returning from the text area.
+        using (ui.Id(generation * 2 + view))
+        using (ui.Column(new Box { Width = Size.Fill, Height = Size.Fill, Gap = 0 }))
+        {
+            DrawHeader(ui, view);
+
+            if (view == (int)LauncherView.Edit) DrawEdit(ui, ref payloadText, hadFiles);
+            else DrawList(ui, ref filter, ref selected, payloadText);
+
+            DrawFooter(ui, view);
+        }
+
+        lock (_gate)
+        {
+            _filter = filter;
+            _payloadText = payloadText;
+            _selected = selected;
+            _view = (LauncherView)view;
+        }
+    }
+
+    private void HandleKeys(Ui ui, string payloadText, ref int selected, ref int view)
+    {
+        bool up = ui.KeyPressed(Key.Up);
+        bool down = ui.KeyPressed(Key.Down);
+        bool tab = ui.KeyPressed(Key.Tab);
+        bool shiftTab = tab && (ui.Modifiers & Mods.Shift) != 0;
+        bool enter = ui.KeyPressed(Key.Enter);
+
+        if (ui.KeyPressed(Key.Escape))
+        {
+            Close(restoreFocus: true);
+            return;
+        }
+
+        if (view == (int)LauncherView.Edit)
+        {
+            // Enter in the text area goes back to the filter and list; a second Enter runs the
+            // selected binding. Tab (without Shift) steps back the same way.
+            if (enter || (tab && !shiftTab)) view = (int)LauncherView.List;
+            return;
+        }
+
+        if (shiftTab)
+        {
+            view = (int)LauncherView.Edit;
+            return;
+        }
+
+        if (up) selected = Math.Max(0, selected - 1);
+        if (down) selected = Math.Min(_visible.Count - 1, selected + 1);
+        if (enter && _visible.Count > 0)
+        {
+            Trigger(_visible[selected].Id, payloadText);
+            Close(restoreFocus: false);
+        }
+    }
+
+    private void RefreshVisible(string filter)
+    {
+        LauncherItem[] items = _bridge.Items;
+        if (ReferenceEquals(items, _builtItems) && filter == _builtFilter) return;
+
+        _builtItems = items;
+        _builtFilter = filter;
+        _visible.Clear();
+
+        string needle = filter.Trim();
+        foreach (LauncherItem item in items)
+        {
+            if (needle.Length > 0 && item.Search.IndexOf(needle, StringComparison.OrdinalIgnoreCase) < 0)
+                continue;
+            _visible.Add(item);
+        }
+    }
+
+    private void DrawHeader(Ui ui, int view)
+    {
+        using (ui.Row(new Box { PadX = 14, PadY = 10, Gap = 9, Align = Align.Center, Width = Size.Fill }))
+        {
+            ui.Text(Icons.Command, new TextOpts(15, Color.Accent));
+            ui.Text(view == (int)LauncherView.Edit ? "Edit captured text" : "Quick launcher",
+                new TextOpts(14, Color.Foreground));
+            ui.Spacer();
+            if (view == (int)LauncherView.List)
+                ui.Badge(_visible.Count.ToString(), new BadgeOpts { Size = ControlSize.Sm, Tone = Tone.Neutral });
+            if (ui.IconButton(Icons.X, new ButtonOpts
+            {
+                Size = ControlSize.Sm,
+                Variant = ButtonVariant.Ghost,
+                Tooltip = "Close (Esc)",
+            }))
+                Close(restoreFocus: true);
+        }
+        ui.Separator();
+    }
+
+    private void DrawEdit(Ui ui, ref string payloadText, bool hadFiles)
+    {
+        using (ui.Column(new Box { Width = Size.Fill, Height = Size.Fill, PadX = 14, PadTop = 14, Gap = 8 }))
+        {
+            ui.Text(hadFiles ? Icons.Grid3x3 : Icons.Pencil, new TextOpts(20, Color.Accent));
+            ui.Secondary(hadFiles
+                ? "One file or folder path per line."
+                : "Selected text, or the clipboard as it stands.");
+            ui.TextArea("payload", ref payloadText, new InputOpts
+            {
+                AutoFocus = true,
+                Width = Size.Fill,
+                Height = -1,
+                Placeholder = "Nothing captured",
+            });
+        }
+    }
+
+    private void DrawList(Ui ui, ref string filter, ref int selected, string payloadText)
+    {
+        using (ui.Box(new Box { PadX = 12, PadTop = 11, PadBottom = 4 }))
+            ui.Input("filter", ref filter, new InputOpts
+            {
+                AutoFocus = true,
+                Width = Size.Fill,
+                Placeholder = "Filter bindings…",
+                Icon = Icons.Search,
+                Clearable = true,
+            });
+
+        using (ui.Scroll(new ScrollOpts { Height = Size.Fill, Gap = 6, Pad = 12, FadeEdges = true }))
+        {
+            if (_visible.Count == 0)
+            {
+                DrawEmptyList(ui, filter);
+                return;
+            }
+
+            for (int i = 0; i < _visible.Count; i++)
+            {
+                LauncherItem item = _visible[i];
+                bool clicked;
+                using (ui.Id(i))
+                using (ui.Row(new Box { Width = Size.Fill, Gap = 0, Align = Align.Stretch }))
+                {
+                    if (i == selected)
+                        using (ui.Box(new Box { Width = Size.Px(3), Bg = Color.Accent, Radius = 2 })) { }
+
+                    using (ui.Card(new Card
+                    {
+                        PadX = 12,
+                        PadY = 9,
+                        Gap = 5,
+                        Width = Size.Grow(1),
+                        Hoverable = true,
+                        Selected = i == selected,
+                    }, out clicked))
+                    {
+                        using (ui.Row(new Box { Gap = 8, Align = Align.Center, Width = Size.Fill }))
+                        {
+                            ui.Text(Icons.Terminal, new TextOpts(13,
+                                i == selected ? Color.Accent : Color.TextMuted));
+                            ui.Label(item.Name);
+                            ui.Spacer();
+                            ui.Kbd(item.Combo);
+                        }
+                        ui.Text(item.Binding.Command.Length > 0 ? item.Binding.Command : "no command",
+                            new TextOpts(12, Color.TextMuted) { NoWrap = true });
+                    }
+                }
+
+                if (clicked)
+                {
+                    selected = i;
+                    Trigger(item.Id, payloadText);
+                    Close(restoreFocus: false);
+                }
+            }
+        }
+    }
+
+    private static void DrawEmptyList(Ui ui, string filter)
+    {
+        using (ui.Column(new Box
+        {
+            Width = Size.Fill,
+            Height = Size.Fill,
+            Justify = Justify.Center,
+            Align = Align.Center,
+            Gap = 10,
+        }))
+        {
+            ui.Text(Icons.Search, new TextOpts(28, Color.TextMuted));
+            ui.Muted(filter.Length > 0 ? "No matching bindings" : "No available bindings");
+        }
+    }
+
+    private static void DrawFooter(Ui ui, int view)
+    {
+        ui.Separator();
+        using (ui.Row(new Box { PadX = 12, PadY = 8, Gap = 5, Align = Align.Center, Width = Size.Fill, Wrap = true }))
+        {
+            if (view == (int)LauncherView.Edit)
+            {
+                ui.Kbd("Enter"); ui.Muted("back");
+                ui.Gap(4);
+                ui.Kbd("Esc"); ui.Muted("close");
+            }
+            else
+            {
+                ui.Kbd("↑↓"); ui.Muted("select");
+                ui.Gap(4);
+                ui.Kbd("Enter"); ui.Muted("run");
+                ui.Gap(4);
+                ui.Kbd("Shift+Tab"); ui.Muted("edit");
+                ui.Gap(4);
+                ui.Kbd("Esc"); ui.Muted("close");
+            }
+        }
+    }
+
+    private void Trigger(string id, string text)
+    {
+        LauncherItem? item = Array.Find(_bridge.Items, candidate => candidate.Id == id);
+        if (item is null) return;
+
+        Payload payload = _hadFiles
+            ? new Payload("", text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            : new Payload(text, Payload.NoFiles);
+
+        try
+        {
+            string result = Launcher.Run(item.Binding, payload);
+            _log.Add(item.Binding.Name, result, true);
+        }
+        catch (Exception error)
+        {
+            _log.Add(item.Binding.Name, error.Message, false);
+        }
+
+        _bridge.EnqueueTriggered(id);
+    }
+
+    private void Close(bool restoreFocus)
+    {
+        _armed = false;
+        nint hwnd = _hwnd;
+        if (hwnd == 0) return;
+        Win32.ShowWindow(hwnd, ShowWindowCommand.Hide);
+        if (restoreFocus && _previousForeground != 0)
+            Win32.SetForegroundWindow(_previousForeground);
+    }
+
+    public void Dispose()
+    {
+        lock (_gate)
+        {
+            if (_disposed) return;
+            _disposed = true;
+        }
+
+        _hook?.Dispose();
+        _hook = null;
+        if (_started) _window?.RequestClose();
+        if (_started) _thread.Join(1000);
+        _ready.Dispose();
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Win32: the small slice of the platform this app needs, with the magic
+// numbers named once instead of at every call site.
+// ---------------------------------------------------------------------------
+
+internal enum ShowWindowCommand
+{
+    Hide = 0,
+    Show = 5,
+    ShowNoActivate = 8,
+    Restore = 9,
+}
+
+[Flags]
+internal enum SetWindowPosFlags : uint
+{
+    NoSize = 0x0001,
+    NoMove = 0x0002,
+    NoZOrder = 0x0004,
+    NoActivate = 0x0010,
+    FrameChanged = 0x0020,
+}
+
+[Flags]
+internal enum WindowStyle : int
+{
+    Border = 0x00800000,
+    Caption = 0x00C00000,
+    ThickFrame = 0x00040000,
+    SysMenu = 0x00080000,
+}
+
+internal enum WindowLong
+{
+    WndProc = -4,
+    Style = -16,
+}
+
+internal enum ClipboardFormat : uint
+{
+    Text = 1,
+    UnicodeText = 13,
+    HDrop = 15,
+}
+
+internal enum MonitorDefault : uint
+{
+    ToNull = 0,
+    ToPrimary = 1,
+    ToNearest = 2,
+}
 
 internal static class Win32
 {
-    public const uint CfText = 1;
-    public const uint CfUnicodeText = 13;
-    public const uint CfHDrop = 15;
+    // ---- messages ---------------------------------------------------------
+
+    internal const uint WmClose = 0x0010;
+    internal const uint WmSetFocus = 0x0007;
+    internal const uint WmKillFocus = 0x0008;
+    internal const uint WmHotkey = 0x0312;
+    internal const uint WmApp = 0x8000;
+    internal const uint WmHookHotkey = 0x8001;
+    internal const uint TrayMessage = 0x8001; // a different window from WmHookHotkey
+
+    internal const int WmLButtonUp = 0x0202;
+    internal const int WmLButtonDblClk = 0x0203;
+    internal const int WmRButtonUp = 0x0205;
+
+    internal const nint WmKeyDown = 0x0100;
+    internal const nint WmKeyUp = 0x0101;
+    internal const nint WmSysKeyDown = 0x0104;
+    internal const nint WmSysKeyUp = 0x0105;
+
+    // ---- hook and input ---------------------------------------------------
+
+    internal const int WhKeyboardLl = 13;
+    internal const uint LlkhfInjected = 0x10;
+    internal const uint GmemMoveable = 0x0042;
+    internal const uint InputKeyboard = 1;
+    internal const uint KeyEventKeyUp = 0x0002;
+
+    // ---- tray icon --------------------------------------------------------
+
+    internal const uint NifMessage = 0x1;
+    internal const uint NifIcon = 0x2;
+    internal const uint NifTip = 0x4;
+    internal const uint NimAdd = 0;
+    internal const uint NimDelete = 2;
+
+    internal const uint MfString = 0;
+    internal const uint MfSeparator = 0x800;
+    internal const uint TpmRightButton = 0x2;
+    internal const uint TpmReturnCmd = 0x100;
+
+    // ---- structures -------------------------------------------------------
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct MSG
+    internal struct MSG
     {
         public nint hwnd;
         public uint message;
@@ -2231,14 +3245,14 @@ internal static class Win32
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct INPUT
+    internal struct INPUT
     {
         public uint type;
         public InputUnion U;
     }
 
     [StructLayout(LayoutKind.Explicit)]
-    public struct InputUnion
+    internal struct InputUnion
     {
         [FieldOffset(0)] public MOUSEINPUT mi;
         [FieldOffset(0)] public KEYBDINPUT ki;
@@ -2246,7 +3260,7 @@ internal static class Win32
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct MOUSEINPUT
+    internal struct MOUSEINPUT
     {
         public int dx;
         public int dy;
@@ -2257,7 +3271,7 @@ internal static class Win32
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct KEYBDINPUT
+    internal struct KEYBDINPUT
     {
         public ushort wVk;
         public ushort wScan;
@@ -2267,100 +3281,50 @@ internal static class Win32
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct HARDWAREINPUT
+    internal struct HARDWAREINPUT
     {
         public uint uMsg;
         public ushort wParamL;
         public ushort wParamH;
     }
 
-    [DllImport("user32.dll", SetLastError = true)]
-    public static extern int RegisterHotKey(nint hWnd, int id, uint fsModifiers, uint vk);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    public static extern int UnregisterHotKey(nint hWnd, int id);
-
-    [DllImport("user32.dll")]
-    public static extern nint GetForegroundWindow();
-
-    [DllImport("user32.dll")]
-    public static extern int ShowWindow(nint hWnd, int command);
-
-    [DllImport("user32.dll")]
-    public static extern int SetForegroundWindow(nint hWnd);
-
-    [DllImport("user32.dll")]
-    public static extern int PostMessage(nint hWnd, uint msg, nint wParam, nint lParam);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    public static extern int PostThreadMessage(uint idThread, uint msg, nint wParam, nint lParam);
-
-    [DllImport("user32.dll")]
-    public static extern int GetMessage(out MSG msg, nint hWnd, uint min, uint max);
-
-    [DllImport("user32.dll")]
-    public static extern int PeekMessage(out MSG msg, nint hWnd, uint min, uint max, uint remove);
-
-    [DllImport("user32.dll")]
-    public static extern void PostQuitMessage(int code);
-
-    [DllImport("user32.dll")]
-    public static extern uint GetClipboardSequenceNumber();
-
-    [DllImport("user32.dll", SetLastError = true)]
-    public static extern int OpenClipboard(nint hWnd);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    public static extern int CloseClipboard();
-
-    [DllImport("user32.dll", SetLastError = true)]
-    public static extern int EmptyClipboard();
-
-    [DllImport("user32.dll", SetLastError = true)]
-    public static extern nint GetClipboardData(uint format);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    public static extern nint SetClipboardData(uint format, nint memory);
-
-    [DllImport("kernel32.dll", SetLastError = true)]
-    public static extern nint GlobalAlloc(uint flags, nuint bytes);
-
-    [DllImport("kernel32.dll", SetLastError = true)]
-    public static extern nint GlobalFree(nint memory);
-
-    [DllImport("kernel32.dll")]
-    public static extern nint GlobalLock(nint handle);
-
-    [DllImport("kernel32.dll")]
-    public static extern int GlobalUnlock(nint handle);
-
-    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
-    public static extern uint DragQueryFileW(nint hDrop, uint index, StringBuilder? file, uint length);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    public static extern uint SendInput(uint count, INPUT[] inputs, int size);
-
-    [DllImport("kernel32.dll")]
-    public static extern uint GetCurrentThreadId();
-
-    // ---- tray icon -------------------------------------------------------
-
-    public const int GwlpWndProc = -4;
-    public const int WmLButtonUp = 0x0202;
-    public const int WmLButtonDblClk = 0x0203;
-    public const int WmRButtonUp = 0x0205;
-
-    public delegate nint WndProc(nint hWnd, uint msg, nint wParam, nint lParam);
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct KBDLLHOOKSTRUCT
+    {
+        public uint vkCode;
+        public uint scanCode;
+        public uint flags;
+        public uint time;
+        public nint dwExtraInfo;
+    }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct POINT
+    internal struct POINT
     {
         public int X;
         public int Y;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct RECT
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct MONITORINFO
+    {
+        public int cbSize;
+        public RECT rcMonitor;
+        public RECT rcWork;
+        public uint dwFlags;
+    }
+
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public struct NOTIFYICONDATAW
+    internal struct NOTIFYICONDATAW
     {
         public int cbSize;
         public nint hWnd;
@@ -2388,48 +3352,166 @@ internal static class Win32
         public nint hBalloonIcon;
     }
 
-    [DllImport("shell32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    public static extern int Shell_NotifyIconW(uint message, ref NOTIFYICONDATAW data);
+    // ---- delegates --------------------------------------------------------
 
-    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
-    public static extern uint ExtractIconExW(string file, int index, out nint large, out nint small, uint count);
+    [UnmanagedFunctionPointer(CallingConvention.Winapi)]
+    internal delegate nint KeyboardProc(int nCode, nint wParam, nint lParam);
+
+    internal delegate nint WndProc(nint hWnd, uint msg, nint wParam, nint lParam);
+
+    // ---- hotkeys and messages --------------------------------------------
+
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern int RegisterHotKey(nint hWnd, int id, HotkeyModifiers modifiers, uint vk);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern int UnregisterHotKey(nint hWnd, int id);
 
     [DllImport("user32.dll")]
-    public static extern int DestroyIcon(nint icon);
+    internal static extern nint GetForegroundWindow();
+
+    [DllImport("user32.dll")]
+    internal static extern int SetForegroundWindow(nint hWnd);
+
+    [DllImport("user32.dll")]
+    internal static extern int ShowWindow(nint hWnd, ShowWindowCommand command);
+
+    [DllImport("user32.dll")]
+    internal static extern int PostMessage(nint hWnd, uint msg, nint wParam, nint lParam);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern int PostThreadMessage(uint idThread, uint msg, nint wParam, nint lParam);
+
+    [DllImport("user32.dll")]
+    internal static extern int GetMessage(out MSG msg, nint hWnd, uint min, uint max);
+
+    [DllImport("user32.dll")]
+    internal static extern int PeekMessage(out MSG msg, nint hWnd, uint min, uint max, uint remove);
+
+    [DllImport("user32.dll")]
+    internal static extern void PostQuitMessage(int code);
+
+    // ---- clipboard --------------------------------------------------------
+
+    [DllImport("user32.dll")]
+    internal static extern uint GetClipboardSequenceNumber();
+
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern int OpenClipboard(nint hWnd);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern int CloseClipboard();
+
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern int EmptyClipboard();
+
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern nint GetClipboardData(ClipboardFormat format);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern nint SetClipboardData(ClipboardFormat format, nint memory);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    internal static extern nint GlobalAlloc(uint flags, nuint bytes);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    internal static extern nint GlobalFree(nint memory);
+
+    [DllImport("kernel32.dll")]
+    internal static extern nint GlobalLock(nint handle);
+
+    [DllImport("kernel32.dll")]
+    internal static extern int GlobalUnlock(nint handle);
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    internal static extern uint DragQueryFileW(nint hDrop, uint index, StringBuilder? file, uint length);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern uint SendInput(uint count, INPUT[] inputs, int size);
+
+    [DllImport("kernel32.dll")]
+    internal static extern uint GetCurrentThreadId();
+
+    // ---- low-level keyboard hook -----------------------------------------
+
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern nint SetWindowsHookEx(int idHook, KeyboardProc proc, nint module, uint threadId);
+
+    [DllImport("user32.dll")]
+    internal static extern bool UnhookWindowsHookEx(nint hook);
+
+    [DllImport("user32.dll")]
+    internal static extern nint CallNextHookEx(nint hook, int nCode, nint wParam, nint lParam);
+
+    [DllImport("user32.dll")]
+    internal static extern short GetKeyState(int virtualKey);
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    internal static extern nint GetModuleHandle(string? moduleName);
+
+    // ---- windows, monitors and subclassing --------------------------------
+
+    [DllImport("user32.dll")]
+    internal static extern bool GetWindowRect(nint hWnd, out RECT rect);
+
+    [DllImport("user32.dll")]
+    internal static extern nint MonitorFromPoint(POINT point, MonitorDefault flags);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    internal static extern bool GetMonitorInfoW(nint monitor, ref MONITORINFO info);
+
+    [DllImport("user32.dll")]
+    internal static extern bool SetWindowPos(nint hWnd, nint insertAfter, int x, int y, int cx, int cy,
+        SetWindowPosFlags flags);
+
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongW", SetLastError = true)]
+    internal static extern int GetWindowLong(nint hWnd, WindowLong index);
 
     [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW", SetLastError = true)]
-    private static extern nint SetWindowLongPtr64(nint hWnd, int index, nint value);
+    private static extern nint SetWindowLongPtr64(nint hWnd, WindowLong index, nint value);
 
     [DllImport("user32.dll", EntryPoint = "SetWindowLongW", SetLastError = true)]
-    private static extern int SetWindowLong32(nint hWnd, int index, int value);
+    private static extern int SetWindowLong32(nint hWnd, WindowLong index, int value);
 
-    public static nint SetWindowLongPtr(nint hWnd, int index, nint value) => nint.Size == 8
+    internal static nint SetWindowLongPtr(nint hWnd, WindowLong index, nint value) => nint.Size == 8
         ? SetWindowLongPtr64(hWnd, index, value)
         : SetWindowLong32(hWnd, index, (int)value);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    public static extern nint CallWindowProcW(nint previous, nint hWnd, uint msg, nint wParam, nint lParam);
+    internal static extern nint CallWindowProcW(nint previous, nint hWnd, uint msg, nint wParam, nint lParam);
 
     [DllImport("user32.dll")]
-    public static extern nint CreatePopupMenu();
+    internal static extern int GetCursorPos(out POINT point);
+
+    [DllImport("user32.dll")]
+    internal static extern int IsIconic(nint hWnd);
+
+    // ---- tray icon and menus ---------------------------------------------
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    internal static extern int Shell_NotifyIconW(uint message, ref NOTIFYICONDATAW data);
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    internal static extern uint ExtractIconExW(string file, int index, out nint large, out nint small, uint count);
+
+    [DllImport("user32.dll")]
+    internal static extern int DestroyIcon(nint icon);
+
+    [DllImport("user32.dll")]
+    internal static extern nint CreatePopupMenu();
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    public static extern int AppendMenuW(nint menu, uint flags, int id, string? item);
+    internal static extern int AppendMenuW(nint menu, uint flags, int id, string? item);
 
     [DllImport("user32.dll")]
-    public static extern int DestroyMenu(nint menu);
+    internal static extern int DestroyMenu(nint menu);
 
     [DllImport("user32.dll")]
-    public static extern int TrackPopupMenu(nint menu, uint flags, int x, int y, int reserved, nint hWnd, nint rect);
-
-    [DllImport("user32.dll")]
-    public static extern int GetCursorPos(out POINT point);
-
-    [DllImport("user32.dll")]
-    public static extern int IsIconic(nint hWnd);
+    internal static extern int TrackPopupMenu(nint menu, uint flags, int x, int y, int reserved, nint hWnd,
+        nint rect);
 
     /// <summary>The icon the executable carries, as the shell would show it.</summary>
-    public static nint LoadAppIcon()
+    internal static nint LoadAppIcon()
     {
         string? path = Environment.ProcessPath;
         if (string.IsNullOrEmpty(path)) return 0;
@@ -2443,4 +3525,33 @@ internal static class Win32
 
         return large;
     }
+}
+
+/// <summary>
+/// A window-procedure subclass. The callback is kept in a field for as long as the subclass is
+/// installed, and the previous procedure is restored when this object is disposed.
+/// </summary>
+internal sealed class WindowProcedure : IDisposable
+{
+    private readonly nint _hwnd;
+    private readonly Win32.WndProc _callback;
+    private nint _previous;
+
+    public WindowProcedure(nint hwnd, Win32.WndProc callback)
+    {
+        _hwnd = hwnd;
+        _callback = callback;
+        _previous = Win32.SetWindowLongPtr(
+            hwnd, WindowLong.WndProc, Marshal.GetFunctionPointerForDelegate(_callback));
+    }
+
+    public void Dispose()
+    {
+        if (_previous == 0) return;
+        Win32.SetWindowLongPtr(_hwnd, WindowLong.WndProc, _previous);
+        _previous = 0;
+    }
+
+    public nint CallPrevious(nint hwnd, uint message, nint wParam, nint lParam) =>
+        _previous == 0 ? 0 : Win32.CallWindowProcW(_previous, hwnd, message, wParam, lParam);
 }
