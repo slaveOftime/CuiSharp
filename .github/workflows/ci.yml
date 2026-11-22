@@ -4,7 +4,8 @@ on:
   pull_request:
     paths:
       - 'src/**'
-      - 'samples/**'
+      - 'samples/CuiSharp.Gallery/**'
+      - 'samples/CuiSharp.Gallery.Browser/**'
       - 'native/**'
       - 'skills/**'
       - 'tools/**'

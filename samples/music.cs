@@ -110,8 +110,8 @@ internal sealed class MusicApp
         Options = new CuiAppOptions
         {
             Title = "Music",
-            Width = 1240,
-            Height = 840,
+            Width = 400,
+            Height = 600,
 
             // Below this the strip has nothing left to give; the stack takes over
             // above it, so the window can still shrink to a small player.
@@ -1023,8 +1023,6 @@ internal sealed class Player : IDisposable
         Shuffle = preferences.Shuffle;
         Repeat = Shuffle ? 0 : Math.Clamp(preferences.Repeat, 0, 2);
         _volume = Math.Clamp(preferences.Volume, 0f, 1f);
-
-        InitializeAudio();
     }
 
     /// <summary>
@@ -1036,11 +1034,14 @@ internal sealed class Player : IDisposable
     {
         // The decoder is a sidecar next to the executable; failing that, the OS
         // search path (a system-wide install) is the fallback.
-        if (!NativeLibrary.TryLoad("miniaudioex", typeof(MiniAudioNative).Assembly, null, out _))
+        if (!NativeLibrary.TryLoad("miniaudioex", typeof(MiniAudioNative).Assembly, null, out var library))
         {
             _error = "Audio library missing";
             return;
         }
+
+        // This is only a probe; the native imports hold their own reference.
+        NativeLibrary.Free(library);
 
         if (TryDefaultEngine()) return;
 
@@ -1329,7 +1330,7 @@ internal sealed class Player : IDisposable
         _duration = track.Duration;
         _pendingSeek = 0;
 
-        Load(track, _position, start: true);
+        Load(track, _position);
     }
 
     public void Toggle()
@@ -1415,26 +1416,27 @@ internal sealed class Player : IDisposable
         MiniAudioNative.ma_sound_seek_to_second(sound.Handle, (float)_position);
     }
 
-    /// <summary>Pre-opens the last session's track at its saved position so Play starts immediately.</summary>
+    /// <summary>Restores the selection and position without opening a decoder or audio device.</summary>
     public void Restore(Track? track, double position)
     {
+        Unload();
         Current = track;
         _position = Math.Max(0, position);
         _duration = track?.Duration ?? 0;
         _pendingSeek = 0;
         _index = track is null ? -1 : IndexOf(track);
-        if (_ready) _error = null;
-
-        if (track is not null) Load(track, _position, start: false);
+        _error = null;
     }
 
     private bool Finished(bool playing) => _wasPlaying && !playing && _duration > 0 && _position >= _duration - 0.6;
 
-    private void Load(Track track, double startAt, bool start = true)
+    private void Load(Track track, double startAt)
     {
         Unload();
-        if (_ready) _error = null;
-        if (!_ready || _engine is null) return;
+        _error = null;
+        // A player showing a library or a restored position does not need an output device yet.
+        if (!_ready) InitializeAudio();
+        if (_engine is null) return;
 
         var sound = new MaSound();
         var flags = ma_sound_flags.stream | ma_sound_flags.no_pitch | ma_sound_flags.no_spatialization;
@@ -1450,7 +1452,7 @@ internal sealed class Player : IDisposable
         if (opened != ma_result.success)
         {
             sound.Dispose();
-            if (start) _error = Explain(opened);
+            _error = Explain(opened);
             return;
         }
 
@@ -1460,11 +1462,8 @@ internal sealed class Player : IDisposable
 
         if (startAt > 0) MiniAudioNative.ma_sound_seek_to_second(sound.Handle, (float)startAt);
 
-        if (start)
-        {
-            MiniAudioNative.ma_sound_start(sound.Handle);
-            _playing = true;
-        }
+        MiniAudioNative.ma_sound_start(sound.Handle);
+        _playing = true;
     }
 
     private void Unload()
@@ -2039,18 +2038,17 @@ internal readonly record struct CoverArt(int Width, int Height, byte[] Pixels, b
 
 internal sealed class ArtCache
 {
-    private const int Keep = 6;
+    private const int Keep = 2;
 
     private readonly Dictionary<string, Cover> _covers = [with(StringComparer.OrdinalIgnoreCase)];
-    private readonly HashSet<string> _empty = [with(StringComparer.OrdinalIgnoreCase)];
     private readonly Queue<string> _order = new();
 
-    // One worker owns the disk and the decoder; the frame only queues a path and
-    // picks up a finished picture, so a slow cover never lands on the UI thread.
+    // Only the current path can have a pending or finished result. A slow decode can finish
+    // after a skip, but its pixels must not accumulate waiting for that track to be revisited.
     private readonly object _gate = new();
-    private readonly Queue<string> _requests = new();
-    private readonly HashSet<string> _requested = [with(StringComparer.OrdinalIgnoreCase)];
-    private readonly Dictionary<string, CoverArt?> _ready = [with(StringComparer.OrdinalIgnoreCase)];
+    private string? _wanted;
+    private bool _ready;
+    private CoverArt? _art;
 
     public ArtCache()
     {
@@ -2066,8 +2064,8 @@ internal sealed class ArtCache
 
             lock (_gate)
             {
-                while (_requests.Count == 0) Monitor.Wait(_gate);
-                path = _requests.Dequeue();
+                while (_wanted is null || _ready) Monitor.Wait(_gate);
+                path = _wanted;
             }
 
             CoverArt? art;
@@ -2082,7 +2080,12 @@ internal sealed class ArtCache
                 art = null;
             }
 
-            lock (_gate) _ready[path] = art;
+            lock (_gate)
+            {
+                if (!StringComparer.OrdinalIgnoreCase.Equals(path, _wanted)) continue;
+                _art = art;
+                _ready = true;
+            }
         }
     }
 
@@ -2090,67 +2093,68 @@ internal sealed class ArtCache
     {
         get
         {
-            lock (_gate) return _requested.Count > 0;
+            lock (_gate) return _wanted is not null;
         }
     }
 
     public Cover Get(Ui ui, Track? track)
     {
-        if (track is null) return default;
-
-        var path = track.Path;
-
-        if (_covers.TryGetValue(path, out var cached)) return cached;
-        if (_empty.Contains(path)) return default;
-
-        var ready = false;
-        CoverArt? art = null;
+        var path = track?.Path;
+        CoverArt? art;
 
         lock (_gate)
         {
-            if (_ready.Remove(path, out art))
+            Cover cached = default;
+            if (path is null || _covers.TryGetValue(path, out cached))
             {
-                _requested.Remove(path);
-                ready = true;
+                _wanted = null;
+                _ready = false;
+                _art = null;
+                return cached;
             }
-            else if (_requested.Add(path))
+
+            if (!StringComparer.OrdinalIgnoreCase.Equals(path, _wanted))
             {
-                _requests.Enqueue(path);
+                _wanted = path;
+                _ready = false;
+                _art = null;
                 Monitor.Pulse(_gate);
+                return default;
+            }
+
+            if (!_ready) return default;
+
+            art = _art;
+            _wanted = null;
+            _ready = false;
+            _art = null;
+        }
+
+        // Cache missing art too: a track with no cover shouldn't be decoded on every frame.
+        Cover result = default;
+        if (art is { } cover)
+        {
+            var texture = ui.CreateImage(cover.Width, cover.Height, cover.Pixels);
+            if (texture != 0)
+            {
+                var frost = ui.CreateImage(Artwork.Frost, Artwork.Frost, cover.Frost);
+                result = new Cover(texture, cover.Width, cover.Height, frost);
             }
         }
 
-        if (!ready) return default;
-
-        if (art is null)
-        {
-            _empty.Add(path);
-            return default;
-        }
-
-        var cover = art.Value;
-        var texture = ui.CreateImage(cover.Width, cover.Height, cover.Pixels);
-        if (texture == 0)
-        {
-            _empty.Add(path);
-            return default;
-        }
-
-        var frost = ui.CreateImage(Artwork.Frost, Artwork.Frost, cover.Frost);
-
-        _covers[path] = new Cover(texture, cover.Width, cover.Height, frost);
+        _covers[path] = result;
         _order.Enqueue(path);
 
         while (_order.Count > Keep)
         {
             if (_covers.Remove(_order.Dequeue(), out var old))
             {
-                ui.DestroyImage(old.Texture);
-                ui.DestroyImage(old.Frost);
+                if (old.Texture != 0) ui.DestroyImage(old.Texture);
+                if (old.Frost != 0) ui.DestroyImage(old.Frost);
             }
         }
 
-        return _covers[path];
+        return result;
     }
 }
 

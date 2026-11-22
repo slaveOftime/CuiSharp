@@ -56,8 +56,8 @@ internal sealed class Dashboard(MarketTracker tracker)
     public static readonly CuiAppOptions Window = new()
     {
         Title = "Global Market Cap",
-        Width = 1360,
-        Height = 920,
+        Width = 1080,
+        Height = 720,
         Theme = Theme.Dark,
         Accent = Accent.Blue,
         Renderer = Renderer.Software,
@@ -73,10 +73,8 @@ internal sealed class Dashboard(MarketTracker tracker)
     {
         SquareCorners(ui);
 
-        // Company names and cached labels can arrive in any script, and a name may carry an
-        // emoji; the bundled faces are Latin, and a missing glyph draws nothing. Cached after
-        // the first call.
-        ui.UseSystemFontFallbacks();
+        // Company names are built in and chart dates use invariant formatting.
+        ui.UseSystemFontFallback("·");
 
         var snapshot = tracker.Current;
         var (width, height) = ui.ViewportSize();
@@ -84,6 +82,11 @@ internal sealed class Dashboard(MarketTracker tracker)
         if (width < MiniBreakpoint) MiniView.Draw(ui, snapshot, _state);
         else if (width >= WideBreakpoint) DrawWide(ui, snapshot, width, height);
         else DrawNarrow(ui, snapshot, height);
+
+        // The mini view has a history sparkline per row; the dashboard charts only its Top N.
+        var mini = width < MiniBreakpoint;
+        tracker.RequestCharts(mini ? Data.Count : _state.TopCount(Data.Count),
+            intraday: !mini && _state.Mode != DashboardState.CapMode);
 
         // The tracker publishes on a background thread; poll once a second so the
         // window picks the new snapshot up without any cross-thread UI calls.
@@ -149,7 +152,9 @@ internal sealed class DashboardState
 
     // Fields, not properties: the Number and Segmented controls bind by ref.
     public int Mode;
-    public double TopN = 12;
+    public double TopN = DefaultTopCount;
+
+    public const int DefaultTopCount = 12;
 
     public int TopCount(int available) => available <= 0 ? 0 : Math.Clamp((int)TopN, 1, available);
 
@@ -429,7 +434,7 @@ internal sealed class ChartPanel
             {
                 Description = rowCount == 0
                     ? "The quote feed has not answered yet. It retries every 30 seconds."
-                    : "The history feed has not returned these companies yet.",
+                    : "Chart data for this tab and ranking has not arrived yet.",
                 Icon = Icons.ChartLine,
             });
         }
@@ -1064,37 +1069,46 @@ internal sealed class Snapshot
     Justification = "The client lives for the process lifetime; the OS reclaims it at exit.")]
 internal sealed class HttpText
 {
+    private static readonly TimeSpan AttemptTimeout = TimeSpan.FromSeconds(20);
     private readonly HttpClient _http = Create();
-    private readonly SemaphoreSlim _gate = new(8);
 
-    public async Task<string?> GetAsync(string url, bool gbk = false)
+    public Task<string?> GetAsync(string url, bool gbk = false) => gbk
+        ? ReadAsync(url, static async (content, token) =>
+            Gbk.DecodeLossy(await content.ReadAsByteArrayAsync(token).ConfigureAwait(false)))
+        : ReadAsync(url, static (content, token) => content.ReadAsStringAsync(token));
+
+    // The caller owns the document. JSON feeds need neither a byte-array copy nor a UTF-16 string.
+    public Task<JsonDocument?> GetJsonAsync(string url) => ReadAsync(url, static async (content, token) =>
+    {
+        using var body = await content.ReadAsStreamAsync(token).ConfigureAwait(false);
+        return await JsonDocument.ParseAsync(body, cancellationToken: token).ConfigureAwait(false);
+    });
+
+    private async Task<T?> ReadAsync<T>(string url, Func<HttpContent, CancellationToken, Task<T>> read)
+        where T : class
     {
         for (var attempt = 0; attempt < 2; attempt++)
         {
-            await _gate.WaitAsync().ConfigureAwait(false);
-
+            // With ResponseHeadersRead, the same deadline must cover the body as well as the headers.
+            using var deadline = new CancellationTokenSource(AttemptTimeout);
             try
             {
-                using var response = await _http.GetAsync(url, HttpCompletionOption.ResponseContentRead)
+                using var response = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, deadline.Token)
                     .ConfigureAwait(false);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    await Task.Delay(250).ConfigureAwait(false);
-                    continue;
-                }
-
-                var bytes = await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
-                return gbk ? Gbk.DecodeLossy(bytes) : Encoding.UTF8.GetString(bytes);
+                if (response.IsSuccessStatusCode)
+                    return await read(response.Content, deadline.Token).ConfigureAwait(false);
             }
-            catch
+            catch (JsonException)
             {
-                if (attempt == 0) await Task.Delay(250).ConfigureAwait(false);
+                return null;
             }
-            finally
+            catch (Exception error) when (error is HttpRequestException or IOException or OperationCanceledException
+                or InvalidOperationException)
             {
-                _gate.Release();
+                // A failed response can be retried once before the caller uses its cached data.
             }
+
+            if (attempt == 0) await Task.Delay(250).ConfigureAwait(false);
         }
 
         return null;
@@ -1111,7 +1125,7 @@ internal sealed class HttpText
 
         var http = new HttpClient(handler)
         {
-            Timeout = TimeSpan.FromSeconds(20),
+            Timeout = Timeout.InfiniteTimeSpan,
         };
 
         http.DefaultRequestHeaders.UserAgent.ParseAdd(
@@ -1249,12 +1263,14 @@ internal sealed class MinuteFeed(HttpText http)
     {
         var eastmoney = company.Minute == MinuteKind.Eastmoney;
 
-        var text = await http.GetAsync(UrlFor(company), gbk: !eastmoney).ConfigureAwait(false);
-        if (text is null) return null;
-
+        var url = UrlFor(company);
         try
         {
-            using var doc = JsonDocument.Parse(text);
+            using var doc = eastmoney
+                ? await http.GetJsonAsync(url).ConfigureAwait(false)
+                : await ReadTencentJsonAsync(url).ConfigureAwait(false);
+            if (doc is null) return null;
+
             var prices = eastmoney
                 ? ParseEastmoney(doc.RootElement)
                 : ParseTencent(doc.RootElement, company.Key);
@@ -1265,6 +1281,12 @@ internal sealed class MinuteFeed(HttpText http)
         {
             return null;
         }
+    }
+
+    private async Task<JsonDocument?> ReadTencentJsonAsync(string url)
+    {
+        var text = await http.GetAsync(url, gbk: true).ConfigureAwait(false);
+        return text is null ? null : JsonDocument.Parse(text);
     }
 
     private static string UrlFor(Company company) => company.Minute switch
@@ -1356,13 +1378,11 @@ internal sealed class DailyFeed(HttpText http)
             + "&klt=101&fqt=1&lmt=132&end=20500101"
             + "&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58";
 
-        var text = await http.GetAsync(url).ConfigureAwait(false);
-        if (text is null) return null;
+        using var doc = await http.GetJsonAsync(url).ConfigureAwait(false);
+        if (doc is null) return null;
 
         try
         {
-            using var doc = JsonDocument.Parse(text);
-
             if (!doc.RootElement.TryGetProperty("data", out var data)
                 || data.ValueKind != JsonValueKind.Object
                 || !data.TryGetProperty("klines", out var klines)
@@ -1398,13 +1418,11 @@ internal sealed class DailyFeed(HttpText http)
         var url = "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=" + company.Key
             + ",day," + start + "," + end + ",320,qfq";
 
-        var text = await http.GetAsync(url).ConfigureAwait(false);
-        if (text is null) return null;
+        using var doc = await http.GetJsonAsync(url).ConfigureAwait(false);
+        if (doc is null) return null;
 
         try
         {
-            using var doc = JsonDocument.Parse(text);
-
             if (!doc.RootElement.TryGetProperty("data", out var data)
                 || data.ValueKind != JsonValueKind.Object
                 || !data.TryGetProperty(company.Key, out var node)
@@ -1562,6 +1580,7 @@ internal sealed class MinuteBook
     Justification = "The tracker lives for the process lifetime; the OS reclaims it at exit.")]
 internal sealed class MarketTracker
 {
+    private const int RefreshWorkers = 4;
     private static readonly TimeSpan RefreshEvery = TimeSpan.FromSeconds(30);
 
     private readonly HttpText _http = new();
@@ -1574,6 +1593,9 @@ internal sealed class MarketTracker
     private readonly ManualResetEventSlim _first = new();
     private readonly SemaphoreSlim _wake = new(0);
 
+    // Sign selects the chart tab (positive: history; negative: intraday). Count and mode travel
+    // together so a refresh never reads the count from one frame and the mode from another.
+    private int _chartDemand = DashboardState.DefaultTopCount;
     private volatile Snapshot? _snapshot;
     private volatile bool _busy;
 
@@ -1605,6 +1627,14 @@ internal sealed class MarketTracker
     public void RequestRefresh()
     {
         if (_wake.CurrentCount == 0) _wake.Release();
+    }
+
+    public void RequestCharts(int count, bool intraday)
+    {
+        var demand = intraday ? -count : count;
+        if (Volatile.Read(ref _chartDemand) == demand) return;
+        Volatile.Write(ref _chartDemand, demand);
+        RequestRefresh();
     }
 
     public void WaitForFirst(TimeSpan timeout) => _first.Wait(timeout);
@@ -1654,24 +1684,13 @@ internal sealed class MarketTracker
 
     private Snapshot Build(Snapshot? previous)
     {
-        // Quotes, FX and minutes do not depend on each other, so they go out together.
+        // One batched quote call still ranks every company. Don't ask for a company's chart data
+        // until the current view has a place to show it.
         var quotesTask = _quotes.ReadAsync();
         var ratesTask = _quotes.ReadFxAsync();
-
-        var minuteTasks = new Task<float[]?>[Data.Count];
-        for (var i = 0; i < Data.Count; i++) minuteTasks[i] = _minutes.ReadAsync(Data.Companies[i]);
-
-        var now = DateTime.UtcNow;
-        Company[] stale = [.. Data.Companies.Where(company => _history.IsStale(company, now))];
-
-        var historyTasks = new Task<List<HistoryPoint>?>[stale.Length];
-        for (var i = 0; i < stale.Length; i++) historyTasks[i] = _daily.ReadAsync(stale[i]);
-
-        Wait(minuteTasks, "minutes");
-        Wait(historyTasks, "history");
-
-        var quotes = quotesTask.GetAwaiter().GetResult();
-        var rates = ratesTask.GetAwaiter().GetResult();
+        Task.WhenAll(quotesTask, ratesTask).GetAwaiter().GetResult();
+        var quotes = quotesTask.Result;
+        var rates = ratesTask.Result;
 
         if (quotes.Count == 0 && previous is not null)
         {
@@ -1682,43 +1701,57 @@ internal sealed class MarketTracker
 
         _fx.Update(rates);
 
-        for (var i = 0; i < Data.Count; i++)
-            _minuteBook.Store(Data.Companies[i], Result(minuteTasks[i]));
+        var rows = SnapshotFactory.BuildRows(quotes, _fx);
+        var demand = Volatile.Read(ref _chartDemand);
+        var count = Math.Min(Math.Abs(demand), rows.Length);
+        var now = DateTime.UtcNow;
+        Func<Company, Task<float[]?>> readMinutes = _minutes.ReadAsync;
+        Func<Company, Task<List<HistoryPoint>?>> readHistory = _daily.ReadAsync;
 
-        for (var i = 0; i < stale.Length; i++)
-            _history.Store(stale[i], Result(historyTasks[i]), now);
+        // Writes are serialized below; the workers own only their indexed results.
+        var minutes = demand < 0 ? new float[]?[count] : [];
+        var history = demand > 0 ? new List<HistoryPoint>?[count] : [];
+        Parallel.ForAsync(0, count, new ParallelOptions { MaxDegreeOfParallelism = RefreshWorkers }, async (i, _) =>
+        {
+            var company = rows[i].Company;
+            if (demand < 0)
+                minutes[i] = await ReadFeedAsync(readMinutes, company, "minutes").ConfigureAwait(false);
+            else if (_history.IsStale(company, now))
+                history[i] = await ReadFeedAsync(readHistory, company, "history").ConfigureAwait(false);
+        }).GetAwaiter().GetResult();
+
+        for (var i = 0; i < minutes.Length; i++)
+            _minuteBook.Store(rows[i].Company, minutes[i]);
+        for (var i = 0; i < history.Length; i++)
+            _history.Store(rows[i].Company, history[i], now);
 
         var errors = (quotes.Count == 0 ? 1 : 0) + (rates.Count == 0 ? 1 : 0);
-
-        var snapshot = SnapshotFactory.Create(quotes, _fx, _history, _minuteBook, errors);
-        ReportMissingHistory(snapshot);
+        var snapshot = SnapshotFactory.Create(rows, _fx, _history, _minuteBook, errors);
+        if (demand > 0) ReportMissingHistory(snapshot, count);
         return snapshot;
     }
 
-    private static void Wait(Task[] tasks, string label)
+    private static async Task<T?> ReadFeedAsync<T>(Func<Company, Task<T?>> read, Company company, string label)
+        where T : class
     {
         try
         {
-            Task.WaitAll(tasks);
+            return await read(company).ConfigureAwait(false);
         }
         catch (Exception error)
         {
-            Log.Write($"{label}: {error.Message}");
+            Log.Write($"{label} {company.Ticker}: {error.Message}");
+            return null;
         }
     }
 
-    private static T? Result<T>(Task<T?> task) where T : class =>
-        task.Status == TaskStatus.RanToCompletion ? task.Result : null;
-
-    private static void ReportMissingHistory(Snapshot snapshot)
+    private static void ReportMissingHistory(Snapshot snapshot, int count)
     {
-        if (snapshot.CapSeries.Count >= snapshot.Rows.Length) return;
-
-        var missing = string.Join(",", snapshot.Rows
+        var missing = string.Join(",", snapshot.Rows.Take(count)
             .Where(row => !snapshot.CapSeries.ContainsKey(row.Company.Key))
             .Select(row => row.Company.Ticker));
 
-        Log.Write("missing history for: " + missing);
+        if (missing.Length > 0) Log.Write("missing history for: " + missing);
     }
 }
 
@@ -1732,13 +1765,12 @@ internal static class SnapshotFactory
     private const int MinuteGrid = 241;
 
     public static Snapshot Create(
-        IReadOnlyDictionary<string, RawQuote> quotes,
+        QuoteRow[] rows,
         FxRates fx,
         HistoryBook history,
         MinuteBook minutes,
         int errors)
     {
-        var rows = BuildRows(quotes, fx);
         var dates = CollectDates(rows, history);
 
         return new Snapshot
@@ -1756,7 +1788,7 @@ internal static class SnapshotFactory
     }
 
     /// <summary>One row per company with a usable quote, converted to USD, largest first.</summary>
-    private static QuoteRow[] BuildRows(IReadOnlyDictionary<string, RawQuote> quotes, FxRates fx)
+    public static QuoteRow[] BuildRows(IReadOnlyDictionary<string, RawQuote> quotes, FxRates fx)
     {
         var rows = new List<QuoteRow>(Data.Count);
 
@@ -1848,22 +1880,14 @@ internal static class SnapshotFactory
 
         foreach (var row in rows)
         {
+            if (minutes.Get(row.Company.Key) is not { Length: >= 2 } prices) continue;
+
             var values = new float[MinuteGrid];
-
-            if (minutes.Get(row.Company.Key) is { Length: >= 2 } prices)
+            var prevClose = row.Prev > 0 ? row.Prev : prices[0];
+            for (var k = 0; k < MinuteGrid; k++)
             {
-                var prevClose = row.Prev > 0 ? row.Prev : prices[0];
-                if (prevClose <= 0) prevClose = prices[0];
-
-                for (var k = 0; k < MinuteGrid; k++)
-                {
-                    var index = (int)MathF.Round(k / (float)(MinuteGrid - 1) * (prices.Length - 1));
-                    values[k] = (prices[index] / prevClose - 1f) * 100f;
-                }
-            }
-            else
-            {
-                Array.Fill(values, row.Pct);
+                var index = (int)MathF.Round(k / (float)(MinuteGrid - 1) * (prices.Length - 1));
+                values[k] = (prices[index] / prevClose - 1f) * 100f;
             }
 
             series[row.Company.Key] = values;
