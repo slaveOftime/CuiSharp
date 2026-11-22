@@ -24,8 +24,9 @@
 //   .png/.jpg/.jpeg/...   ui.ImageViewer — zoom, pan, a checkerboard behind
 //                         transparency.
 //   anything else text    ui.CodeEditor — syntax highlighting, editable;
-//                         Save writes the file back. CUI has no C# grammar, so
-//                         a .cs file uses its C/C++ tokenizer (see LangOf).
+//                         Save writes the file back. CUI has no C# or F#
+//                         grammar, so a .cs file uses its C/C++ tokenizer and a
+//                         .fs one its JavaScript tokenizer (see LangOf).
 //   video, archives,
 //   executables, missing
 //   paths and folders     a metadata page: format, size, dates, and for an
@@ -1145,6 +1146,17 @@ internal sealed class FileApp
     /// correctly everywhere except the handful of keywords C does not have
     /// (<c>var</c>, <c>async</c>, <c>await</c>, <c>record</c>, <c>foreach</c>…).
     /// </para>
+    /// <para>
+    /// F# has no grammar either, and the JS one is its nearest neighbour: it
+    /// has <c>let</c>, <c>function</c>, <c>type</c>, <c>interface</c>,
+    /// <c>async</c>, <c>yield</c>, <c>in</c>, <c>try</c>, <c>this</c>,
+    /// <c>class</c> and <c>new</c>, and the same <c>//</c> comment, quoted
+    /// string and number rules. Its upper-case rule also lands on the right
+    /// things, since F# spells modules, types and union cases in PascalCase.
+    /// What it misses is F#'s own vocabulary (<c>match</c>, <c>with</c>,
+    /// <c>module</c>, <c>open</c>, <c>member</c>, <c>rec</c>, <c>mutable</c>…),
+    /// <c>(* *)</c> block comments, and it colors a backtick as a string.
+    /// </para>
     private static string LangOf(string path)
     {
         var ext = Path.GetExtension(path.AsSpan());
@@ -1162,6 +1174,9 @@ internal sealed class FileApp
             || ext.Equals(".mjs", StringComparison.OrdinalIgnoreCase)) return "js";
         if (ext.Equals(".ts", StringComparison.OrdinalIgnoreCase)
             || ext.Equals(".tsx", StringComparison.OrdinalIgnoreCase)) return "ts";
+        if (ext.Equals(".fs", StringComparison.OrdinalIgnoreCase)
+            || ext.Equals(".fsi", StringComparison.OrdinalIgnoreCase)
+            || ext.Equals(".fsx", StringComparison.OrdinalIgnoreCase)) return "js";
         if (ext.Equals(".py", StringComparison.OrdinalIgnoreCase)
             || ext.Equals(".pyw", StringComparison.OrdinalIgnoreCase)) return "python";
         if (ext.Equals(".rs", StringComparison.OrdinalIgnoreCase)) return "rust";
