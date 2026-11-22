@@ -174,6 +174,9 @@ Forwarding managed fields or stack locals at begin would leave native with dangl
   awake), so an app that would otherwise sleep still draws the frame that installs the faces. Pixel
   probes use isolated native contexts and an arena scope, never a nested managed frame: resetting
   the caller's arena or retiring its callbacks while Draw is running would invalidate live data.
+  System-font files are mapped read-only when possible so a large collection does not have to be
+  copied into private memory. CUI borrows the mapping, so the probe or window must destroy its
+  native context before releasing the mapped view.
 - `[assembly: DisableRuntimeMarshalling]`, `IsAotCompatible`, `IsTrimmable`.
 - `[SuppressGCTransition]` only on the reviewed allowlist in `overrides.json` — leaf functions that
   cannot call managed code and cannot block.
