@@ -26,6 +26,11 @@
 //   anything else text    ui.CodeEditor — syntax highlighting, editable;
 //                         Save writes the file back. CUI has no C# grammar, so
 //                         a .cs file uses its C/C++ tokenizer (see LangOf).
+//   video, archives,
+//   executables, missing
+//   paths and folders     a metadata page: format, size, dates, and for an
+//                         MP4/MOV its duration and resolution. Nothing is read
+//                         into a string, so a 6 GB movie opens at once.
 //   tracked file with
 //   local changes         the git HEAD version against the working tree,
 //                         shown by default; Code switches back to editing.
@@ -48,19 +53,23 @@
 #:property StripSymbols=true
 #:property DebugType=none
 
+using System.Buffers;
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
+using System.Text.Unicode;
 using CuiSharp;
 using CuiSharp.Hosting;
 
 var app = new FileApp(PickPaths(args));
 return CuiApp.Run(app.Options, app.Draw);
 
-/// Every argument that names an existing file, made absolute and de-duplicated.
+/// Every argument, made absolute and de-duplicated. A path that is missing or
+/// a folder is kept: the info page says so, which beats a silent drop.
 static string[] PickPaths(string[] args)
 {
     var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -80,7 +89,7 @@ static string[] PickPaths(string[] args)
             continue;
         }
 
-        if (File.Exists(full) && seen.Add(full)) paths.Add(full);
+        if (seen.Add(full)) paths.Add(full);
     }
 
     return [.. paths];
@@ -94,6 +103,8 @@ internal enum FileKind
     Markdown,
     Image,
     Csv,
+    Video,
+    Binary,     // anything whose first bytes are not text; metadata only
 }
 
 internal enum ViewMode
@@ -103,6 +114,7 @@ internal enum ViewMode
     Image,
     Diff,
     Csv,
+    Info,       // no preview: size, dates, format, and whatever the container tells us
 }
 
 internal sealed class FileApp
@@ -126,6 +138,7 @@ internal sealed class FileApp
     private string? _notice;            // "Saved"/"Reloaded"; drawn once, then cleared
     private string? _error;
     private string? _footer;            // the status line; rebuilt only when it changes
+    private FileFacts? _facts;          // size, dates and format, for the info page
     private GitInfo _gitInfo = GitInfo.None;
     private string? _head;              // the file's text at HEAD, read only when a diff is shown
     private CodeEditorResult _editor;
@@ -276,14 +289,25 @@ internal sealed class FileApp
         _view = default;
         _kind = FileKind.Text;
         _mode = ViewMode.Text;
+        _facts = null;
 
         var info = new FileInfo(path);
         _dir = info.DirectoryName ?? Directory.GetCurrentDirectory();
-        Options.Title = info.Name;
+        Options.Title = NameOf(path);
+
+        // A folder or a path that no longer exists still opens: the info page
+        // says what it is, instead of leaving the window on a spinner.
+        if (Directory.Exists(path))
+        {
+            _mode = ViewMode.Info;
+            _facts = FileFacts.ForFolder(path);
+            return;
+        }
 
         if (!info.Exists)
         {
-            _error = $"File not found: {path}";
+            _mode = ViewMode.Info;
+            _facts = FileFacts.ForMissing(path);
             return;
         }
 
@@ -293,9 +317,11 @@ internal sealed class FileApp
             FileKind.Markdown => ViewMode.Markdown,
             FileKind.Image => ViewMode.Image,
             FileKind.Csv => ViewMode.Csv,
+            FileKind.Video => ViewMode.Info,
             _ => ViewMode.Text,
         };
         _lang = LangOf(path);
+        _facts = FileFacts.ForFile(info);
 
         // A grid keeps its column widths per id, so a second file with other
         // columns does not inherit the first one's widths.
@@ -444,13 +470,23 @@ internal sealed class FileApp
     {
         _gitInfo = content.Status;
         _head = content.Head;
+        _facts = content.Facts;
         _error = null;
+        _footer = null;
 
-        if (_kind is FileKind.Image || content.Text is not { } text) return;
+        // The extension was only a guess. The first bytes can turn a text file
+        // into a binary one, and a file too large for the editor arrives with
+        // no text at all; both belong on the info page.
+        if (content.Kind != _kind) _kind = content.Kind;
+
+        if (content.Text is not { } text)
+        {
+            if (_kind is not FileKind.Image) _mode = ViewMode.Info;
+            return;
+        }
 
         _text = text;
         _cap = ComputeCap(text);
-        _footer = null;
 
         // A tracked file with local changes opens as a diff, but only while the
         // frame is still showing the mode LoadFor chose: a click on Code/Edit
@@ -474,7 +510,7 @@ internal sealed class FileApp
 
     private void RefreshGit()
     {
-        if (_path is not { } path || _kind is FileKind.Image) return;
+        if (_path is not { } path || _kind is FileKind.Image or FileKind.Video or FileKind.Binary) return;
 
         _gitLoad?.Dispose();
         _gitLoad = new Progressive<GitInfo>((token, publish) => LoadGitAsync(path, token, publish));
@@ -499,7 +535,15 @@ internal sealed class FileApp
                     LoadFor(_index - 1);
                 }
             }
-            ui.Text(_path ?? "File Preview", new TextOpts { Size = 12, NoWrap = true });
+            // A movie's name is often a paragraph. Leave room for the arrows,
+            // badges and buttons, and let the path ellipsize in what is left.
+            var pathWidth = MathF.Max(120f, ui.ViewportSize().X - 360f);
+            ui.Text(_path ?? "File Preview", new TextOpts
+            {
+                Size = 12,
+                NoWrap = true,
+                Width = Size.Px(pathWidth),
+            });
             if (_paths.Length > 1)
             {
                 if (ui.IconButton(Icons.ArrowRight, new()
@@ -521,8 +565,6 @@ internal sealed class FileApp
                 _notice = null;
             }
             if (_error is { } error) ui.Badge(Trim(error, 100), new() { Tone = Tone.Danger });
-
-            ui.Spacer();
 
             using (ui.Row(new Box { Gap = 0, Align = Align.Center, Wrap = false, Height = Size.Fit }))
             {
@@ -603,6 +645,127 @@ internal sealed class FileApp
             case ViewMode.Csv:
                 DrawCsv(ui);
                 break;
+            case ViewMode.Info:
+                DrawInfo(ui);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// What a file looks like when it cannot be shown: one card with its name,
+    /// its format, and every fact the app can get without decoding it. A video
+    /// contributes its duration and resolution from the container header; a
+    /// missing path or a folder contributes only what the file system knows.
+    /// </summary>
+    private void DrawInfo(Ui ui, string? note = null)
+    {
+        if (_facts is not { } facts)
+        {
+            DrawEmpty(ui);
+            return;
+        }
+
+        using (ui.Column(new Box
+        {
+            Height = Size.Fill,
+            Align = Align.Center,
+            Justify = Justify.Center,
+            Gap = 12,
+        }))
+        {
+            using (ui.Card(new Card
+            {
+                Width = Size.Fill,
+                MinWidth = 300,
+                MaxWidth = 520,
+                Pad = 24,
+                Gap = 10,
+                Align = Align.Center,
+            }))
+            {
+                ui.Icon(IconFor(facts), 44, Color.TextMuted);
+                ui.Text(NameOf(_path ?? "File"), new TextOpts
+                {
+                    Size = 16,
+                    Width = Size.Fill,
+                    Align = TextAlign.Center,
+                    NoWrap = true,
+                });
+                ui.Secondary(facts.Format);
+
+                var hasDetails = facts.Length is not null || facts.Duration is not null
+                    || facts.Width > 0 || facts.Created is not null || facts.Modified is not null;
+                if (hasDetails) ui.Separator();
+
+                if (facts.Length is { } length) InfoRow(ui, "Size", HumanSize(length));
+                if (facts.Width > 0 && facts.Height > 0)
+                    InfoRow(ui, "Resolution", $"{facts.Width} x {facts.Height}");
+                if (facts.Duration is { } duration)
+                {
+                    InfoRow(ui, "Duration", FormatDuration(duration));
+                    if (facts.Length is { } bytes && duration.TotalSeconds > 0)
+                        InfoRow(ui, "Bit rate", $"{bytes * 8 / duration.TotalSeconds / 1_000_000:0.#} Mbps");
+                }
+                if (facts.Created is { } created) InfoRow(ui, "Created", created.ToString("g"));
+                if (facts.Modified is { } modified) InfoRow(ui, "Modified", modified.ToString("g"));
+                if (_path is { } path) InfoRow(ui, "Location", FolderOf(path));
+
+                if ((note ?? facts.Note) is { } reason)
+                {
+                    ui.Separator();
+                    ui.Secondary(reason);
+                }
+                if (_error is { } error) ui.Secondary(error);
+            }
+
+            // The sample has no player, but the file is one click from the app
+            // the user already has for it.
+            if (_path is { } open && facts.Length is not null
+                && ui.Button("Open with default app", new() { Size = ControlSize.Sm }))
+            {
+                OpenExternally(open);
+            }
+        }
+    }
+
+    private static void InfoRow(Ui ui, string label, string value)
+    {
+        using (ui.Row(new Box { Gap = 12, Align = Align.Center, Height = Size.Fit }))
+        {
+            ui.Text(label, new TextOpts
+            {
+                Size = 12,
+                Width = Size.Px(88),
+                NoWrap = true,
+                Color = Color.TextMuted,
+            });
+            ui.Text(value, new TextOpts { Size = 12 });
+        }
+    }
+
+    private static string IconFor(FileFacts facts) => facts.Format switch
+    {
+        "Folder" => Icons.Folder,
+        "MP4 video" or "QuickTime video" or "Matroska video" or "WebM video"
+            or "AVI video" or "Windows Media video" or "MPEG video"
+            or "MPEG transport stream" or "Flash video" or "Ogg video" => Icons.Video,
+        "ZIP archive" or "7-Zip archive" or "RAR archive" or "Gzip archive"
+            or "Tar archive" or "Disc image" => Icons.Archive,
+        "Windows executable" or "Windows library" or "Windows installer" => Icons.Package,
+        _ when facts.Format.EndsWith("image", StringComparison.OrdinalIgnoreCase) => Icons.Image,
+        _ => Icons.File,
+    };
+
+    private void OpenExternally(string path)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+            _notice = "Opened";
+        }
+        catch (Exception error)
+        {
+            _error = Describe(error);
         }
     }
 
@@ -726,7 +889,9 @@ internal sealed class FileApp
         }
         else if (_viewer.Failed)
         {
-            ui.Secondary($"Couldn't load {Path.GetFileName(_imgPath)} (PNG and JPEG are supported)");
+            // An image with no decoder (SVG, HEIC, ICO…) gets the same page a
+            // video does: what it is, how big, where it lives.
+            DrawInfo(ui, "This image format has no decoder (PNG and JPEG are supported).");
         }
     }
 
@@ -767,15 +932,25 @@ internal sealed class FileApp
 
     private void DrawEmpty(Ui ui)
     {
-        using (ui.Column(new Box { Gap = 8, Align = Align.Center }))
+        using (ui.Column(new Box
         {
-            ui.Spinner(32);
-            var message = _path is null
+            Gap = 8,
+            Align = Align.Center,
+            Height = Size.Fill,
+            Justify = Justify.Center,
+        }))
+        {
+            if (_error is null && _load is { IsRunning: true })
+            {
+                ui.Spinner(32);
+                ui.Secondary("Loading...");
+                return;
+            }
+
+            ui.Icon(_path is null ? Icons.File : Icons.CircleAlert, 32, Color.TextMuted);
+            ui.Secondary(_path is null
                 ? "Pass a file: dotnet run file.cs -- <path>"
-                : _error is { } error ? error
-                : _load is { IsRunning: true } ? "Loading..."
-                : "No text to show";
-            ui.Secondary(message);
+                : _error ?? "Nothing to show");
         }
     }
 
@@ -797,6 +972,20 @@ internal sealed class FileApp
 
     private string BuildFooter()
     {
+        // An image with no decoder shows the info page too, so its footer
+        // should read like one.
+        if (_mode is ViewMode.Info || (_mode is ViewMode.Image && _viewer.Failed))
+        {
+            if (_facts is not { } facts) return "No file";
+            if (facts.Length is null && facts.Modified is null) return $"Not found - {facts.Format}";
+
+            var parts = new List<string>(3);
+            if (facts.Length is { } length) parts.Add(HumanSize(length));
+            if (facts.Modified is { } modifiedAt) parts.Add(modifiedAt.ToString());
+            parts.Add(facts.Format);
+            return string.Join(" - ", parts);
+        }
+
         var shown = _mode is ViewMode.Image ? _imgPath ?? _path : _path;
         if (shown is null) return "No file";
 
@@ -874,6 +1063,7 @@ internal sealed class FileApp
 
         if (mode is ViewMode.Text && _kind is not FileKind.Image) _mode = ViewMode.Text;
         else if (mode is ViewMode.Diff && (_kind is FileKind.Text or FileKind.Csv)) _mode = ViewMode.Diff;
+        else if (mode is ViewMode.Info) _mode = ViewMode.Info;
 
         _notice = "Reloaded";
     }
@@ -936,6 +1126,7 @@ internal sealed class FileApp
         ImageFiles.IsImage(path) ? FileKind.Image
         : ImageFiles.IsMarkdown(path) ? FileKind.Markdown
         : IsCsv(path) ? FileKind.Csv
+        : MediaFiles.IsVideo(path) ? FileKind.Video
         : FileKind.Text;
 
     private static bool IsCsv(string path)
@@ -991,6 +1182,27 @@ internal sealed class FileApp
 
     private static int CountLines(string text) =>
         text.Length == 0 ? 0 : text.AsSpan().Count('\n') + (text[^1] == '\n' ? 0 : 1);
+
+    /// The name a path shows, for a file or a folder given with a trailing slash.
+    private static string NameOf(string path) =>
+        Path.GetFileName(Path.TrimEndingDirectorySeparator(path));
+
+    private static string FolderOf(string path) =>
+        Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(path)) ?? path;
+
+    /// A byte count a person can read, in the largest unit that keeps it above 1.
+    private static string HumanSize(long bytes) => bytes switch
+    {
+        < 1024 => $"{bytes} B",
+        < 1024 * 1024 => $"{bytes / 1024d:0.#} KB",
+        < 1024L * 1024 * 1024 => $"{bytes / (1024d * 1024):0.#} MB",
+        _ => $"{bytes / (1024d * 1024 * 1024):0.#} GB",
+    };
+
+    private static string FormatDuration(TimeSpan duration) =>
+        duration.TotalHours >= 1
+            ? $"{(int)duration.TotalHours}:{duration.Minutes:00}:{duration.Seconds:00}"
+            : $"{duration.Minutes}:{duration.Seconds:00}";
 
     private static string Trim(string text, int max)
     {
@@ -2063,19 +2275,473 @@ internal sealed class CsvTable
     }
 }
 
-/// <summary>The result of one background read of a file.</summary>
-internal sealed record FileContent(string? Text, GitInfo Status, string? Head)
+/// <summary>
+/// The result of one background read of a file. <see cref="Text"/> is null for
+/// everything that is not text: a picture, a video, a binary, or a file too
+/// large for the editor. <see cref="Facts"/> is what the info page shows.
+/// </summary>
+internal sealed record FileContent(
+    FileKind Kind, string? Text, GitInfo Status, string? Head, FileFacts Facts)
 {
+    /// <summary>
+    /// Above this a file is metadata only. The editor holds the text twice —
+    /// the string and its UTF-8 buffer — so an unbounded read of a log or a
+    /// disk image is the same bug as reading a movie as text.
+    /// </summary>
+    private const long MaxTextBytes = 32L * 1024 * 1024;
+
+    /// <summary>Enough to tell text from binary and to name a format.</summary>
+    private const int SniffBytes = 8 * 1024;
+
     public static async Task<FileContent> LoadAsync(string path, FileKind kind, CancellationToken token)
     {
-        var text = kind is FileKind.Image ? null : await File.ReadAllTextAsync(path, token);
+        var info = new FileInfo(path);
+        var facts = FileFacts.ForFile(info);
+
+        // Video and binary files are never decoded into a string. A 6 GB movie
+        // used to be read as text, which cost ~2.5x its size in memory and
+        // could not even fit in a string at all.
+        if (kind is FileKind.Video)
+        {
+            var video = facts with { Note = "Playback is not built in; open it in your player." };
+            return new FileContent(kind, null, GitInfo.None, null, await MediaFacts.ReadAsync(path, video, token));
+        }
+
+        if (kind is FileKind.Image)
+            return new FileContent(kind, null, await Git.ReadAsync(path, token), null, facts);
+
+        await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read,
+            FileShare.ReadWrite | FileShare.Delete, 64 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan);
+
+        var head = new byte[SniffBytes];
+        var read = 0;
+        while (read < head.Length)
+        {
+            var count = await stream.ReadAsync(head.AsMemory(read), token);
+            if (count == 0) break;
+            read += count;
+        }
+
+        // The bytes decide before the size does: a 190 MB installer is binary,
+        // not a text file that happens to be too large to edit.
+        var span = head.AsSpan(0, read);
+        if (FileFormats.LooksBinary(span))
+        {
+            // The extension may have said .txt; the bytes say otherwise. Name
+            // the real format when the extension is unknown and the signature
+            // is one we know.
+            var format = FileFormats.FromExtension(path) ?? FileFormats.FromSignature(span) ?? facts.Format;
+            return new FileContent(FileKind.Binary, null, GitInfo.None, null,
+                facts with { Format = format, Note = "No preview for this file type." });
+        }
+
+        if (info.Length > MaxTextBytes)
+        {
+            return new FileContent(kind, null, GitInfo.None, null,
+                facts with { Note = "This file is too large to preview here." });
+        }
+
+        stream.Position = 0;
+        using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+        var text = await reader.ReadToEndAsync(token);
+
         var git = await Git.ReadAsync(path, token);
-
-        string? head = null;
+        string? headText = null;
         if (kind is FileKind.Text && git.Tracked && git.Changed)
-            head = await Git.ReadHeadAsync(path, token);
+            headText = await Git.ReadHeadAsync(path, token);
 
-        return new FileContent(text, git, head);
+        return new FileContent(kind, text, git, headText, facts);
+    }
+}
+
+/// <summary>Everything the info page can say without a preview.</summary>
+internal sealed record FileFacts(string Format, long? Length, DateTime? Created, DateTime? Modified)
+{
+    /// <summary>From the container header; null when the format has none we read.</summary>
+    public TimeSpan? Duration { get; init; }
+
+    public int Width { get; init; }
+    public int Height { get; init; }
+
+    /// <summary>Why there is no preview, when the reason is worth stating.</summary>
+    public string? Note { get; init; }
+
+    public static FileFacts ForFile(FileInfo info) => new(
+        FileFormats.Describe(info.FullName),
+        info.Length,
+        info.CreationTimeUtc.ToLocalTime(),
+        info.LastWriteTimeUtc.ToLocalTime());
+
+    public static FileFacts ForFolder(string path)
+    {
+        var info = new DirectoryInfo(path);
+        return new FileFacts("Folder", null, info.CreationTimeUtc.ToLocalTime(),
+            info.LastWriteTimeUtc.ToLocalTime())
+        {
+            Note = "Folders are not previewed. Pass a file inside it instead.",
+        };
+    }
+
+    public static FileFacts ForMissing(string path) =>
+        new(FileFormats.Describe(path), null, null, null)
+        {
+            Note = "This path does not exist.",
+        };
+}
+
+/// <summary>The extension lists that decide whether a file is a video.</summary>
+internal static class MediaFiles
+{
+    public static bool IsVideo(string path)
+    {
+        var ext = Path.GetExtension(path.AsSpan());
+
+        return ext.Equals(".mp4", StringComparison.OrdinalIgnoreCase)
+            || ext.Equals(".m4v", StringComparison.OrdinalIgnoreCase)
+            || ext.Equals(".mov", StringComparison.OrdinalIgnoreCase)
+            || ext.Equals(".mkv", StringComparison.OrdinalIgnoreCase)
+            || ext.Equals(".webm", StringComparison.OrdinalIgnoreCase)
+            || ext.Equals(".avi", StringComparison.OrdinalIgnoreCase)
+            || ext.Equals(".wmv", StringComparison.OrdinalIgnoreCase)
+            || ext.Equals(".flv", StringComparison.OrdinalIgnoreCase)
+            || ext.Equals(".mpg", StringComparison.OrdinalIgnoreCase)
+            || ext.Equals(".mpeg", StringComparison.OrdinalIgnoreCase)
+            || ext.Equals(".m2ts", StringComparison.OrdinalIgnoreCase)
+            || ext.Equals(".3gp", StringComparison.OrdinalIgnoreCase)
+            || ext.Equals(".ogv", StringComparison.OrdinalIgnoreCase);
+    }
+}
+
+/// <summary>Format names, from the extension when it is known and the bytes otherwise.</summary>
+internal static class FileFormats
+{
+    private static readonly Dictionary<string, string> ByExtension = new(StringComparer.OrdinalIgnoreCase)
+    {
+        [".md"] = "Markdown",
+        [".markdown"] = "Markdown",
+        [".txt"] = "Text file",
+        [".log"] = "Log file",
+        [".csv"] = "CSV table",
+        [".tsv"] = "TSV table",
+        [".json"] = "JSON",
+        [".jsonc"] = "JSON",
+        [".xml"] = "XML",
+        [".yaml"] = "YAML",
+        [".yml"] = "YAML",
+        [".html"] = "HTML",
+        [".htm"] = "HTML",
+        [".cs"] = "C# source",
+        [".csx"] = "C# script",
+        [".js"] = "JavaScript",
+        [".ts"] = "TypeScript",
+        [".py"] = "Python source",
+        [".rs"] = "Rust source",
+        [".go"] = "Go source",
+        [".sql"] = "SQL script",
+        [".png"] = "PNG image",
+        [".jpg"] = "JPEG image",
+        [".jpeg"] = "JPEG image",
+        [".gif"] = "GIF image",
+        [".bmp"] = "Bitmap image",
+        [".webp"] = "WebP image",
+        [".tif"] = "TIFF image",
+        [".tiff"] = "TIFF image",
+        [".svg"] = "SVG image",
+        [".ico"] = "Windows icon",
+        [".heic"] = "HEIC image",
+        [".mp4"] = "MP4 video",
+        [".m4v"] = "MP4 video",
+        [".mov"] = "QuickTime video",
+        [".mkv"] = "Matroska video",
+        [".webm"] = "WebM video",
+        [".avi"] = "AVI video",
+        [".wmv"] = "Windows Media video",
+        [".flv"] = "Flash video",
+        [".mpg"] = "MPEG video",
+        [".mpeg"] = "MPEG video",
+        [".m2ts"] = "MPEG transport stream",
+        [".3gp"] = "3GPP video",
+        [".ogv"] = "Ogg video",
+        [".zip"] = "ZIP archive",
+        [".7z"] = "7-Zip archive",
+        [".rar"] = "RAR archive",
+        [".tar"] = "Tar archive",
+        [".gz"] = "Gzip archive",
+        [".bz2"] = "Bzip2 archive",
+        [".xz"] = "XZ archive",
+        [".zst"] = "Zstandard archive",
+        [".iso"] = "Disc image",
+        [".img"] = "Disc image",
+        [".exe"] = "Windows executable",
+        [".dll"] = "Windows library",
+        [".msi"] = "Windows installer",
+        [".sys"] = "Windows driver",
+        [".pdf"] = "PDF document",
+        [".docx"] = "Word document",
+        [".doc"] = "Word document",
+        [".xlsx"] = "Excel workbook",
+        [".xls"] = "Excel workbook",
+        [".pptx"] = "PowerPoint deck",
+        [".ppt"] = "PowerPoint deck",
+        [".ttf"] = "TrueType font",
+        [".otf"] = "OpenType font",
+        [".woff"] = "Web font",
+        [".woff2"] = "Web font",
+        [".sqlite"] = "SQLite database",
+        [".sqlite3"] = "SQLite database",
+        [".db"] = "Database",
+        [".mmdb"] = "MaxMind database",
+        [".wasm"] = "WebAssembly module",
+        [".class"] = "Java class",
+        [".jar"] = "Java archive",
+        [".apk"] = "Android package",
+        [".pdb"] = "Program database",
+        [".stl"] = "3D model (STL)",
+        [".dxf"] = "CAD drawing (DXF)",
+        [".stp"] = "CAD model (STEP)",
+        [".step"] = "CAD model (STEP)",
+        [".psd"] = "Photoshop document",
+    };
+
+    /// <summary>
+    /// The name a known extension stands for, or null. The extension wins over
+    /// the signature, because ".docx" is a better answer than the ZIP it is.
+    /// </summary>
+    public static string? FromExtension(string path) =>
+        ByExtension.TryGetValue(Path.GetExtension(path), out var name) ? name : null;
+
+    /// <summary>The name to show for a path, falling back to the extension itself.</summary>
+    public static string Describe(string path)
+    {
+        if (FromExtension(path) is { } known) return known;
+
+        var ext = Path.GetExtension(path);
+        return ext.Length > 1
+            ? $"{ext[1..].ToUpperInvariant()} file"
+            : "File";
+    }
+
+    /// <summary>The format a file's first bytes announce, or null when they say nothing.</summary>
+    public static string? FromSignature(ReadOnlySpan<byte> head)
+    {
+        if (head.StartsWith("%PDF"u8)) return "PDF document";
+        if (head.StartsWith("MZ"u8)) return "Windows executable";
+        if (head.StartsWith("\x7fELF"u8)) return "ELF binary";
+        if (head.StartsWith("SQLite format 3\0"u8)) return "SQLite database";
+        if (head.StartsWith("\x1f\x8b"u8)) return "Gzip archive";
+        if (head.StartsWith("7z\xbc\xaf\x27\x1c"u8)) return "7-Zip archive";
+        if (head.StartsWith("Rar!"u8)) return "RAR archive";
+        if (head.StartsWith("PK"u8) && head.Length > 3 && head[2] is 3 or 5 or 7) return "ZIP archive";
+        if (head.StartsWith("\xd0\xcf\x11\xe0"u8)) return "Office document";
+        if (head.StartsWith("\x89PNG"u8)) return "PNG image";
+        if (head.StartsWith("\xff\xd8\xff"u8)) return "JPEG image";
+        if (head.StartsWith("GIF8"u8)) return "GIF image";
+        if (head.StartsWith("\x1a\x45\xdf\xa3"u8)) return "Matroska video";
+        if (head.StartsWith("OggS"u8)) return "Ogg media";
+        if (head.Length >= 12 && head[4..8].SequenceEqual("ftyp"u8)) return "MP4 video";
+        if (head.Length >= 12 && head[..4].SequenceEqual("RIFF"u8))
+        {
+            if (head[8..12].SequenceEqual("AVI "u8)) return "AVI video";
+            if (head[8..12].SequenceEqual("WEBP"u8)) return "WebP image";
+            if (head[8..12].SequenceEqual("WAVE"u8)) return "WAV audio";
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Whether the first bytes are something other than UTF-8 text. A NUL is
+    /// decisive; otherwise the bytes are validated as UTF-8, tolerating a
+    /// character cut in half by the end of the window. A UTF-16 BOM is text.
+    /// </summary>
+    public static bool LooksBinary(ReadOnlySpan<byte> head)
+    {
+        if (head.Length == 0) return false;
+        if (head.StartsWith("\xff\xfe"u8) || head.StartsWith("\xfe\xff"u8)) return false;
+        if (head.IndexOf((byte)0) >= 0) return true;
+
+        var chars = ArrayPool<char>.Shared.Rent(head.Length);
+        try
+        {
+            var status = Utf8.ToUtf16(head, chars, out _, out _,
+                replaceInvalidSequences: false, isFinalBlock: false);
+            return status is OperationStatus.InvalidData;
+        }
+        finally
+        {
+            ArrayPool<char>.Shared.Return(chars);
+        }
+    }
+}
+
+/// <summary>
+/// Reads the container header of an MP4/MOV to get its duration and picture
+/// size. It seeks over the media data, so the cost is one small read of the
+/// <c>moov</c> box, not the size of the film.
+/// </summary>
+internal static class MediaFacts
+{
+    /// <summary>A movie header is a few KB; anything bigger is not one.</summary>
+    private const int MaxMoovBytes = 16 * 1024 * 1024;
+
+    public static async Task<FileFacts> ReadAsync(string path, FileFacts facts, CancellationToken token)
+    {
+        try
+        {
+            await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read,
+                FileShare.ReadWrite | FileShare.Delete, 64 * 1024, FileOptions.Asynchronous | FileOptions.RandomAccess);
+
+            if (await FindMovieBoxAsync(stream, token) is not { } moov) return facts;
+
+            TimeSpan? duration = null;
+            var width = 0;
+            var height = 0;
+            ReadMovieHeader(moov, ref duration, ref width, ref height);
+
+            return facts with { Duration = duration, Width = width, Height = height };
+        }
+        catch (Exception) when (!token.IsCancellationRequested)
+        {
+            // A truncated or non-standard container is still a file with a
+            // size and a date; those facts stand.
+            return facts;
+        }
+    }
+
+    private static async Task<byte[]?> FindMovieBoxAsync(FileStream stream, CancellationToken token)
+    {
+        var header = new byte[16];
+        var position = 0L;
+
+        // A sane file has a handful of top-level boxes. The cap stops a corrupt
+        // size field from turning this into an endless walk.
+        for (var boxes = 0; boxes < 64 && position + 8 <= stream.Length; boxes++)
+        {
+            stream.Position = position;
+            if (await ReadFullAsync(stream, header.AsMemory(0, 8), token) < 8) return null;
+
+            var size = (long)BinaryPrimitives.ReadUInt32BigEndian(header);
+            var headerSize = 8L;
+
+            if (size == 1)
+            {
+                if (await ReadFullAsync(stream, header.AsMemory(8, 8), token) < 8) return null;
+                var large = BinaryPrimitives.ReadUInt64BigEndian(header.AsSpan(8));
+                if (large > long.MaxValue) return null;
+                size = (long)large;
+                headerSize = 16;
+            }
+            else if (size == 0)
+            {
+                size = stream.Length - position;
+            }
+
+            if (size < headerSize || position + size > stream.Length) return null;
+
+            if (header.AsSpan(4, 4).SequenceEqual("moov"u8))
+            {
+                var payload = size - headerSize;
+                if (payload > MaxMoovBytes) return null;
+
+                var box = new byte[(int)payload];
+                return await ReadFullAsync(stream, box, token) == payload ? box : null;
+            }
+
+            position += size;
+        }
+
+        return null;
+    }
+
+    private static void ReadMovieHeader(ReadOnlySpan<byte> moov, ref TimeSpan? duration, ref int width, ref int height)
+    {
+        var position = 0;
+
+        while (position + 8 <= moov.Length)
+        {
+            var size = (int)BinaryPrimitives.ReadUInt32BigEndian(moov[position..]);
+            if (size < 8 || position + size > moov.Length) break;
+
+            var type = moov.Slice(position + 4, 4);
+            var payload = moov.Slice(position + 8, size - 8);
+
+            if (type.SequenceEqual("mvhd"u8)) ReadDuration(payload, ref duration);
+            else if (type.SequenceEqual("trak"u8)) ReadTrackSize(payload, ref width, ref height);
+
+            position += size;
+        }
+    }
+
+    private static void ReadDuration(ReadOnlySpan<byte> mvhd, ref TimeSpan? duration)
+    {
+        if (mvhd.Length < 20) return;
+
+        uint timescale;
+        ulong length;
+
+        if (mvhd[0] == 1)
+        {
+            if (mvhd.Length < 32) return;
+            timescale = BinaryPrimitives.ReadUInt32BigEndian(mvhd[20..]);
+            length = BinaryPrimitives.ReadUInt64BigEndian(mvhd[24..]);
+        }
+        else
+        {
+            timescale = BinaryPrimitives.ReadUInt32BigEndian(mvhd[12..]);
+            length = BinaryPrimitives.ReadUInt32BigEndian(mvhd[16..]);
+            if (length == uint.MaxValue) return;   // "unknown", per the spec
+        }
+
+        if (timescale == 0 || length == 0) return;
+        duration = TimeSpan.FromSeconds((double)length / timescale);
+    }
+
+    /// <summary>
+    /// A track's picture size lives in its <c>tkhd</c>, as 16.16 fixed point.
+    /// Audio tracks report zero, so the largest non-zero track is the video.
+    /// </summary>
+    private static void ReadTrackSize(ReadOnlySpan<byte> trak, ref int width, ref int height)
+    {
+        var position = 0;
+
+        while (position + 8 <= trak.Length)
+        {
+            var size = (int)BinaryPrimitives.ReadUInt32BigEndian(trak[position..]);
+            if (size < 8 || position + size > trak.Length) break;
+
+            if (trak.Slice(position + 4, 4).SequenceEqual("tkhd"u8))
+            {
+                var tkhd = trak.Slice(position + 8, size - 8);
+                var offset = tkhd.Length > 0 && tkhd[0] == 1 ? 88 : 76;
+                if (tkhd.Length < offset + 8) return;
+
+                var w = (int)(BinaryPrimitives.ReadUInt32BigEndian(tkhd[offset..]) >> 16);
+                var h = (int)(BinaryPrimitives.ReadUInt32BigEndian(tkhd[(offset + 4)..]) >> 16);
+
+                if (w is > 0 and <= 16384 && h is > 0 and <= 16384
+                    && (long)w * h > (long)width * height)
+                {
+                    width = w;
+                    height = h;
+                }
+                return;
+            }
+
+            position += size;
+        }
+    }
+
+    private static async Task<int> ReadFullAsync(FileStream stream, Memory<byte> buffer, CancellationToken token)
+    {
+        var total = 0;
+        while (total < buffer.Length)
+        {
+            var read = await stream.ReadAsync(buffer[total..], token);
+            if (read == 0) break;
+            total += read;
+        }
+
+        return total;
     }
 }
 
