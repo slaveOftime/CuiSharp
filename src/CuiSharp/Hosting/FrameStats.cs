@@ -87,11 +87,11 @@ public static class FrameStats
     }
 
     /// <summary>Closes a frame and returns its numbers. Called by the host after the component rendered.</summary>
-    internal static FrameSample End(long allocatedAtStart)
+    internal static FrameSample End(long allocatedAtStart, bool live)
     {
         AllocatedBytes = GC.GetAllocatedBytesForCurrentThread() - allocatedAtStart;
         DrawMs = Elapsed(_lastFrame, Stopwatch.GetTimestamp());
-        IsLive = Component.AnyWantFrames || PendingWork.Any;
+        IsLive = live;
 
         // The first frame of a run has no previous frame to measure against, and the frame after
         // a sleep measures the sleep. Both leave the average alone rather than dragging it to 0.

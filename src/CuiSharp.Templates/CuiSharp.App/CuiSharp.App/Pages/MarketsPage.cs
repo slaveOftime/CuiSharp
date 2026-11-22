@@ -42,6 +42,12 @@ public sealed class MarketsPage(MarketFeed feed) : Component
         }
     }
 
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) _load.Dispose();
+        base.Dispose(disposing);
+    }
+
     protected override void Draw(Ui ui)
     {
         feed.Advance();

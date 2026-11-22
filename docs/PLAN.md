@@ -7,9 +7,8 @@ in [ARCHITECTURE.md](ARCHITECTURE.md). Every item here passes the same gates as 
 ## 1. Open work
 
 - **Remaining analyzer code fixes** for CUI001, CUI006–CUI008. CUI002/CUI003 rewrite scope disposal
-  and guards; CUI004 keys repeated widgets in simple for/foreach loops; CUI005 removes an awaited
-  BCL `ConfigureAwait(bool)`. IDE-only fixes ship in a separate assembly so command-line analyzers
-  do not depend on Workspaces. Still needed: safe rewrites for the remaining rules and sequential
+  and guards; CUI004 keys repeated widgets in simple for/foreach loops. IDE-only fixes ship in
+  a separate assembly so command-line analyzers do not depend on Workspaces. Still needed: safe rewrites for the remaining rules and sequential
   fix-all for overlapping scope bodies. Nested loops and ambiguous row keys remain manual.
 
 - **Profile the real-time chart regression across the latest CUI sync.** Alternating isolated old-

@@ -1728,7 +1728,6 @@ class CuiSharp.Hosting.Mutation
   property Boolean IsRunning { get; }
   property Exception Error { get; }
 class CuiSharp.Hosting.Mutation`1
-  Boolean TryPublish(out T)
   Void Cancel()
   Void Dispose()
   Void Restart()

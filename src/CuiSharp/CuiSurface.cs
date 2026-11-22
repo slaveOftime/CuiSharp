@@ -59,8 +59,7 @@ public sealed unsafe partial class CuiSurface : IDisposable
     private long _frameAllocated;
     private readonly FrameRecorder _recorder = new();
 
-    [ThreadStatic] private static CuiSurface? _current;
-    private CuiSurface? _previous;
+    private UiFrameState.DrawScope _drawScope;
     private FrameRecorder? _recorderBelow;
 
     private CuiSurface(nint sw, nint ctx, int width, int height, float scale, RendererKind kind)
@@ -71,7 +70,7 @@ public sealed unsafe partial class CuiSurface : IDisposable
         _height = height;
         _scale = scale;
         Kind = kind;
-        PendingWork.MarkDrawn();
+        _frame.Faults = _faults;
     }
 
     /// <summary>The native context, for the input surface this type also exposes.</summary>
@@ -140,14 +139,10 @@ public sealed unsafe partial class CuiSurface : IDisposable
     public bool LastFrameReady => _frame.LastFrameReady;
 
     /// <summary>
-    /// Exceptions a component threw while this surface drew. A component's error
-    /// boundary keeps the frame going, which would otherwise make a broken page look
-    /// like a passing render test; assert <c>Assert.Empty(surface.Faults)</c>.
+    /// Exceptions contained while drawing a component or applying a background result.
+    /// A render test can check <c>Assert.Empty(surface.Faults)</c> even when the frame drew.
     /// </summary>
     public IReadOnlyList<Exception> Faults => _faults;
-
-    /// <summary>Records a failure for the assertions above. Called by the error boundary.</summary>
-    internal static void ReportFault(Exception error) => _current?._faults.Add(error);
 
     /// <summary>Creates a windowless context backed by the software rasterizer.</summary>
     /// <remarks>
@@ -237,16 +232,6 @@ public sealed unsafe partial class CuiSurface : IDisposable
     {
         ObjectDisposedException.ThrowIf(_ctx == 0, this);
 
-        // The frame boundary is the only place work from a pool thread may be
-        // applied, so a frame never sees a half-applied result.
-        Completions.Drain();
-        Component.BeginFrame();
-
-        // A component's error boundary reports into the surface that is drawing it,
-        // so a test can assert that a page rendered without throwing.
-        _previous = _current;
-        _current = this;
-
         _frame.Reset();
         Utf8.BeginFrame();
 
@@ -256,11 +241,13 @@ public sealed unsafe partial class CuiSurface : IDisposable
 
         _recorderBelow = WidgetRecorder.BeginFrame(_recorder);
 
-        // A surface is how a test draws a frame, so it reports the same numbers a window does.
-        _frameAllocated = FrameStats.Begin();
-
         Native.SetViewport(_ctx, _width, _height, _scale);
         Native.BeginFrame(_ctx, deltaSeconds);
+
+        // Apply the owner's completions before timing or running application draw code.
+        _drawScope.Dispose();
+        _drawScope = _frame.EnterDraw(_ctx, window: false);
+        _frameAllocated = FrameStats.Begin();
     }
 
     /// <summary>Ends the frame, finalising layout and the draw list.</summary>
@@ -271,16 +258,15 @@ public sealed unsafe partial class CuiSurface : IDisposable
         {
             // Closed before CUI lays out and paints, and before the recorder picks the frame's
             // text apart: these numbers are the app's own draw, which is what a budget is about.
-            LastFrame = FrameStats.End(_frameAllocated);
-            PendingWork.MarkDrawn();
+            LastFrame = FrameStats.End(_frameAllocated, _frame.IsLive);
+            _drawScope.Dispose();
+            _drawScope = default;
             using (_frame.EnterPaint()) Native.EndFrame(_ctx);
         }
         finally
         {
             WidgetRecorder.EndFrame(_recorder, _recorderBelow, _ctx);
             _recorderBelow = null;
-            _current = _previous;
-            _previous = null;
 
             // Readiness is published here, last, rather than at MarkReady or before CUI paints:
             // the deferred canvas painters run inside EndFrame and may mark the frame they paint,
@@ -429,6 +415,8 @@ public sealed unsafe partial class CuiSurface : IDisposable
 
         if (_ctx != 0)
         {
+            _drawScope.Dispose();
+            _drawScope = default;
             Native.Destroy(_ctx);
             _ctx = 0;
             _frame.Reset();

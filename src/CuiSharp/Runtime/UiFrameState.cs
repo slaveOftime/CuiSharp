@@ -15,6 +15,18 @@ internal sealed class UiFrameState
 {
     [ThreadStatic] private static UiFrameState? _painting;
     internal static UiFrameState? Painting => _painting;
+    [ThreadStatic] private static UiFrameState? _drawing;
+    internal static UiFrameState? Drawing => _drawing;
+    private UiFrameState? _drawBelow;
+    private bool _drawingThis;
+
+    // Installed by the first background operation this host starts. The interface leaves the
+    // dispatcher and its queues out of a plain window's AOT image.
+    internal IFrameWork? Work;
+    internal nint WakeWindow;
+    internal bool WantsFrames;
+    internal List<Exception>? Faults;
+    internal bool IsLive => WantsFrames || Work is { NextFrameSeconds: >= 0f };
 
     internal readonly List<PaintFn> Painters = new();
 
@@ -112,6 +124,8 @@ internal sealed class UiFrameState
     /// </summary>
     internal void Release()
     {
+        if (_drawingThis) ExitDraw();
+        CloseWork();
         Localization?.Detach(this);
         Localization = null;
         LocalizationBlock = 0;
@@ -133,6 +147,64 @@ internal sealed class UiFrameState
     }
     internal PaintScope EnterPaint() => new(this);
 
+    internal DrawScope EnterDraw(nint context, bool window)
+    {
+        // A modal OS resize can re-enter the same window callback. Only the outer draw owns
+        // the boundary: no re-entrant completion delivery into a callback already on the stack.
+        if (_drawingThis) return default;
+        _drawingThis = true;
+        _drawBelow = _drawing;
+        _drawing = this;
+        WantsFrames = false;
+        try
+        {
+            Work?.Drain();
+            return new DrawScope(this, context, window);
+        }
+        catch
+        {
+            ExitDraw();
+            throw;
+        }
+    }
+
+    internal void CloseWork() => Work?.Close();
+
+    private void ExitDraw()
+    {
+        // Explicit surfaces may finish out of order. Unlink only this one so ending the
+        // first cannot replace the active second, or resurrect a frame that already ended.
+        if (_drawing == this) _drawing = _drawBelow;
+        else
+        {
+            for (UiFrameState? above = _drawing; above is not null; above = above._drawBelow)
+            {
+                if (above._drawBelow != this) continue;
+                above._drawBelow = _drawBelow;
+                break;
+            }
+        }
+
+        _drawBelow = null;
+        _drawingThis = false;
+    }
+
+    internal readonly struct DrawScope(UiFrameState frame, nint context, bool window) : IDisposable
+    {
+        public void Dispose()
+        {
+            if (frame is null) return;
+            frame.ExitDraw();
+            if (context == 0) return;
+
+            // A manually driven surface only requests animation frames, never wall-clock
+            // worker waits. Read demand once; a worker cannot touch the native context.
+            float seconds = window ? frame.Work?.NextFrameSeconds ?? -1f : -1f;
+            if (frame.WantsFrames || seconds == 0f) Native.RequestRedraw(context);
+            else if (seconds > 0f) Native.RequestWakeup(context, seconds);
+        }
+    }
+
     private unsafe void FreeRetired()
     {
         if (_retiredBlocks.Count == 0) return;
@@ -152,4 +224,12 @@ internal sealed class UiFrameState
 
         public void Dispose() => _painting = _previous;
     }
+}
+
+// The core owns the draw boundary, but only the optional hosting layer implements its work.
+internal interface IFrameWork
+{
+    float NextFrameSeconds { get; }
+    void Drain();
+    void Close();
 }

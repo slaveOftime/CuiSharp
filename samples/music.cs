@@ -56,7 +56,7 @@ using StbImageSharp;
 var preferences = Store.LoadPreferences();
 var library = new Library(preferences.Folders);
 using var player = new Player(preferences);
-var app = new MusicApp(library, player, preferences);
+using var app = new MusicApp(library, player, preferences);
 
 var exitCode = CuiApp.Run(app.Options, app.Draw);
 app.SyncPreferences();
@@ -68,7 +68,7 @@ return exitCode;
 // above the library, or a single compact strip/stack once the window gets small.
 // ---------------------------------------------------------------------------
 
-internal sealed class MusicApp
+internal sealed class MusicApp : IDisposable
 {
     private const float SideBySideWidth = 860f;
     private const float MiniWidth = 680f;
@@ -97,6 +97,8 @@ internal sealed class MusicApp
     private int _summaryFolders = -1;
     private int _summarySeconds = -1;
     private string _summaryText = "";
+
+    public void Dispose() => _nowPlaying.Dispose();
 
     public MusicApp(Library library, Player player, Preferences preferences)
     {
@@ -290,7 +292,7 @@ internal sealed class MusicApp
 // The player card: the visualizer, what is playing, and the transport.
 // ---------------------------------------------------------------------------
 
-internal sealed class NowPlayingPanel(Player player, int visualizer, Action save, ArtCache art)
+internal sealed class NowPlayingPanel(Player player, int visualizer, Action save, ArtCache art) : IDisposable
 {
     private const float TimeWidth = 44f;
 
@@ -309,6 +311,8 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
     private int _lastDuration = -1;
 
     public bool IsReading => _sound.IsRunning || art.IsLoading;
+
+    public void Dispose() => _sound.Dispose();
 
     public int VisualizerMode => _visualizer.Mode;
 

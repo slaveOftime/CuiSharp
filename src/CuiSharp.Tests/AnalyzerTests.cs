@@ -477,44 +477,38 @@ public class AnalyzerTests
         Assert.Single(found, f => f.StartsWith("CUI004", StringComparison.Ordinal));
     }
 
-    // ---- CUI005 / CUI006 ----------------------------------------------------
+    // ---- CUI006 -------------------------------------------------------------
 
     [Fact]
-    public async Task ConfigureAwaitAndAsyncVoidInsideAComponentAreReported()
+    public async Task AsyncVoidInsideAComponentIsReported()
     {
         string[] found = await AnalyzeAsync(Prologue + """
             public sealed class Page : Component
             {
-                public override async void Draw(Ui ui)
-                {
-                    await Task.Delay(1).ConfigureAwait(false);
-                    ui.Text("drawn");
-                }
+                protected override void Draw(Ui ui) { }
+                private async void Load() => await Task.Delay(1);
             }
-            """);
+            """, requireValidCompilation: true);
 
-        Assert.Single(found, f => f.StartsWith("CUI005", StringComparison.Ordinal));
         Assert.Single(found, f => f.StartsWith("CUI006", StringComparison.Ordinal));
         Assert.Contains("Mutation", found.Single(f => f.StartsWith("CUI006", StringComparison.Ordinal)), StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task AComponentAwaitingNormallyIsNotReported()
+    public async Task ConfiguringAWorkerAwaitDoesNotImplyFrameThreadAffinity()
     {
         string[] found = await AnalyzeAsync(Prologue + """
             public sealed class Page : Component
             {
-                public override void Draw(Ui ui) => ui.Text("drawn");
-
-                private async Task LoadAsync()
+                private readonly Mutation _load = new(async token => await Task.Delay(1, token).ConfigureAwait(false));
+                protected override void Draw(Ui ui)
                 {
-                    await Task.Delay(1);
+                    if (ui.Button("Load")) _load.Run();
                 }
             }
-            """);
+            """, requireValidCompilation: true);
 
-        Assert.DoesNotContain(found, f => f.StartsWith("CUI005", StringComparison.Ordinal));
-        Assert.DoesNotContain(found, f => f.StartsWith("CUI006", StringComparison.Ordinal));
+        Assert.Empty(found);
     }
 
     // ---- CUI007 -------------------------------------------------------------

@@ -25,27 +25,22 @@ public class ReadinessTests
     }
 
     /// <summary>
-    /// A page whose data arrives the way the framework delivers it: a pool thread posts to
-    /// <see cref="Completions"/> and the next frame boundary applies it, and only the frames
-    /// after that mark ready. This is the shape a real app has, and the reason a wait needs no
-    /// polling of its own.
+    /// A page whose data arrives through an actual background operation, then marks the first
+    /// frame that draws the applied data ready.
     /// </summary>
-    private sealed class Loader
+    private sealed class Loader : Component
     {
+        private readonly TaskCompletionSource<string> _result = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly Mutation<string> _load;
         private string? _data;
 
-        public Loader() => _load = new Mutation<string>(_ => Task.FromResult(""), value => _data = value);
+        public Loader() => _load = new Mutation<string>(ct => _result.Task.WaitAsync(ct), value => _data = value);
 
-        /// <summary>
-        /// The release signal: the operation finishes on a pool thread when the test says so,
-        /// through the same completion path a mutation's continuation uses. The mutation is
-        /// never <c>Run</c> — this is about the drain at the frame boundary, not about an
-        /// operation's process-wide bookkeeping, which a sibling test class counts exactly.
-        /// </summary>
-        public void Deliver(string value) => Task.Run(() => Completions.Post(_load, value, 0));
+        public void Deliver(string value) => _result.SetResult(value);
 
-        public void Draw(Ui ui)
+        protected override void OnInitialized() => _load.Run();
+
+        protected override void Draw(Ui ui)
         {
             if (_data is { } data)
             {
@@ -56,6 +51,12 @@ public class ReadinessTests
             {
                 ui.Label("loading");
             }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) _load.Dispose();
+            base.Dispose(disposing);
         }
     }
 
@@ -301,12 +302,11 @@ public class ReadinessTests
         if (!OperatingSystem.IsWindows()) return;
 
         var loader = new Loader();
-        using var app = HeadlessApp.Start(loader.Draw, 400, 300);
+        using var app = HeadlessApp.Start(loader, 400, 300);
         Assert.False(app.Ready);
         Assert.True(app.TryFind("loading", out _));
 
-        // The pool posts the completion; the wait releases because each frame drains Completions
-        // at its boundary, so no timing assumption is built into this test.
+        // Release the worker, then wait for observable application state rather than sleeping.
         loader.Deliver("42 rows");
 
         HeadlessApp.WaitOutcome ready = app.WaitReady(TimeSpan.FromSeconds(10));
