@@ -372,6 +372,7 @@ public sealed unsafe class CuiApp : IDisposable
             HotReloadWake.Detach(state.WindowHandle);
             LiveResize.Uninstall(state.WindowHandle);
             state.Window?.Release();
+            state.Frame.Release();
             handle.Free();
         }
     }

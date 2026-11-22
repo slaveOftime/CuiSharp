@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.IO.MemoryMappedFiles;
 using System.Numerics;
 using System.Text;
 using CuiSharp.Interop;
@@ -293,6 +294,7 @@ internal static unsafe class FontProbe
         nint sw = Native.SwCreate();
         if (sw == 0) throw new InvalidOperationException("cui_sw_create failed.");
         nint ctx = 0;
+        MemoryMappedViewAccessor? backing = null;
         try
         {
             var desc = new NativeCtxDesc { Renderer = Native.SwIface(sw), NoDefaultFonts = (byte)(path is null ? 0 : 1) };
@@ -302,7 +304,7 @@ internal static unsafe class FontProbe
 
             if (path is not null)
             {
-                Font face = Native.FontLoadFile(ctx, Utf8.Get(path));
+                Font face = SystemFontFile.Load(ctx, path, out backing);
                 if ((int)face <= (int)Font.Icons) return 0;
                 Native.FontSetRole(ctx, Font.Body, face);
             }
@@ -324,6 +326,7 @@ internal static unsafe class FontProbe
         finally
         {
             if (ctx != 0) Native.Destroy(ctx);
+            backing?.Dispose();
             Native.SwDestroy(sw);
         }
     }

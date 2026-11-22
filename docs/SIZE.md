@@ -71,6 +71,14 @@ a spinner — and background work brings the async machinery and the thread pool
 The teaching example is the cost, not the framework: an app that never starts background work pays
 nothing of it.
 
+System-font fallbacks read their candidate files through a read-only memory mapping instead of
+copying them, which is what a 19 MB `.ttc` collection costs in a running app. In the executable
+that costs 512 B on `MIN` (1 176 576 B measured after the change) and 3 072 B on a published
+`cui-mini` (1 388 032 B) — the reach `System.IO.MemoryMappedFiles` gives the trimmer; the gallery
+is byte-identical. Measured runtime goes the other way: an idle disk app at 200 % scaling held
+76.8 MiB of private working set when every chosen face was copied against 26.3 MiB mapped, with
+the same scripts installed.
+
 Nearly all of it is the headless channel: `System.IO`, `Console`, `Encoding` and the reflection
 over an enum the command lexer reads arrive with it, and a switch only removes them when the
 trimmer knows the answer at build time. The rest is `StackTraceSupport` and

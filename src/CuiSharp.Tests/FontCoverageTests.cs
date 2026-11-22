@@ -1,3 +1,4 @@
+using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using CuiSharp.Hosting;
 using CuiSharp.Interop;
@@ -25,6 +26,34 @@ public class FontCoverageTests
         // Partial coverage must not be accepted just because the Latin half paints.
         Assert.False(FontProbe.Paints(inter, "Hello中文"));
         Assert.False(FontProbe.PaintsThemeFace("Hello中文"));
+    }
+
+    [Fact]
+    public void AReadOnlyMappedFontRendersLikeACopiedFontAcrossFrames()
+    {
+        string inter = Path.Combine(RepositoryRoot, "native", "CUI", "assets", "fonts", "Inter-Regular.ttf");
+        using var reference = CuiSurface.Create(240, 60);
+        reference.Ui.SetFont(Font.Body, reference.Ui.LoadFont(inter));
+        byte[] expected = Render(reference, "Hello");
+        Assert.True(HasInk(expected, Render(reference, " ")));
+
+        var surface = CuiSurface.Create(240, 60);
+        MemoryMappedViewAccessor? backing = null;
+        try
+        {
+            Font face = SystemFontFile.Load(surface.Handle, inter, out backing);
+            Assert.NotNull(backing);
+            Assert.False(backing.CanWrite);
+            Assert.True((int)face > (int)Font.Icons);
+            surface.Ui.SetFont(Font.Body, face);
+            _ = Render(surface, " ");
+            Assert.Equal(expected, Render(surface, "Hello"));
+        }
+        finally
+        {
+            surface.Dispose();
+            backing?.Dispose();
+        }
     }
 
     [Fact]

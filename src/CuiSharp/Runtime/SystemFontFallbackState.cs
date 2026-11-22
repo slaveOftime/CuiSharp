@@ -1,3 +1,4 @@
+using System.IO.MemoryMappedFiles;
 using System.Numerics;
 using CuiSharp.Interop;
 
@@ -15,7 +16,7 @@ internal sealed class SystemFontFallbackState
 
     // The faces loaded onto this context, by path. A path the probe chose but that failed to load
     // is absent here, which is what makes a later search try it again rather than trust it.
-    private readonly Dictionary<string, Font> _faces = new(
+    private readonly Dictionary<string, (Font Face, MemoryMappedViewAccessor? Backing)> _faces = new(
         OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
 
     private string[]? _probes;
@@ -127,7 +128,7 @@ internal sealed class SystemFontFallbackState
         foreach ((string sample, string? path) in probe.Matches)
         {
             if (path is null) _samples.TryAdd(sample, 0);
-            else if (_faces.TryGetValue(path, out Font loaded)) _samples.TryAdd(sample, loaded);
+            else if (_faces.TryGetValue(path, out var loaded)) _samples.TryAdd(sample, loaded.Face);
         }
 
         // A widget drawn earlier in this frame measured and shaped its text before these faces
@@ -142,7 +143,7 @@ internal sealed class SystemFontFallbackState
 
         // Reuse files installed by either helper, even when two different samples need them.
         foreach (string path in _files)
-            if (FontProbe.Paints(path, sample)) return _faces[path];
+            if (FontProbe.Paints(path, sample)) return _faces[path].Face;
 
         foreach (string path in _probes ??= [.. SystemFonts.Probes])
         {
@@ -158,14 +159,21 @@ internal sealed class SystemFontFallbackState
     private Font Load(Ui ui, string path)
     {
         using var scope = Utf8.Scope();
-        Font face = ui.LoadFont(path);
+        Font face = SystemFontFile.Load(ui.Handle, path, out var backing);
         if ((int)face <= (int)Font.Icons) return 0;
 
+        _faces.Add(path, (face, backing));
         foreach (Font role in SystemFonts.Roles) ui.AddFontFallback(role, face);
-        _faces[path] = face;
         _files.Add(path);
         _installed++;
         return face;
+    }
+
+    // The search owns only temporary views; it never touches the installed faces.
+    internal void ReleaseAfterContextDestroyed()
+    {
+        foreach (var face in _faces.Values) face.Backing?.Dispose();
+        _faces.Clear();
     }
 }
 

@@ -118,6 +118,7 @@ internal sealed class UiFrameState
         _localizationClear = false;
         FrameReady = false;
         LastFrameReady = false;
+        SystemFontFallbacks?.ReleaseAfterContextDestroyed();
         SystemFontFallbacks = null;
         FreeRetired();
     }
