@@ -1,9 +1,8 @@
 # File-based samples
 
-Four self-contained CuiSharp apps, one `.cs` file each. They start with
-`#:project ../src/CuiSharp/CuiSharp.csproj`, so each one builds against the source in this
-repository — including its analyzers — and they share the same run / publish / headless recipe.
-The icon beside each file is what the published window uses.
+Six self-contained CuiSharp apps, one `.cs` file each. They start with
+`#:package CuiSharp@*`, so each one builds against the latest published package, and they share the
+same run / publish / headless recipe. The icon beside each file is what the published window uses.
 
 | File | What it shows |
 |---|---|
@@ -11,9 +10,12 @@ The icon beside each file is what the published window uses.
 | [`stock.cs`](stock.cs) | A global market-cap dashboard over Tencent + Eastmoney, with a live tracker and cache. |
 | [`music.cs`](music.cs) | A music player over your folders: library, transport, seek bar and real-audio visualizers. |
 | [`download.cs`](download.cs) | A magnet + HTTP download manager: newest-first queue, peers, speed and a details pane. |
+| [`file.cs`](file.cs) | A file preview: markdown with inline images, CSV grids, images to zoom, and git-tracked text edited with the HEAD diff beside it. |
+| [`hotkey.cs`](hotkey.cs) | A Windows hotkey manager: bind a global key to an app, optionally capturing the foreground selection first. |
 
-All four call `ui.UseSystemFontFallbacks()` every frame: the bundled faces are Latin, and a
-folder name, a download name or a music tag can be written in any script — or carry an emoji — so
+All six call `ui.UseSystemFontFallbacks()` every frame: the bundled faces are Latin, and a
+folder name, a download name, a music tag or a file path can be written in any script — or carry an
+emoji — so
 the apps install the faces the machine has instead of drawing those glyphs as nothing. Asking is
 pixels, so the search runs on the pool: the first frames draw every label in the bundled faces, the
 first frame after it lands installs the faces it found, and every call after that is a cached read
@@ -26,9 +28,13 @@ dotnet run disk.cs
 dotnet run stock.cs
 dotnet run music.cs
 dotnet run download.cs
+dotnet run file.cs
+dotnet run hotkey.cs
 ```
 
 `disk.cs` also takes folders: `dotnet run disk.cs -- <folder> [folder...]`.
+`file.cs` takes the files to preview: `dotnet run file.cs -- <file> [more files...]`.
+`hotkey.cs` is Windows-only: a global hotkey is a RegisterHotKey, and no other platform offers one.
 
 ## Publish
 
@@ -39,12 +45,15 @@ dotnet publish disk.cs -c Release -o .
 dotnet publish stock.cs -c Release -o .
 dotnet publish music.cs -c Release -o .
 dotnet publish download.cs -c Release -o .
+dotnet publish file.cs -c Release -o .
+dotnet publish hotkey.cs -c Release -o .
 ```
 
-The generated binaries are gitignored. All four publish for the current platform. `music.cs` is one
+The generated binaries are gitignored. All six publish for the current platform. `music.cs` is one
 NativeAOT executable plus the two native libraries it loads: `miniaudioex.dll` and, on Windows,
 `vcruntime140.dll`. Windows Sandbox carries no VC++ redistributable, so the runtime travels with the
-app. The exe alone will not play: publish all three together.
+app. The exe alone will not play: publish all three together. `hotkey.cs` ships one file and loads
+nothing beside it; `file.cs` likewise.
 
 ## Drive a published build headlessly
 
@@ -63,9 +72,8 @@ dotnet cui tree --app artifacts/disk/disk --state artifacts/cui-run
 ```
 
 The apps read `CUISHARP_STATE_HOME`: `music` uses `<root>/CuiMusic`, `download` uses
-`<root>/CuiDownload`, and `stock` uses `<root>/GlobalMarketCap`. The `#:project` reference means a
-sample always builds with the `CUISHARP_VIEWPORT` override, so `--size` reports the viewport it
-really used.
+`<root>/CuiDownload`, and `stock` uses `<root>/GlobalMarketCap`. `CUISHARP_VIEWPORT` is read by the
+library itself, so `--size` reports the viewport it really used whatever the sample references.
 
 `dotnet cui` is the companion tool (`dotnet tool install -g CuiSharp.Tools`). Every app repeats the
 full recipe at the top of its file:
@@ -81,5 +89,5 @@ dotnet cui session --script steps.txt
 Use `dotnet tool update -g CuiSharp.Tools` to keep the tool current. `--script` works in every
 shell; a POSIX shell can still pipe the same file into `dotnet cui session` if it prefers.
 
-`#:project` and the tool are versioned separately: a sample always builds against this repository,
-while the tool only changes when you update it.
+`#:package` and the tool are versioned separately: a sample always builds against the latest
+published package, while the tool only changes when you update it.

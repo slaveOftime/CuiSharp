@@ -4,6 +4,29 @@ Every user-visible change, newest first. Pre-1.0 the minor number carries new su
 carries fixes. The section for a tag is what the GitHub release publishes, so the two cannot say
 different things.
 
+## [0.4.7] — 2026-11-22
+
+### Changed
+
+- **System-font fallbacks are mapped, not copied.** `ui.UseSystemFontFallbacks()` read each chosen
+  font file whole into private memory and kept it for the window's lifetime, so a machine whose CJK
+  face is an 18.8 MB `.ttc` collection paid the collection: an idle disk app measured 76.8 MiB of
+  private working set with the fallback set installed against 25 MiB with it off, and the difference
+  was the font bytes. The file is now mapped read-only and CUI is handed a pointer into the map,
+  which is what `cui_font_load_memory`'s `copy=false` contract already asks for: the caller keeps
+  the bytes alive, so the view is released only after the native context that borrows it is gone —
+  a window's views with `UiFrameState.Release`, which `CuiApp.Run` now calls when `cui_app_run`
+  returns. A file that cannot be mapped falls back to `cui_font_load_file`, so the app still gets
+  the face. The same scripts install, and a test pins that a mapped face draws the pixels the
+  copied one drew. Measured runtime goes the other way: the same app holds 26.3 MiB private with
+  fallbacks still enabled. In the executable it costs the trimmer's reach for
+  `System.IO.MemoryMappedFiles`: 512 B on a minimal app and 3 072 B on a published `cui-mini`;
+  the gallery is byte-identical.
+- **Two samples join the set**: `file.cs`, a file preview that edits git-tracked text with a diff
+  gutter, and `hotkey.cs`, a Windows hotkey manager that can capture the foreground application's
+  selection before launching the bound app. Both call `ui.UseSystemFontFallbacks()` like the other
+  four, and `samples/README.md` now describes six.
+
 ## [0.4.6] — 2026-11-21
 
 ### Changed

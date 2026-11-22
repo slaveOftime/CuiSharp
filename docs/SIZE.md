@@ -55,9 +55,9 @@ way:
 Those are historical profile measurements, not a same-library comparison with 0.4.4.
 The current shipped snapshot is:
 
-| App | 0.4.6, shipped |
+| App | 0.4.7, shipped |
 |---|---|
-| minimal app | 1 176 064 B |
+| minimal app | 1 176 576 B |
 | gallery, 32 pages | 3 177 984 B |
 | `dotnet new cui-app`, published | 2 312 704 B |
 | `dotnet new cui-mini`, published | 1 384 960 B |
@@ -74,8 +74,10 @@ nothing of it.
 System-font fallbacks read their candidate files through a read-only memory mapping instead of
 copying them, which is what a 19 MB `.ttc` collection costs in a running app. In the executable
 that costs 512 B on `MIN` (1 176 576 B measured after the change) and 3 072 B on a published
-`cui-mini` (1 388 032 B) — the reach `System.IO.MemoryMappedFiles` gives the trimmer; the gallery
-is byte-identical. Measured runtime goes the other way: an idle disk app at 200 % scaling held
+`cui-mini` where the change was authored — the reach `System.IO.MemoryMappedFiles` gives the
+trimmer. The gallery and the scaffolded app are byte-identical, and the mini measured byte-identical
+on the machine that produced this table: template-row bytes move by a few KB across SDK versions,
+the same tolerance the name-in-the-binary rows above carry. Measured runtime goes the other way: an idle disk app at 200 % scaling held
 76.8 MiB of private working set when every chosen face was copied against 26.3 MiB mapped, with
 the same scripts installed.
 
