@@ -186,7 +186,7 @@ internal sealed class FileApp
         Options = new CuiAppOptions
         {
             Title = paths.Length > 0 ? Path.GetFileName(paths[0]) : "File Preview",
-            Width = 720,
+            Width = 760,
             Height = 960,
             Theme = Theme.Dark,
             Accent = Accent.Violet,
@@ -625,6 +625,8 @@ internal sealed class FileApp
                 _notice = null;
             }
             if (_error is { } error) ui.Badge(Trim(error, 100), new() { Tone = Tone.Danger });
+
+            ui.Spacer();
 
             using (ui.Row(new Box { Gap = 0, Align = Align.Center, Wrap = false, Height = Size.Fit }))
             {
