@@ -136,7 +136,7 @@ public class HeadlessApp : IDisposable
     /// <summary>Logical height in points.</summary>
     public int Height => _surface.Height;
 
-    /// <summary>Exceptions a component threw while drawing; an empty list is a healthy frame.</summary>
+    /// <summary>Exceptions contained while drawing a component or applying a background result.</summary>
     public IReadOnlyList<string> Faults => _faults;
 
     /// <summary>
@@ -379,8 +379,8 @@ public class HeadlessApp : IDisposable
     }
 
     /// <summary>
-    /// True when something in the last frame asked for another one: an animation in flight, a
-    /// transition, work that finished on a pool thread. <see cref="Settle"/> is the loop around it.
+    /// True when the last frame requested another animation frame. This does not wait for
+    /// background jobs; use <see cref="WaitReady"/> or <see cref="WaitFor"/> for observable data.
     /// </summary>
     public bool Animating => !_disposed && Native.NeedsRedraw(_surface.Handle) != 0;
 
@@ -407,7 +407,6 @@ public class HeadlessApp : IDisposable
         for (int i = 0; i < count; i++)
         {
             _faults.Clear();
-            Component.BeginFrame();
             _surface.BeginFrame(deltaSeconds);
             try
             {
@@ -420,11 +419,6 @@ public class HeadlessApp : IDisposable
             {
                 _surface.EndFrame();
             }
-
-            // A component that wants the next frame says so here too, so Animating means the same
-            // thing in a test as in a window. PendingWork is deliberately left out: it is
-            // process-wide, and one leaked operation would make every later test look animated.
-            if (Component.AnyWantFrames) Native.RequestRedraw(_surface.Handle);
 
             foreach (Exception fault in _surface.Faults) _faults.Add(fault.Message);
         }

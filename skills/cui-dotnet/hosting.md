@@ -1,9 +1,7 @@
 # Hosting
 
-`CuiSharp.Hosting` is a namespace inside the `CuiSharp` package, not a package of its own: a
-builder, a service container, and one call that runs the root component. Trimming removes it from an
-app that never references it, which is why the gallery — which uses no hosting — publishes at the
-same size with or without the dependency.
+Start with `CuiApp.Run(draw)` or `CuiApp.Run(component)`. Use `CuiApplication` if you also want
+Microsoft dependency injection. All three use the same frame and background-work rules.
 
 ```csharp
 var builder = CuiApplication.CreateBuilder(args);
@@ -15,162 +13,145 @@ using var app = builder.Build();
 return app.Run<TodoPage>();
 ```
 
-| Type | Purpose |
-|---|---|
-| `CuiApplication` | `CreateBuilder`, `Build`, `Run<TRoot>()` / `Run(component)` on the calling thread |
-| `CuiApplicationBuilder` | `Services`, `AddPage<TPage>()`, `Window`, `Args` |
-| `Component` | `Draw(Ui)`, `OnInitialized`, `ComponentToken`, an inline error boundary, `WantsFrames` |
-| `CuiApp.Run([options,] component)` | runs a root `Component` in a window without a DI container |
-| `ui.Component(child)` | draws a child component inside the current container |
-| `ui.ActionButton(label, op, ...)` | draws a button bound to a `Mutation` or `Progressive` (loading, error badge, retry) |
-| `Mutation` / `Mutation<T>` | one async operation: `Run` / `Restart` / `Cancel`, `Latest`, `IsRunning`, `Error` |
-| `Progressive<T>` | work that reports as it runs: `Run` / `Restart` / `Cancel`, `Latest`, `IsRunning`, `Error`, `FrameRate` |
-
-A component is the screen: fields for state, a `Draw(Ui)` method, and the mutations it owns. There
-is no view model, no binding, no `INotifyPropertyChanged`, and no reflection in the frame loop.
+A `Component` owns ordinary C# state and rebuilds its UI in synchronous `Draw(Ui)`. Compose it
+with `ui.Component(child)`. `OnInitialized()` runs once, just before its first draw. Exceptions
+in initialization and drawing appear inline. There is no data binding or synchronization context.
 
 ## The frame contract
 
-`CuiApp.Run` hands the loop to CUI, which drives every frame — including the frames the OS requests
-while the user drags a window edge. `CuiApplication.Run` is `CuiApp.Run` with a root component, and
-the manual `CuiApp.Create`/`Frame` loop uses the same boundary, so every host behaves the same. Each
-frame:
+1. At the start of a frame, the host applies completed callbacks queued for **that window or
+   surface**, on its drawing thread.
+2. Draw reads state and builds the UI. Never block or await in Draw. `Ui` and its scopes cannot
+   leave the frame.
+3. A window draws for input, native animation, or app requests. Use `WantsFrames` for a rendered
+   component that continuously changes, and `ui.RequestRedraw()` for one more frame. Background
+   operations request frames automatically; they don't need either of those calls.
 
-1. work that finished on a pool thread is applied (`Completions.Drain`), on the UI thread;
-2. the root component renders; a throw is contained to that component and drawn as an inline error;
-3. if a mutation is still running, a progressive run is active, or a rendered component reported
-   `WantsFrames`, the host keeps the loop awake — a sleeping window cannot be woken by a pool thread.
-   A run that asked for a slower cadence is woken after that interval instead of every frame;
-4. the owed wake-up is spent, so the loop can sleep again once nothing is outstanding.
-
-In a `Run` app this happens around each draw callback. In a manual loop it happens around each
-`Frame()` call: the frame the caller drew is ended at the start of the next call, and the next frame
-begins before `Frame()` returns, so work that finished meanwhile is already applied when the caller
-draws.
-
-`WantsFrames` is sampled *after* a component draws, so the frame that makes a page live is the frame
-that asks for the next one.
-
-The host also measures the frame it just drew, so any page can show its own numbers without a clock:
-
-```csharp
-ui.Badge(FrameStats.IsLive ? $"{FrameStats.Fps:0} fps" : "idle", new() { Dot = FrameStats.IsLive });
-ui.Secondary($"draw {FrameStats.DrawMs:0.00} ms · alloc {FrameStats.AllocatedBytes} B");
-```
-
-`DrawMs` and `AllocatedBytes` describe the component's own draw, so `0 B` is a statement about app
-code. `FrameMs` is wall clock, which for a sleeping window is the sleep, so `Fps` averages runs of
-frames and `IsLive` says whether the app is in one — a footer that showed 0.5 fps after an idle
-minute would be telling the truth about nothing.
-
-Nothing in a component may block: no `.Result`, no `.Wait()`, no `Thread.Sleep`. The analyzers treat
-those as errors inside a frame (`CUI001`).
+`CuiApp.Run` also draws during a native window resize. In a manual `CuiApp.Create`/`Frame()` loop,
+`Frame()` ends the previous draw and starts the next one before returning. A `CuiSurface` (including
+`TestApp` and `HeadlessApp`) instead draws only when driven. `FrameStats` reports the cost of app
+drawing, not native layout and paint; a surface exposes its sample as `LastFrame`.
 
 ## Async work
 
-A `Mutation` is created once and run from an event:
+**Start on the frame thread. Work on the pool. Draw the result on the frame thread.**
+
+| Need | Use |
+|---|---|
+| One save, load or computation | `Mutation` for `Task`; `Mutation<T>` for `Task<T>` |
+| A scan, download, or other operation that reports as it runs | `Progressive<T>` — the newest snapshot wins |
+| Every event matters or an external event source must wake an otherwise idle app | Neither is an event queue or a general-purpose UI dispatcher |
+
+### One result
 
 ```csharp
-public sealed class Editor(Notes notes) : Component
+using System.IO;
+using CuiSharp;
+using CuiSharp.Hosting;
+
+var path = "notes.txt";
+using var load = new Mutation<string>(ct => File.ReadAllTextAsync(path, ct));
+
+return CuiApp.Run(ui =>
 {
-    private readonly Mutation<Note> _save = new(token => notes.SaveAsync(token), _ => Saved = true);
+    if (ui.Button("Load", new() { Loading = load.IsRunning })) load.Run();
+    if (load.Latest is { } text) ui.Label(text);
+    if (load.Error is { } error) ui.Alert(error.Message, new() { Tone = Tone.Danger });
+});
+```
+
+`Latest` is the last successful worker result (default until the first success or after `Cancel`).
+A new run keeps the previous successful result until it succeeds. To distinguish a successful
+null/default from no result, or to update UI state once, pass `apply` to `Mutation<T>` or
+`onSuccess` to `Mutation`. The callback runs
+before the next draw of the owner that takes the completion; `Latest` and `IsRunning` describe the
+worker and may change before that callback runs. A throwing callback is contained and reported in
+`Error` and, for a surface, in `Faults`. It does not roll back anything it already changed.
+`ui.ActionButton` is optional; it calls the configured `Run()` and supplies loading and retry UI.
+
+### Progress snapshots
+
+```csharp
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using CuiSharp;
+using CuiSharp.Hosting;
+
+using var page = new ImportPage();
+return CuiApp.Run(page);
+
+sealed class ImportPage : Component
+{
+    private readonly Progressive<Progress> _import = new(ImportAsync) { FrameRate = 5 };
 
     protected override void Draw(Ui ui)
     {
-        ui.ActionButton("Save", _save, new() { Icon = Icons.Save });
+        if (ui.Button("Import", new() { Loading = _import.IsRunning })) _import.Run();
+        if (_import.IsRunning && ui.Button("Cancel")) _import.Cancel();
+        if (_import.Latest is { } progress) ui.Label($"Imported {progress.Done} / 10");
+        if (_import.Error is { } error) ui.Alert(error.Message, new() { Tone = Tone.Danger });
     }
-}
-```
 
-`ui.ActionButton` draws the button, turns its spinner on while `_save.IsRunning`, and when
-`_save.Error` is set draws a danger badge plus a retry button. When custom markup is needed, read
-`IsRunning`, `Error` and `Latest` directly (`if (ui.Button("Save", new() { Loading = _save.IsRunning })) _save.Run();`).
-Like `Progressive<T>`, a `Mutation` also supports `Run(work)`, `Restart()`, `Restart(work)` and
-`Cancel()`, and `Mutation<T>.Latest` holds the last completed result so a component that does not
-need an `apply` callback can read `_load.Latest` straight from `Draw`.
-
-The work runs on the pool — `Run` hands it to `Task.Run`, so even the synchronous prefix of an
-`async` method (a parse, a file read before the first `await`) is off the frame. It never touches
-`Ui`, and it hands its result over at a frame boundary. There is no synchronization context: a
-continuation does not run on the UI thread, it publishes a value the UI thread reads next frame. That
-is the whole async story, and it is why nothing deadlocks.
-
-The frame that applies it must run on the thread that called `Run`. Create a mutation on the UI
-thread (a component's field, as above), and that is where its completion is queued and applied.
-
-A mutation owns one run at a time and remembers which one. If a result arrives after the component
-was disposed — the user navigated away while the request was in flight — it is dropped rather than
-applied into a page that no longer exists, and a run that has been superseded cannot clear the state
-of the newer one. `IsRunning` and `Error` are always current, so `Draw` never has to poll.
-
-### Work that reports as it goes
-
-A scan's file count, a download's bytes and a spectrum table filling in have no single result.
-`Progressive<T>` is the same shape as `Mutation` for those: the work runs on the pool and calls a
-`publish` callback whenever it has something new; `Draw` reads `Latest`.
-
-```csharp
-public sealed class DiskPage(DiskScanner scanner) : Component
-{
-    private readonly Progressive<ScanResult> _scan = new(scanner.ScanAsync) { FrameRate = 5 };
-
-    protected override void Draw(Ui ui)
+    protected override void Dispose(bool disposing)
     {
-        if (ui.Button("Scan", new() { Loading = _scan.IsRunning })) _scan.Run();
-        if (_scan.IsRunning && ui.Button("Cancel")) _scan.Cancel();
-
-        if (_scan.Latest is { } result) DrawScan(result);
-        if (_scan.Error is { } error) ui.Badge(error.Message, new() { Tone = Tone.Danger });
+        if (disposing) _import.Dispose();
+        base.Dispose(disposing);
     }
+
+    private static async Task ImportAsync(CancellationToken ct, Action<Progress> publish)
+    {
+        for (int done = 1; done <= 10; done++)
+        {
+            await Task.Delay(200, ct); // stand-in for importing one item
+            publish(new Progress(done));
+        }
+    }
+
+    private sealed record Progress(int Done);
 }
 ```
 
-When the work depends on an argument that changes at run time — another folder, another track —
-pass the work to `Run(work)` or `Restart(work, initial)` instead of the constructor.
+Publish immutable snapshots, or transfer ownership so the producer no longer mutates the data.
+Finish reporting before the worker task ends. `Latest` is one reference read, not a queue; read it
+once into a local if multiple controls need to agree. A new run starts with `null` unless you pass
+`initial`. `FrameRate` is the cadence this operation requests while active, not an FPS cap. `0`
+asks for every frame, `5` asks for a wake after about 200 ms; input, animation or other work can
+draw sooner. A worker finishing during a Windows timer wait can post a wake immediately; on other
+backends the already scheduled wake is the fallback.
 
-Every report writes one reference, which the frame reads without a lock or an allocation. A report
-that arrives between two frames is deliberately dropped: the frame wants the newest state, not a
-queue of every step, and a fast producer cannot make the frame do unbounded work. There is no
-per-report callback for the same reason; invoking one would put the producer's rate into frame cost.
-For the opposite case — every line of a log matters — use a `ConcurrentQueue` that `Draw` drains;
-that is a different problem.
+### Ownership and cancellation
 
-`T` is a class because publishing a reference is atomic. Wrap a small struct in a record class if
-that is what you have; boxing it per report would allocate on the producer and turn a cheap write
-into garbage.
-
-`Run` starts only when nothing is running, so a second click cannot restart a job by accident.
-`Restart` supersedes the current run — use it when the input changed, another track or another
-folder — and drops anything the old producer publishes afterwards; pass `initial` when the first
-frame should already show a seed snapshot before the pool thread reports. `Cancel` stops the active
-run and clears `Latest` and `Error` while keeping the instance reusable; `Dispose` cancels and drops
-the value when the owner goes away, exactly like `Mutation`. A cancellation caused by `Restart`,
-`Cancel` or `Dispose` is not an `Error`. Each run is a `Task.Run`, not a thread of its own, exactly
-like `Mutation`; a producer that needs a thread or a `Parallel.For` starts it inside its own work.
-
-`FrameRate` is how often the host wakes while the run is active: `0` (the default) draws at the
-window's own pace, which is what a visualizer or an animation wants; `10` or `5` is enough for a
-progress bar or a scan and leaves the CPU for the work. When the run completes, one more frame is
-owed so the final value is drawn before the window sleeps.
-
-Like `Mutation`, start it on the UI thread: the frame that starts the work is the frame that reads
-it.
+- **Construct** anywhere. The first `Run` or `Restart` binds the operation to the frame host
+  drawing right now. Start from a click or `OnInitialized()` there, not a constructor, a worker,
+  or an unconditional call on every draw. Capture any changing input before handing work to the
+  pool. Even the synchronous prefix of the work runs off the frame thread.
+- **`Run()`** starts only when idle. You can configure the delegate at construction or pass it
+  to `Run(work)`; an accepted delegate is remembered for retry. **`Restart()`** or
+  **`Restart(work)`** can replace work still in flight. Either way, starting a new run drops
+  any callback from the previous run that has not been applied yet.
+- **`Cancel()`** clears the result and error and drops pending apply; the same instance is reusable.
+  **`Dispose()`** does the same and prevents later starts. Call them on the owning thread, including
+  between frames and at shutdown. Cancellation is cooperative: these calls don't wait, and an
+  abandoned worker may still run but cannot affect the operation's state. Cancellation is not a
+  failure. Keep one operation per UI owner and dispose it when that owner goes away; disposing a
+  `Component` does not automatically dispose its fields.
+- **`Task` continuations are not UI events.** They have no frame-thread affinity. Do not touch
+  `Ui` or mutate UI-owned state from a worker, with or without `ConfigureAwait`. If the frame
+  completes a `TaskCompletionSource` that a worker awaits, use
+  `TaskCreationOptions.RunContinuationsAsynchronously` so the worker cannot resume inline in Draw.
+  Read `Latest` in Draw or use a mutation's `apply`.
 
 ## Testing a hosted app
 
-`TestApp` drives a component directly, without the host, which is what a UI test wants:
-
-```csharp
-using var app = TestApp.Start(new TodoPage(new FakeTodoService()), 800, 600);
-app.FindButton("Add").Click();
-Assert.Single(page.Todos);
-```
-
-A test that needs the real container builds the app and calls `Run` — but a headless process is
-usually simpler: `dotnet cui tree` against the app project drives it with its own services.
+`TestApp` drives a component directly, without DI or a window. Use a controllable worker (for
+example, one that awaits a test-owned `TaskCompletionSource`) and assert what the frame actually
+shows. Complete the worker, then use `WaitFor` to wait for a label/query, or `WaitReady` for a frame
+that calls `ui.MarkReady()`. `Frame()` forces a draw. `Settle()` is for animation, **not** for waiting
+for worker results. These tests don't prove a sleeping OS window wakes; check that separately in a
+real window. `dotnet cui` can drive the real startup and services when needed.
 
 ## Related
 
-- `docs/ARCHITECTURE.md` in the repository — decisions and the generator pipeline.
 - [SKILL.md](SKILL.md) — how to write pages.
 - [api/Options.md](api/Options.md) — every option struct.

@@ -1,5 +1,7 @@
 using System.Text.RegularExpressions;
 using CuiSharp.Tools;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace CuiSharp.Tests;
 
@@ -33,6 +35,24 @@ public class DocumentationDriftTests
 
         Assert.True(missing.Count == 0,
             "SKILL.md calls API that llms.txt does not list: " + string.Join(", ", missing));
+    }
+
+    [Theory]
+    [InlineData("One result")]
+    [InlineData("Progress snapshots")]
+    public void TheBackgroundWorkRecipesAreCompletePrograms(string heading)
+    {
+        string guide = Read("hosting.md");
+        Match example = Regex.Match(guide, $@"(?m)^### {Regex.Escape(heading)}\s+```csharp\r?\n(?<code>[\s\S]*?)^```\s*$");
+        Assert.True(example.Success, $"missing example: {heading}");
+
+        string assemblies = (string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!;
+        var references = assemblies.Split(Path.PathSeparator).Append(typeof(CuiApp).Assembly.Location)
+            .Distinct(StringComparer.OrdinalIgnoreCase).Select(path => MetadataReference.CreateFromFile(path));
+        var compilation = CSharpCompilation.Create("HostingRecipe",
+            [CSharpSyntaxTree.ParseText(example.Groups["code"].Value)], references,
+            new CSharpCompilationOptions(OutputKind.ConsoleApplication, nullableContextOptions: NullableContextOptions.Enable));
+        Assert.Empty(compilation.GetDiagnostics().Where(diagnostic => diagnostic.Severity >= DiagnosticSeverity.Warning));
     }
 
     /// <summary>

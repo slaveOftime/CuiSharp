@@ -4,6 +4,17 @@ Every user-visible change, newest first. Pre-1.0 the minor number carries new su
 carries fixes. The section for a tag is what the GitHub release publishes, so the two cannot say
 different things.
 
+## [Unreleased]
+
+- **One frame owner per background operation.** Start `Mutation` or `Progressive<T>` during
+  its window or surface's draw (a click or `OnInitialized`), not from a constructor. Other
+  surfaces no longer consume its result or redraw demand. Cancellation and replacement detach
+  immediately without running user cancellation callbacks in the frame. A throwing mutation
+  apply is reported in `Error` and headless `Faults` instead of interrupting the frame.
+- **Use `Latest` or `apply` instead of `Mutation<T>.TryPublish`.** The one-shot polling method
+  is removed. Analyzer CUI005 and its code fix are removed: `ConfigureAwait` does not move a
+  continuation onto CuiSharp's frame thread.
+
 ## [0.4.7] — 2026-11-22
 
 ### Changed

@@ -13,12 +13,12 @@ Start with [the Todo walkthrough](README.md#follow-one-interaction-add-a-todo): 
 - **The host owns frames.** A window gets frames for input. Call `ui.RequestRedraw()` during
   drawing when you need a follow-up frame, as Todo does after drawing the input. A rendered
   component uses `WantsFrames` while it is live or animating, not to subscribe to external events.
-- **External notifications are not animation.** Changing a field on a worker does not request a
-  frame. Use `Mutation<T>` for app-started background work with a UI-thread apply callback, or
-  `Progressive<T>` for snapshots while work runs. The host requests frames while such work is
-  pending; on Windows it can also post a wake to the window on completion. Do not assume arbitrary
-  external events wake a sleeping window across backends. `HeadlessApp.Frame()` forces a draw and
-  does not test that wake path. Never call `Ui` from a worker thread.
+- **Start background work from a click or `OnInitialized`, not from a constructor.** Use
+  `Mutation` / `Mutation<T>` for one outcome and `Progressive<T>` for live snapshots. The worker
+  returns data, not UI state changes. The owning host requests frames; read `Latest` in Draw or
+  use `apply` for a UI-thread update. Dispose page-owned operations in `Dispose(bool)`. For the
+  full contract, run `dotnet cui docs read hosting`. `Settle()` does not wait for workers; test
+  the result with `WaitFor` or `WaitReady`.
 
 ## Drawing and selectors
 

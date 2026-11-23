@@ -9,6 +9,7 @@ public unsafe ref partial struct Ui
     private readonly UiFrameState _frame;
 
     internal Ui(nint handle, UiFrameState frame) { Handle = handle; _frame = frame; }
+    internal UiFrameState FrameState => _frame;
 
     private byte* Arena(int bytes) => Utf8.AllocFrameBytes(bytes);
     private float* FloatBlock(ReadOnlySpan<float> values) => (float*)UiMarshal.Values<float>(values);

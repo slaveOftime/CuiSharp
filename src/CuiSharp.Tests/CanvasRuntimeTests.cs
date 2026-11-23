@@ -31,6 +31,7 @@ public class CanvasRuntimeTests
             paint.DrawRect(rect, Color.Accent);
         });
         first.EndFrame();
+        Assert.Same(second.Ui.FrameState, UiFrameState.Drawing);
         Assert.Equal(1, firstPaints);
         Assert.Equal(0, secondPaints);
         second.EndFrame();
@@ -38,6 +39,7 @@ public class CanvasRuntimeTests
         Assert.Equal(firstHandle, firstPaintHandle);
         Assert.Equal(secondHandle, secondPaintHandle);
         Assert.Null(UiFrameState.Painting);
+        Assert.Null(UiFrameState.Drawing);
 
         first.BeginFrame();
         first.EndFrame();

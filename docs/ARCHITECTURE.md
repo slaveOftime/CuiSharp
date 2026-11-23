@@ -37,7 +37,7 @@ src/CuiSharp/                 the library (package: CuiSharp)
   Hosting/                    builder, DI, Component, Mutation/Progressive, headless loop and app
   Charting/                   series decimation for long or live data
   CuiApp.cs, CuiSurface.cs    the window, and the same frames without one
-src/CuiSharp.Analyzers/       CUI001-CUI008, packed into CuiSharp at analyzers/dotnet/cs
+src/CuiSharp.Analyzers/       frame and AOT rules, packed into CuiSharp at analyzers/dotnet/cs
 src/CuiSharp.CodeFixes/       IDE-only fixes, packed beside the analyzers (no runtime dependency)
 src/CuiSharp.Testing/         TestApp: drive a component without a window
 src/CuiSharp.Tools/           dotnet cui: the docs and API offline, then build, run headless, relay one command
@@ -194,10 +194,7 @@ package. Workspaces belongs to the IDE and is unavailable to command-line compil
 it must never become an analyzer or runtime dependency. CUI002 adds `using`; conditional scopes
 also get a guard. CUI003 guards only the using statement's body, or the remainder of a using
 declaration's block. A rewrite that introduces a compiler error is not offered. Scope fix-all
-is deliberately unavailable until overlapping body edits can be applied sequentially. CUI005
-removes only an awaited BCL `Task`/`ValueTask.ConfigureAwait(bool)`, not a look-alike method, a
-configured awaitable stored in a local, or `ConfigureAwaitOptions` (which can suppress exceptions).
-CUI004 wraps a widget in an id scope on its actual receiver, and a using declaration together with
+is deliberately unavailable until overlapping body edits can be applied sequentially. CUI004 wraps a widget in an id scope on its actual receiver, and a using declaration together with
 its remaining children. It only chooses a foreach item or an integer counter incremented/decremented
 by the same for loop; nested loops, while/do loops and ambiguous keys require a manual rewrite.
 No fix-all is offered. Display-only text and calls addressing an existing id are not row collisions;
@@ -209,23 +206,18 @@ labels used to animate widgets (Gauge, Meter, ProgressRing) still need distinct 
 is what the OS modal loop also invokes while a window edge is dragged, which is why the window owns
 the loop: a managed `while` loop is blocked during the drag and the layout would go stale.
 
-Each frame, in order: `FrameBoundary.Enter()` (work that finished on a pool thread is applied on
-the UI thread, and the component frame flags are reset), `FrameStats.Begin()`, the root component
-renders, `FrameStats.End()`, then `FrameBoundary.Leave()` keeps the loop awake while a mutation or
-progressive run is in flight, an operation completed since the last frame, or a component reported
-`WantsFrames` — because a sleeping window cannot be woken by a pool thread. `Leave` spends the owed
-wake-up, so the loop can sleep again once nothing is outstanding. `CuiApp.Run`'s native frame
-callback invokes those two hooks around the draw callback, and the manual `CuiApp.Frame` loop and
-`CuiSurface` use the same contract, so a plain `CuiApp.Run` app, a `CuiApplication` and `dotnet cui`
-all behave alike.
+`UiFrameState.EnterDraw` marks the host currently drawing, resets its `WantsFrames` flag and
+applies a batch of its completed callbacks **before** application drawing and its timing sample.
+At the end the host schedules the next window frame, if needed. `CuiApp.Run`, the manual
+`CuiApp.Frame` loop, and `CuiSurface` use the same boundary. `CuiSurface` takes no wall-clock
+worker waits on frame exit: its caller decides when to drive it. `dotnet cui` readiness waits
+and tests using `WaitFor` or `WaitReady` drive real frames until they observe the expected state.
 
-`FrameBoundary` is the reason the boundary is not in `CuiApplication`: a hosted app is one draw
-callback among several, and the promise ("a `Mutation` apply callback runs in a plain app too") is
-about the host, not about the component composition root. It is installed, not called
-unconditionally: the first `Component`, `Mutation` or `Progressive` creates a small `FrameHooks`
-object, and `CuiApp` invokes a nullable delegate on it. An app that never constructs one of those
-keeps the null check and the trimmer drops the dispatcher, the queue and the component machinery —
-which is why the size floor does not move for a plain window.
+`FrameDispatcher` is created only when an operation first starts in that host. `UiFrameState`
+knows only its optional `IFrameWork` interface, so a plain window does not root the dispatcher
+or queues. The thread-static points at the draw in progress, not at a queue: two surfaces on the
+same thread never consume each other's work or wake signals. `Component.PendingOperations` is a
+process-wide diagnostic total only; redraw never reads it.
 
 `FrameStats` measures the frame that just drew, so a footer needs no clock of its own. `DrawMs` and
 `AllocatedBytes` cover the component's own draw — CUI's layout and paint happen after it — so
@@ -249,30 +241,25 @@ because a write to those would not be visible until the next rebuild.
 `CuiSurface` runs the same draw code with no window, driving frames by hand: that is what the
 tests, the benchmarks, the snapshots and `dotnet cui` use.
 
-There is no synchronization context and no `TimeProvider` today. `Mutation` applies its result
-through `Completions`, and that is the whole async story: continuations do not run on the UI thread,
-they hand a value over at the next frame boundary.
+**Worker execution is not UI-thread continuation.** There is no synchronization context. Both
+operation types share `OperationState`: the first start binds the operation to the active frame
+host. A distinct run object is the identity checked on every publish and apply. `Cancel`,
+`Restart` and `Dispose` retire that run immediately; `CancelAsync` runs user cancellation callbacks
+off the UI thread, and the token source lives until both work and callbacks are done. A window
+or surface that closes drops its redraw demand and queued applies; the app still owns operation
+disposal.
 
-`Progressive<T>` is the many-report sibling for work that has no single result. The producer runs on
-the pool and publishes a *reference* to its current snapshot; the frame reads `Latest` with one
-volatile load. Intermediate reports are dropped by design — a frame wants the newest state, not a
-queue whose length is set by the producer — and `T` is constrained to a class because publishing a
-reference is atomic while a struct would have to be boxed per report. It has no apply callback for
-the same reason: invoking one per report would move the producer's rate into frame cost, which is
-the problem the value slot exists to avoid. A run reports its `FrameRate` to `PendingWork`, so a
-scan can ask the loop for five frames a second while a visualizer keeps the full rate; a completion
-wakes an attached window immediately and gets an unthrottled frame so the final value is drawn once,
-while a cancelled or superseded run settles its count without claiming a completion frame. `Run` is
-re-entry-safe, `Restart` supersedes an older producer so its late publish cannot land in the new
-state, `Cancel` stops a run while keeping the instance reusable, and `Dispose` cancels and settles
-the run when the owner goes away.
+`Mutation<T>` stores its last successful result and can queue a one-time apply callback.
+Callback failures are recorded in the operation's `Error` and a surface's `Faults`, without
+interrupting other callbacks or drawing. `Progressive<T>` only publishes a snapshot reference;
+`Latest` costs one volatile read, with no queue or per-report apply. Both outcomes are visible
+without an apply; a mutation's worker can finish before its queued apply runs.
 
-That boundary belongs to one thread. `Completions` queues into a `FrameDispatcher`, found through a
-thread-static and captured when `Run` starts the work, so a frame applies only results queued by
-mutations started on its thread. This also handles components constructed by DI before the window
-loop starts. A process-wide queue — what this used to be — is applied by whichever surface draws
-first, which can run another thread's callback against the wrong UI and make that frame collect its
-allocations.
+The dispatcher publishes one redraw demand: idle, immediate (a completion or full-rate work),
+or the shortest active interval. A completion signal is consumed **at frame entry**, so there
+is no end-of-frame clear that can swallow a new completion. A Windows completion posts `WM_NULL`
+to its own window to interrupt the timer; other backends draw when the active frame's already
+scheduled wake expires. An abandoned run does not claim a completion frame.
 
 Hot reload rides the same sleep, and the runtime does report it. A type named by
 `[assembly: MetadataUpdateHandler]` is called `ClearCache` before a delta is applied and

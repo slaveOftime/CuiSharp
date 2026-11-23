@@ -66,7 +66,7 @@ using System.Text.Unicode;
 using CuiSharp;
 using CuiSharp.Hosting;
 
-var app = new FileApp(PickPaths(args));
+using var app = new FileApp(PickPaths(args));
 return CuiApp.Run(app.Options, app.Draw);
 
 /// Every argument, made absolute and de-duplicated. A path that is missing or
@@ -118,7 +118,7 @@ internal enum ViewMode
     Info,       // no preview: size, dates, format, and whatever the container tells us
 }
 
-internal sealed class FileApp
+internal sealed class FileApp : IDisposable
 {
     private const int CapMargin = 4096;
     private const string MarkdownScrollId = "md-scroll";
@@ -128,6 +128,7 @@ internal sealed class FileApp
     private readonly ImageTexture _viewer = new();
 
     private int _index;
+    private bool _started;
     private FileKind _kind;
     private ViewMode _mode;
     private ViewMode? _returnMode;      // where Back goes from the viewer
@@ -164,10 +165,10 @@ internal sealed class FileApp
     // The preview queues its own handles; the viewer holds one, released here.
     private bool _releaseViewer;
 
-    private Progressive<FileContent>? _load;
-    private Progressive<GitInfo>? _gitLoad;
-    private Progressive<string>? _headLoad;
-    private Progressive<CsvTable>? _tableLoad;
+    private Mutation<FileContent>? _load;
+    private Mutation<GitInfo>? _gitLoad;
+    private Mutation<string>? _headLoad;
+    private Mutation<CsvTable>? _tableLoad;
 
     public FileApp(string[] paths)
     {
@@ -183,8 +184,6 @@ internal sealed class FileApp
             Renderer = Renderer.Software,
         };
         Options.WindowCreated += OnWindowCreated;
-
-        if (paths.Length > 0) LoadFor(0);
     }
 
     public CuiAppOptions Options { get; }
@@ -192,8 +191,22 @@ internal sealed class FileApp
     /// The file on display, from the arguments.
     private string? _path => _paths.Length > 0 ? _paths[_index] : null;
 
+    public void Dispose()
+    {
+        _load?.Dispose();
+        _gitLoad?.Dispose();
+        _headLoad?.Dispose();
+        _tableLoad?.Dispose();
+    }
+
     public void Draw(Ui ui)
     {
+        if (!_started)
+        {
+            _started = true;
+            LoadFor(0);
+        }
+
         // Names outside the bundled faces draw nothing; install the OS faces
         // for CJK and friends once per context.
         ui.UseSystemFontFallbacks();
@@ -334,19 +347,9 @@ internal sealed class FileApp
         else _releaseViewer = true;
 
         var kind = _kind;
-        _load = new Progressive<FileContent>((token, publish) => LoadContentAsync(path, kind, token, publish));
+        _load = new Mutation<FileContent>(token => FileContent.LoadAsync(path, kind, token));
         _load.Run();
     }
-
-    private static async Task LoadContentAsync(
-        string path, FileKind kind, CancellationToken token, Action<FileContent> publish)
-        => publish(await FileContent.LoadAsync(path, kind, token));
-
-    private static async Task LoadHeadAsync(string path, CancellationToken token, Action<string> publish)
-        => publish(await Git.ReadHeadAsync(path, token) ?? string.Empty);
-
-    private static async Task LoadGitAsync(string path, CancellationToken token, Action<GitInfo> publish)
-        => publish(await Git.ReadAsync(path, token));
 
     private void PollLoad()
     {
@@ -429,11 +432,7 @@ internal sealed class FileApp
         if (_csv is not null || _tableLoad is not null || _tableFailed
             || _kind is not FileKind.Csv || _text is not { } text) return;
 
-        _tableLoad = new Progressive<CsvTable>((token, publish) =>
-        {
-            publish(CsvTable.Parse(text, token));
-            return Task.CompletedTask;
-        });
+        _tableLoad = new Mutation<CsvTable>(token => Task.FromResult(CsvTable.Parse(text, token)));
         _tableLoad.Run();
     }
 
@@ -505,7 +504,7 @@ internal sealed class FileApp
     {
         if (_head is not null || _headLoad is not null || _path is not { } path) return;
 
-        _headLoad = new Progressive<string>((token, publish) => LoadHeadAsync(path, token, publish));
+        _headLoad = new Mutation<string>(async token => await Git.ReadHeadAsync(path, token) ?? string.Empty);
         _headLoad.Run();
     }
 
@@ -514,7 +513,7 @@ internal sealed class FileApp
         if (_path is not { } path || _kind is FileKind.Image or FileKind.Video or FileKind.Binary) return;
 
         _gitLoad?.Dispose();
-        _gitLoad = new Progressive<GitInfo>((token, publish) => LoadGitAsync(path, token, publish));
+        _gitLoad = new Mutation<GitInfo>(token => Git.ReadAsync(path, token));
         _gitLoad.Run();
     }
 
