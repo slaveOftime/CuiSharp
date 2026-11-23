@@ -78,7 +78,7 @@ internal sealed class HotkeyApp : IDisposable
 
     private ShortcutInfo[] _shortcuts = [];
     private bool _scanStarted;
-    private volatile bool _scanning;
+    private bool _scanning;
 
     private CuiWindow? _window;
     private TrayIcon? _tray;
@@ -270,7 +270,7 @@ internal sealed class HotkeyApp : IDisposable
 
     private void DrawBindingList(Ui ui)
     {
-        using (ui.Column(new Box { Width = Size.Px(196), Height = Size.Fill, Gap = 6 }))
+        using (ui.Column(new Box { Width = Size.Px(220), Height = Size.Fill, Gap = 6 }))
         {
             using (ui.Row(new Box { Gap = 6, Align = Align.Center, Width = Size.Fill, PadX = 2 }))
             {
@@ -328,7 +328,7 @@ internal sealed class HotkeyApp : IDisposable
         Binding binding = _bindings[index];
         string status = _host.Status(index);
         string combo = KeyMap.Text(binding.Mods, (Key)binding.Key);
-        string target = binding.Command.Length > 0 ? Path.GetFileName(binding.Command) : "";
+        string target = Path.GetFileName(binding.Command);
         if (target.Length == 0) target = binding.Command;
 
         using (ui.Id(index))
@@ -348,8 +348,6 @@ internal sealed class HotkeyApp : IDisposable
                 using (ui.Row(new Box { Gap = 8, Align = Align.Center, Width = Size.Fill }))
                 {
                     ui.Label(binding.Name.Length > 0 ? binding.Name : "Untitled");
-                    if (binding.BuiltIn)
-                        ui.Badge("built-in", new BadgeOpts { Size = ControlSize.Sm, Tone = Tone.Info });
                     ui.Spacer();
                     ui.Kbd(combo);
                 }
@@ -555,7 +553,7 @@ internal sealed class HotkeyApp : IDisposable
         using (ui.Card(new Card { Pad = 12, Gap = 8, Width = Size.Fill }))
         {
             ui.Label("Quick launcher");
-            ui.Secondary("This hotkey opens a 300 × 400 window listing every available binding, " +
+            ui.Secondary("This hotkey opens a 380 × 340 window listing every available binding, " +
                          "ordered by when it was last used. Type to filter, use ↑ and ↓ to move, " +
                          "and press Enter to run the selected binding.");
             ui.Muted("Shift+Tab switches to the captured text, where file and folder paths can be " +
@@ -976,19 +974,27 @@ internal sealed class HotkeyApp : IDisposable
 
         _ = Task.Run(() =>
         {
+            ShortcutInfo[] shortcuts;
+            string? error = null;
             try
             {
-                _shortcuts = ShortcutStore.Scan().ToArray();
+                shortcuts = ShortcutStore.Scan().ToArray();
             }
-            catch (Exception error)
+            catch (Exception exception)
             {
-                _log.Add("Shortcuts", error.Message, false);
+                shortcuts = [];
+                error = exception.Message;
             }
-            finally
+
+            // Hand the result to the UI thread: the array a frame reads is never replaced from
+            // here, and the badge and the list change together on the next frame.
+            _uiActions.Enqueue(() =>
             {
+                _shortcuts = shortcuts;
                 _scanning = false;
-                Wake();
-            }
+                if (error is not null) _log.Add("Shortcuts", error, false);
+            });
+            Wake();
         });
     }
 
@@ -2572,7 +2578,6 @@ internal sealed class LauncherItem
     public required Binding Binding { get; init; }   // a clone; the launcher never edits the live model
     public required string Name { get; init; }
     public required string Combo { get; init; }
-    public required string Search { get; init; }
 }
 
 /// <summary>
@@ -2600,7 +2605,6 @@ internal sealed class LauncherBridge
                 Binding = b.Clone(),
                 Name = b.Name.Length > 0 ? b.Name : "Untitled",
                 Combo = combo,
-                Search = b.Name + "\n" + b.Command + "\n" + combo,
             });
         }
 
@@ -2630,6 +2634,11 @@ internal sealed class LauncherBridge
 
 internal sealed class LauncherWindow : IDisposable
 {
+    // Matches Win32.ColorKey: the theme background the window is keyed out against.
+    private static readonly Color TransparentKey = Color.Rgb(0x0B0B0B);
+
+    private const string EditCommand = "Edit captured text";
+
     private readonly LauncherBridge _bridge;
     private readonly ActivityLog _log;
     private readonly Thread _thread;
@@ -2646,19 +2655,26 @@ internal sealed class LauncherWindow : IDisposable
 
     // Handed from the hotkey thread to the launcher thread under _gate. Draw copies them into
     // locals, then writes them back at the end of the frame.
-    private string _filter = "";
     private string _payloadText = "";
     private bool _hadFiles;
-    private int _selected;
     private int _generation;
-    private LauncherView _view = LauncherView.List;
+    private LauncherView _view = LauncherView.Palette;
 
-    private enum LauncherView { List, Edit }
+    private enum LauncherView { Palette, Edit }
 
-    // Cached filtering: a visible launcher does not re-scan the snapshot on every frame.
-    private readonly List<LauncherItem> _visible = new();
-    private LauncherItem[] _builtItems = [];
-    private string _builtFilter = "";
+    // The launcher owns the search and the selection. The snapshot is re-read only when the
+    // bridge publishes a new array; the filter order and scores are reused frame to frame.
+    private LauncherItem[] _items = [];
+    private int[] _order = [];
+    private int[] _scores = [];
+    private string _query = "";
+    private int _highlight;
+    private int _drawnGeneration = -1;
+    private int _viewEpoch;
+
+    // Tab never reaches KeyPressed: CUI spends it on focus traversal first. Watching the
+    // physical key gives one edge per press, so Shift+Tab switches view exactly once.
+    private bool _tabHeld;
 
     public LauncherWindow(LauncherBridge bridge, ActivityLog log)
     {
@@ -2701,9 +2717,9 @@ internal sealed class LauncherWindow : IDisposable
             // Clear the previous capture now; Complete fills in the real text a moment later.
             _payloadText = "";
             _hadFiles = false;
-            _filter = "";
-            _selected = 0;
-            _view = LauncherView.List;
+            _view = LauncherView.Palette;
+
+            // A new generation gives the search box and the text area fresh state.
             _generation++;
             _previousForeground = Win32.GetForegroundWindow();
             _armed = false;
@@ -2796,7 +2812,7 @@ internal sealed class LauncherWindow : IDisposable
     {
         Title = "Quick launcher",
         Width = 380,
-        Height = 400,
+        Height = 340,   // the palette panel is ~262 high plus its top offset
         MinWidth = 240,
         MinHeight = 240,
         Theme = Theme.Dark,
@@ -2812,21 +2828,26 @@ internal sealed class LauncherWindow : IDisposable
 
         // Watch WM_KILLFOCUS so clicking another window dismisses the launcher.
         _hook = new WindowProcedure(_hwnd, OnMessage);
-        RemoveSystemChrome(_hwnd);
+        ApplyLauncherStyle(_hwnd);
 
         _ready.Set();
     }
 
     /// <summary>
-    /// Drops the OS caption, system menu and resize border: the frame draws its own header and
-    /// close button, so a second title bar would only be noise.
+    /// Makes the window a borderless, transparent canvas: the palette draws its own panel, so the
+    /// black framebuffer around it must not show as a rectangle over the desktop.
     /// </summary>
-    private static void RemoveSystemChrome(nint hwnd)
+    private static void ApplyLauncherStyle(nint hwnd)
     {
         int style = Win32.GetWindowLong(hwnd, WindowLong.Style);
-        style = (style & ~(int)(WindowStyle.Caption | WindowStyle.ThickFrame | WindowStyle.SysMenu))
-                | (int)WindowStyle.Border;
+        style &= ~(int)(WindowStyle.Border | WindowStyle.Caption
+                        | WindowStyle.ThickFrame | WindowStyle.SysMenu);
         Win32.SetWindowLongPtr(hwnd, WindowLong.Style, style);
+
+        int exStyle = Win32.GetWindowLong(hwnd, WindowLong.ExStyle);
+        Win32.SetWindowLongPtr(hwnd, WindowLong.ExStyle, exStyle | Win32.WsExLayered);
+        Win32.SetLayeredWindowAttributes(hwnd, Win32.ColorKey, 0, Win32.LwaColorKey);
+
         Win32.SetWindowPos(hwnd, 0, 0, 0, 0, 0,
             SetWindowPosFlags.NoSize | SetWindowPosFlags.NoMove
             | SetWindowPosFlags.NoZOrder | SetWindowPosFlags.FrameChanged);
@@ -2836,145 +2857,385 @@ internal sealed class LauncherWindow : IDisposable
     {
         ui.UseSystemFontFallbacks();
 
-        // Softer corners and a slightly taller control scale make this small window feel like a
-        // modern launcher rather than a compact form. Tokens live in the theme, not at call sites.
+        // The launcher retunes the shared theme for its small window: square panel and spotlight
+        // corners, the manager's control scale, and motion on for the spotlight beam.
         ThemeStyle style = ui.Style;
         style.RadiusControl = 8;
-        style.RadiusPanel = 10;
+        style.RadiusPanel = 0;
         style.RadiusSurface = 12;
         style.ControlMd = 34;
         style.ControlSm = 28;
+        style.Motion = 1;
 
-        string filter;
+        // The selected row takes a hint of the accent, so the palette reads as one piece; the
+        // stock neutral overlay would leave it looking like just another grey.
+        style[Token.Active] = Color.Rgb(0x2E2A3C);
+
+        // The palette shows focus through the highlighted row and the flat fields, so a ring
+        // drawn around whichever control has the keyboard is noise rather than a cue.
+        style[Token.FocusRing] = Color.Transparent;
+
+        // The spotlight paints a SURFACE background; key it out so only its glow and border show.
+        // The token is restored as soon as the card begins, before the panel and its text area draw.
+        Color surface = style[Token.Surface];
+        style[Token.Background] = TransparentKey;
+
+        LauncherView view;
         string payloadText;
-        int generation;
-        int selected;
-        int view;
         bool hadFiles;
+        int generation;
         lock (_gate)
         {
-            filter = _filter;
+            view = _view;
             payloadText = _payloadText;
-            generation = _generation;
-            selected = _selected;
-            view = (int)_view;
             hadFiles = _hadFiles;
+            generation = _generation;
         }
 
-        RefreshVisible(filter);
-
-        selected = Math.Clamp(selected, 0, Math.Max(0, _visible.Count - 1));
-
-        // Read keys before a widget can consume them. Navigation belongs to the launcher, not to
-        // the filter field or the text area that happens to hold the focus.
-        HandleKeys(ui, payloadText, ref selected, ref view);
-
-        // A fresh id per open and per view gives the focused field AutoFocus, so typing starts in
-        // the filter each time the hotkey fires and again when returning from the text area.
-        using (ui.Id(generation * 2 + view))
-        using (ui.Column(new Box { Width = Size.Fill, Height = Size.Fill, Gap = 0 }))
+        // A hotkey press starts a fresh search and selection.
+        if (generation != _drawnGeneration)
         {
-            DrawHeader(ui, view);
-
-            if (view == (int)LauncherView.Edit) DrawEdit(ui, ref payloadText, hadFiles);
-            else DrawList(ui, ref filter, ref selected, payloadText);
-
-            DrawFooter(ui, view);
+            _drawnGeneration = generation;
+            _query = "";
+            _highlight = 0;
+            _tabHeld = false;
         }
+
+        bool tabDown = ui.KeyDown(Key.Tab);
+        bool tabPressed = tabDown && !_tabHeld;
+        _tabHeld = tabDown;
+        bool shift = (ui.Modifiers & Mods.Shift) != 0;
+
+        bool close = false;
+        string triggeredId = "";
+        bool editRequested = false;
+        bool returningToPalette = false;
+
+        // The launcher window is the palette: one spotlight and one panel fill it with a 1 point
+        // inset. Both views share that box, so switching between them moves nothing.
+        using (ui.Box(new Box { Bg = TransparentKey, Width = Size.Fill, Height = Size.Fill }))
+        {
+            // Read Enter, Esc and the view switch before a field or the text area can consume them.
+            if (view == LauncherView.Edit)
+            {
+                if (ui.KeyPressed(Key.Escape)) close = true;
+                else if (ui.KeyPressed(Key.Enter) || (tabPressed && !shift))
+                {
+                    view = LauncherView.Palette;
+                    returningToPalette = true;
+                }
+            }
+            else if (ui.KeyPressed(Key.Escape))
+            {
+                close = true;
+            }
+            else if (tabPressed && shift)
+            {
+                editRequested = true;
+            }
+
+            if (!close)
+            {
+                style[Token.Surface] = TransparentKey;
+
+                using (ui.Spotlight("launcher-spotlight", new SpotlightOpts
+                {
+                    Width = Size.Fill,
+                    Height = Size.Fill,
+                    Pad = 1,
+                    Beam = true,
+                    Color = Color.Accent,
+                }))
+                {
+                    style[Token.Surface] = surface;
+
+                    using (ui.Column(new Box
+                    {
+                        Width = Size.Fill,
+                        Height = Size.Fill,
+                        Bg = Color.SurfaceRaised,
+                        Border = 1,
+                        BorderColor = Color.Border,
+                        Radius = 0,
+                        Clip = true,
+                    }))
+                    using (ui.Id(generation * 8 + _viewEpoch))
+                    {
+                        if (view == LauncherView.Edit)
+                        {
+                            DrawEditHeader(ui, hadFiles);
+                            DrawSeparator(ui);
+                            DrawEditBody(ui, ref payloadText);
+                            DrawSeparator(ui);
+                            DrawEditFooter(ui);
+                        }
+                        else
+                        {
+                            // The Enter that left the editor must not also select a row on the
+                            // first palette frame, or the two views would bounce.
+                            DrawPalette(ui, ref triggeredId, ref editRequested,
+                                acceptEnter: !returningToPalette);
+                        }
+                    }
+                }
+            }
+
+            // Leave a keyed framebuffer behind, so the next Show does not flash the last panel.
+            if (close || triggeredId.Length > 0)
+            {
+                using (ui.Box(new Box { Width = Size.Fill, Height = Size.Fill, Bg = TransparentKey }))
+                { }
+            }
+        }
+
+        if (editRequested) view = LauncherView.Edit;
 
         lock (_gate)
         {
-            _filter = filter;
+            if (view != _view) _viewEpoch++;
+            _view = view;
             _payloadText = payloadText;
-            _selected = selected;
-            _view = (LauncherView)view;
+        }
+
+        if (triggeredId.Length > 0)
+        {
+            Trigger(triggeredId, payloadText);
+            Close(restoreFocus: false);
+        }
+        else if (close)
+        {
+            Close(restoreFocus: true);
         }
     }
 
-    private void HandleKeys(Ui ui, string payloadText, ref int selected, ref int view)
+    /// <summary>Search field, filtered rows and key hints: the launcher's default view.</summary>
+    private void DrawPalette(Ui ui, ref string triggeredId, ref bool editRequested, bool acceptEnter)
     {
         bool up = ui.KeyPressed(Key.Up);
         bool down = ui.KeyPressed(Key.Down);
-        bool tab = ui.KeyPressed(Key.Tab);
-        bool shiftTab = tab && (ui.Modifiers & Mods.Shift) != 0;
-        bool enter = ui.KeyPressed(Key.Enter);
+        bool enter = acceptEnter && ui.KeyPressed(Key.Enter);
 
-        if (ui.KeyPressed(Key.Escape))
+        using (ui.Box(new Box { Width = Size.Fill, PadX = 10, PadY = 8 }))
         {
-            Close(restoreFocus: true);
-            return;
+            // The focused field's border mixes toward the accent, and its caret and selection use
+            // that same token. Point the accent at the resting border colour for this one call, so
+            // focus adds no glowing outline; the rest of the launcher keeps its violet accent.
+            ThemeStyle style = ui.Style;
+            Color accent = style[Token.Accent];
+            style[Token.Accent] = style[Token.BorderStrong];
+
+            InputResult result = ui.Input("query", ref _query, new InputOpts
+            {
+                AutoFocus = true,
+                Width = Size.Fill,
+                Size = ControlSize.Lg,
+                Placeholder = "Type a command or search",
+                Icon = Icons.Search,
+                Clearable = true,
+            });
+
+            style[Token.Accent] = accent;
+            if (result.Changed) _highlight = 0;
         }
 
-        if (view == (int)LauncherView.Edit)
+        DrawSeparator(ui);
+
+        int count = Filter();
+        bool hasEdit = Fuzzy(EditCommand, _query) >= 0;
+        int total = count + (hasEdit ? 1 : 0);
+
+        if (total == 0) _highlight = 0;
+        else
         {
-            // Enter in the text area goes back to the filter and list; a second Enter runs the
-            // selected binding. Tab (without Shift) steps back the same way.
-            if (enter || (tab && !shiftTab)) view = (int)LauncherView.List;
-            return;
+            if (up) _highlight = (_highlight + total - 1) % total;
+            if (down) _highlight = (_highlight + 1) % total;
+            if (_highlight >= total) _highlight = total - 1;
         }
 
-        if (shiftTab)
+        bool chosen = false;
+        using (ui.Scroll(new ScrollOpts
         {
-            view = (int)LauncherView.Edit;
-            return;
+            Id = "rows",
+            Height = Size.Fill,
+            Pad = 4,
+            Gap = 2,
+        }))
+        {
+            if (total == 0)
+            {
+                using (ui.Box(new Box { Width = Size.Fill, Pad = 28, Align = Align.Center }))
+                    ui.Muted("No results found");
+            }
+
+            for (int j = 0; j < count; j++)
+            {
+                LauncherItem item = _items[_order[j]];
+                using (ui.Id(_order[j]))
+                {
+                    if (ui.ListItem(item.Name, new ListItemOpts
+                    {
+                        Icon = Icons.Terminal,
+                        Trailing = item.Combo,
+                        Selected = j == _highlight,
+                    }))
+                    {
+                        _highlight = j;
+                        triggeredId = item.Id;
+                        chosen = true;
+                    }
+                }
+            }
+
+            if (hasEdit)
+            {
+                using (ui.Id("edit-captured-text"))
+                {
+                    if (ui.ListItem(EditCommand, new ListItemOpts
+                    {
+                        Icon = Icons.Pencil,
+                        Trailing = "Shift+Tab",
+                        Selected = count == _highlight,
+                    }))
+                    {
+                        _highlight = count;
+                        editRequested = true;
+                        chosen = true;
+                    }
+                }
+            }
         }
 
-        if (up) selected = Math.Max(0, selected - 1);
-        if (down) selected = Math.Min(_visible.Count - 1, selected + 1);
-        if (enter && _visible.Count > 0)
+        if (enter && !chosen && total > 0)
         {
-            Trigger(_visible[selected].Id, payloadText);
-            Close(restoreFocus: false);
+            if (_highlight < count) triggeredId = _items[_order[_highlight]].Id;
+            else editRequested = true;
         }
+
+        DrawSeparator(ui);
+        DrawPaletteFooter(ui);
     }
 
-    private void RefreshVisible(string filter)
+    /// <summary>Takes the newest MRU snapshot and resizes the filter arrays to match it.</summary>
+    private void RefreshItems()
     {
         LauncherItem[] items = _bridge.Items;
-        if (ReferenceEquals(items, _builtItems) && filter == _builtFilter) return;
+        if (ReferenceEquals(items, _items)) return;
 
-        _builtItems = items;
-        _builtFilter = filter;
-        _visible.Clear();
-
-        string needle = filter.Trim();
-        foreach (LauncherItem item in items)
-        {
-            if (needle.Length > 0 && item.Search.IndexOf(needle, StringComparison.OrdinalIgnoreCase) < 0)
-                continue;
-            _visible.Add(item);
-        }
+        _items = items;
+        _order = new int[items.Length];
+        _scores = new int[items.Length];
     }
 
-    private void DrawHeader(Ui ui, int view)
+    /// <summary>
+    /// Applies the fuzzy search to the MRU snapshot. Order and scores live in preallocated arrays,
+    /// so a steady-state frame does not allocate.
+    /// </summary>
+    private int Filter()
     {
-        using (ui.Row(new Box { PadX = 14, PadY = 10, Gap = 9, Align = Align.Center, Width = Size.Fill }))
+        RefreshItems();
+
+        int count = 0;
+        for (int i = 0; i < _items.Length; i++)
         {
-            ui.Text(Icons.Command, new TextOpts(15, Color.Accent));
-            ui.Text(view == (int)LauncherView.Edit ? "Edit captured text" : "Quick launcher",
-                new TextOpts(14, Color.Foreground));
-            ui.Spacer();
-            if (view == (int)LauncherView.List)
-                ui.Badge(_visible.Count.ToString(), new BadgeOpts { Size = ControlSize.Sm, Tone = Tone.Neutral });
-            if (ui.IconButton(Icons.X, new ButtonOpts
+            int score = Fuzzy(_items[i].Name, _query);
+            if (score < 0) continue;
+            _order[count] = i;
+            _scores[count] = score;
+            count++;
+        }
+
+        // Best match first, keeping the MRU order on ties, like the built-in palette.
+        if (_query.Length > 0)
+        {
+            for (int a = 1; a < count; a++)
             {
-                Size = ControlSize.Sm,
-                Variant = ButtonVariant.Ghost,
-                Tooltip = "Close (Esc)",
-            }))
-                Close(restoreFocus: true);
+                int order = _order[a];
+                int score = _scores[a];
+                int b = a - 1;
+                while (b >= 0 && _scores[b] < score)
+                {
+                    _order[b + 1] = _order[b];
+                    _scores[b + 1] = _scores[b];
+                    b--;
+                }
+                _order[b + 1] = order;
+                _scores[b + 1] = score;
+            }
         }
-        ui.Separator();
+
+        return count;
     }
 
-    private void DrawEdit(Ui ui, ref string payloadText, bool hadFiles)
+    /// <summary>
+    /// Subsequence match with the built-in palette's score: word starts and runs score higher.
+    /// Returns -1 when the query does not match.
+    /// </summary>
+    private static int Fuzzy(string text, string query)
     {
-        using (ui.Column(new Box { Width = Size.Fill, Height = Size.Fill, PadX = 14, PadTop = 14, Gap = 8 }))
+        if (query.Length == 0) return 1;
+
+        int score = 0;
+        int run = 0;
+        int t = 0;
+        foreach (char raw in query)
         {
-            ui.Text(hadFiles ? Icons.Grid3x3 : Icons.Pencil, new TextOpts(20, Color.Accent));
-            ui.Secondary(hadFiles
-                ? "One file or folder path per line."
-                : "Selected text, or the clipboard as it stands.");
+            char q = char.ToLowerInvariant(raw);
+            if (q == ' ') continue;
+
+            bool found = false;
+            while (t < text.Length)
+            {
+                char c = char.ToLowerInvariant(text[t]);
+                bool wordStart = t == 0 || text[t - 1] == ' ';
+                t++;
+                if (c == q)
+                {
+                    found = true;
+                    run++;
+                    score += 1 + run + (wordStart ? 3 : 0);
+                    break;
+                }
+                run = 0;
+            }
+
+            if (!found) return -1;
+        }
+
+        return score;
+    }
+
+    private static void DrawEditHeader(Ui ui, bool hadFiles)
+    {
+        using (ui.Row(new Box
+        {
+            Width = Size.Fill,
+            Height = Size.Px(60),
+            PadX = 14,
+            Gap = 10,
+            Align = Align.Center,
+        }))
+        {
+            ui.Text(hadFiles ? Icons.Grid3x3 : Icons.Pencil, new TextOpts(18, Color.Accent));
+            using (ui.Column(new Box { Gap = 1 }))
+            {
+                ui.Text("Edit captured text", new TextOpts(15, Color.Foreground));
+                ui.Muted(hadFiles
+                    ? "One file or folder path per line."
+                    : "Selected text, or the clipboard as it stands.");
+            }
+        }
+    }
+
+    private static void DrawEditBody(Ui ui, ref string payloadText)
+    {
+        using (ui.Box(new Box { Width = Size.Fill, Height = Size.Fill, Pad = 12 }))
+        {
+            // Same flat field as the search box: the accent would otherwise outline the area
+            // whenever it holds the keyboard.
+            ThemeStyle style = ui.Style;
+            Color accent = style[Token.Accent];
+            style[Token.Accent] = style[Token.BorderStrong];
+
             ui.TextArea("payload", ref payloadText, new InputOpts
             {
                 AutoFocus = true,
@@ -2982,110 +3243,59 @@ internal sealed class LauncherWindow : IDisposable
                 Height = -1,
                 Placeholder = "Nothing captured",
             });
+
+            style[Token.Accent] = accent;
         }
     }
 
-    private void DrawList(Ui ui, ref string filter, ref int selected, string payloadText)
+    private static void DrawPaletteFooter(Ui ui)
     {
-        using (ui.Box(new Box { PadX = 12, PadTop = 11, PadBottom = 4 }))
-            ui.Input("filter", ref filter, new InputOpts
-            {
-                AutoFocus = true,
-                Width = Size.Fill,
-                Placeholder = "Filter bindings…",
-                Icon = Icons.Search,
-                Clearable = true,
-            });
-
-        using (ui.Scroll(new ScrollOpts { Height = Size.Fill, Gap = 6, Pad = 12, FadeEdges = true }))
-        {
-            if (_visible.Count == 0)
-            {
-                DrawEmptyList(ui, filter);
-                return;
-            }
-
-            for (int i = 0; i < _visible.Count; i++)
-            {
-                LauncherItem item = _visible[i];
-                bool clicked;
-                using (ui.Id(i))
-                using (ui.Row(new Box { Width = Size.Fill, Gap = 0, Align = Align.Stretch }))
-                {
-                    if (i == selected)
-                        using (ui.Box(new Box { Width = Size.Px(3), Bg = Color.Accent, Radius = 2 })) { }
-
-                    using (ui.Card(new Card
-                    {
-                        PadX = 12,
-                        PadY = 9,
-                        Gap = 5,
-                        Width = Size.Grow(1),
-                        Hoverable = true,
-                        Selected = i == selected,
-                    }, out clicked))
-                    {
-                        using (ui.Row(new Box { Gap = 8, Align = Align.Center, Width = Size.Fill }))
-                        {
-                            ui.Text(Icons.Terminal, new TextOpts(13,
-                                i == selected ? Color.Accent : Color.TextMuted));
-                            ui.Label(item.Name);
-                            ui.Spacer();
-                            ui.Kbd(item.Combo);
-                        }
-                        ui.Text(item.Binding.Command.Length > 0 ? item.Binding.Command : "no command",
-                            new TextOpts(12, Color.TextMuted) { NoWrap = true });
-                    }
-                }
-
-                if (clicked)
-                {
-                    selected = i;
-                    Trigger(item.Id, payloadText);
-                    Close(restoreFocus: false);
-                }
-            }
-        }
-    }
-
-    private static void DrawEmptyList(Ui ui, string filter)
-    {
-        using (ui.Column(new Box
+        using (ui.Row(new Box
         {
             Width = Size.Fill,
-            Height = Size.Fill,
-            Justify = Justify.Center,
-            Align = Align.Center,
-            Gap = 10,
+            PadX = 14,
+            PadY = 10,
+            Gap = 16,
+            Wrap = true,
+            Bg = Color.SurfaceMuted,
         }))
         {
-            ui.Text(Icons.Search, new TextOpts(28, Color.TextMuted));
-            ui.Muted(filter.Length > 0 ? "No matching bindings" : "No available bindings");
+            Hint(ui, "↑ ↓", "navigate");
+            Hint(ui, "Enter", "select");
+            Hint(ui, "Esc", "close");
         }
     }
 
-    private static void DrawFooter(Ui ui, int view)
+    private static void DrawEditFooter(Ui ui)
     {
-        ui.Separator();
-        using (ui.Row(new Box { PadX = 12, PadY = 8, Gap = 5, Align = Align.Center, Width = Size.Fill, Wrap = true }))
+        using (ui.Row(new Box
         {
-            if (view == (int)LauncherView.Edit)
-            {
-                ui.Kbd("Enter"); ui.Muted("back");
-                ui.Gap(4);
-                ui.Kbd("Esc"); ui.Muted("close");
-            }
-            else
-            {
-                ui.Kbd("↑↓"); ui.Muted("select");
-                ui.Gap(4);
-                ui.Kbd("Enter"); ui.Muted("run");
-                ui.Gap(4);
-                ui.Kbd("Shift+Tab"); ui.Muted("edit");
-                ui.Gap(4);
-                ui.Kbd("Esc"); ui.Muted("close");
-            }
+            Width = Size.Fill,
+            PadX = 14,
+            PadY = 10,
+            Gap = 16,
+            Wrap = true,
+            Bg = Color.SurfaceMuted,
+        }))
+        {
+            Hint(ui, "Enter", "back");
+            Hint(ui, "Esc", "close");
         }
+    }
+
+    private static void Hint(Ui ui, string key, string label)
+    {
+        using (ui.Row(new Box { Gap = 6, Align = Align.Center }))
+        {
+            ui.Kbd(key);
+            ui.Muted(label);
+        }
+    }
+
+    private static void DrawSeparator(Ui ui)
+    {
+        using (ui.Box(new Box { Width = Size.Fill, Height = Size.Px(1), Bg = Color.Border }))
+        { }
     }
 
     private void Trigger(string id, string text)
@@ -3113,6 +3323,8 @@ internal sealed class LauncherWindow : IDisposable
     private void Close(bool restoreFocus)
     {
         _armed = false;
+        lock (_gate) _view = LauncherView.Palette;
+
         nint hwnd = _hwnd;
         if (hwnd == 0) return;
         Win32.ShowWindow(hwnd, ShowWindowCommand.Hide);
@@ -3172,6 +3384,7 @@ internal enum WindowLong
 {
     WndProc = -4,
     Style = -16,
+    ExStyle = -20,
 }
 
 internal enum ClipboardFormat : uint
@@ -3208,6 +3421,15 @@ internal static class Win32
     internal const nint WmKeyUp = 0x0101;
     internal const nint WmSysKeyDown = 0x0104;
     internal const nint WmSysKeyUp = 0x0105;
+
+    // ---- layered launcher window -----------------------------------------
+
+    internal const int WsExLayered = 0x80000;
+    internal const uint LwaColorKey = 0x1;
+
+    // The dark theme's Background token (#1F1F1F) under the palette's 70% scrim lands on #0B0B0B.
+    // Keying that colour out leaves only the palette panel on the desktop.
+    internal const uint ColorKey = 0x0B0B0B;
 
     // ---- hook and input ---------------------------------------------------
 
@@ -3485,6 +3707,9 @@ internal static class Win32
 
     [DllImport("user32.dll")]
     internal static extern int IsIconic(nint hWnd);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern bool SetLayeredWindowAttributes(nint hWnd, uint colorKey, byte alpha, uint flags);
 
     // ---- tray icon and menus ---------------------------------------------
 
