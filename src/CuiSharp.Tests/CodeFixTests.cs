@@ -74,53 +74,6 @@ public sealed class CodeFixTests
         await FixAsync(source, "CUI002");
     }
 
-    [Theory]
-    [InlineData("Task.FromResult(7)")]
-    [InlineData("new ValueTask<int>(7)")]
-    public async Task RemovingConfigureAwaitKeepsTheAwaitedResult(string task)
-    {
-        string source = Prologue + "public sealed class Probe : Component { protected override void Draw(Ui ui) {} " +
-            "public async Task<int> LoadAsync() => await " + task + ".ConfigureAwait(false); }";
-        var fixedCompilation = await FixAsync(source, "CUI005");
-        Type probe = Emit(fixedCompilation).GetType("Probe")!;
-        var instance = Activator.CreateInstance(probe);
-        var work = (Task<int>)probe.GetMethod("LoadAsync")!.Invoke(instance, null)!;
-        Assert.Equal(7, await work);
-    }
-
-    [Fact]
-    public async Task ALookalikeConfigureAwaitIsNotRewritten()
-    {
-        string source = Prologue + "public sealed class Probe : Component { protected override void Draw(Ui ui) {} " +
-            "public Task<int> ConfigureAwait(bool flag) => Task.FromResult(flag ? 1 : 2); " +
-            "public async Task<int> LoadAsync() => await this.ConfigureAwait(false); }";
-        using var workspace = new AdhocWorkspace();
-        Document document = DocumentFor(workspace, source);
-        var diagnostic = Assert.Single((await AnalyzeAsync(document)).Where(d => d.Id == "CUI005"));
-        var actions = new List<CodeAction>();
-        await new ConfigureAwaitCodeFixProvider().RegisterCodeFixesAsync(
-            new CodeFixContext(document, diagnostic, (action, _) => actions.Add(action), CancellationToken.None));
-        Assert.Empty(actions);
-    }
-
-    [Theory]
-    [InlineData("ConfigureAwaitOptions.SuppressThrowing")]
-    [InlineData("ConfigureAwaitOptions.ForceYielding")]
-    public async Task ConfigureAwaitOptionsAreNotRemoved(string options)
-    {
-        string source = Prologue + "public sealed class Probe : Component { protected override void Draw(Ui ui) {} " +
-            "public async Task LoadAsync() => await Task.CompletedTask.ConfigureAwait(" + options + "); }";
-        using var workspace = new AdhocWorkspace();
-        Document document = DocumentFor(workspace, source);
-        var compilation = (await document.Project.GetCompilationAsync())!;
-        Assert.Empty(compilation.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error));
-        var diagnostic = Assert.Single(await AnalyzeAsync(document), d => d.Id == "CUI005");
-        var actions = new List<CodeAction>();
-        await new ConfigureAwaitCodeFixProvider().RegisterCodeFixesAsync(
-            new CodeFixContext(document, diagnostic, (action, _) => actions.Add(action), CancellationToken.None));
-        Assert.Empty(actions);
-    }
-
     [Fact]
     public async Task AGuardThatWouldRemoveTheOnlyReturnIsNotOffered()
     {
@@ -253,7 +206,6 @@ public sealed class CodeFixTests
         CodeFixProvider provider = id switch
         {
             "CUI004" => new WidgetIdCodeFixProvider(),
-            "CUI005" => new ConfigureAwaitCodeFixProvider(),
             _ => new ScopeCodeFixProvider(),
         };
         var actions = new List<CodeAction>();
@@ -265,7 +217,7 @@ public sealed class CodeFixTests
         fixedDocument = await Formatter.FormatAsync(fixedDocument);
         var fixedCompilation = (CSharpCompilation)(await fixedDocument.Project.GetCompilationAsync())!;
         Assert.Empty(fixedCompilation.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error));
-        Assert.DoesNotContain(await AnalyzeAsync(fixedDocument), d => d.Id is "CUI002" or "CUI003" or "CUI004" or "CUI005");
+        Assert.DoesNotContain(await AnalyzeAsync(fixedDocument), d => d.Id is "CUI002" or "CUI003" or "CUI004");
         return fixedCompilation;
     }
 

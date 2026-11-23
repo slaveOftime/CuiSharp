@@ -175,8 +175,7 @@ public class PageInteractionTests
 
         var pixels = new byte[surface.PixelWidth * surface.PixelHeight * 4];
 
-        mutation.Run();
-        surface.Draw(_ => { }, pixels);
+        surface.Draw(_ => mutation.Run(), pixels);
 
         Assert.True(mutation.IsRunning);
         Assert.Equal(-1, applied);

@@ -66,8 +66,8 @@ return CuiApp.Run(new CuiAppOptions { Title = "Notes", Width = 900, Height = 600
 ```
 
 `CuiApp.Run` creates the window, owns the message loop and calls the lambda once per frame until
-the window closes. An idle window uses no CPU. For DI, pages and async work, run a hosted app
-instead:
+the window closes. An idle window uses no CPU. For pages and dependency injection, use
+`CuiApplication`. Background operations also work without DI:
 
 ```csharp
 var builder = CuiApplication.CreateBuilder(args);
@@ -379,7 +379,7 @@ million-sample feed holds 144 fps with 0 B of managed allocation per frame.
 | The UI freezes on a button press | something blocked in the frame | no `.Result`, `.Wait()`, `Thread.Sleep` in `Draw` (CUI001) |
 | The window freezes when a file button is pressed | an OS file dialog ran inside `Draw` | call `window.PickFile` from a click and let that frame pause, or use `ui.FilePicker` inside the frame |
 | Frame rate sags | allocation per frame: LINQ, `new`, string concat | interpolate into a widget; hoist arrays with `static readonly` (CUI007) |
-| An async handler deadlocks or the app crashes at shutdown | `ConfigureAwait(false)` or `async void` in a component | await normally in `Mutation`/`Run` (CUI005, CUI006) |
+| Background work changes UI state from the wrong thread | a worker or `async void` handler edits frame-owned state | return data through `Mutation` or `Progressive` (CUI006) |
 | A tour never advances, or Done leaves the card on screen | the widget's return was assigned to the `ref` it also writes | `ui.Tour(…, ref step)` writes the step; its `TourAction` result is what the user pressed |
 
 **`ui.FilePicker` is the picker that belongs in `Draw`.** It is CUI's own dialog, drawn like every
@@ -393,7 +393,7 @@ acceptable. In a bare `CuiApp.Run`, capture the window once with
 `ui.FilePicker` needs no replacement because it is just a frame.
 
 IDE quick fixes are available for scope disposal (`CUI002`), conditional-body guards (`CUI003`),
-repeated-widget keys (`CUI004`) and an awaited BCL `ConfigureAwait` (`CUI005`). Scope/id fixes are
+repeated-widget keys (`CUI004`). Scope/id fixes are
 individual, not fix-all, and are not offered if they introduce a compiler error. The id fix uses
 that widget's receiver and the foreach item or a changing integer for-loop counter; a using
 container's children remain inside it. Nested loops, while/do loops and ambiguous keys need an
@@ -410,47 +410,11 @@ Verifying:
 
 ## Async work
 
-`Draw` is synchronous: nothing in it can `await`. Start the task, publish the result into a field,
-read the field next frame. `Mutation` is that shape, ready-made, and it keeps the loop awake while
-the task runs:
-
-```csharp
-public sealed class Editor(Notes notes) : Component
-{
-    private readonly Mutation<Note> _save = new(token => notes.SaveAsync(token), _ => Saved = true);
-
-    protected override void Draw(Ui ui)
-    {
-        if (ui.Button("Save", new() { Loading = _save.IsRunning })) _save.Run();
-        if (_save.Error is { } error) ui.Badge(error.Message, new() { Tone = Tone.Danger });
-    }
-}
-```
-
-In a bare `CuiApp.Run` callback, the same rules by hand: start the task, keep a field, and call
-`ui.RequestRedraw()` while it is in flight, because a sleeping window cannot be woken by a pool
-thread. The task never touches `Ui`; it assigns a field, and the UI thread reads it next frame.
-Assignment of a reference or an enum is atomic, so no lock is needed.
-
-For work that reports more than once — a scan's count, bytes, a spectrum table, a live feed — use
-`Progressive<T>` instead of hand-rolling a `CancellationTokenSource`, a `Volatile.Write` and a
-`RequestWakeup` cadence. The work calls `publish` as it goes and `Draw` reads the latest value:
-
-```csharp
-private readonly Progressive<ScanResult> _scan = new(scanner.ScanAsync) { FrameRate = 5 };
-
-if (ui.Button("Scan")) _scan.Run();
-if (_scan.Latest is { } result) Draw(result);
-
-// Input changed (another track/folder): supersede the old run rather than let it publish late.
-_scan.Restart((token, publish) => scanner.ScanAsync(next, token, publish));
-```
-
-`Latest` is a volatile reference, so a report between frames is dropped on purpose: the frame wants
-the newest state, not every step. A `ConcurrentQueue` drained by `Draw` is the shape when every
-report matters. `T` is a class (publishing a reference is atomic); `FrameRate` throttles the wake-up
-and defaults to the window's own pace. The frame boundary belongs to the host, so `Mutation`'s apply
-callback and a progressive run's wake-up work in a plain `CuiApp.Run` app as well as a hosted one.
+Use `Mutation` / `Mutation<T>` for one outcome, or `Progressive<T>` for the newest of many
+snapshots. Start the operation from an event or `OnInitialized()` in the owning frame. The worker
+runs on the pool; the host handles redraw. These helpers work in a bare `CuiApp.Run` callback and
+in a component. See [Hosting: Async work](hosting.md#async-work) for examples, cancellation, and
+ownership. With just the tool installed, run `dotnet cui docs read hosting`.
 
 ## Where it renders
 

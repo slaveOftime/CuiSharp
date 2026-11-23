@@ -44,7 +44,7 @@ var start = targets.Length switch
     _ => Location.Group(targets),
 };
 
-var scanner = new DiskScanner();
+using var scanner = new DiskScanner();
 var browser = new Browser(scanner, start);
 var app = new DiskApp(browser, scanner);
 app.Options.WindowCreated += app.OnWindowCreated;
@@ -63,6 +63,7 @@ internal sealed class DiskApp(Browser browser, DiskScanner scanner)
     private readonly MapPanel _map = new();
     private readonly FolderPicker _picker = new();
     private CuiWindow? _window;
+    private bool _started;
 
     public CuiAppOptions Options { get; } = new()
     {
@@ -79,6 +80,12 @@ internal sealed class DiskApp(Browser browser, DiskScanner scanner)
 
     public void Draw(Ui ui)
     {
+        if (!_started)
+        {
+            _started = true;
+            browser.Refresh();
+        }
+
         SquareCorners(ui);
 
         // Folder and file names come from whatever the disk holds: any script, and emoji; the
@@ -157,7 +164,6 @@ internal sealed class Browser
     {
         _scanner = scanner;
         Current = start;
-        _scanner.Scan(start);
     }
 
     public Location Current { get; private set; }
@@ -943,7 +949,7 @@ internal readonly record struct Measurement(long Size, int Files, int Folders);
 // arrive so the map grows while the disk is still being read.
 // ---------------------------------------------------------------------------
 
-internal sealed class DiskScanner
+internal sealed class DiskScanner : IDisposable
 {
     private const int MapEntries = 28;
 
@@ -963,6 +969,8 @@ internal sealed class DiskScanner
     private long _publishedAt;
 
     public ScanResult? Current => _scan.Latest;
+
+    public void Dispose() => _scan.Dispose();
 
     public void Scan(Location location) =>
         _scan.Restart(

@@ -848,8 +848,8 @@ internal static class BundledTopics
             "Next: `dotnet cui docs search canvas` for the primitives a control draws with."),
 
         ("hosting",
-            "components, dependency injection, Mutation, and who owns a redraw",
-            ["hosting", "SKILL#async-work"],
+            "components, background work (Mutation and Progressive), and who owns a redraw",
+            ["hosting"],
             "Next: `dotnet cui docs read testing`."),
 
         ("testing",

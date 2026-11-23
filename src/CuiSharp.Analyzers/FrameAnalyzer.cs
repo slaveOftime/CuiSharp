@@ -20,7 +20,7 @@ public sealed class FrameAnalyzer : DiagnosticAnalyzer
 {
     /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-        [Diagnostics.BlockingCall, Diagnostics.ConfigureAwaitInComponent, Diagnostics.AsyncVoidInComponent,
+        [Diagnostics.BlockingCall, Diagnostics.AsyncVoidInComponent,
          Diagnostics.AllocationInFrame, Diagnostics.ReflectionUnderAot];
 
     /// <inheritdoc />
@@ -37,8 +37,7 @@ public sealed class FrameAnalyzer : DiagnosticAnalyzer
             start.RegisterSyntaxNodeAction(ctx => CheckBlocking(ctx, types),
                 SyntaxKind.SimpleMemberAccessExpression, SyntaxKind.InvocationExpression);
 
-            // CUI005 / CUI006: the hosting rules.
-            start.RegisterSyntaxNodeAction(ctx => CheckConfigureAwait(ctx, types), SyntaxKind.InvocationExpression);
+            // CUI006: background work has to report its outcome through a Task.
             start.RegisterSymbolAction(ctx => CheckAsyncVoid(ctx, types), SymbolKind.Method);
 
             // CUI008: reflection-based serialization, which Native AOT trims away.
@@ -150,17 +149,6 @@ public sealed class FrameAnalyzer : DiagnosticAnalyzer
 
         context.ReportDiagnostic(Diagnostic.Create(Diagnostics.ReflectionUnderAot, invocation.GetLocation(),
             $"JsonSerializer.{method.Name}"));
-    }
-
-    // ---- CUI005 -------------------------------------------------------------
-
-    private static void CheckConfigureAwait(SyntaxNodeAnalysisContext context, KnownTypes types)
-    {
-        var invocation = (InvocationExpressionSyntax)context.Node;
-        if (CalledName(invocation) != "ConfigureAwait") return;
-        if (!InsideComponent(invocation, context.SemanticModel, types, context.CancellationToken)) return;
-
-        context.ReportDiagnostic(Diagnostic.Create(Diagnostics.ConfigureAwaitInComponent, invocation.GetLocation()));
     }
 
     // ---- CUI006 -------------------------------------------------------------
@@ -283,12 +271,6 @@ public sealed class FrameAnalyzer : DiagnosticAnalyzer
         }
 
         return false;
-    }
-
-    private static bool InsideComponent(SyntaxNode node, SemanticModel model, KnownTypes types, CancellationToken token)
-    {
-        TypeDeclarationSyntax? declaration = node.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault();
-        return declaration is not null && model.GetDeclaredSymbol(declaration, token) is { } type && types.IsComponent(type);
     }
 
     private static string CalledName(InvocationExpressionSyntax invocation) => invocation.Expression switch

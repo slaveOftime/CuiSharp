@@ -3298,9 +3298,8 @@ sealed class Idiomatic
         sb.AppendLine("- Scopes are `using` blocks; interactive widgets take `ref` and return `bool`.");
         sb.AppendLine("- Text fields take `ref string`; CUI edits the value and returns it on the frames it changed.");
         sb.AppendLine("- A widget id is a stable string. Inside a loop, wrap each row in `using (ui.Id(item.Id))`, or enumerate `ui.Keyed(items, key)`.");
-        sb.AppendLine("- Long work goes through `Mutation`: create it once, call `Run()` from a button, read `IsRunning` and `Error`.");
-        sb.AppendLine("- Work that reports as it runs (a scan, bytes, a live feed) goes through `Progressive<T>`: `Run((token, publish) => ...)` / `Restart(...)`, and Draw reads `Latest`; `FrameRate` throttles the wake-up.");
-        sb.AppendLine("- A page that changes on its own needs `WantsFrames => true`, or the window sleeps.");
+        sb.AppendLine("- Start `Mutation` (one outcome) or `Progressive<T>` (latest snapshot) from a click or `OnInitialized` in the owning frame. The worker runs on the pool and the host requests redraw. See [Hosting](hosting.md#async-work).");
+        sb.AppendLine("- Use `WantsFrames => true` for independent animation or a live page, not to redraw for a background operation.");
         sb.AppendLine("- Per-frame code allocates nothing: no LINQ, no `new`, no string concatenation. Interpolate into a widget instead.");
         sb.AppendLine("- Find a control in a frame by a query: a label (`Save`), a kind and a label (`Button \"Save\"`), a semantic role (`role:button`), a value (`value:Milk`), an id (`id:draft`), or a path through its containers (`editor > Save`; only the last step may name a kind).");
         sb.AppendLine();

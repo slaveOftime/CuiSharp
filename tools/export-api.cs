@@ -1675,7 +1675,7 @@ internal static class SelfTest
                 ("CuiSharp.SemanticNode", "SemanticNode? Parent { get; }", "a nullable reference property keeps its ?"),
                 ("CuiSharp.Hosting.Mutation", "Exception? Error { get; }", "a nullable exception property keeps its ?"),
                 ("CuiSharp.Localization", "string?[]? Months { get; set; }", "nested and outer nullability render together"),
-                ("CuiSharp.Hosting.Mutation`1", "bool TryPublish(out T? result)", "a generic parameter written T? renders T?"),
+                ("CuiSharp.Hosting.Mutation`1", "T? Latest { get; }", "a generic result written T? renders T?"),
                 ("CuiSharp.KeyFn`1", "int Invoke(in T item)", "a bare generic parameter stays bare"),
                 ("CuiSharp.LogBuffer", "void AppendLine(string? text, LogLevel level = LogLevel.Info)", "a nonzero enum default names its type"),
                 ("CuiSharp.DrawFn", "DrawFn(object @object, nint method)", "a compiler-named keyword parameter is escaped in the declaration"),
@@ -1708,13 +1708,14 @@ internal static class SelfTest
                 "the conversion found its documentation");
 
             ConstructorInfo? mutation = assembly.GetType("CuiSharp.Hosting.Mutation")?.GetConstructors()
-                .FirstOrDefault(c => c.GetParameters().Length == 1);
+                .FirstOrDefault(c => c.GetParameters() is [{ ParameterType.IsGenericType: true }]);
             Check(mutation is not null && DocId.Constructor(mutation)
                       == "M:CuiSharp.Hosting.Mutation.#ctor(System.Func{System.Threading.CancellationToken,System.Threading.Tasks.Task})",
                 "a constructor's id reads as #ctor");
 
             ConstructorInfo? mutationOf = assembly.GetType("CuiSharp.Hosting.Mutation`1")?.GetConstructors()
-                .FirstOrDefault(c => c.GetParameters().Length == 1);
+                .FirstOrDefault(c => c.GetParameters() is [{ ParameterType.IsGenericType: true }] parameters
+                    && parameters[0].ParameterType.GetGenericTypeDefinition() == typeof(Func<,>));
             Check(mutationOf is not null && DocId.Constructor(mutationOf)
                       == "M:CuiSharp.Hosting.Mutation`1.#ctor(System.Func{System.Threading.CancellationToken,System.Threading.Tasks.Task{`0}})",
                 "the enclosing type's generic parameter takes one backtick");
@@ -1723,7 +1724,7 @@ internal static class SelfTest
             // built from Type.ToString(); these fail again the moment the keys drift.
             Check(docs.SummaryFor("T:CuiSharp.Hosting.Mutation`1").Contains("background operation", StringComparison.Ordinal),
                 "a generic type found its summary");
-            Check(docs.SummaryFor("P:CuiSharp.Hosting.Mutation`1.Error").Contains("failure that ended", StringComparison.Ordinal),
+            Check(docs.SummaryFor("P:CuiSharp.Hosting.Mutation`1.Error").Contains("worker or apply failure", StringComparison.Ordinal),
                 "a property of a generic type found its summary");
             Check(docs.SummaryFor("T:CuiSharp.KeyFn`1").Contains("key for one item", StringComparison.Ordinal),
                 "a generic delegate found its summary");

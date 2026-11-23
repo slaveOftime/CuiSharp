@@ -55,16 +55,6 @@ internal static class Diagnostics
         isEnabledByDefault: true,
         description: "Ids key hover, focus, scroll and text buffers; reusing one in a loop makes the rows fight over a single state.");
 
-    /// <summary>ConfigureAwait makes no sense when the continuation must be on the UI thread.</summary>
-    internal static readonly DiagnosticDescriptor ConfigureAwaitInComponent = new(
-        id: "CUI005",
-        title: "Do not leave the UI thread inside a component",
-        messageFormat: "Remove 'ConfigureAwait(false)' from this await: a component's continuation has to resume on the UI thread to touch component state",
-        category: Category,
-        defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true,
-        description: "Components resume on CUI's synchronization context, which is what makes 'state changed, then redraw' safe without locking.");
-
     /// <summary>async void: nothing can observe the failure and nothing tracks the work.</summary>
     internal static readonly DiagnosticDescriptor AsyncVoidInComponent = new(
         id: "CUI006",

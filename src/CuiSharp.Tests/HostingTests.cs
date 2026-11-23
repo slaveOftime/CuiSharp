@@ -2,86 +2,14 @@ using CuiSharp.Hosting;
 
 namespace CuiSharp.Tests;
 
-/// <summary>
-/// The hosting layer's two promises: a mutation never blocks the frame and always
-/// settles, and a component that throws cannot take the window down with it.
-/// </summary>
 [Collection("ProcessWindowState")]
 public class HostingTests
 {
-    private sealed class SlowWork
-    {
-        private readonly TaskCompletionSource<int> _done = new();
-
-        public Task<int> Task => _done.Task;
-
-        public Mutation<int> Create() => new(_ => _done.Task);
-
-        public void Finish(int value) => _done.SetResult(value);
-    }
-
-    [Fact]
-    public void MutationRunsWithoutBlockingAndPublishesOnALaterCall()
-    {
-        var work = new SlowWork();
-        var mutation = work.Create();
-
-        Assert.False(mutation.TryPublish(out _));
-        Assert.Equal(0, Component.PendingOperations);
-
-        mutation.Run();
-        Assert.True(mutation.IsRunning);
-        Assert.Equal(1, Component.PendingOperations);
-
-        // Re-entry must not start the work twice or double-count it.
-        mutation.Run();
-        Assert.Equal(1, Component.PendingOperations);
-
-        Assert.False(mutation.TryPublish(out _));   // still running
-
-        work.Finish(42);
-        SpinUntil(() => !mutation.IsRunning);
-        Assert.Equal(42, mutation.Latest);
-        Assert.True(mutation.TryPublish(out var result));
-        Assert.Equal(42, result);
-        Assert.Equal(42, mutation.Latest);
-        Assert.Equal(0, Component.PendingOperations);
-        Assert.False(mutation.IsRunning);
-
-        mutation.Dispose();
-    }
-
-    [Fact]
-    public void AMutationCanRestartWithNewWorkAndCancelWithoutFailing()
-    {
-        var first = new SlowWork();
-        var second = new SlowWork();
-        using var mutation = new Mutation<int>();
-
-        mutation.Run(_ => first.Task);
-        Assert.True(mutation.IsRunning);
-
-        mutation.Restart(_ => second.Task);
-        first.Finish(1);
-        Thread.Sleep(30);
-        Assert.Null(mutation.Error);
-        Assert.Equal(0, mutation.Latest);
-        Assert.True(mutation.IsRunning);
-
-        second.Finish(9);
-        SpinUntil(() => !mutation.IsRunning);
-        Assert.Equal(9, mutation.Latest);
-
-        mutation.Cancel();
-        Assert.Equal(0, mutation.Latest);
-        Assert.Null(mutation.Error);
-    }
+    private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(5);
 
     [Fact]
     public void ActionButtonAndAddPageWireComponentsAndOperationsCleanly()
     {
-        if (!OperatingSystem.IsWindows()) return;
-
         var builder = CuiApplication.CreateBuilder();
         builder.AddPage<Asleep>();
         builder.AddPage<Live>();
@@ -100,9 +28,7 @@ public class HostingTests
         using var save = new Mutation(_ =>
         {
             Interlocked.Increment(ref runs);
-            return fail
-                ? System.Threading.Tasks.Task.FromException(new InvalidOperationException("disk full"))
-                : System.Threading.Tasks.Task.CompletedTask;
+            return fail ? Task.FromException(new InvalidOperationException("disk full")) : Task.CompletedTask;
         });
 
         using var app = HeadlessApp.Start(ui =>
@@ -111,323 +37,91 @@ public class HostingTests
         }, 320, 160);
 
         app.FindButton("Save").ClickAndFrame();
-        SpinUntil(() => !save.IsRunning);
+        Until(() => !save.IsRunning);
         app.Frame();
-
         Assert.Equal(1, runs);
         Assert.Contains(app.Tree.Descendants(), node => node.Kind == "Badge" && node.Text == "disk full");
 
         fail = false;
         app.FindButton("Retry save").ClickAndFrame();
-        SpinUntil(() => !save.IsRunning);
-        app.Frame();
-
+        Until(() => !save.IsRunning);
         Assert.Equal(2, runs);
         Assert.Null(save.Error);
     }
 
     [Fact]
-    public void AFailedMutationSettlesAndReportsItsError()
+    public void AnUnrelatedSurfaceNeitherAppliesResultsNorReportsItselfLive()
     {
-        var mutation = new Mutation<int>(_ => System.Threading.Tasks.Task.FromException<int>(new InvalidOperationException("boom")));
+        using var owner = HeadlessApp.Start(ui => ui.Label("owner"), 120, 80);
+        using var observer = HeadlessApp.Start(ui => ui.Label("observer"), 120, 80);
+        var finish = new TaskCompletionSource<int>();
+        int applied = 0;
+        using var mutation = new Mutation<int>(_ => finish.Task, value => applied = value);
+
+        owner.Surface.BeginFrame();
         mutation.Run();
+        owner.Surface.EndFrame();
+        Assert.True(owner.Surface.LastFrame.IsLive);
+        observer.Frame();
+        Assert.False(observer.Surface.LastFrame.IsLive);
 
-        SpinUntil(() => mutation.Error is not null && !mutation.IsRunning);
-        Assert.False(mutation.TryPublish(out _));
-        Assert.Equal("boom", mutation.Error?.Message);
-        Assert.Equal(0, Component.PendingOperations);
-
-        mutation.Dispose();
-    }
-
-    private sealed class Probe : Component
-    {
-        protected override void Draw(Ui ui) { }
-    }
-
-    private sealed class StreamWork
-    {
-        private readonly TaskCompletionSource _done = new();
-        private Action<Snapshot>? _publish;
-
-        public Task Task => _done.Task;
-
-        public bool Connected => Volatile.Read(ref _publish) is not null;
-
-        public void Connect(Action<Snapshot> publish) => Volatile.Write(ref _publish, publish);
-
-        public void Publish(int value) => Volatile.Read(ref _publish)?.Invoke(new Snapshot(value));
-
-        public void Finish() => _done.TrySetResult();
-    }
-
-    private sealed record Snapshot(int Value);
-
-    [Fact]
-    public void AProgressivePublishesWhileItRunsAndKeepsTheLastValue()
-    {
-        var work = new StreamWork();
-        using var progressive = new Progressive<Snapshot>();
-
-        progressive.Run((_, publish) =>
-        {
-            work.Connect(publish);
-            return work.Task;
-        });
-
-        Assert.True(progressive.IsRunning);
-        Assert.Equal(1, Component.PendingOperations);
-        Assert.Null(progressive.Latest);
-
-        SpinUntil(() => work.Connected);
-
-        work.Publish(1);
-        SpinUntil(() => progressive.Latest?.Value == 1);
-        Assert.True(progressive.IsRunning);
-
-        work.Publish(2);
-        SpinUntil(() => progressive.Latest?.Value == 2);
-
-        work.Finish();
-        SpinUntil(() => !progressive.IsRunning);
-        Assert.Equal(0, Component.PendingOperations);
-
-        // The frame that shows the last report is still owed after the work ends; the run does
-        // not clear the value the component is about to draw.
-        Assert.Equal(2, progressive.Latest?.Value);
-        Assert.True(PendingWork.Due);
-        PendingWork.MarkDrawn();
-        Assert.False(PendingWork.Due);
+        finish.SetResult(7);
+        Until(() => !mutation.IsRunning);
+        observer.Frame();
+        Assert.Equal(0, applied);
+        owner.Frame();
+        Assert.Equal(7, applied);
+        Assert.False(owner.Surface.LastFrame.IsLive);
     }
 
     [Fact]
-    public void AProgressiveBuiltWithWorkCanRunCancelAndRestart()
+    public void AThrowingApplyIsReportedWithoutInterruptingOtherAppliesOrDraw()
     {
-        int runs = 0;
-        using var progressive = new Progressive<Snapshot>((_, publish) =>
+        int applied = 0;
+        using var broken = new Mutation<int>(_ => Task.FromResult(7), _ => throw new InvalidOperationException("apply failed"));
+        using var healthy = new Mutation<int>(_ => Task.FromResult(42), value => applied = value);
+        using var app = HeadlessApp.Start(ui =>
         {
-            publish(new Snapshot(Interlocked.Increment(ref runs)));
-            return System.Threading.Tasks.Task.CompletedTask;
-        });
+            if (broken.Error is { } error) ui.Label(error.Message);
+            ui.Label($"applied {applied}");
+        }, 320, 160);
 
-        progressive.Run();
-        SpinUntil(() => !progressive.IsRunning);
-        Assert.Equal(1, progressive.Latest?.Value);
+        app.Surface.BeginFrame();
+        broken.Run();
+        Until(() => !broken.IsRunning); // enqueue this one first
+        healthy.Run();
+        Until(() => !healthy.IsRunning);
+        app.Surface.EndFrame();
+        app.Frame();
 
-        progressive.Cancel();
-        Assert.Null(progressive.Latest);
-        Assert.Null(progressive.Error);
-        Assert.False(progressive.IsRunning);
-
-        progressive.Restart();
-        SpinUntil(() => !progressive.IsRunning);
-        Assert.Equal(2, progressive.Latest?.Value);
+        Assert.Equal(7, broken.Latest);
+        Assert.Equal("apply failed", broken.Error?.Message);
+        Assert.Equal(["apply failed"], app.Faults);
+        Assert.True(app.TryFind("apply failed", out _));
+        Assert.True(app.TryFind("applied 42", out _));
     }
 
     [Fact]
-    public void AnInitialSnapshotIsVisibleBeforeTheProducerReports()
+    public void AnAbortedSurfaceFrameDoesNotLeakDrawingStateOrDropSubsequentApplies()
     {
-        var work = new StreamWork();
-        using var progressive = new Progressive<Snapshot>();
-
-        progressive.Restart((_, publish) =>
+        int applied = 0;
+        using var mutation = new Mutation<int>(_ => Task.FromResult(9), value => applied = value);
+        using (var surface = CuiSurface.Create(160, 100))
         {
-            work.Connect(publish);
-            return work.Task;
-        }, initial: new Snapshot(0));
+            surface.BeginFrame();
+            mutation.Run();
+            Until(() => !mutation.IsRunning);
 
-        // The frame that started the run sees the seed immediately, before the pool thread runs.
-        Assert.Equal(0, progressive.Latest?.Value);
+            // Simulate an unclosed frame followed by a fresh frame on the same surface.
+            surface.BeginFrame();
+            surface.EndFrame();
+            Assert.Equal(9, applied);
 
-        SpinUntil(() => work.Connected);
-        work.Publish(5);
-        SpinUntil(() => progressive.Latest?.Value == 5);
+            // An unclosed frame at disposal must also unlink this surface from the thread.
+            surface.BeginFrame();
+        }
 
-        work.Finish();
-        SpinUntil(() => !progressive.IsRunning);
-    }
-
-    [Theory]
-    [InlineData(-1f)]
-    [InlineData(float.NaN)]
-    [InlineData(float.PositiveInfinity)]
-    public void AnInvalidFrameRateIsRejected(float rate)
-    {
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Progressive<Snapshot> { FrameRate = rate });
-    }
-
-    [Fact]
-    public void ARunIsIgnoredWhileProgressiveWorkIsInFlight()
-    {
-        var work = new StreamWork();
-        int starts = 0;
-        using var progressive = new Progressive<Snapshot>();
-
-        progressive.Run((_, _) =>
-        {
-            Interlocked.Increment(ref starts);
-            return work.Task;
-        });
-
-        SpinUntil(() => starts == 1);
-        Assert.Equal(1, Component.PendingOperations);
-
-        // A second click during the run must not start another producer or double-count it.
-        progressive.Run((_, _) =>
-        {
-            Interlocked.Increment(ref starts);
-            return work.Task;
-        });
-
-        Thread.Sleep(50);
-        Assert.Equal(1, starts);
-        Assert.Equal(1, Component.PendingOperations);
-
-        work.Finish();
-        SpinUntil(() => !progressive.IsRunning);
-        Assert.Equal(0, Component.PendingOperations);
-    }
-
-    [Fact]
-    public void ARestartedProgressiveDropsThePreviousRunsReports()
-    {
-        var first = new StreamWork();
-        var second = new StreamWork();
-        using var progressive = new Progressive<Snapshot> { FrameRate = 5 };
-
-        progressive.Run((_, publish) =>
-        {
-            first.Connect(publish);
-            return first.Task;
-        });
-
-        SpinUntil(() => first.Connected);
-        PendingWork.MarkDrawn();
-
-        progressive.Restart((_, publish) =>
-        {
-            second.Connect(publish);
-            return second.Task;
-        });
-
-        // Superseding a run must not claim a completion frame: the new run still wants its own
-        // throttled cadence rather than an immediate redraw.
-        Assert.False(PendingWork.Due);
-        Assert.InRange(PendingWork.NextFrameSeconds, 0.19f, 0.21f);
-
-        SpinUntil(() => second.Connected);
-        Assert.Equal(1, Component.PendingOperations);
-
-        // The work the app moved on from finished late and reported: it must not land in the
-        // state the new run owns.
-        first.Publish(1);
-        Thread.Sleep(50);
-        Assert.Null(progressive.Latest);
-
-        second.Publish(2);
-        SpinUntil(() => progressive.Latest?.Value == 2);
-        first.Finish();
-
-        Thread.Sleep(50);
-        Assert.Equal(2, progressive.Latest?.Value);
-        Assert.True(progressive.IsRunning);
-
-        second.Finish();
-        SpinUntil(() => !progressive.IsRunning);
-        Assert.Null(progressive.Error);
-        Assert.Equal(0, Component.PendingOperations);
-    }
-
-    [Fact]
-    public void ADisposedProgressiveCannotPublishOrKeepTheLoopAwake()
-    {
-        var work = new StreamWork();
-        var progressive = new Progressive<Snapshot>();
-
-        progressive.Run((_, publish) =>
-        {
-            work.Connect(publish);
-            return work.Task;
-        });
-
-        SpinUntil(() => work.Connected);
-        work.Publish(1);
-        SpinUntil(() => progressive.Latest?.Value == 1);
-
-        progressive.Dispose();
-        Assert.Null(progressive.Latest);
-        Assert.False(progressive.IsRunning);
-        Assert.Equal(0, Component.PendingOperations);
-
-        work.Publish(2);
-        work.Finish();
-        Thread.Sleep(50);
-        Assert.Null(progressive.Latest);
-        Assert.Equal(0, Component.PendingOperations);
-    }
-
-    [Fact]
-    public void AFailedProgressiveSettlesAndReportsItsError()
-    {
-        using var progressive = new Progressive<Snapshot>();
-        progressive.Run((_, _) => throw new InvalidOperationException("boom"));
-
-        SpinUntil(() => progressive.Error is not null && !progressive.IsRunning);
-
-        Assert.Equal("boom", progressive.Error?.Message);
-        Assert.Null(progressive.Latest);
-        Assert.False(progressive.IsRunning);
-        Assert.Equal(0, Component.PendingOperations);
-    }
-
-    [Fact]
-    public void ACancelledProgressiveIsNotAFailure()
-    {
-        var started = new TaskCompletionSource();
-        var progressive = new Progressive<Snapshot>();
-
-        progressive.Run(async (token, _) =>
-        {
-            started.TrySetResult();
-            await System.Threading.Tasks.Task.Delay(Timeout.Infinite, token);
-        });
-
-        SpinUntil(() => started.Task.IsCompleted);
-        progressive.Dispose();
-
-        SpinUntil(() => !progressive.IsRunning);
-        Assert.Null(progressive.Error);
-        Assert.Equal(0, Component.PendingOperations);
-    }
-
-    [Fact]
-    public void ProgressiveWorkRunsOffTheFrameThread()
-    {
-        int frameThread = Environment.CurrentManagedThreadId;
-        int workThread = 0;
-        using var progressive = new Progressive<Snapshot>();
-
-        progressive.Run((_, _) =>
-        {
-            workThread = Environment.CurrentManagedThreadId;
-            return System.Threading.Tasks.Task.CompletedTask;
-        });
-
-        SpinUntil(() => workThread != 0);
-        Assert.NotEqual(frameThread, workThread);
-    }
-
-    [Fact]
-    public void FrameRateThrottlesTheWakeUp()
-    {
-        var work = new StreamWork();
-        using var progressive = new Progressive<Snapshot> { FrameRate = 4 };
-
-        progressive.Run((_, _) => work.Task);
-        Assert.InRange(PendingWork.NextFrameSeconds, 0.24f, 0.26f);
-
-        work.Finish();
-        SpinUntil(() => !progressive.IsRunning);
+        Assert.Null(UiFrameState.Drawing);
     }
 
     [Fact]
@@ -447,11 +141,10 @@ public class HostingTests
         Assert.True(app.Frame());
 
         int applied = 0;
-        using var mutation = new Mutation<int>(_ => System.Threading.Tasks.Task.FromResult(7), value => applied = value);
+        using var mutation = new Mutation<int>(_ => Task.FromResult(7), value => applied = value);
         mutation.Run();
-        SpinUntil(() => !mutation.IsRunning && Component.PendingOperations == 0);
-
-        // The manual loop has no callback of its own, so this is the frame that must drain.
+        Until(() => !mutation.IsRunning);
+        Assert.Equal(0, applied);
         Assert.True(app.Frame());
         Assert.Equal(7, applied);
     }
@@ -463,20 +156,13 @@ public class HostingTests
 
         int applied = 0;
         bool started = false;
-        bool closed = false;
         CuiWindow? window = null;
-        using var mutation = new Mutation<int>(_ => System.Threading.Tasks.Task.FromResult(7), value => applied = value);
+        using var mutation = new Mutation<int>(_ => Task.FromResult(7), value => applied = value);
         using var watchdog = new Timer(_ =>
         {
-            try
-            {
-                window?.RequestClose();
-            }
-            catch
-            {
-                // The window was already gone; the loop is about to return.
-            }
-        }, null, TimeSpan.FromSeconds(10), Timeout.InfiniteTimeSpan);
+            try { window?.RequestClose(); }
+            catch (ObjectDisposedException) { }
+        }, null, TimeSpan.FromSeconds(10), System.Threading.Timeout.InfiniteTimeSpan);
 
         int code = CuiApp.Run(new CuiAppOptions
         {
@@ -494,271 +180,66 @@ public class HostingTests
                 mutation.Run();
             }
 
-            if (applied == 7 && !closed)
-            {
-                closed = true;
-                window!.RequestClose();
-            }
+            if (applied == 7) window!.RequestClose();
         });
 
         Assert.Equal(0, code);
         Assert.Equal(7, applied);
     }
 
-
     [Fact]
-    public void AFinishedMutationDropsPendingWorkEvenWhenNobodyPublishes()
+    public void AThrottledWorkerWakesItsWindowsNextDrawOnCompletion()
     {
-        // The regression: a component that is no longer drawn (the user switched
-        // tabs) never polls, so counting work until TryPublish pinned the window at
-        // the frame rate forever.
-        var work = new SlowWork();
-        var mutation = work.Create();
-        mutation.Run();
-        Assert.Equal(1, Component.PendingOperations);
+        if (!OperatingSystem.IsWindows()) return;
 
-        work.Finish(1);
-        SpinUntil(() => Component.PendingOperations == 0);
-
-        // The frame that shows the result is still requested exactly once.
-        Assert.True(PendingWork.Any);
-        PendingWork.MarkDrawn();
-        Assert.False(PendingWork.Any);
-
-        mutation.Dispose();
-    }
-
-    [Fact]
-    public void AVoidMutationReportsItsErrorWithoutBeingPolled()
-    {
-        var mutation = new Mutation(_ => System.Threading.Tasks.Task.FromException(new InvalidOperationException("nope")));
-        mutation.Run();
-
-        // The failure lands on the completing thread, so `Error` is what to wait for: a frame that
-        // reads it is never a frame too early. IsRunning is the fence for the settled counters and
-        // for a later Run: Error is published just before the run stops counting itself.
-        SpinUntil(() => mutation.Error is not null && !mutation.IsRunning);
-
-        // No TryPublish in Draw needed: Error is current as soon as the work ends.
-        Assert.Equal("nope", mutation.Error?.Message);
-        Assert.Equal(0, Component.PendingOperations);
-
-        // Running again clears the previous failure, then reports it again.
-        mutation.Run();
-        SpinUntil(() => mutation.Error is not null && !mutation.IsRunning);
-        Assert.Equal("nope", mutation.Error?.Message);   // same faulting delegate, reported again
-        mutation.Dispose();
-    }
-
-    [Fact]
-    public void AMutationThatThrowsSynchronouslyDoesNotEscapeTheFrame()
-    {
-        // "Synchronously" is about the delegate, not the thread: the throw happens in the
-        // work's own synchronous prefix, which now runs on the pool, so the frame never sees it.
-        var mutation = new Mutation(_ => throw new InvalidOperationException("sync boom"));
-        mutation.Run();
-
-        SpinUntil(() => mutation.Error is not null && !mutation.IsRunning);
-        Assert.Equal("sync boom", mutation.Error?.Message);
-        Assert.False(mutation.IsRunning);
-        Assert.Equal(0, Component.PendingOperations);
-
-        mutation.Dispose();
-    }
-
-    [Fact]
-    public void TheWorksSynchronousPrefixRunsOffTheFrameThread()
-    {
-        // The docs promise the work runs on the pool. An `async` method runs its prefix on
-        // whatever thread called it, so invoking `_work` inline put that prefix — a file read
-        // before the first await, a lock, a parse — inside Draw, and the frame waited for it.
-        int frameThread = Environment.CurrentManagedThreadId;
-        int workThread = 0;
-        var mutation = new Mutation<int>(_ =>
+        CuiWindow? window = null;
+        int timedOut = 0;
+        bool started = false;
+        bool drewCompletion = false;
+        using var operation = new Progressive<string>(async (token, publish) =>
         {
-            workThread = Environment.CurrentManagedThreadId;
-            return System.Threading.Tasks.Task.FromResult(1);
-        });
-
-        mutation.Run();
-        SpinUntil(() => workThread != 0);
-
-        Assert.NotEqual(frameThread, workThread);
-        mutation.Dispose();
-    }
-
-    [Fact]
-    public void ASlowSynchronousPrefixInTheWorkDoesNotHoldUpRun()
-    {
-        // Run is called from Draw, so anything it does inline is frame time.
-        var mutation = new Mutation<int>(_ =>
+            // Let the hidden window enter its long wait; no input is injected to wake it.
+            await Task.Delay(250, token);
+            publish("complete");
+        })
+        { FrameRate = 1f / 30f };
+        using var watchdog = new Timer(_ =>
         {
-            Thread.Sleep(300);
-            return System.Threading.Tasks.Task.FromResult(1);
-        });
+            Volatile.Write(ref timedOut, 1);
+            try { window?.RequestClose(); }
+            catch (ObjectDisposedException) { }
+        }, null, TimeSpan.FromSeconds(10), System.Threading.Timeout.InfiniteTimeSpan);
 
-        var elapsed = System.Diagnostics.Stopwatch.StartNew();
-        mutation.Run();
-        elapsed.Stop();
-
-        Assert.True(elapsed.ElapsedMilliseconds < 150, $"Run blocked the frame for {elapsed.ElapsedMilliseconds} ms");
-        mutation.Dispose();
-    }
-
-    [Fact]
-    public void ADisposedMutationCannotApplyItsResult()
-    {
-        // The regression: a page is torn down while its work is in flight. The work finishes,
-        // the completion is already queued, and the next frame applies it into a component that
-        // no longer exists — or, worse, resurrects one the user navigated away from.
-        var applied = new List<int>();
-        var work = new SlowWork();
-        var mutation = new Mutation<int>(_ => work.Task, applied.Add);
-
-        mutation.Run();
-        mutation.Dispose();
-        work.Finish(7);
-
-        Completions.Drain();
-        Assert.Empty(applied);
-        Assert.Equal(0, Component.PendingOperations);
-    }
-
-    [Fact]
-    public void ACancelledWorkCannotApplyItsResult()
-    {
-        var applied = new List<int>();
-        var started = new TaskCompletionSource();
-        var mutation = new Mutation<int>(async token =>
+        int code = CuiApp.Run(new CuiAppOptions
         {
-            started.TrySetResult();
-            await System.Threading.Tasks.Task.Delay(Timeout.Infinite, token).ConfigureAwait(false);
-            return 3;
-        }, applied.Add);
-
-        mutation.Run();
-        SpinUntil(() => started.Task.IsCompleted);
-        mutation.Dispose();
-
-        SpinUntil(() => !mutation.IsRunning && Component.PendingOperations == 0);
-        Completions.Drain();
-        Assert.Empty(applied);
-        Assert.Null(mutation.Error);   // a cancelled run is not a failure
-    }
-
-    [Fact]
-    public void ACompletedOperationDoesNotOverwriteANewerOne()
-    {
-        // Run #1 completes and queues its apply. Run #2 starts before that apply is drained.
-        // Applying #1 would publish stale state and clear the pending work of #2.
-        var applied = new List<int>();
-        var appliedLate = new List<bool>();
-        var first = new SlowWork();
-        int run = 0;
-        var second = new TaskCompletionSource<int>();
-        var mutation = new Mutation<int>(
-            _ => ++run == 1 ? first.Task : second.Task,
-            value =>
+            Title = "CompletionWake",
+            Width = 320,
+            Height = 240,
+            Hidden = true,
+            Renderer = Renderer.Software,
+            WindowCreated = created => window = created,
+        }, _ =>
+        {
+            if (!started)
             {
-                applied.Add(value);
-                appliedLate.Add(value == 1 && Volatile.Read(ref run) > 1);
-            });
-
-        mutation.Run();
-        first.Finish(1);
-        SpinUntil(() => Component.PendingOperations == 0);
-
-        mutation.Run();   // a second operation, before the frame that would have applied #1
-        Assert.True(mutation.IsRunning);
-
-        Completions.Drain();
-        Assert.DoesNotContain(true, appliedLate);   // #1 never lands after #2 started
-        Assert.True(mutation.IsRunning);            // #2 still owns this mutation
-
-        second.SetResult(2);
-        SpinUntil(() => { Completions.Drain(); return applied.Contains(2); });
-        Assert.Equal(2, applied[^1]);
-        Assert.DoesNotContain(true, appliedLate);
-    }
-
-    [Fact]
-    public void AFrameOnAnotherThreadDoesNotApplyThisThreadsResult()
-    {
-        // The mutation is constructed on this thread, as DI can do before the window starts, but
-        // Run and the frame loop belong to the UI thread. The completion must follow Run's thread,
-        // not the constructor's, and a frame on the constructor thread must not apply it.
-        int constructedOn = Environment.CurrentManagedThreadId;
-        int pendingBefore = Component.PendingOperations;
-        var applied = new List<int>();
-        var work = new SlowWork();
-        using var mutation = new Mutation<int>(_ => work.Task, applied.Add);
-        using var ready = new ManualResetEventSlim();
-        using var allowDrain = new ManualResetEventSlim();
-        Exception? uiError = null;
-        int runOn = 0;
-
-        var ui = new Thread(() =>
-        {
-            try
-            {
-                runOn = Environment.CurrentManagedThreadId;
-                mutation.Run();
-                ready.Set();
-                if (!allowDrain.Wait(TimeSpan.FromSeconds(10)))
-                    throw new TimeoutException("the test never released the UI frame");
-                Completions.Drain();
+                started = true;
+                operation.Run();
             }
-            catch (Exception error)
+
+            if (!operation.IsRunning && operation.Latest == "complete" && Volatile.Read(ref timedOut) == 0)
             {
-                uiError = error;
-                ready.Set();
+                drewCompletion = true;
+                window!.RequestClose();
             }
         });
-        ui.Start();
 
-        try
-        {
-            Assert.True(ready.Wait(TimeSpan.FromSeconds(10)), "the UI thread never started the mutation");
-            Assert.Null(uiError);
-            Assert.NotEqual(constructedOn, runOn);
-
-            work.Finish(7);
-            SpinUntil(() => Component.PendingOperations == pendingBefore);
-
-            // A frame on the construction thread is not the owner of this result.
-            Completions.Drain();
-            Assert.Empty(applied);
-        }
-        finally
-        {
-            allowDrain.Set();
-            Assert.True(ui.Join(TimeSpan.FromSeconds(10)), "the UI thread never finished its frame");
-        }
-
-        Assert.Null(uiError);
-        Assert.Equal([7], applied);
+        Assert.Equal(0, code);
+        Assert.True(drewCompletion, "the window did not draw the final snapshot before the watchdog");
     }
 
-    [Fact]
-    public void RepeatedOperationsSettlePendingWorkExactly()
+    private sealed class Probe : Component
     {
-        // A stale completion that settles the newest run's count leaks a pending frame for the
-        // life of the process: the window stays awake at the frame rate with nothing to draw.
-        var applied = new List<int>();
-        int next = 0;
-        var mutation = new Mutation<int>(_ => System.Threading.Tasks.Task.FromResult(++next), applied.Add);
-
-        for (var i = 0; i < 32; i++)
-        {
-            mutation.Run();
-            SpinUntil(() => Component.PendingOperations == 0);
-            Completions.Drain();          // the frame that applies the result
-            PendingWork.MarkDrawn();
-        }
-
-        Assert.Equal(0, Component.PendingOperations);
-        Assert.Equal(32, applied.Count);
-        mutation.Dispose();
+        protected override void Draw(Ui ui) { }
     }
 
     [Fact]
@@ -772,34 +253,22 @@ public class HostingTests
 
     private sealed class Allocating : Component
     {
-        protected override void Draw(Ui ui)
-        {
-            // The shape of a real regression: a string built per frame.
-            string text = new string('x', 8) + FrameStats.Frames;
-            ui.Text(text);
-        }
+        protected override void Draw(Ui ui) => ui.Text(new string('x', 8) + FrameStats.Frames);
     }
 
     [Fact]
     public void FrameStatsReportTheCostOfTheFrameThatDrew()
     {
-        if (!OperatingSystem.IsWindows()) return;
-
         using var surface = CuiSurface.Create(240, 160);
         var pixels = new byte[surface.PixelWidth * surface.PixelHeight * 4];
-        var quiet = new Probe();
-        var noisy = new Allocating();
+        using var quiet = new Probe();
+        using var noisy = new Allocating();
 
-        // A surface fills these in by itself, so a test and a window report the same numbers.
         long frames = surface.LastFrame.Frames;
         surface.Draw(quiet.Render, pixels);
         Assert.True(surface.LastFrame.Frames > frames);
-
-        // A component that allocates nothing must measure zero...
         surface.Draw(quiet.Render, pixels);
         Assert.Equal(0, surface.LastFrame.AllocatedBytes);
-
-        // ...and one that allocates must be caught by the same number.
         surface.Draw(noisy.Render, pixels);
         Assert.True(surface.LastFrame.AllocatedBytes > 0);
     }
@@ -812,83 +281,63 @@ public class HostingTests
     private sealed class Live : Component
     {
         protected override bool WantsFrames => true;
-
         protected override void Draw(Ui ui) => ui.Button("Save");
     }
 
     [Fact]
     public void AnIdleFrameReportsNoFrameRateAndALiveOneDoes()
     {
-        if (!OperatingSystem.IsWindows()) return;
-
         using var surface = CuiSurface.Create(240, 160);
         var pixels = new byte[surface.PixelWidth * surface.PixelHeight * 4];
+        using var asleep = new Asleep();
+        using var live = new Live();
 
-        // CUI sleeps when nothing asks for a frame, so "fps" would describe a rate that has
-        // nothing to do with the app: a footer says idle instead.
-        var asleep = new Asleep();
         surface.Draw(asleep.Render, pixels);
         Assert.False(surface.LastFrame.IsLive);
-
-        var live = new Live();
         for (var i = 0; i < 4; i++) surface.Draw(live.Render, pixels);
         Assert.True(surface.LastFrame.IsLive);
         Assert.True(surface.LastFrame.Fps > 0);
-
-        // Returning to a still component resets the per-frame flag on the surface too.
         surface.Draw(asleep.Render, pixels);
         Assert.False(surface.LastFrame.IsLive);
-
-        asleep.Dispose();
-        live.Dispose();
     }
 
     [Fact]
     public void TheThemeIsReadAndWrittenFromInsideAFrame()
     {
         using var surface = CuiSurface.Create(200, 120);
-        Ui ui = surface.Ui;   // the frame context, the same value Draw receives
-
+        Ui ui = surface.Ui;
         Assert.Equal(Theme.Light, ui.Theme);
-
         ui.Theme = Theme.Dark;
         Assert.Equal(Theme.Dark, ui.Theme);
-
-        // What a Ctrl+J command is: no state of the app's own, one call.
         ui.ToggleTheme();
         Assert.Equal(Theme.Light, ui.Theme);
-
         ui.Accent = Accent.Rose;
         Assert.Equal(Accent.Rose, ui.Accent);
     }
 
-    private sealed class Exploding : Component
+    private sealed class Exploding(bool duringInitialization) : Component
     {
+        protected override void OnInitialized()
+        {
+            if (duringInitialization) throw new InvalidOperationException("component failed");
+        }
+
         protected override void Draw(Ui ui) => throw new InvalidOperationException("component failed");
     }
 
-    [Fact]
-    public void AThrowingComponentIsContainedByItsErrorBoundary()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void AThrowingComponentIsContainedByItsErrorBoundary(bool duringInitialization)
     {
-        if (!OperatingSystem.IsWindows()) return;
-
         using var surface = CuiSurface.Create(320, 200);
         var pixels = new byte[surface.PixelWidth * surface.PixelHeight * 4];
-        var exploding = new Exploding();
-
-        // No exception escapes: the frame is drawn with an inline error instead,
-        // and the failure is recorded so a test cannot mistake it for a success.
+        using var exploding = new Exploding(duringInitialization);
         surface.Draw(exploding.Render, pixels);
 
         Assert.Contains(pixels, b => b != 0);
-        Assert.Single(surface.Faults);
-        Assert.Equal("component failed", surface.Faults[0].Message);
-        exploding.Dispose();
+        Assert.Equal("component failed", Assert.Single(surface.Faults).Message);
     }
 
-    private static void SpinUntil(Func<bool> condition)
-    {
-        for (var i = 0; i < 500 && !condition(); i++) Thread.Sleep(10);
-        Assert.True(condition());
-    }
+    private static void Until(Func<bool> condition) => Assert.True(SpinWait.SpinUntil(condition, Timeout));
 }

@@ -291,7 +291,7 @@ public class ApiCatalogTests
         Assert.Contains("string?[]? Months { get; set; }",
             Catalog.Value.Query("Localization").Render(), StringComparison.Ordinal);
         string mutationOfT = Catalog.Value.Query("CuiSharp.Hosting.Mutation`1").Render();
-        Assert.Contains("bool TryPublish(out T? result)", mutationOfT, StringComparison.Ordinal);
+        Assert.Contains("T? Latest { get; }", mutationOfT, StringComparison.Ordinal);
 
         // Keyword identifier names are only legal with `@`: the compiler names delegate
         // parameters after their metadata (`object object`) and interop wrappers name a
@@ -314,7 +314,7 @@ public class ApiCatalogTests
         // Generic owners lost every summary while doc ids were built from Type.ToString().
         Assert.Contains("One background operation",
             Catalog.Value.Query("CuiSharp.Hosting.Mutation`1").Render(), StringComparison.Ordinal);
-        Assert.Contains("failure that ended",
+        Assert.Contains("worker or apply failure",
             Catalog.Value.Query("CuiSharp.Hosting.Mutation`1").Render(), StringComparison.Ordinal);
         Assert.Contains("key for one item",
             Catalog.Value.Query("KeyFn").Render(), StringComparison.Ordinal);

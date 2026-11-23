@@ -118,29 +118,21 @@ A component is a class with fields and a `Draw(Ui)` method. Composition is a `us
 `foreach`, or `ui.Component(child)`:
 
 ```csharp
-sealed class TodoPage : Component
+sealed class CounterPage : Component
 {
-    private readonly List<Todo> _todos = [];
-    private readonly Mutation<Todo> _add;
-
-    public TodoPage(TodoService service) => _add = new Mutation<Todo>(service.AddAsync, Add);
+    private int _clicks;
 
     protected override void Draw(Ui ui)
     {
-        using var card = ui.Card(new() { Id = "todos", Pad = 16, Gap = 12 });
-        ui.Heading("Todos", 2);
-        foreach (Todo todo in _todos) ui.Checkbox(todo.Title, ref todo.Done);
-        if (ui.Button("Add", new ButtonOpts { Variant = ButtonVariant.Primary, Disabled = _add.IsRunning }))
-            _add.Run(new Todo("Untitled"));
-        if (_add.Error is { } error) ui.Alert(error.Message, new AlertOpts { Tone = Tone.Danger });
+        if (ui.Button("Count")) _clicks++;
+        ui.Label($"Clicked {_clicks} times");
     }
-
-    private void Add(Todo todo) => _todos.Add(todo);
 }
 ```
 
-Async work never runs in a frame: `Mutation` publishes its result at the next frame boundary, and
-`WantsFrames` keeps the loop awake while something is outstanding.
+For background work, use `Mutation` for one result or `Progressive<T>` for the latest of many
+snapshots. Start from a click or `OnInitialized`; the worker returns data and the owning host
+requests frames. See [Hosting: Async work](skills/cui-dotnet/hosting.md#async-work).
 
 **Custom controls** are `static` extension blocks, indistinguishable from built-in widgets at the
 call site — no base class, no registration, no allocation:
@@ -257,10 +249,9 @@ debug mode, no mock, no second code path. For a check that has to hold, prefer
 **Analyzers ship in the package** and turn common frame and AOT mistakes into build errors or
 warnings: a blocking call in a frame (`CUI001`), a container scope without `using` (`CUI002`), a
 popover body that never checks `Open` (`CUI003`), a constant id in a loop (`CUI004`),
-`ConfigureAwait(false)` or `async void` in a component (`CUI005`, `CUI006`), and an allocation in a
-frame (`CUI007`), plus reflection-based JSON serialization under AOT (`CUI008`). Each message says
-what to do instead. IDE quick fixes add scope disposal/conditional guards (`CUI002`, `CUI003`),
-key repeated widgets (`CUI004`), and remove an awaited BCL `ConfigureAwait` (`CUI005`). The id fix
+`async void` in a component (`CUI006`), and an allocation in a frame (`CUI007`), plus reflection-based
+JSON serialization under AOT (`CUI008`). Each message says what to do instead. IDE quick fixes add
+scope disposal/conditional guards (`CUI002`, `CUI003`) and key repeated widgets (`CUI004`). The id fix
 uses the widget's receiver and a foreach item or an unambiguous changing integer counter;
 nested loops and while/do loops need explicit keys. The other rules still require a manual rewrite.
 
@@ -316,7 +307,7 @@ Windows-only because it uses the WinRT `MediaPlayer`; the other three publish fo
 
 ```
 src/CuiSharp/            the library: Interop (generated), Ui, Runtime, Semantics, Hosting, Charting
-src/CuiSharp.Analyzers/  CUI001-CUI008, packed into CuiSharp
+src/CuiSharp.Analyzers/  frame and AOT rules, packed into CuiSharp
 src/CuiSharp.CodeFixes/  IDE quick fixes, packed beside the analyzers
 src/CuiSharp.Testing/    TestApp: drive a component without a window
 src/CuiSharp.Tools/      dotnet cui: the guide and the API offline, plus build, run headless, relay one command
