@@ -47,6 +47,7 @@ var start = targets.Length switch
 var scanner = new DiskScanner();
 var browser = new Browser(scanner, start);
 var app = new DiskApp(browser, scanner);
+app.Options.WindowCreated += app.OnWindowCreated;
 
 return CuiApp.Run(app.Options, app.Draw);
 
@@ -61,6 +62,7 @@ internal sealed class DiskApp(Browser browser, DiskScanner scanner)
 
     private readonly MapPanel _map = new();
     private readonly FolderPicker _picker = new();
+    private CuiWindow? _window;
 
     public CuiAppOptions Options { get; } = new()
     {
@@ -72,6 +74,9 @@ internal sealed class DiskApp(Browser browser, DiskScanner scanner)
         Renderer = Renderer.Software,
     };
 
+    /// <summary>Keeps the window, so Esc can close it the way the title bar's button does.</summary>
+    public void OnWindowCreated(CuiWindow window) => _window = window;
+
     public void Draw(Ui ui)
     {
         SquareCorners(ui);
@@ -79,6 +84,10 @@ internal sealed class DiskApp(Browser browser, DiskScanner scanner)
         // Folder and file names come from whatever the disk holds: any script, and emoji; the
         // bundled faces are Latin, and a missing glyph draws nothing. Cached after the first call.
         ui.UseSystemFontFallbacks();
+
+        // Esc closes the window, except while the folder dialog is open: there it cancels
+        // the dialog, which the dialog reads for itself later in this frame.
+        if (!_picker.IsOpen && ui.KeyPressed(Key.Escape)) _window?.RequestClose();
 
         var result = scanner.Current;
         var (width, height) = ui.ViewportSize();
@@ -301,6 +310,8 @@ internal sealed class FolderPicker
 {
     private bool _open;
     private string _path = "";
+
+    public bool IsOpen => _open;
 
     /// <summary>Called from the button; the app draws the dialog at the end of the frame.</summary>
     public void Request() => _open = true;
