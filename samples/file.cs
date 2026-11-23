@@ -16,11 +16,18 @@
 //                         one (or the Image button) to open it in the viewer,
 //                         and Back returns to the page.
 //
+//                         A link to another file opens that file the same way:
+//                         a .md beside this one as markdown, a .cs as code, a
+//                         picture in the viewer, a folder or a broken path as
+//                         its metadata page. A web address goes to the browser.
+//                         Back — the button, Esc, or the mouse's Back button —
+//                         returns to the page, at the line it was left on.
+//
 //   .csv / .tsv           a sortable grid: click a header to sort by it, click
 //                         it again to reverse, drag the edge to widen a column.
 //                         Edit switches to the text, where Save works.
 //
-//   Esc closes the window (from the viewer, it goes back instead).
+//   Esc goes back a page; with nowhere to go it closes the window.
 //   .png/.jpg/.jpeg/...   ui.ImageViewer — zoom, pan, a checkerboard behind
 //                         transparency.
 //   anything else text    ui.CodeEditor — syntax highlighting, editable;
@@ -53,12 +60,14 @@
 #:property InvariantGlobalization=true
 #:property StripSymbols=true
 #:property DebugType=none
+#:property AllowUnsafeBlocks=true
 
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
@@ -121,18 +130,20 @@ internal enum ViewMode
 internal sealed class FileApp
 {
     private const int CapMargin = 4096;
-    private const string MarkdownScrollId = "md-scroll";
+    private const int MaxHistory = 64;
 
-    private readonly string[] _paths;
+    private readonly string[] _paths;            // the files passed on the command line
+    private readonly List<Page> _history = [];   // where Back goes, newest last
     private readonly MarkdownPreview _markdown = new();
     private readonly ImageTexture _viewer = new();
 
-    private int _index;
+    private string? _path;           // the page on screen: an argument, or a link
+    private int _index;              // the argument that page came from, if any
     private FileKind _kind;
     private ViewMode _mode;
-    private ViewMode? _returnMode;      // where Back goes from the viewer
     private string _dir = Directory.GetCurrentDirectory();
     private string _lang = "text";
+    private string _scrollId = "md-scroll";   // one scroll position per page
     private string? _text;              // the loaded text; the editor buffer in text mode
     private int _cap;                   // the editor's buffer capacity, in UTF-8 bytes
     private bool _dirty;
@@ -189,18 +200,19 @@ internal sealed class FileApp
 
     public CuiAppOptions Options { get; }
 
-    /// The file on display, from the arguments.
-    private string? _path => _paths.Length > 0 ? _paths[_index] : null;
-
     public void Draw(Ui ui)
     {
         // Names outside the bundled faces draw nothing; install the OS faces
         // for CJK and friends once per context.
         ui.UseSystemFontFallbacks();
 
+        // The mouse's Back button, and Esc, both mean the same thing: leave
+        // this page. With nothing to go back to, Esc closes the window.
+        if (OperatingSystem.IsWindows() && Native.TakeBack() && CanGoBack) GoBack();
+
         if (ui.KeyPressed(Key.Escape))
         {
-            if (_mode is ViewMode.Image && _returnMode is { } back) ReturnTo(back);
+            if (CanGoBack) GoBack();
             else if (_window is { NativeWindow: not 0 } window) window.RequestClose();
         }
 
@@ -238,6 +250,8 @@ internal sealed class FileApp
 
         var hwnd = window.NativeWindow;
         if (hwnd == 0) return;
+
+        Native.HookBackButton(hwnd);
         if (Native.GetWindowRect(hwnd, out var rect) == 0) return;
 
         var workW = Native.GetSystemMetrics(Native.SmCxWorkarea);
@@ -256,14 +270,55 @@ internal sealed class FileApp
 
     // ---- loading ----------------------------------------------------------
 
-    /// Starts one background read for the file: its text, its git state, and
-    /// HEAD when a text file actually needs a diff. Nothing here blocks a frame.
+    /// A page Back can return to: the file, and the view it was shown in.
+    private readonly record struct Page(string Path, ViewMode Mode);
+
+    private bool CanGoBack => _history.Count > 0;
+
+    /// Opens the argument at <paramref name="index"/>, and leaves Back a way
+    /// out of whatever was on screen.
     private void LoadFor(int index)
     {
         if ((uint)index >= (uint)_paths.Length) return;
 
         _index = index;
-        var path = _paths[index];
+        Navigate(_paths[index], null);
+    }
+
+    /// Opens a file as a new page, remembering the one on screen so Back can
+    /// return to it. A link, and the arrows in the header, both come here.
+    private void Navigate(string path, ViewMode? mode)
+    {
+        if (_path is { } current) Remember(new Page(current, _mode));
+        Open(path, mode);
+    }
+
+    /// Back: the previous page, in the view it was left in. Going back to the
+    /// same file costs nothing — its text and its parsed pictures are still here.
+    private void GoBack()
+    {
+        if (_history.Count == 0) return;
+
+        var page = _history[^1];
+        _history.RemoveAt(_history.Count - 1);
+
+        if (string.Equals(page.Path, _path, StringComparison.OrdinalIgnoreCase)) Show(page.Mode);
+        else Open(page.Path, page.Mode);
+    }
+
+    private void Remember(Page page)
+    {
+        if (_history.Count >= MaxHistory) _history.RemoveAt(0);
+        _history.Add(page);
+    }
+
+    /// Starts one background read for the file: its text, its git state, and
+    /// HEAD when a text file actually needs a diff. Nothing here blocks a frame.
+    /// <paramref name="mode"/> keeps a page's view across Back; null picks the
+    /// one its kind wants.
+    private void Open(string path, ViewMode? mode)
+    {
+        _path = path;
 
         _markdown.Reset();
         DropTable();
@@ -285,7 +340,6 @@ internal sealed class FileApp
         _diffCursor = 0;
         _head = null;
         _gitInfo = GitInfo.None;
-        _returnMode = null;
         _imgPath = null;
         _view = default;
         _kind = FileKind.Text;
@@ -295,6 +349,11 @@ internal sealed class FileApp
         var info = new FileInfo(path);
         _dir = info.DirectoryName ?? Directory.GetCurrentDirectory();
         Options.Title = NameOf(path);
+
+        // The scroll keeps its position per id, so a page has its own: coming
+        // back to a long document returns to the line it was left on, and a
+        // new one starts at the top.
+        _scrollId = "md:" + path;
 
         // A folder or a path that no longer exists still opens: the info page
         // says what it is, instead of leaving the window on a spinner.
@@ -313,7 +372,7 @@ internal sealed class FileApp
         }
 
         _kind = Classify(path);
-        _mode = _kind switch
+        _mode = mode ?? _kind switch
         {
             FileKind.Markdown => ViewMode.Markdown,
             FileKind.Image => ViewMode.Image,
@@ -326,7 +385,7 @@ internal sealed class FileApp
 
         // A grid keeps its column widths per id, so a second file with other
         // columns does not inherit the first one's widths.
-        _csvId = $"csv-{index}";
+        _csvId = "csv:" + path;
 
         // A picture the viewer holds belongs to the file being left. When the
         // new file is a picture too, Load frees it as it decodes the new one.
@@ -569,9 +628,15 @@ internal sealed class FileApp
 
             using (ui.Row(new Box { Gap = 0, Align = Align.Center, Wrap = false, Height = Size.Fit }))
             {
-                if (_mode is ViewMode.Image && _returnMode is { } back
-                    && ui.Button("Back", new() { Size = ControlSize.Sm, Variant = ButtonVariant.Ghost }))
-                    ReturnTo(back);
+                if (CanGoBack
+                    && ui.Button("Back", new()
+                    {
+                        Size = ControlSize.Sm,
+                        Variant = ButtonVariant.Ghost,
+                        Tooltip = "Back",
+                        Shortcut = "Esc",
+                    }))
+                    GoBack();
 
                 if (_mode is ViewMode.Markdown or ViewMode.Csv
                     && ui.Button("Edit", new() { Size = ControlSize.Sm, Variant = ButtonVariant.Ghost }))
@@ -852,13 +917,13 @@ internal sealed class FileApp
 
         // The rect is last frame's, which is what a size decision needs: the
         // scroll is laid out at the end of the frame that opened it.
-        var viewport = ui.RectOf(MarkdownScrollId);
+        var viewport = ui.RectOf(_scrollId);
         _markdown.SetViewport(viewport);
 
         string? open;
         using (ui.Scroll(new ScrollOpts
         {
-            Id = MarkdownScrollId,
+            Id = _scrollId,
             Height = Size.Fill,
             Width = Size.Fill,
             FadeEdges = true,
@@ -1046,7 +1111,7 @@ internal sealed class FileApp
 
     private void Reload()
     {
-        if (_path is null) return;
+        if (_path is not { } path) return;
 
         // From the viewer, Reload re-decodes the picture. Reloading the file the
         // viewer was opened from would drop the picture and go back to the page.
@@ -1059,20 +1124,23 @@ internal sealed class FileApp
             return;
         }
 
-        var mode = _mode;
-        LoadFor(_index);
+        // The same page, so the same view, and no history entry: a reload is
+        // not somewhere Back should go.
+        var mode = _mode switch
+        {
+            ViewMode.Text when _kind is not FileKind.Image => ViewMode.Text,
+            ViewMode.Diff when _kind is FileKind.Text or FileKind.Csv => ViewMode.Diff,
+            ViewMode.Info => ViewMode.Info,
+            _ => (ViewMode?)null,
+        };
 
-        if (mode is ViewMode.Text && _kind is not FileKind.Image) _mode = ViewMode.Text;
-        else if (mode is ViewMode.Diff && (_kind is FileKind.Text or FileKind.Csv)) _mode = ViewMode.Diff;
-        else if (mode is ViewMode.Info) _mode = ViewMode.Info;
-
+        Open(path, mode);
         _notice = "Reloaded";
     }
 
     private void ShowText()
     {
         _mode = ViewMode.Text;
-        _returnMode = null;
         _markdown.Reset();
         DropTable();
         _footer = null;
@@ -1081,27 +1149,39 @@ internal sealed class FileApp
     private void ShowPreview()
     {
         _mode = _kind is FileKind.Csv ? ViewMode.Csv : ViewMode.Markdown;
-        _returnMode = null;
         EnsureTable();
         _footer = null;
     }
 
-    private void ReturnTo(ViewMode mode)
+    /// Another view of the file already loaded, which is what Back restores:
+    /// its text and its parsed pictures are still here.
+    private void Show(ViewMode mode)
     {
         _mode = mode;
-        _returnMode = null;
-        _releaseViewer = true;
+        _releaseViewer = mode is not ViewMode.Image;   // leaving the viewer frees its picture
         _footer = null;
     }
 
-    /// A click on a link or on an inline image: a local PNG/JPEG opens in the
-    /// viewer, anything else (a web URL, a source file) is left alone.
+    /// A click on a link in the page. A picture opens in the viewer, a file on
+    /// disk — markdown, source, a folder — opens as a page of its own, and a
+    /// web address goes to the browser.
     private void OpenLink(string link)
     {
         if (_mode is ViewMode.Image) return;
 
-        if (ImageFiles.TryResolve(link, _dir, out var full) && ImageFiles.IsPreviewable(full))
-            OpenImage(full);
+        var url = link.Trim();
+        if (url.Length == 0 || url[0] == '#') return;   // a heading in this page
+
+        if (Uri.TryCreate(url, UriKind.Absolute, out var uri) && !uri.IsFile)
+        {
+            if (uri.Scheme is "http" or "https" or "mailto") OpenExternally(url);
+            return;
+        }
+
+        if (!ImageFiles.TryResolvePath(url, _dir, out var full)) return;
+
+        if (ImageFiles.IsPreviewable(full)) OpenImage(full);
+        else Navigate(full, null);
     }
 
     private void OpenImage(string path)
@@ -1109,13 +1189,15 @@ internal sealed class FileApp
         if (!string.Equals(_imgPath, path, StringComparison.OrdinalIgnoreCase))
             _view = default;
 
-        _returnMode = _mode is ViewMode.Image ? _returnMode ?? ViewMode.Markdown : _mode;
+        // The page is not on screen while the picture is, so it goes on the
+        // history: Back parses and draws it again, at the line it was left on.
+        if (_mode is not ViewMode.Image && _path is { } current) Remember(new Page(current, _mode));
+
         _mode = ViewMode.Image;
         _imgPath = path;
 
-        // The page is not on screen while the picture is: drop its chunks and
-        // its decoded images, and parse/draw it again on Back. The viewer frees
-        // the handle it held, if any, when Load decodes this one.
+        // Drop the page's chunks and its decoded images; the viewer frees the
+        // handle it held, if any, when Load decodes this one.
         _markdown.Reset();
         _notice = null;
         _footer = null;
@@ -2892,7 +2974,14 @@ internal static class ImageFiles
     /// A link's destination as a file on disk, relative to the document that
     /// named it. Web and data URLs have no local file and answer false.
     /// </summary>
-    public static bool TryResolve(string url, string dir, out string full)
+    public static bool TryResolve(string url, string dir, out string full) =>
+        TryResolvePath(url, dir, out full) && File.Exists(full);
+
+    /// <summary>
+    /// The same, for a link that is followed rather than drawn: a folder counts,
+    /// and so does a path that is not there — the page that opens says so.
+    /// </summary>
+    public static bool TryResolvePath(string url, string dir, out string full)
     {
         full = string.Empty;
 
@@ -2912,17 +3001,18 @@ internal static class ImageFiles
 
         var fragment = value.IndexOf('#');
         if (fragment >= 0) value = value[..fragment];
+        if (value.Length == 0) return false;
 
         try { value = Uri.UnescapeDataString(value); } catch (UriFormatException) { }
         try { full = Path.GetFullPath(value, dir); } catch { return false; }
 
-        return File.Exists(full);
+        return true;
     }
 }
 
 /// The handful of window calls the sample needs on top of CUI's own window APIs.
 [SupportedOSPlatform("windows")]
-internal static class Native
+internal static unsafe class Native
 {
     internal const int SmCxScreen = 0;
     internal const int SmCyScreen = 1;
@@ -2932,6 +3022,43 @@ internal static class Native
     internal const uint SwpNosize = 0x0001;
     internal const uint SwpNoactivate = 0x0010;
 
+    private const int GwlWndproc = -4;
+    private const uint WmXButtonUp = 0x020C;
+    private const int XButton1 = 1;
+
+    private static nint _previous;   // the window procedure this one wraps
+    private static int _back;        // a Back click, waiting for the next frame
+
+    /// <summary>
+    /// Catches the mouse's Back button. CUI's window has no message for it —
+    /// its backends map the left, right and middle buttons and nothing else —
+    /// so the window procedure is wrapped and XBUTTON1 read here, the same way
+    /// CuiSharp wraps it for live resizing. Every other message, and every
+    /// other button, goes on to the procedure that was there.
+    /// </summary>
+    internal static void HookBackButton(nint hwnd)
+    {
+        if (hwnd == 0 || _previous != 0) return;
+
+        var proc = (nint)(delegate* unmanaged[Stdcall]<nint, uint, nint, nint, nint>)&OnMessage;
+        _previous = SetWindowLongPtr(hwnd, GwlWndproc, proc);
+    }
+
+    /// True once per press of the mouse's Back button.
+    internal static bool TakeBack() => Interlocked.Exchange(ref _back, 0) != 0;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
+    private static nint OnMessage(nint hwnd, uint message, nint wParam, nint lParam)
+    {
+        if (message == WmXButtonUp && (int)((long)wParam >> 16) == XButton1)
+        {
+            Volatile.Write(ref _back, 1);
+            return 0;   // swallowed: nothing behind us wants a Back click
+        }
+
+        return _previous == 0 ? 0 : CallWindowProc(_previous, hwnd, message, wParam, lParam);
+    }
+
     [DllImport("user32.dll")]
     internal static extern int SetWindowPos(nint hWnd, nint hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
 
@@ -2940,6 +3067,12 @@ internal static class Native
 
     [DllImport("user32.dll")]
     internal static extern int GetSystemMetrics(int nIndex);
+
+    [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")]
+    private static extern nint SetWindowLongPtr(nint hWnd, int nIndex, nint dwNewLong);
+
+    [DllImport("user32.dll", EntryPoint = "CallWindowProcW")]
+    private static extern nint CallWindowProc(nint previous, nint hWnd, uint message, nint wParam, nint lParam);
 
     internal struct Rect
     {
