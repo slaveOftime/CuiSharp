@@ -23,6 +23,11 @@
 //                         Back — the button, Esc, or the mouse's Back button —
 //                         returns to the page, at the line it was left on.
 //
+//                         A ```mermaid fence is drawn, not printed: a
+//                         flowchart or state diagram as a node graph (wheel
+//                         zooms, drag pans, F fits), a pie as a donut. Mermaid
+//                         kinds CUI has no widget for stay code blocks.
+//
 //   .csv / .tsv           a sortable grid: click a header to sort by it, click
 //                         it again to reverse, drag the edge to widen a column.
 //                         Edit switches to the text, where Save works.
@@ -1334,6 +1339,7 @@ internal sealed class MarkdownPreview
     private const float PlaceholderHeight = 160f;
     private const float CardPad = 8f;
     private const float CardGap = 8f;
+    private const float PieHeight = 320f;
 
     private readonly MarkdownOpts _options = new() { Width = Size.Fill };
     private readonly List<Block> _blocks = [];
@@ -1365,6 +1371,7 @@ internal sealed class MarkdownPreview
         var position = 0;
         var fenced = false;
         var fence = '\0';
+        var fenceWidth = 3;     // a longer fence may hold a shorter one
         var lifted = false;
 
         while (position < text.Length)
@@ -1378,17 +1385,31 @@ internal sealed class MarkdownPreview
 
             if (fenced)
             {
-                if (StartsFence(trimmed, fence)) fenced = false;
+                if (FenceRun(trimmed, fence) >= fenceWidth) fenced = false;
             }
-            else if (StartsFence(trimmed, '`'))
+            else if (StartsFence(trimmed, '`') || StartsFence(trimmed, '~'))
             {
-                fenced = true;
-                fence = '`';
-            }
-            else if (StartsFence(trimmed, '~'))
-            {
-                fenced = true;
-                fence = '~';
+                var mark = trimmed[0];
+                var width = FenceRun(trimmed, mark);
+                var fenceEnd = lineEnd;
+                var diagram = IsMermaidFence(trimmed)
+                    ? ReadDiagram(text, lineEnd, mark, width, out fenceEnd)
+                    : null;
+
+                if (diagram is not null)
+                {
+                    AddText(text[textStart..position]);
+                    _blocks.Add(new MermaidBlock($"md-mermaid-{_blocks.Count}", diagram));
+                    textStart = fenceEnd;
+                    next = fenceEnd;
+                    lifted = true;
+                }
+                else
+                {
+                    fenced = true;
+                    fence = mark;
+                    fenceWidth = width;
+                }
             }
             else if (!IsIndented(line) && IsTableRow(trimmed)
                 && ReadImageTable(text, dir, position, out var tableEnd) is { } table)
@@ -1473,11 +1494,38 @@ internal sealed class MarkdownPreview
             {
                 open ??= DrawTable(ui, table);
             }
+            else if (block is MermaidBlock mermaid)
+            {
+                DrawDiagram(ui, mermaid);
+            }
 
             previousImage = block is ImageBlock;
         }
 
         return open;
+    }
+
+    /// <summary>
+    /// A mermaid diagram, drawn with CUI's own widgets instead of its source:
+    /// a flowchart or state diagram is a node graph — wheel zooms, drag pans,
+    /// hover lights up a node's neighbours, F fits — and a pie is a donut.
+    /// </summary>
+    private static void DrawDiagram(Ui ui, MermaidBlock block)
+    {
+        var diagram = block.Diagram;
+
+        if (diagram.Kind is MermaidKind.Pie)
+        {
+            ui.DonutChart(block.Id, diagram.Values, diagram.Labels, new ChartOpts { Height = PieHeight });
+            return;
+        }
+
+        ui.GraphView(block.Id, diagram.Nodes, diagram.Edges, ref block.Selected, new GraphOpts
+        {
+            Width = Size.Fill,
+            Height = diagram.Height,
+            TopDown = diagram.TopDown,
+        });
     }
 
     public void SetViewport(RectF viewport)
@@ -1917,6 +1965,64 @@ internal sealed class MarkdownPreview
         line.Length > 0 && (line[0] == '\t' || (line.Length >= 4
             && line[0] == ' ' && line[1] == ' ' && line[2] == ' ' && line[3] == ' '));
 
+    // ---- mermaid ----------------------------------------------------------
+
+    /// <summary>The length of the run of <paramref name="fence"/> characters a line starts with.</summary>
+    private static int FenceRun(ReadOnlySpan<char> line, char fence)
+    {
+        var i = 0;
+        while (i < line.Length && line[i] == fence) i++;
+        return i;
+    }
+
+    /// <summary>
+    /// A fence whose info string says mermaid: <c>```mermaid</c>, and the
+    /// <c>```mermaid title="…"</c> some docs use.
+    /// </summary>
+    private static bool IsMermaidFence(ReadOnlySpan<char> line)
+    {
+        var i = FenceRun(line, line[0]);
+        while (i < line.Length && line[i] == ' ') i++;
+
+        var end = i;
+        while (end < line.Length && !char.IsWhiteSpace(line[end])) end++;
+
+        return line[i..end].Equals("mermaid", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// The body of the mermaid fence that starts after <paramref name="lineEnd"/>,
+    /// and where the fence ends. Null when it never closes, or when the diagram
+    /// is a kind CUI has no widget for: then the fence stays in the text and
+    /// renders as the code block it was written as.
+    /// </summary>
+    private static MermaidDiagram? ReadDiagram(string text, int lineEnd, char mark, int width, out int end)
+    {
+        end = lineEnd;
+
+        var bodyStart = lineEnd + 1;
+        var scan = bodyStart;
+
+        while (scan < text.Length)
+        {
+            var e = text.IndexOf('\n', scan);
+            if (e < 0) e = text.Length;
+
+            if (FenceRun(text.AsSpan(scan, e - scan).TrimEnd('\r').TrimStart(), mark) >= width)
+            {
+                var diagram = MermaidDiagram.TryParse(text[bodyStart..scan]);
+                if (diagram is null) return null;
+
+                end = e + 1;
+                return diagram;
+            }
+
+            scan = e + 1;
+        }
+
+        return null;
+    }
+
     private abstract class Block(string id)
     {
         public string Id { get; } = id;
@@ -1932,6 +2038,16 @@ internal sealed class MarkdownPreview
         public string Alt { get; } = alt;
         public string Path { get; } = path;
         public ImageTexture? Texture;
+    }
+
+    /// A mermaid fence that CUI has a widget for: drawn as a graph or a donut
+    /// instead of the code block it was written as.
+    private sealed class MermaidBlock(string id, MermaidDiagram diagram) : Block(id)
+    {
+        public MermaidDiagram Diagram { get; } = diagram;
+
+        /// The graph keeps the selected node here, frame to frame.
+        public int Selected = -1;
     }
 
     /// A table whose cells are pictures: drawn as a grid, one card per cell.
@@ -1950,6 +2066,519 @@ internal sealed class MarkdownPreview
         public string Label { get; } = label;
         public string Path { get; } = path;
         public ImageTexture? Texture;
+    }
+}
+
+/// <summary>Which widget a mermaid diagram maps onto.</summary>
+internal enum MermaidKind
+{
+    /// <summary>Nodes and edges: <c>ui.GraphView</c>.</summary>
+    Flow,
+
+    /// <summary>Slices: <c>ui.DonutChart</c>.</summary>
+    Pie,
+}
+
+/// <summary>
+/// The mermaid diagrams CUI has a widget for. A flowchart — and a state
+/// diagram, which is the same picture — becomes a node graph; a pie becomes a
+/// donut. The parse is deliberately forgiving: it reads the lines it knows and
+/// drops the ones it does not (<c>classDef</c>, <c>style</c>, <c>click</c>,
+/// notes, edge labels), so a real-world diagram keeps its shape instead of
+/// falling back to source.
+/// </summary>
+internal sealed class MermaidDiagram
+{
+    public MermaidKind Kind;
+    public bool TopDown = true;
+    public float Height = 320f;
+    public GraphNode[] Nodes = [];
+    public GraphEdge[] Edges = [];
+    public float[] Values = [];
+    public string[] Labels = [];
+
+    /// <summary>
+    /// Reads a fenced mermaid body. Null means the kind is one CUI cannot
+    /// draw, and the caller leaves the fence in the text as a code block.
+    /// </summary>
+    public static MermaidDiagram? TryParse(string body)
+    {
+        var lines = body.Split('\n');
+
+        var header = 0;
+        while (header < lines.Length && IsNoise(lines[header])) header++;
+        if (header == lines.Length) return null;
+
+        var words = lines[header].Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (words.Length == 0) return null;
+
+        return words[0].ToLowerInvariant() switch
+        {
+            "flowchart" or "graph" => ParseFlow(lines, header, Downward(words)),
+            "statediagram" or "statediagram-v2" => ParseFlow(lines, header, topDown: true),
+            "pie" => ParsePie(lines, header),
+            _ => null,
+        };
+    }
+
+    /// <summary>Blank lines, <c>%%</c> comments and <c>%%{init}%%</c> directives.</summary>
+    private static bool IsNoise(string line)
+    {
+        var text = line.Trim();
+        return text.Length == 0 || text.StartsWith("%%", StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// <c>LR</c> and <c>RL</c> lay the layers out side by side; everything else
+    /// — <c>TD</c>, <c>TB</c>, and a state diagram, which names no direction —
+    /// stacks them.
+    /// </summary>
+    private static bool Downward(string[] words) =>
+        words.Length < 2
+        || (!words[1].Equals("LR", StringComparison.OrdinalIgnoreCase)
+            && !words[1].Equals("RL", StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>
+    /// A flowchart, and a state diagram, which is the same picture: one
+    /// statement a line (<c>;</c> also separates them), and the lines CUI has
+    /// no use for — a style, a note, a state's description — dropped whole.
+    /// </summary>
+    private static MermaidDiagram? ParseFlow(string[] lines, int header, bool topDown)
+    {
+        var nodes = new List<GraphNode>();
+        var edges = new List<GraphEdge>();
+        var index = new Dictionary<string, int>(StringComparer.Ordinal);
+
+        var group = (string?)null;   // the subgraph the nodes below it belong to
+        var terminal = 0;            // a state diagram's [*]: the first starts, the rest end
+
+        for (var i = header + 1; i < lines.Length; i++)
+        {
+            var line = lines[i].Trim();
+            if (line.Length == 0 || line.StartsWith("%%", StringComparison.Ordinal)) continue;
+
+            if (line is "end" or "}") { group = null; continue; }
+            if (line.StartsWith("subgraph", StringComparison.Ordinal))
+            {
+                group = Subgraph(line) is { Length: > 0 } title ? title : null;
+                continue;
+            }
+            if (IsDirective(line)) continue;
+
+            // `Idle : waiting` describes a state, while `Idle --> Running :
+            // start` labels a transition; only the first is dropped.
+            var colon = line.IndexOf(':');
+            if (colon > 0 && colon + 1 < line.Length && line[colon + 1] != ':'
+                && !line.AsSpan(0, colon).Contains('-') && !line.AsSpan(0, colon).Contains('='))
+                continue;
+
+            var start = 0;
+            while (start <= line.Length)
+            {
+                var end = line.IndexOf(';', start);
+                if (end < 0) end = line.Length;
+
+                Chain(line.AsSpan(start, end - start), nodes, edges, index, group, ref terminal);
+
+                if (end == line.Length) break;
+                start = end + 1;
+            }
+        }
+
+        if (nodes.Count == 0) return null;
+
+        return new MermaidDiagram
+        {
+            Kind = MermaidKind.Flow,
+            TopDown = topDown,
+            Height = PanelHeight(nodes, edges, topDown),
+            Nodes = [.. nodes],
+            Edges = [.. edges],
+        };
+    }
+
+    /// <summary>
+    /// How tall the panel has to be for the graph to fit at a readable size.
+    /// CUI lays a graph out in layers and shrinks it to fit the panel, so a
+    /// twelve-step flowchart in a 320-point box ends up as unreadable dots.
+    /// The layer of a node is its longest path from a root, found by relaxing
+    /// the edges; a cycle stops climbing once it reaches the node count.
+    /// </summary>
+    private static float PanelHeight(List<GraphNode> nodes, List<GraphEdge> edges, bool topDown)
+    {
+        var count = nodes.Count;
+        if (count == 0) return 220f;
+
+        var layer = new int[count];
+
+        for (var pass = 0; pass < count; pass++)
+        {
+            var moved = false;
+
+            foreach (var edge in edges)
+            {
+                if (edge.From == edge.To) continue;
+
+                var next = layer[edge.From] + 1;
+                if (next > layer[edge.To] && next < count)
+                {
+                    layer[edge.To] = next;
+                    moved = true;
+                }
+            }
+
+            if (!moved) break;
+        }
+
+        var depth = layer.Max() + 1;
+        var widest = 0;
+
+        for (var at = 0; at < depth; at++)
+            widest = Math.Max(widest, layer.Count(l => l == at));
+
+        return topDown
+            ? Math.Clamp(depth * 76f + 56f, 220f, 640f)
+            : Math.Clamp(widest * 52f + 56f, 180f, 420f);
+    }
+
+    /// <summary>
+    /// Lines that style the diagram rather than draw it. A node's colour is the
+    /// theme's business, so they are all dropped.
+    /// </summary>
+    private static bool IsDirective(string line)
+    {
+        var end = 0;
+        while (end < line.Length && !char.IsWhiteSpace(line[end])) end++;
+
+        return line[..end] is "classDef" or "class" or "style" or "linkStyle" or "click"
+            or "direction" or "accTitle" or "accDescr" or "note" or "state";
+    }
+
+    /// <summary>
+    /// A subgraph's title, which becomes the detail line every node inside it
+    /// carries — <c>subgraph api [API layer]</c> and <c>subgraph "API layer"</c>
+    /// mean the same thing.
+    /// </summary>
+    private static string Subgraph(string line)
+    {
+        var text = line["subgraph".Length..].Trim();
+
+        var open = text.IndexOf('[');
+        var close = text.LastIndexOf(']');
+        if (open >= 0 && close > open) text = text[(open + 1)..close].Trim();
+
+        if (text.Length >= 2 && text[0] == '"' && text[^1] == '"') text = text[1..^1].Trim();
+
+        return text;
+    }
+
+    /// <summary>
+    /// One statement: node references joined by links, with <c>&amp;</c>
+    /// grouping, so <c>A &amp; B --&gt; C --&gt; D</c> is two edges and then one.
+    /// </summary>
+    private static void Chain(
+        ReadOnlySpan<char> text,
+        List<GraphNode> nodes,
+        List<GraphEdge> edges,
+        Dictionary<string, int> index,
+        string? group,
+        ref int terminal)
+    {
+        var pos = 0;
+        var sources = new List<int>(2);
+
+        var first = Node(text, ref pos, nodes, index, group, ref terminal);
+        if (first < 0) return;
+        sources.Add(first);
+
+        while (true)
+        {
+            var save = pos;
+            SkipSpace(text, ref pos);
+
+            if (pos < text.Length && text[pos] == '&')
+            {
+                pos++;
+                var more = Node(text, ref pos, nodes, index, group, ref terminal);
+                if (more < 0) return;
+                sources.Add(more);
+                continue;
+            }
+
+            pos = save;
+            if (!Link(text, ref pos, out var both)) return;
+
+            var targets = new List<int>(2);
+            while (true)
+            {
+                var target = Node(text, ref pos, nodes, index, group, ref terminal);
+                if (target < 0) return;
+                targets.Add(target);
+
+                save = pos;
+                SkipSpace(text, ref pos);
+                if (pos < text.Length && text[pos] == '&') { pos++; continue; }
+
+                pos = save;
+                break;
+            }
+
+            foreach (var from in sources)
+            {
+                foreach (var to in targets)
+                {
+                    if (from == to) continue;
+
+                    edges.Add(new GraphEdge(from, to));
+                    if (both) edges.Add(new GraphEdge(to, from));
+                }
+            }
+
+            sources.Clear();
+            sources.AddRange(targets);
+        }
+    }
+
+    /// <summary>
+    /// A node reference: <c>A</c>, <c>A[Text]</c>, <c>A{Text}</c>, or the
+    /// <c>[*]</c> a state diagram uses for its start and end. Returns its
+    /// index, defining it the first time it is named.
+    /// </summary>
+    private static int Node(
+        ReadOnlySpan<char> text,
+        ref int pos,
+        List<GraphNode> nodes,
+        Dictionary<string, int> index,
+        string? group,
+        ref int terminal)
+    {
+        SkipSpace(text, ref pos);
+        if (pos >= text.Length) return -1;
+
+        // `[*]` has no name of its own: the first one opens the diagram and
+        // the rest close it, which is how mermaid means it.
+        if (text[pos] == '[' && text.Length > pos + 2 && text[pos + 1] == '*')
+        {
+            var close = text[pos..].IndexOf(']');
+            if (close < 0) return -1;
+            pos += close + 1;
+
+            var mark = terminal++ == 0 ? "Start" : "End";
+            return Add(mark, null, terminal == 1 ? Tone.Success : Tone.Danger, nodes, index, group);
+        }
+
+        var start = pos;
+        while (pos < text.Length && IsId(text[pos])) pos++;
+        if (pos == start) return -1;
+
+        var id = text[start..pos].ToString();
+        string? label = null;
+
+        if (pos < text.Length && text[pos] is '[' or '(' or '{' or '>')
+            label = Shape(text, ref pos);
+
+        // `:::class` styles the node; it is not part of its name.
+        if (pos + 2 < text.Length && text[pos] == ':' && text[pos + 1] == ':' && text[pos + 2] == ':')
+        {
+            pos += 3;
+            while (pos < text.Length && IsId(text[pos])) pos++;
+        }
+
+        return Add(id, label, Tone.Neutral, nodes, index, group);
+    }
+
+    /// <summary>
+    /// The node's index, adding it the first time. A later mention that names
+    /// a label wins: <c>A</c> then <c>A[Fetch orders]</c> labels the node.
+    /// </summary>
+    private static int Add(
+        string id,
+        string? label,
+        Tone tone,
+        List<GraphNode> nodes,
+        Dictionary<string, int> index,
+        string? group)
+    {
+        if (index.TryGetValue(id, out var at))
+        {
+            if (!string.IsNullOrEmpty(label) && nodes[at].Label == id)
+                nodes[at] = new GraphNode(label, nodes[at].Detail, nodes[at].Tone);
+
+            return at;
+        }
+
+        at = nodes.Count;
+        nodes.Add(new GraphNode(string.IsNullOrEmpty(label) ? id : label, group, tone));
+        index[id] = at;
+        return at;
+    }
+
+    /// <summary>
+    /// The text inside a node's shape — <c>[..]</c>, <c>(..)</c>, <c>{..}</c>,
+    /// <c>((..))</c>, <c>([..])</c>, <c>[[..]]</c>, <c>[(..)]</c>,
+    /// <c>{{..}}</c>, <c>&gt;..]</c>, <c>[/../]</c>. Only the label matters;
+    /// the shape is a drawing mermaid owns.
+    /// </summary>
+    private static string Shape(ReadOnlySpan<char> text, ref int pos)
+    {
+        var open = text[pos];
+        var close = open switch { '(' => ')', '{' => '}', _ => ']' };
+        var start = pos + 1;
+        var depth = 1;
+
+        pos++;
+        while (pos < text.Length)
+        {
+            if (text[pos] == open) depth++;
+            else if (text[pos] == close && --depth == 0) break;
+            pos++;
+        }
+
+        if (pos >= text.Length) return string.Empty;
+
+        var content = text[start..pos];
+        pos++;
+        return Unwrap(content);
+    }
+
+    /// <summary>
+    /// Strips what a label may carry around its text — <c>(..)</c>, quotes,
+    /// <c>/../</c>, <c>**bold**</c> — and turns the line breaks a label uses
+    /// into spaces, since a node draws one line.
+    /// </summary>
+    private static string Unwrap(ReadOnlySpan<char> text)
+    {
+        text = text.Trim();
+
+        while (text.Length >= 2)
+        {
+            var pair = text[0] switch
+            {
+                '(' => ')', '[' => ']', '{' => '}', '/' => '/', '\\' => '\\',
+                '"' => '"', '\'' => '\'', _ => '\0',
+            };
+
+            if (pair == '\0' || text[^1] != pair) break;
+            text = text[1..^1].Trim();
+        }
+
+        while (text.Length > 1 && text[0] is '*' or '_' or '`') text = text[1..];
+        while (text.Length > 0 && text[^1] is '*' or '_' or '`') text = text[..^1];
+
+        var label = text.ToString();
+        if (label.Length == 0) return label;
+
+        return label
+            .Replace("<br/>", " ", StringComparison.OrdinalIgnoreCase)
+            .Replace("<br />", " ", StringComparison.OrdinalIgnoreCase)
+            .Replace("<br>", " ", StringComparison.OrdinalIgnoreCase)
+            .Trim();
+    }
+
+    /// <summary>
+    /// A link between two nodes: <c>--&gt;</c>, <c>---</c>, <c>-.-&gt;</c>,
+    /// <c>==&gt;</c>, <c>--x</c>, and their labelled forms
+    /// (<c>-- yes --&gt;</c>, <c>--&gt;|yes|</c>). A graph draws an arrowhead
+    /// and nothing else, so the label is read and dropped.
+    /// </summary>
+    private static bool Link(ReadOnlySpan<char> text, ref int pos, out bool both)
+    {
+        both = false;
+
+        SkipSpace(text, ref pos);
+        var start = pos;
+
+        pos = ArrowEnd(text, pos);
+        if (pos == start) return false;
+
+        var run = text[start..pos];
+
+        // `A -- yes --> B`: the first run is only the head of a labelled link.
+        if (run is "--" or "-." or "==")
+        {
+            while (pos < text.Length && !IsArrowChar(text[pos])) pos++;
+            if (pos >= text.Length) return false;
+
+            start = pos;
+            pos = ArrowEnd(text, pos);
+            run = text[start..pos];
+        }
+
+        // `-->|yes| B`: the label sits between two bars after the arrowhead.
+        if (pos < text.Length && text[pos] == '|')
+        {
+            var close = text[(pos + 1)..].IndexOf('|');
+            if (close < 0) return false;
+            pos += close + 2;
+        }
+
+        both = run.Length > 1 && run[0] == '<';
+        return true;
+    }
+
+    /// <summary>
+    /// Where the run of arrow characters that starts at <paramref name="pos"/>
+    /// ends. <c>--x</c> and <c>--o</c> take their head only after a dash, so a
+    /// node called <c>orders</c> is not read as one.
+    /// </summary>
+    private static int ArrowEnd(ReadOnlySpan<char> text, int pos)
+    {
+        var start = pos;
+
+        while (pos < text.Length && IsArrowChar(text[pos])) pos++;
+
+        if (pos > start && text[pos - 1] is '-' or '=' && pos < text.Length && text[pos] is 'x' or 'o')
+            pos++;
+
+        return pos;
+    }
+
+    private static bool IsArrowChar(char c) => c is '-' or '.' or '=' or '<' or '>';
+
+    private static bool IsId(char c) => char.IsLetterOrDigit(c) || c is '_' or '*';
+
+    private static void SkipSpace(ReadOnlySpan<char> text, ref int pos)
+    {
+        while (pos < text.Length && char.IsWhiteSpace(text[pos])) pos++;
+    }
+
+    /// <summary>
+    /// <c>pie title Pets</c>, then <c>"Dogs" : 386</c> a line. The donut takes
+    /// the values and the legend; the title has nowhere to go.
+    /// </summary>
+    private static MermaidDiagram? ParsePie(string[] lines, int header)
+    {
+        var values = new List<float>();
+        var labels = new List<string>();
+
+        for (var i = header + 1; i < lines.Length; i++)
+        {
+            var line = lines[i].Trim();
+            if (line.Length == 0 || line.StartsWith("%%", StringComparison.Ordinal)) continue;
+
+            var colon = line.LastIndexOf(':');
+            if (colon <= 0) continue;
+
+            var label = Unwrap(line.AsSpan(0, colon));
+            if (label.Length == 0) continue;
+
+            if (!float.TryParse(line.AsSpan(colon + 1), NumberStyles.Float, CultureInfo.InvariantCulture, out var value))
+                continue;
+
+            if (value <= 0) continue;
+
+            labels.Add(label);
+            values.Add(value);
+        }
+
+        if (values.Count == 0) return null;
+
+        return new MermaidDiagram
+        {
+            Kind = MermaidKind.Pie,
+            Values = [.. values],
+            Labels = [.. labels],
+        };
     }
 }
 
