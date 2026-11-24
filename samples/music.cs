@@ -83,6 +83,9 @@ internal sealed class MusicApp : IDisposable
     private const float CompactPlayerMax = 216f;
     private const float LibraryMinimum = 180f;
 
+    private const float VolumeStep = 0.05f;
+    private const double SeekStep = 5;
+
     private readonly Library _library;
     private readonly Player _player;
     private readonly Preferences _preferences;
@@ -141,7 +144,9 @@ internal sealed class MusicApp : IDisposable
         _player.Pump();
         _player.SetQueue(_library.Queue);
         Resolve();
-        Shortcuts(ui);
+
+        // The picker is modal: while it is open the keys belong to it.
+        if (!_picker.IsOpen) Shortcuts(ui);
 
         var trackBefore = _player.Current;
         _nowPlaying.Advance(ui.DeltaTime, _player.IsPlaying);
@@ -234,13 +239,59 @@ internal sealed class MusicApp : IDisposable
         return $"{trackCount} · {folderCount} · {Format.Time(duration)}";
     }
 
+    /// <summary>
+    /// Transport keys, so the player works without the pointer: Space toggles,
+    /// Left and Right seek, and Ctrl with the arrows skips a track or sets the
+    /// volume. M mutes, Home starts over, R cycles the playback mode and V the
+    /// effect. A focused text field owns the keyboard and turns all of this off.
+    /// </summary>
     private void Shortcuts(Ui ui)
     {
         if (ui.WantsKeyboard) return;
 
         if (ui.Shortcut((Mods)0, Key.Space)) _player.Toggle();
-        if (ui.Shortcut((Mods)0, Key.Right)) _player.Seek(_player.Position + 5);
-        if (ui.Shortcut((Mods)0, Key.Left)) _player.Seek(_player.Position - 5);
+
+        if (ui.Shortcut((Mods)0, Key.Left)) _player.Seek(_player.Position - SeekStep);
+        if (ui.Shortcut((Mods)0, Key.Right)) _player.Seek(_player.Position + SeekStep);
+
+        if (ui.Shortcut(Mods.Ctrl, Key.Left)) _player.Previous();
+        if (ui.Shortcut(Mods.Ctrl, Key.Right)) _player.Next();
+
+        if (ui.Shortcut((Mods)0, Key.Home)) _player.Seek(0);
+
+        var volume = false;
+
+        if (ui.Shortcut(Mods.Ctrl, Key.Up))
+        {
+            _player.Volume += VolumeStep;
+            volume = true;
+        }
+
+        if (ui.Shortcut(Mods.Ctrl, Key.Down))
+        {
+            _player.Volume -= VolumeStep;
+            volume = true;
+        }
+
+        if (ui.Shortcut((Mods)0, Key.M))
+        {
+            _player.Volume = _player.Volume <= 0.001f ? 0.7f : 0f;
+            volume = true;
+        }
+
+        if (volume) Save();
+
+        if (ui.Shortcut((Mods)0, Key.R))
+        {
+            _player.CycleMode();
+            Save();
+        }
+
+        if (ui.Shortcut((Mods)0, Key.V))
+        {
+            _nowPlaying.VisualizerMode = (_nowPlaying.VisualizerMode + 1) % Visualizer.Count;
+            Save();
+        }
     }
 
     /// <summary>
@@ -314,7 +365,11 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
 
     public void Dispose() => _sound.Dispose();
 
-    public int VisualizerMode => _visualizer.Mode;
+    public int VisualizerMode
+    {
+        get => _visualizer.Mode;
+        set => _visualizer.Mode = value;
+    }
 
     public void Advance(float delta, bool playing)
     {
@@ -661,6 +716,7 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
         if (ui.IconButton(icon, new ButtonOpts
         {
             Tooltip = tooltip,
+            Shortcut = "R",
             Size = ControlSize.Sm,
             Selected = mode != PlaybackMode.Off,
         }))
@@ -669,12 +725,18 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
             save();
         }
 
-        if (ui.IconButton(Icons.SkipBack, new ButtonOpts { Tooltip = "Previous", Size = ControlSize.Sm }))
+        if (ui.IconButton(Icons.SkipBack, new ButtonOpts
+        {
+            Tooltip = "Previous",
+            Shortcut = "Ctrl Left",
+            Size = ControlSize.Sm,
+        }))
             player.Previous();
 
         if (ui.IconButton(player.IsPlaying ? Icons.Pause : Icons.Play, new ButtonOpts
         {
             Tooltip = player.IsPlaying ? "Pause" : "Play",
+            Shortcut = "Space",
             Size = ControlSize.Sm,
             Variant = ButtonVariant.Primary,
         }))
@@ -682,7 +744,12 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
             player.Toggle();
         }
 
-        if (ui.IconButton(Icons.SkipForward, new ButtonOpts { Tooltip = "Next", Size = ControlSize.Sm }))
+        if (ui.IconButton(Icons.SkipForward, new ButtonOpts
+        {
+            Tooltip = "Next",
+            Shortcut = "Ctrl Right",
+            Size = ControlSize.Sm,
+        }))
             player.Next();
     }
 
@@ -727,6 +794,7 @@ internal sealed class NowPlayingPanel(Player player, int visualizer, Action save
         if (ui.IconButton(volume <= 0.001f ? Icons.VolumeX : Icons.Volume2, new ButtonOpts
         {
             Tooltip = volume <= 0.001f ? "Unmute" : "Mute",
+            Shortcut = "M",
             Size = ControlSize.Sm,
         }))
         {
@@ -966,6 +1034,8 @@ internal sealed class FolderPicker
 {
     private bool _open;
     private string _path = "";
+
+    public bool IsOpen => _open;
 
     public void Request() => _open = true;
 
