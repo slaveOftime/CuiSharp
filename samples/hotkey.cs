@@ -114,6 +114,11 @@ internal sealed class HotkeyApp : IDisposable
             MinHeight = 400,
             Theme = Theme.Dark,
             Accent = Accent.Rose,
+
+            // The GPU context, not the UI, is this app's largest cost: an OpenGL window for a
+            // text-only screen holds about 95 MB of driver memory, and this one stays open all
+            // day. The software rasterizer builds the same frame in well under a millisecond.
+            Renderer = Renderer.Software,
             WindowCreated = window =>
             {
                 _window = window;
@@ -2637,6 +2642,10 @@ internal sealed class LauncherWindow : IDisposable
     // Matches Win32.ColorKey: the theme background the window is keyed out against.
     private static readonly Color TransparentKey = Color.Rgb(0x0B0B0B);
 
+    // The dark theme's violet accent. The window itself is neutral (see Options), so the hue the
+    // palette is designed around has to be put back by hand.
+    private static readonly Color PaletteAccent = Color.Rgb(0xA78BFF);
+
     private const string EditCommand = "Edit captured text";
 
     private readonly LauncherBridge _bridge;
@@ -2816,8 +2825,16 @@ internal sealed class LauncherWindow : IDisposable
         MinWidth = 240,
         MinHeight = 240,
         Theme = Theme.Dark,
-        Accent = Accent.Violet,
         Hidden = true,
+
+        // Neutral, not violet, and the palette paints the violet back into the accent token. A
+        // field's focus edge is the accent unless the window's accent is neutral, where it becomes
+        // TextSecondary — the only way to keep a focused field from drawing an outline of its own.
+        Accent = Accent.Neutral,
+
+        // Same reason as the manager window: a second GPU context costs another ~30 MB, and this
+        // palette is 380 x 340. Its transparency is the window's colour key, not the renderer's.
+        Renderer = Renderer.Software,
         WindowCreated = PrepareWindow,
     };
 
@@ -2874,6 +2891,11 @@ internal sealed class LauncherWindow : IDisposable
         // The palette shows focus through the highlighted row and the flat fields, so a ring
         // drawn around whichever control has the keyboard is noise rather than a cue.
         style[Token.FocusRing] = Color.Transparent;
+
+        // The window is built with a neutral accent so a focused field draws no edge (see
+        // DrawPalette); the violet the palette is designed around goes back into the token that
+        // the beam, the icons and the selected row read.
+        style[Token.Accent] = PaletteAccent;
 
         // The spotlight paints a SURFACE background; key it out so only its glow and border show.
         // The token is restored as soon as the card begins, before the panel and its text area draw.
@@ -3017,12 +3039,17 @@ internal sealed class LauncherWindow : IDisposable
 
         using (ui.Box(new Box { Width = Size.Fill, PadX = 10, PadY = 8 }))
         {
-            // The focused field's border mixes toward the accent, and its caret and selection use
-            // that same token. Point the accent at the resting border colour for this one call, so
-            // focus adds no glowing outline; the rest of the launcher keeps its violet accent.
+            // The search is plain text on the panel, not a form control: a field's fill is
+            // Surface, its resting edge BorderStrong and its focused edge the accent — under this
+            // window's neutral accent that is TextSecondary. All three point at nothing here, so
+            // no state of the field draws a box; the tokens come back for everything after it.
             ThemeStyle style = ui.Style;
-            Color accent = style[Token.Accent];
-            style[Token.Accent] = style[Token.BorderStrong];
+            Color surface = style[Token.Surface];
+            Color edge = style[Token.BorderStrong];
+            Color focused = style[Token.TextSecondary];
+            style[Token.Surface] = Color.Transparent;
+            style[Token.BorderStrong] = Color.Transparent;
+            style[Token.TextSecondary] = Color.Transparent;
 
             InputResult result = ui.Input("query", ref _query, new InputOpts
             {
@@ -3034,7 +3061,9 @@ internal sealed class LauncherWindow : IDisposable
                 Clearable = true,
             });
 
-            style[Token.Accent] = accent;
+            style[Token.Surface] = surface;
+            style[Token.BorderStrong] = edge;
+            style[Token.TextSecondary] = focused;
             if (result.Changed) _highlight = 0;
         }
 
@@ -3230,11 +3259,15 @@ internal sealed class LauncherWindow : IDisposable
     {
         using (ui.Box(new Box { Width = Size.Fill, Height = Size.Fill, Pad = 12 }))
         {
-            // Same flat field as the search box: the accent would otherwise outline the area
-            // whenever it holds the keyboard.
+            // The same flat field as the search: the captured text is the panel, so no fill and
+            // no edge in any state — including focus, which is why the window's accent is neutral.
             ThemeStyle style = ui.Style;
-            Color accent = style[Token.Accent];
-            style[Token.Accent] = style[Token.BorderStrong];
+            Color surface = style[Token.Surface];
+            Color edge = style[Token.BorderStrong];
+            Color focused = style[Token.TextSecondary];
+            style[Token.Surface] = Color.Transparent;
+            style[Token.BorderStrong] = Color.Transparent;
+            style[Token.TextSecondary] = Color.Transparent;
 
             ui.TextArea("payload", ref payloadText, new InputOpts
             {
@@ -3244,7 +3277,9 @@ internal sealed class LauncherWindow : IDisposable
                 Placeholder = "Nothing captured",
             });
 
-            style[Token.Accent] = accent;
+            style[Token.Surface] = surface;
+            style[Token.BorderStrong] = edge;
+            style[Token.TextSecondary] = focused;
         }
     }
 
