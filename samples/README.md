@@ -7,7 +7,7 @@ same run / publish / headless recipe. The icon beside each file is what the publ
 | File | What it shows |
 |---|---|
 | [`disk.cs`](disk.cs) | A treemap of a folder on disk: sizes, scan progress, ranking and free space. |
-| [`stock.cs`](stock.cs) | A global market-cap dashboard over Tencent + Eastmoney, with a live tracker and cache. |
+| [`stock.cs`](stock.cs) | A global market-cap dashboard over Eastmoney or TradingView + Yahoo, switchable in the footer, with a live tracker and cache. |
 | [`music.cs`](music.cs) | A music player over your folders: library, transport, seek bar and real-audio visualizers. |
 | [`download.cs`](download.cs) | A magnet + HTTP download manager: newest-first queue, peers, speed and a details pane. |
 | [`file.cs`](file.cs) | A file preview: markdown with inline images, CSV grids, images to zoom, and git-tracked text edited with the HEAD diff beside it. |

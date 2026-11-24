@@ -11,18 +11,21 @@
 #:property OutputType=WinExe
 #:property ApplicationIcon=stock.ico
 
+using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using CuiSharp;
 using CuiSharp.Hosting;
 
 // ---------------------------------------------------------------------------
-// Global Market Cap — a native CuiSharp market tracker over TradingView + Yahoo Finance.
+// Global Market Cap — a native CuiSharp market tracker over two switchable feeds:
+// Eastmoney (东方财富, reachable from mainland China) and TradingView + Yahoo Finance.
+// The footer switch picks one, and the choice is saved beside the cached snapshot.
 //
 //   run      dotnet run stock.cs                        opens in MiniView by default
 //   ship     dotnet publish stock.cs -c Release -o .    one native executable, no runtime needed
@@ -65,7 +68,7 @@ internal sealed class Dashboard(MarketService service)
     private const float MiniBreakpoint = 660f;
     private const float WideBreakpoint = 1000f;
 
-    private readonly DashboardState _state = new();
+    private readonly DashboardState _state = new(service.SelectedSource);
     private readonly ChartPanel _chart = new();
     private CuiWindow? _window;
 
@@ -88,6 +91,10 @@ internal sealed class Dashboard(MarketService service)
         ApplyStyle(ui);
 
         if (ui.KeyPressed(Key.Escape)) _window?.RequestClose();
+
+        // The footer binds the switch by ref, so the choice arrives one frame after the click.
+        if (_state.SourceIndex != service.SelectedSource)
+            service.SelectSource(_state.SourceIndex);
 
         var (width, height) = ui.ViewportSize();
         var mini = width < MiniBreakpoint;
@@ -117,7 +124,7 @@ internal sealed class Dashboard(MarketService service)
     private void DrawWide(Ui ui, MarketView view, float width, float height)
     {
         var listWidth = Math.Clamp(width * 0.31f, 310f, 430f);
-        var chartHeight = Math.Max(260f, height - 340f);
+        var chartHeight = Math.Max(260f, height - 352f);
 
         using (ui.Column(new Box { Pad = 14, Gap = 12, Height = Size.Fill }))
         {
@@ -130,7 +137,7 @@ internal sealed class Dashboard(MarketService service)
                 RankingPanel.Draw(ui, view, _state, Size.Fill, Size.Px(listWidth));
             }
 
-            FooterView.Draw(ui, view, wide: true);
+            FooterView.Draw(ui, service, _state, view, wide: true);
         }
     }
 
@@ -145,12 +152,12 @@ internal sealed class Dashboard(MarketService service)
             SummaryView.Draw(ui, view, _state, wide: false);
             _chart.Draw(ui, view, _state, wide: false, chartHeight);
             RankingPanel.Draw(ui, view, _state, Size.Px(440), Size.Fill);
-            FooterView.Draw(ui, view, wide: false);
+            FooterView.Draw(ui, service, _state, view, wide: false);
         }
     }
 }
 
-internal sealed class DashboardState
+internal sealed class DashboardState(int sourceIndex)
 {
     public const int DefaultTopCount = 12;
 
@@ -162,6 +169,7 @@ internal sealed class DashboardState
     // Public fields so CuiSharp's Number and Segmented controls can bind by ref.
     public int ModeIndex;
     public double TopN = DefaultTopCount;
+    public int SourceIndex = sourceIndex;
 
     public ChartHorizon Horizon => ModeIndex == 0
         ? SixMonthHorizon.Instance
@@ -206,14 +214,16 @@ internal static class MiniView
             {
                 case MarketLoading:
                     ui.LoadingCenter("Loading global markets...", Size.Fill);
-                    return;
+                    DrawFooter(ui, service, state, "");
+                    break;
 
                 case MarketError(var message, _):
                     ui.ErrorCenter("Market feed unavailable", message, Size.Fill);
-                    return;
+                    DrawFooter(ui, service, state, "");
+                    break;
 
                 case MarketSnapshot snapshot:
-                    DrawContent(ui, snapshot, state);
+                    DrawContent(ui, service, snapshot, state);
                     break;
             }
         }
@@ -264,7 +274,7 @@ internal static class MiniView
         }
     }
 
-    private static void DrawContent(Ui ui, MarketSnapshot snapshot, DashboardState state)
+    private static void DrawContent(Ui ui, MarketService service, MarketSnapshot snapshot, DashboardState state)
     {
         var count = Math.Min(DefaultRows, snapshot.Rows.Length);
         var anySelected = state.AnySelected(snapshot.Rows, count);
@@ -286,11 +296,17 @@ internal static class MiniView
             }
         }
 
+        DrawFooter(ui, service, state, snapshot.UpdatedLabel);
+    }
+
+    /// <summary>The feed switch has to stay reachable while a feed is failing, so every state draws it.</summary>
+    private static void DrawFooter(Ui ui, MarketService service, DashboardState state, string updated)
+    {
         using (ui.Row(new Box { Align = Align.Center, Gap = 8 }))
         {
-            ui.Muted("TradingView · Yahoo Finance");
+            ui.SourceSwitch(service, state);
             ui.Spacer();
-            ui.FooterTime(snapshot.UpdatedLabel);
+            if (updated.Length > 0) ui.FooterTime(updated);
         }
     }
 
@@ -737,7 +753,7 @@ internal sealed class ChartPanel
             IntradayHorizon => $"Session open to latest · {hint}",
         };
 
-        const string Right = "Quotes: TradingView · Series: Yahoo Finance";
+        const string Right = "Quotes & series: Eastmoney";
 
         if (wide)
         {
@@ -828,10 +844,7 @@ internal static class RankingPanel
 
 internal static class FooterView
 {
-    private const string Sources =
-        "Global quotes and USD market caps from TradingView · daily and intraday series from Yahoo Finance · quotes may be delayed";
-
-    public static void Draw(Ui ui, MarketView view, bool wide)
+    public static void Draw(Ui ui, MarketService service, DashboardState state, MarketView view, bool wide)
     {
         var updated = view is MarketSnapshot snapshot ? snapshot.UpdatedLabel : "";
 
@@ -839,17 +852,23 @@ internal static class FooterView
         {
             using (ui.Row(new Box { Align = Align.Center, Gap = 10 }))
             {
-                ui.Muted(Sources);
+                ui.SourceSwitch(service, state);
+                ui.Muted(service.Attribution);
                 ui.Spacer();
                 if (updated.Length > 0) ui.FooterTime(updated);
             }
         }
         else
         {
-            using (ui.Column(new Box { Gap = 3 }))
+            using (ui.Column(new Box { Gap = 6 }))
             {
-                ui.Muted(Sources);
-                if (updated.Length > 0) ui.FooterTime(updated);
+                ui.Muted(service.Attribution);
+                using (ui.Row(new Box { Align = Align.Center, Gap = 10 }))
+                {
+                    ui.SourceSwitch(service, state);
+                    ui.Spacer();
+                    if (updated.Length > 0) ui.FooterTime(updated);
+                }
             }
         }
     }
@@ -885,6 +904,16 @@ internal static class MarketUiExtensions
 
         public void FooterTime(string text) =>
             ui.Text(text, new TextOpts { Size = 11, Tabular = true, Color = Color.TextMuted });
+
+        /// <summary>The footer feed switch; writing state.SourceIndex is what commits it.</summary>
+        public void SourceSwitch(MarketService service, DashboardState state)
+        {
+            using (ui.Box(new Box { Width = Size.Px(196) }))
+            {
+                ui.Segmented("source", service.SourceLabels, ref state.SourceIndex,
+                    new SegmentedOpts { FullWidth = true, Size = ControlSize.Sm });
+            }
+        }
 
         public void VLine(float height)
         {
@@ -1064,19 +1093,21 @@ internal sealed record IntradayHorizon
 {
     public static readonly IntradayHorizon Instance = new();
     public string Title => "Session performance";
-    public string Subtitle => "Percent from previous close · 5-minute bars";
+    public string Subtitle => "Percent from previous close · intraday";
     public string Badge => "% change";
     public string ValueFormat => "%.2f%%";
 }
 
+/// <summary>The id each feed knows one listing by.</summary>
+internal readonly record struct SourceIds(string Eastmoney, string TradingView, string Yahoo);
+
 internal sealed record Company(
-    string ScanSymbol,
-    string YahooSymbol,
     string Ticker,
     string Name,
     string Market,
     string Currency,
-    int ColorIndex)
+    int ColorIndex,
+    SourceIds Ids)
 {
     public string Subtitle { get; } = $"{Name} · {Market}";
     public string RowCardId { get; } = $"row:{Ticker}";
@@ -1090,44 +1121,47 @@ internal sealed record Company(
 
 internal static class Catalog
 {
+    // Each listing carries the id every feed knows it by: Eastmoney `market.code`
+    // (105 NASDAQ, 106 NYSE, 116 HKEX, 1 SSE, 0 SZSE, 176 Tokyo), TradingView
+    // `EXCHANGE:TICKER`, and the Yahoo Finance symbol.
     public static readonly Company[] Companies =
     [
-        new("NASDAQ:NVDA", "NVDA", "NVDA", "NVIDIA", "NASDAQ", "USD", 0),
-        new("NASDAQ:MSFT", "MSFT", "MSFT", "Microsoft", "NASDAQ", "USD", 1),
-        new("NASDAQ:AAPL", "AAPL", "AAPL", "Apple", "NASDAQ", "USD", 2),
-        new("NASDAQ:GOOGL", "GOOGL", "GOOGL", "Alphabet", "NASDAQ", "USD", 3),
-        new("NASDAQ:AMZN", "AMZN", "AMZN", "Amazon", "NASDAQ", "USD", 4),
-        new("NASDAQ:META", "META", "META", "Meta Platforms", "NASDAQ", "USD", 5),
-        new("NASDAQ:AVGO", "AVGO", "AVGO", "Broadcom", "NASDAQ", "USD", 6),
-        new("NASDAQ:TSLA", "TSLA", "TSLA", "Tesla", "NASDAQ", "USD", 7),
-        new("NYSE:BRK.B", "BRK-B", "BRK.B", "Berkshire Hathaway", "NYSE", "USD", 8),
-        new("NYSE:LLY", "LLY", "LLY", "Eli Lilly", "NYSE", "USD", 9),
-        new("NYSE:JPM", "JPM", "JPM", "JPMorgan Chase", "NYSE", "USD", 10),
-        new("NYSE:V", "V", "V", "Visa", "NYSE", "USD", 11),
-        new("NYSE:MA", "MA", "MA", "Mastercard", "NYSE", "USD", 12),
-        new("NASDAQ:WMT", "WMT", "WMT", "Walmart", "NASDAQ", "USD", 13),
-        new("NYSE:JNJ", "JNJ", "JNJ", "Johnson & Johnson", "NYSE", "USD", 14),
-        new("NYSE:PG", "PG", "PG", "Procter & Gamble", "NYSE", "USD", 15),
-        new("NYSE:XOM", "XOM", "XOM", "Exxon Mobil", "NYSE", "USD", 16),
-        new("NYSE:UNH", "UNH", "UNH", "UnitedHealth", "NYSE", "USD", 17),
-        new("NYSE:HD", "HD", "HD", "Home Depot", "NYSE", "USD", 18),
-        new("NASDAQ:COST", "COST", "COST", "Costco", "NASDAQ", "USD", 19),
-        new("NYSE:ORCL", "ORCL", "ORCL", "Oracle", "NYSE", "USD", 20),
-        new("NASDAQ:NFLX", "NFLX", "NFLX", "Netflix", "NASDAQ", "USD", 21),
-        new("NASDAQ:AMD", "AMD", "AMD", "AMD", "NASDAQ", "USD", 22),
-        new("NYSE:TSM", "TSM", "TSM", "TSMC", "NYSE", "USD", 23),
+        new("NVDA", "NVIDIA", "NASDAQ", "USD", 0, new("105.NVDA", "NASDAQ:NVDA", "NVDA")),
+        new("MSFT", "Microsoft", "NASDAQ", "USD", 1, new("105.MSFT", "NASDAQ:MSFT", "MSFT")),
+        new("AAPL", "Apple", "NASDAQ", "USD", 2, new("105.AAPL", "NASDAQ:AAPL", "AAPL")),
+        new("GOOGL", "Alphabet", "NASDAQ", "USD", 3, new("105.GOOGL", "NASDAQ:GOOGL", "GOOGL")),
+        new("AMZN", "Amazon", "NASDAQ", "USD", 4, new("105.AMZN", "NASDAQ:AMZN", "AMZN")),
+        new("META", "Meta Platforms", "NASDAQ", "USD", 5, new("105.META", "NASDAQ:META", "META")),
+        new("AVGO", "Broadcom", "NASDAQ", "USD", 6, new("105.AVGO", "NASDAQ:AVGO", "AVGO")),
+        new("TSLA", "Tesla", "NASDAQ", "USD", 7, new("105.TSLA", "NASDAQ:TSLA", "TSLA")),
+        new("BRK.B", "Berkshire Hathaway", "NYSE", "USD", 8, new("106.BRK_B", "NYSE:BRK.B", "BRK-B")),
+        new("LLY", "Eli Lilly", "NYSE", "USD", 9, new("106.LLY", "NYSE:LLY", "LLY")),
+        new("JPM", "JPMorgan Chase", "NYSE", "USD", 10, new("106.JPM", "NYSE:JPM", "JPM")),
+        new("V", "Visa", "NYSE", "USD", 11, new("106.V", "NYSE:V", "V")),
+        new("MA", "Mastercard", "NYSE", "USD", 12, new("106.MA", "NYSE:MA", "MA")),
+        new("WMT", "Walmart", "NASDAQ", "USD", 13, new("105.WMT", "NASDAQ:WMT", "WMT")),
+        new("JNJ", "Johnson & Johnson", "NYSE", "USD", 14, new("106.JNJ", "NYSE:JNJ", "JNJ")),
+        new("PG", "Procter & Gamble", "NYSE", "USD", 15, new("106.PG", "NYSE:PG", "PG")),
+        new("XOM", "Exxon Mobil", "NYSE", "USD", 16, new("106.XOM", "NYSE:XOM", "XOM")),
+        new("UNH", "UnitedHealth", "NYSE", "USD", 17, new("106.UNH", "NYSE:UNH", "UNH")),
+        new("HD", "Home Depot", "NYSE", "USD", 18, new("106.HD", "NYSE:HD", "HD")),
+        new("COST", "Costco", "NASDAQ", "USD", 19, new("105.COST", "NASDAQ:COST", "COST")),
+        new("ORCL", "Oracle", "NYSE", "USD", 20, new("106.ORCL", "NYSE:ORCL", "ORCL")),
+        new("NFLX", "Netflix", "NASDAQ", "USD", 21, new("105.NFLX", "NASDAQ:NFLX", "NFLX")),
+        new("AMD", "AMD", "NASDAQ", "USD", 22, new("105.AMD", "NASDAQ:AMD", "AMD")),
+        new("TSM", "TSMC", "NYSE", "USD", 23, new("106.TSM", "NYSE:TSM", "TSM")),
 
-        new("HKEX:700", "0700.HK", "0700", "Tencent", "HKEX", "HKD", 24),
-        new("HKEX:9988", "9988.HK", "9988", "Alibaba", "HKEX", "HKD", 25),
-        new("HKEX:3690", "3690.HK", "3690", "Meituan", "HKEX", "HKD", 26),
+        new("0700", "Tencent", "HKEX", "HKD", 24, new("116.00700", "HKEX:700", "0700.HK")),
+        new("9988", "Alibaba", "HKEX", "HKD", 25, new("116.09988", "HKEX:9988", "9988.HK")),
+        new("3690", "Meituan", "HKEX", "HKD", 26, new("116.03690", "HKEX:3690", "3690.HK")),
 
-        new("SSE:600519", "600519.SS", "600519", "Kweichow Moutai", "SSE", "CNY", 27),
-        new("SSE:601398", "601398.SS", "601398", "ICBC", "SSE", "CNY", 28),
-        new("SZSE:300750", "300750.SZ", "300750", "CATL", "SZSE", "CNY", 29),
+        new("600519", "Kweichow Moutai", "SSE", "CNY", 27, new("1.600519", "SSE:600519", "600519.SS")),
+        new("601398", "ICBC", "SSE", "CNY", 28, new("1.601398", "SSE:601398", "601398.SS")),
+        new("300750", "CATL", "SZSE", "CNY", 29, new("0.300750", "SZSE:300750", "300750.SZ")),
 
-        new("TSE:7203", "7203.T", "7203", "Toyota", "TSE", "JPY", 30),
-        new("TSE:6758", "6758.T", "6758", "Sony", "TSE", "JPY", 31),
-        new("TSE:9984", "9984.T", "9984", "SoftBank Group", "TSE", "JPY", 32),
+        new("7203", "Toyota", "TSE", "JPY", 30, new("176.7203", "TSE:7203", "7203.T")),
+        new("6758", "Sony", "TSE", "JPY", 31, new("176.6758", "TSE:6758", "6758.T")),
+        new("9984", "SoftBank Group", "TSE", "JPY", 32, new("176.9984", "TSE:9984", "9984.T")),
     ];
 
     public static int Count => Companies.Length;
@@ -1138,8 +1172,11 @@ internal static class Catalog
     public static readonly Dictionary<string, Company> ByTicker =
         Companies.ToDictionary(static c => c.Ticker, StringComparer.Ordinal);
 
+    public static readonly Dictionary<string, Company> BySecId =
+        Companies.ToDictionary(static c => c.Ids.Eastmoney, StringComparer.Ordinal);
+
     public static readonly Dictionary<string, Company> ByScanSymbol =
-        Companies.ToDictionary(static c => c.ScanSymbol, StringComparer.Ordinal);
+        Companies.ToDictionary(static c => c.Ids.TradingView, StringComparer.Ordinal);
 
     public static Company GetOrFallback(string ticker) =>
         ByTicker.TryGetValue(ticker, out var company) ? company : Companies[0];
@@ -1186,7 +1223,6 @@ internal readonly record struct FxSnapshot(
 }
 
 internal sealed record MarketSnapshot(
-    int Version,
     DateTimeOffset UpdatedUtc,
     QuoteRow[] Rows,
     string[] DateLabels,
@@ -1239,8 +1275,8 @@ internal readonly record struct SummaryStats(
 }
 
 // ---------------------------------------------------------------------------
-// 5. MarketService: drives background updates via CuiSharp's `Mutation<T>`,
-//    using two batch JSON endpoints and source-generated System.Text.Json.
+// 5. MarketService: drives background updates via CuiSharp's `Mutation<T>`, and picks
+//    between `MarketSource` implementations, each doing its own quote + series calls.
 // ---------------------------------------------------------------------------
 
 internal sealed class MarketService : IDisposable
@@ -1249,9 +1285,11 @@ internal sealed class MarketService : IDisposable
 
     private static readonly TimeSpan RefreshInterval = TimeSpan.FromSeconds(RefreshSeconds);
 
-    private readonly MarketClient _client = new();
+    private readonly MarketSource[] _sources;
+    private readonly string[] _labels;
     private readonly Mutation<MarketView> _mutation;
 
+    private MarketSource _source;
     private MarketView _current;
     private int _requestedCount = DashboardState.DefaultTopCount;
     private int _fetchedCount;
@@ -1260,15 +1298,22 @@ internal sealed class MarketService : IDisposable
 
     public MarketService()
     {
-        _current = Cache.Load() is { } cached
-            ? cached
-            : MarketLoading.Instance;
+        var saved = Cache.Load();
+
+        _sources = [new EastmoneySource(), new YahooSource()];
+        _labels = [.. _sources.Select(static source => source.Label)];
+        _source = Array.Find(_sources, source => source.Id == saved?.Source) ?? _sources[0];
+
+        _current = saved?.Snapshot is { } snapshot ? snapshot : MarketLoading.Instance;
 
         _mutation = new Mutation<MarketView>(FetchAsync, apply: view => _current = view);
     }
 
     public MarketView Current => _current;
     public bool IsBusy => _mutation.IsRunning;
+    public string[] SourceLabels => _labels;
+    public int SelectedSource => Array.IndexOf(_sources, _source);
+    public string Attribution => _source.Attribution;
 
     public async Task WarmUpAsync()
     {
@@ -1291,10 +1336,30 @@ internal sealed class MarketService : IDisposable
 
     public void RequestRefresh() => TriggerRefresh();
 
+    /// <summary>Switches feeds, remembers the choice, and refetches straight away.</summary>
+    public void SelectSource(int index)
+    {
+        if ((uint)index >= (uint)_sources.Length) return;
+
+        var next = _sources[index];
+        if (ReferenceEquals(next, _source)) return;
+
+        _source = next;
+        _current = MarketLoading.Instance;
+        _fetchedCount = 0;
+
+        // Persist the choice before the network runs: a feed that cannot be reached
+        // still has to be the one selected after a restart.
+        Cache.Save(_source.Id, null);
+        TriggerRefresh();
+    }
+
     public void Dispose()
     {
         _mutation.Dispose();
-        _client.Dispose();
+
+        foreach (var source in _sources)
+            source.Dispose();
     }
 
     private void TriggerRefresh()
@@ -1307,15 +1372,16 @@ internal sealed class MarketService : IDisposable
 
     private async Task<MarketView> FetchAsync(CancellationToken ct)
     {
+        var source = _source;
         var previous = _current is MarketSnapshot existing ? existing : null;
         var count = Math.Clamp(_requestedCount, MiniView.DefaultRows, Catalog.Count);
 
         try
         {
-            var snapshot = await _client.FetchSnapshotAsync(count, previous, ct).ConfigureAwait(false);
+            var snapshot = await source.FetchSnapshotAsync(count, previous, ct).ConfigureAwait(false);
             if (snapshot is not null)
             {
-                Cache.Save(snapshot);
+                Cache.Save(source.Id, snapshot);
                 GC.Collect(2, GCCollectionMode.Aggressive, blocking: true, compacting: true);
                 return snapshot;
             }
@@ -1337,139 +1403,561 @@ internal sealed class MarketService : IDisposable
 
 internal readonly record struct DailyClose(DateOnly Date, float Close);
 
-[SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable",
-    Justification = "Disposed by MarketService.")]
-internal sealed class MarketClient : IDisposable
+internal static class FxIds
+{
+    public const string UsdHkd = "119.USDHKD";
+    public const string UsdJpy = "119.USDJPY";
+    public const string UsdCny = "133.USDCNH";
+}
+
+/// <summary>One market feed: quotes, daily history and intraday series for the same catalog.</summary>
+internal abstract class MarketSource : IDisposable
+{
+    protected const int IntradayGridPoints = 120;
+    protected static readonly TimeSpan HistoryCacheTtl = TimeSpan.FromMinutes(10);
+    private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(15);
+
+    private readonly ConcurrentDictionary<string, DailyClose[]> _dailyCache = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, float[]> _intradayCache = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, float> _lastPrice = new(StringComparer.Ordinal);
+    private readonly SemaphoreSlim _gate;
+    private readonly int _maxAttempts;
+    private readonly TimeSpan _retryDelay;
+    private DateTimeOffset _dailyFetchedAt = DateTimeOffset.MinValue;
+
+    protected MarketSource(int concurrency, int maxAttempts, TimeSpan retryDelay)
+    {
+        _gate = new SemaphoreSlim(concurrency, concurrency);
+        _maxAttempts = maxAttempts;
+        _retryDelay = retryDelay;
+        Http = CreateHttpClient(concurrency);
+    }
+
+    public abstract string Id { get; }
+    public abstract string Label { get; }
+    public abstract string Attribution { get; }
+
+    protected HttpClient Http { get; }
+
+    public void Dispose()
+    {
+        Http.Dispose();
+        _gate.Dispose();
+    }
+
+    public async Task<MarketSnapshot?> FetchSnapshotAsync(int topCount, MarketSnapshot? previous, CancellationToken ct)
+    {
+        var feed = await FetchQuotesAsync(previous?.Fx ?? new FxSnapshot(), ct).ConfigureAwait(false);
+        if (feed is not { } quotes || quotes.Quotes.Count == 0) return null;
+
+        var targetCompanies = quotes.Quotes
+            .Take(Math.Min(topCount, quotes.Quotes.Count))
+            .Select(static q => q.Company)
+            .ToArray();
+
+        var now = DateTimeOffset.UtcNow;
+        var stale = now - _dailyFetchedAt > HistoryCacheTtl;
+
+        if (stale || targetCompanies.Any(c => !_dailyCache.ContainsKey(c.Ticker)))
+        {
+            // Refetch the whole window only when it went stale; otherwise ask for just the
+            // symbols that came back empty, so one bad request does not replay 33 others.
+            var batch = stale
+                ? targetCompanies
+                : [.. targetCompanies.Where(c => !_dailyCache.ContainsKey(c.Ticker))];
+
+            await FetchDailyBatchAsync(batch, ct).ConfigureAwait(false);
+
+            // Only start the TTL once every symbol has history; a partial network failure
+            // must be retried on the next 30 s cycle instead of leaving the chart empty.
+            if (targetCompanies.All(c => _dailyCache.ContainsKey(c.Ticker)))
+                _dailyFetchedAt = now;
+        }
+
+        await FetchIntradayBatchAsync(quotes.Quotes, targetCompanies, ct).ConfigureAwait(false);
+
+        return BuildSnapshot(quotes.Quotes, quotes.Fx, now, previous);
+    }
+
+    protected abstract Task<QuoteFeed?> FetchQuotesAsync(FxSnapshot fallback, CancellationToken ct);
+
+    protected abstract Task FetchDailyBatchAsync(Company[] companies, CancellationToken ct);
+
+    protected abstract Task FetchIntradayBatchAsync(List<RawQuote> quotes, Company[] companies, CancellationToken ct);
+
+    /// <summary>A closed exchange repeats the same price every cycle, so a series only has to
+    /// be refetched once it is missing or its quote moved.</summary>
+    protected bool NeedsIntraday(Company company, RawQuote quote) =>
+        !_intradayCache.ContainsKey(company.Ticker)
+        || !_lastPrice.TryGetValue(company.Ticker, out var last)
+        || last != quote.Price;
+
+    protected void StoreDaily(Company company, DailyClose[] points) => _dailyCache[company.Ticker] = points;
+
+    protected void StoreIntraday(Company company, float price, float[] series)
+    {
+        _intradayCache[company.Ticker] = series;
+        _lastPrice[company.Ticker] = price;
+    }
+
+    protected Task<T?> GetJsonAsync<T>(string url, JsonTypeInfo<T> type, CancellationToken ct)
+        where T : class =>
+        GetJsonAsync([url], type, ct);
+
+    /// <summary>Rotates through the URLs one per attempt, so a host that is dropping connections
+    /// does not consume the whole retry budget.</summary>
+    protected Task<T?> GetJsonAsync<T>(string[] urls, JsonTypeInfo<T> type, CancellationToken ct)
+        where T : class =>
+        SendAsync(urls, (url, token) => Http.GetFromJsonAsync(url, type, token), ct);
+
+    protected Task<TResponse?> PostJsonAsync<TRequest, TResponse>(
+        string url,
+        TRequest body,
+        JsonTypeInfo<TRequest> requestType,
+        JsonTypeInfo<TResponse> responseType,
+        CancellationToken ct)
+        where TResponse : class =>
+        SendAsync([url], async (target, token) =>
+        {
+            using var response = await Http.PostAsJsonAsync(target, body, requestType, token).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode) return null;
+
+            return await response.Content.ReadFromJsonAsync(responseType, token).ConfigureAwait(false);
+        }, ct);
+
+    private async Task<T?> SendAsync<T>(
+        string[] urls,
+        Func<string, CancellationToken, Task<T?>> send,
+        CancellationToken ct)
+        where T : class
+    {
+        // Feeds drop connections when a burst arrives at once, so requests stay few and far
+        // apart and a throttled one is retried with backoff instead of being lost.
+        for (var attempt = 0; attempt < _maxAttempts; attempt++)
+        {
+            if (attempt > 0)
+                await Task.Delay(_retryDelay * attempt, ct).ConfigureAwait(false);
+
+            var url = urls[attempt % urls.Length];
+
+            await _gate.WaitAsync(ct).ConfigureAwait(false);
+            try
+            {
+                using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                timeout.CancelAfter(RequestTimeout);
+
+                return await send(url, timeout.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex) when (ex is HttpRequestException or JsonException or TaskCanceledException or IOException)
+            {
+                Log.Write($"{Id}: {url} failed (attempt {attempt + 1}/{_maxAttempts}): {ex.GetBaseException().Message}");
+            }
+            finally
+            {
+                _gate.Release();
+            }
+        }
+
+        return null;
+    }
+
+    private MarketSnapshot BuildSnapshot(
+        List<RawQuote> quotes,
+        FxSnapshot fx,
+        DateTimeOffset nowUtc,
+        MarketSnapshot? previous)
+    {
+        var dates = new SortedSet<DateOnly>();
+        foreach (var quote in quotes)
+        {
+            if (_dailyCache.TryGetValue(quote.Company.Ticker, out var closes))
+                foreach (var point in closes) dates.Add(point.Date);
+        }
+
+        var sortedDates = dates.ToArray();
+        var dateLabels = new string[sortedDates.Length];
+        for (var i = 0; i < sortedDates.Length; i++)
+            dateLabels[i] = sortedDates[i].ToString("MMM d", CultureInfo.InvariantCulture);
+
+        // A cycle that brought no history at all leaves the axis unchanged, so the series
+        // already on screen are still valid; keep them instead of blanking every sparkline.
+        var carried = previous is { DateLabels.Length: > 0 } earlier
+            && (sortedDates.Length == 0 || earlier.DateLabels.AsSpan().SequenceEqual(dateLabels))
+                ? earlier
+                : null;
+
+        if (carried is not null && sortedDates.Length == 0)
+            dateLabels = carried.DateLabels;
+
+        var previousRows = previous?.Rows.ToDictionary(static r => r.Ticker, StringComparer.Ordinal);
+
+        var rows = new QuoteRow[quotes.Count];
+        for (var i = 0; i < quotes.Count; i++)
+        {
+            var quote = quotes[i];
+            var capHistory = BuildCapSeries(quote, sortedDates);
+            var intradayPct = _intradayCache.GetValueOrDefault(quote.Company.Ticker) ?? [];
+
+            if (previousRows is not null && previousRows.TryGetValue(quote.Company.Ticker, out var old))
+            {
+                if (carried is not null
+                    && capHistory.Length != dateLabels.Length
+                    && old.CapHistory.Length == dateLabels.Length)
+                {
+                    capHistory = old.CapHistory;
+                }
+
+                if (intradayPct.Length < 2 && old.IntradayPct.Length >= 2)
+                    intradayPct = old.IntradayPct;
+            }
+
+            rows[i] = new QuoteRow(
+                Ticker: quote.Company.Ticker,
+                Price: quote.Price,
+                PrevClose: quote.PrevClose,
+                ChangePct: quote.ChangePct,
+                MarketCapUsd: quote.MarketCapUsd,
+                CapHistory: capHistory,
+                IntradayPct: intradayPct);
+        }
+
+        return new MarketSnapshot(
+            UpdatedUtc: nowUtc,
+            Rows: rows,
+            DateLabels: dateLabels,
+            Fx: fx,
+            Cached: false);
+    }
+
+    private float[] BuildCapSeries(RawQuote quote, ReadOnlySpan<DateOnly> dates)
+    {
+        if (dates.IsEmpty || !_dailyCache.TryGetValue(quote.Company.Ticker, out var points) || points.Length < 2)
+            return [];
+
+        var lastClose = points[0].Close;
+        var capPerUnitPriceTrillions = quote.MarketCapUsd / quote.Price / 1e12f;
+        var values = new float[dates.Length];
+        var p = 0;
+
+        for (var i = 0; i < dates.Length; i++)
+        {
+            var target = dates[i];
+            while (p + 1 < points.Length && points[p + 1].Date <= target)
+                p++;
+
+            if (points[p].Date <= target)
+                lastClose = points[p].Close;
+
+            values[i] = lastClose * capPerUnitPriceTrillions;
+        }
+
+        values[^1] = quote.MarketCapUsd / 1e12f;
+        return values;
+    }
+
+    private static HttpClient CreateHttpClient(int concurrency)
+    {
+        var handler = new SocketsHttpHandler
+        {
+            AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+            PooledConnectionLifetime = TimeSpan.FromMinutes(2),
+            PooledConnectionIdleTimeout = TimeSpan.FromSeconds(30),
+            MaxConnectionsPerServer = concurrency,
+        };
+
+        var http = new HttpClient(handler)
+        {
+            Timeout = Timeout.InfiniteTimeSpan,
+        };
+
+        http.DefaultRequestHeaders.UserAgent.ParseAdd(
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131.0 Safari/537.36");
+
+        return http;
+    }
+}
+
+/// <summary>Eastmoney: one batch quote call, then a k-line and a trend call per symbol.</summary>
+internal sealed class EastmoneySource() : MarketSource(2, 3, TimeSpan.FromMilliseconds(300))
+{
+    private const string QuoteUrl = "https://push2.eastmoney.com/api/qt/ulist.np/get";
+    private const string KlineUrl = "https://push2his.eastmoney.com/api/qt/stock/kline/get";
+    private const string TrendsUrl = "https://push2his.eastmoney.com/api/qt/stock/trends2/get";
+
+    private static readonly string QuoteQuery =
+        "fltt=2&invt=2&fields=f2,f3,f4,f12,f13,f14,f20&secids="
+        + string.Join(',', Catalog.Companies.Select(static c => c.Ids.Eastmoney).Concat([FxIds.UsdHkd, FxIds.UsdJpy, FxIds.UsdCny]));
+
+    public override string Id => "eastmoney";
+    public override string Label => "Eastmoney";
+    public override string Attribution => "Quotes, market caps and series from Eastmoney · may be delayed";
+
+    protected override async Task<QuoteFeed?> FetchQuotesAsync(FxSnapshot fallback, CancellationToken ct)
+    {
+        var response = await GetJsonAsync($"{QuoteUrl}?{QuoteQuery}", MarketJsonContext.Default.EmQuoteResponse, ct)
+            .ConfigureAwait(false);
+        if (response?.Data?.Diff is not { Length: > 0 } items) return null;
+
+        var fx = ParseFx(items, fallback);
+        var quotes = ParseQuotes(items, fx);
+        return quotes.Count == 0 ? null : new QuoteFeed(quotes, fx);
+    }
+
+    protected override Task FetchDailyBatchAsync(Company[] companies, CancellationToken ct)
+    {
+        var beg = DateTimeOffset.UtcNow.AddDays(-200).ToString("yyyyMMdd", CultureInfo.InvariantCulture);
+        return Parallel.ForEachAsync(companies, new ParallelOptions { CancellationToken = ct, MaxDegreeOfParallelism = 1 },
+            async (company, ct) => await FetchDailyAsync(company, beg, ct));
+    }
+
+    private async Task FetchDailyAsync(Company company, string beg, CancellationToken ct)
+    {
+        var url = $"{KlineUrl}?secid={company.Ids.Eastmoney}&klt=101&fqt=1&beg={beg}&end=20500101"
+            + "&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f53";
+
+        var response = await GetJsonAsync(url, MarketJsonContext.Default.EmKlineResponse, ct).ConfigureAwait(false);
+        if (ParseDailyCloses(response?.Data?.Klines) is { Length: >= 2 } points)
+            StoreDaily(company, points);
+    }
+
+    protected override Task FetchIntradayBatchAsync(List<RawQuote> quotes, Company[] companies, CancellationToken ct)
+    {
+        var byTicker = quotes.ToDictionary(static q => q.Company.Ticker, StringComparer.Ordinal);
+        return Parallel.ForEachAsync(companies, new ParallelOptions { CancellationToken = ct, MaxDegreeOfParallelism = 1 },
+            async (company, ct) =>
+            {
+                if (!byTicker.TryGetValue(company.Ticker, out var quote)) return;
+                if (!NeedsIntraday(company, quote)) return;
+                await FetchIntradayAsync(company, quote, ct);
+            });
+    }
+
+    private async Task FetchIntradayAsync(Company company, RawQuote quote, CancellationToken ct)
+    {
+        var url = $"{TrendsUrl}?secid={company.Ids.Eastmoney}&ndays=1&iscr=0"
+            + "&fields1=f1,f2,f3,f4,f5,f6,f7,f8&fields2=f51,f53";
+
+        var response = await GetJsonAsync(url, MarketJsonContext.Default.EmTrendsResponse, ct).ConfigureAwait(false);
+        if (response?.Data is not { } data) return;
+
+        var baseline = TryNumber(data.PreClose, out var pre) && pre > 0 ? (float)pre : quote.PrevClose;
+        if (ResampleIntradayPct(data.Trends, baseline) is { Length: >= 2 } pctSeries)
+            StoreIntraday(company, quote.Price, pctSeries);
+    }
+
+    private static FxSnapshot ParseFx(EmQuoteRow[] items, FxSnapshot fallback)
+    {
+        var hkd = fallback.UsdHkd;
+        var jpy = fallback.UsdJpy;
+        var cny = fallback.UsdCny;
+
+        foreach (var item in items)
+        {
+            if (!TryNumber(item.Price, out var rate) || rate <= 0) continue;
+
+            switch (item.SecId)
+            {
+                case FxIds.UsdHkd: hkd = (float)rate; break;
+                case FxIds.UsdJpy: jpy = (float)rate; break;
+                case FxIds.UsdCny: cny = (float)rate; break;
+            }
+        }
+
+        return new FxSnapshot(hkd, jpy, cny);
+    }
+
+    private static List<RawQuote> ParseQuotes(EmQuoteRow[] items, FxSnapshot fx)
+    {
+        var quotes = new List<RawQuote>(Catalog.Count);
+
+        foreach (var item in items)
+        {
+            if (!Catalog.BySecId.TryGetValue(item.SecId, out var company)) continue;
+            if (!TryNumber(item.Price, out var price) || price <= 0) continue;
+            if (!TryNumber(item.MarketCap, out var cap) || cap <= 0) continue;
+
+            var priceF = (float)price;
+            var pct = TryNumber(item.ChangePct, out var changePct) ? (float)changePct : 0f;
+            var changeAbs = TryNumber(item.ChangeAbs, out var diff) ? (float)diff : 0f;
+            var prev = priceF > changeAbs ? priceF - changeAbs : priceF;
+            var capUsd = (float)(cap / FxToUsd(company.Currency, fx));
+
+            quotes.Add(new RawQuote(company, priceF, prev, pct, capUsd));
+        }
+
+        quotes.Sort(static (a, b) => b.MarketCapUsd.CompareTo(a.MarketCapUsd));
+        return quotes;
+    }
+
+    private static double FxToUsd(string currency, FxSnapshot fx) => currency switch
+    {
+        "HKD" => fx.UsdHkd,
+        "CNY" => fx.UsdCny,
+        "JPY" => fx.UsdJpy,
+        _ => 1d,
+    };
+
+    private static bool TryNumber(JsonElement element, out double value)
+    {
+        if (element.ValueKind == JsonValueKind.Number && element.TryGetDouble(out value)) return true;
+        value = 0;
+        return false;
+    }
+
+    private static DailyClose[] ParseDailyCloses(string[]? lines)
+    {
+        if (lines is not { Length: > 0 }) return [];
+
+        var points = new List<DailyClose>(lines.Length);
+        foreach (var line in lines)
+        {
+            var comma = line.IndexOf(',');
+            if (comma <= 0) continue;
+            if (!DateOnly.TryParseExact(line.AsSpan(0, comma), "yyyy-MM-dd", CultureInfo.InvariantCulture,
+                    DateTimeStyles.None, out var date)) continue;
+            if (!float.TryParse(line.AsSpan(comma + 1), NumberStyles.Float, CultureInfo.InvariantCulture,
+                    out var close)) continue;
+            if (close <= 0f) continue;
+
+            points.Add(new DailyClose(date, close));
+        }
+
+        return [.. points];
+    }
+
+    private static float[] ResampleIntradayPct(string[]? trends, float fallbackPrevClose)
+    {
+        if (trends is not { Length: >= 2 } lines) return [];
+
+        var valid = new List<float>(lines.Length);
+        foreach (var line in lines)
+        {
+            var comma = line.LastIndexOf(',');
+            if (comma <= 0) continue;
+            if (float.TryParse(line.AsSpan(comma + 1), NumberStyles.Float, CultureInfo.InvariantCulture, out var price)
+                && price > 0f) valid.Add(price);
+        }
+
+        if (valid.Count < 2) return [];
+
+        var baseline = fallbackPrevClose > 0f ? fallbackPrevClose : valid[0];
+
+        var resampled = new float[IntradayGridPoints];
+        for (var i = 0; i < IntradayGridPoints; i++)
+        {
+            var sourceIndex = (int)MathF.Round(i / (float)(IntradayGridPoints - 1) * (valid.Count - 1));
+            resampled[i] = (valid[sourceIndex] / baseline - 1f) * 100f;
+        }
+
+        return resampled;
+    }
+}
+
+/// <summary>TradingView quotes plus Yahoo Finance spark series, the original feed pair.</summary>
+internal sealed class YahooSource() : MarketSource(4, 2, TimeSpan.FromMilliseconds(200))
 {
     private const string ScanUrl = "https://scanner.tradingview.com/global/scan";
     private const string SparkBaseUrl = "https://query1.finance.yahoo.com/v8/finance/spark";
     private const int SparkBatchSize = 20;
-    private const int IntradayGridPoints = 120;
-    private static readonly TimeSpan HistoryCacheTtl = TimeSpan.FromMinutes(10);
 
     private static readonly TvScanRequest ScanPayload = new(
         new TvSymbols([
-            .. Catalog.Companies.Select(static c => c.ScanSymbol),
+            .. Catalog.Companies.Select(static c => c.Ids.TradingView),
             "FX_IDC:USDHKD",
             "FX_IDC:USDJPY",
             "FX_IDC:USDCNY",
         ]),
         ["close", "change", "change_abs", "market_cap_basic"]);
 
-    private readonly HttpClient _http = CreateHttpClient();
-    private readonly Dictionary<string, DailyClose[]> _dailyCache = [with(StringComparer.Ordinal)];
-    private readonly Dictionary<string, float[]> _intradayCache = [with(StringComparer.Ordinal)];
-    private DateTimeOffset _dailyFetchedAt = DateTimeOffset.MinValue;
+    public override string Id => "yahoo";
+    public override string Label => "Yahoo";
+    public override string Attribution => "Quotes from TradingView · series from Yahoo Finance · may be delayed";
 
-    public void Dispose() => _http.Dispose();
-
-    public async Task<MarketSnapshot?> FetchSnapshotAsync(
-        int topCount,
-        MarketSnapshot? previous,
-        CancellationToken ct)
+    protected override async Task<QuoteFeed?> FetchQuotesAsync(FxSnapshot fallback, CancellationToken ct)
     {
-        var scan = await PostScanAsync(ct).ConfigureAwait(false);
-        if (scan?.Data is not { Length: > 0 } items) return null;
-
-        var fx = ParseFx(items, previous?.Fx ?? new FxSnapshot());
-        var quotes = ParseQuotes(items);
-        if (quotes.Count == 0) return null;
-
-        var targetCompanies = quotes
-            .Take(Math.Min(topCount, quotes.Count))
-            .Select(static q => q.Company)
-            .ToArray();
-
-        var now = DateTimeOffset.UtcNow;
-        var needDaily = now - _dailyFetchedAt > HistoryCacheTtl
-            || targetCompanies.Any(c => !_dailyCache.ContainsKey(c.Ticker));
-
-        if (needDaily)
-        {
-            await FetchDailyHistoryAsync(targetCompanies, ct).ConfigureAwait(false);
-            _dailyFetchedAt = now;
-        }
-
-        await FetchIntradayAsync(targetCompanies, quotes, ct).ConfigureAwait(false);
-
-        return BuildSnapshot(quotes, fx, now);
-    }
-
-    private async Task<TvScanResponse?> PostScanAsync(CancellationToken ct)
-    {
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        timeout.CancelAfter(TimeSpan.FromSeconds(15));
-
-        using var response = await _http.PostAsJsonAsync(
+        var scan = await PostJsonAsync(
             ScanUrl,
             ScanPayload,
             MarketJsonContext.Default.TvScanRequest,
-            timeout.Token).ConfigureAwait(false);
-
-        if (!response.IsSuccessStatusCode) return null;
-
-        return await response.Content.ReadFromJsonAsync(
             MarketJsonContext.Default.TvScanResponse,
-            timeout.Token).ConfigureAwait(false);
+            ct).ConfigureAwait(false);
+        if (scan?.Data is not { Length: > 0 } items) return null;
+
+        var quotes = ParseQuotes(items);
+        return quotes.Count == 0 ? null : new QuoteFeed(quotes, ParseFx(items, fallback));
     }
 
-    private async Task FetchDailyHistoryAsync(Company[] companies, CancellationToken ct)
+    protected override Task FetchDailyBatchAsync(Company[] companies, CancellationToken ct)
     {
+        return Parallel.ForEachAsync(companies.Chunk(SparkBatchSize), new ParallelOptions { CancellationToken = ct, MaxDegreeOfParallelism = 1 },
+            async (chunk, ct) =>
+            {
+                var symbols = string.Join(',', chunk.Select(static c => c.Ids.Yahoo));
+                await FetchDailyBatchAsync(
+                    chunk,
+                    $"{SparkBaseUrl}?symbols={symbols}&range=6mo&interval=1d",
+                    ct);
+            });
+    }
+
+    private async Task FetchDailyBatchAsync(Company[] companies, string url, CancellationToken ct)
+    {
+        var batch = await GetJsonAsync(url, MarketJsonContext.Default.DictionaryStringYahooSparkSeries, ct)
+            .ConfigureAwait(false);
+        if (batch is null) return;
+
+        foreach (var company in companies)
+        {
+            if (!batch.TryGetValue(company.Ids.Yahoo, out var spark)) continue;
+            if (ParseDailyCloses(spark) is { Length: >= 2 } points)
+                StoreDaily(company, points);
+        }
+    }
+
+    protected override Task FetchIntradayBatchAsync(List<RawQuote> quotes, Company[] companies, CancellationToken ct)
+    {
+        var byTicker = quotes.ToDictionary(static q => q.Company.Ticker, StringComparer.Ordinal);
+        var pending = new List<Task>();
+
         foreach (var chunk in companies.Chunk(SparkBatchSize))
         {
-            var symbols = string.Join(',', chunk.Select(static c => c.YahooSymbol));
-            var url = $"{SparkBaseUrl}?symbols={symbols}&range=6mo&interval=1d";
+            var wanted = chunk
+                .Where(company => byTicker.TryGetValue(company.Ticker, out var quote) && NeedsIntraday(company, quote))
+                .ToArray();
+            if (wanted.Length == 0) continue;
 
-            var batch = await GetSparkBatchAsync(url, ct).ConfigureAwait(false);
-            if (batch is null) continue;
-
-            foreach (var company in chunk)
-            {
-                if (!batch.TryGetValue(company.YahooSymbol, out var spark)) continue;
-                if (ParseDailyCloses(spark) is { Length: >= 2 } points)
-                    _dailyCache[company.Ticker] = points;
-            }
+            var symbols = string.Join(',', wanted.Select(static c => c.Ids.Yahoo));
+            pending.Add(FetchIntradayBatchAsync(
+                wanted,
+                byTicker,
+                $"{SparkBaseUrl}?symbols={symbols}&range=1d&interval=5m",
+                ct));
         }
+
+        return Task.WhenAll(pending);
     }
 
-    private async Task FetchIntradayAsync(Company[] companies, List<RawQuote> quotes, CancellationToken ct)
+    private async Task FetchIntradayBatchAsync(
+        Company[] companies,
+        Dictionary<string, RawQuote> byTicker,
+        string url,
+        CancellationToken ct)
     {
-        var prevByTicker = quotes.ToDictionary(static q => q.Company.Ticker, static q => q.PrevClose, StringComparer.Ordinal);
+        var batch = await GetJsonAsync(url, MarketJsonContext.Default.DictionaryStringYahooSparkSeries, ct)
+            .ConfigureAwait(false);
+        if (batch is null) return;
 
-        foreach (var chunk in companies.Chunk(SparkBatchSize))
+        foreach (var company in companies)
         {
-            var symbols = string.Join(',', chunk.Select(static c => c.YahooSymbol));
-            var url = $"{SparkBaseUrl}?symbols={symbols}&range=1d&interval=5m";
+            if (!batch.TryGetValue(company.Ids.Yahoo, out var spark)) continue;
 
-            var batch = await GetSparkBatchAsync(url, ct).ConfigureAwait(false);
-            if (batch is null) continue;
-
-            foreach (var company in chunk)
-            {
-                if (!batch.TryGetValue(company.YahooSymbol, out var spark)) continue;
-                var prevClose = prevByTicker.GetValueOrDefault(company.Ticker);
-                if (ResampleIntradayPct(spark, prevClose) is { Length: >= 2 } pctSeries)
-                    _intradayCache[company.Ticker] = pctSeries;
-            }
-        }
-    }
-
-    private async Task<Dictionary<string, YahooSparkSeries>?> GetSparkBatchAsync(string url, CancellationToken ct)
-    {
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        timeout.CancelAfter(TimeSpan.FromSeconds(15));
-
-        try
-        {
-            return await _http.GetFromJsonAsync(
-                url,
-                MarketJsonContext.Default.DictionaryStringYahooSparkSeries,
-                timeout.Token).ConfigureAwait(false);
-        }
-        catch (Exception ex) when (ex is HttpRequestException or JsonException or TaskCanceledException)
-        {
-            Log.Write($"spark fetch failed: {ex.Message}");
-            return null;
+            var quote = byTicker[company.Ticker];
+            if (ResampleIntradayPct(spark, quote.PrevClose) is { Length: >= 2 } pctSeries)
+                StoreIntraday(company, quote.Price, pctSeries);
         }
     }
 
@@ -1555,106 +2043,53 @@ internal sealed class MarketClient : IDisposable
 
         return resampled;
     }
-
-    private MarketSnapshot BuildSnapshot(List<RawQuote> quotes, FxSnapshot fx, DateTimeOffset nowUtc)
-    {
-        var dates = new SortedSet<DateOnly>();
-        foreach (var quote in quotes)
-        {
-            if (_dailyCache.TryGetValue(quote.Company.Ticker, out var closes))
-                foreach (var point in closes) dates.Add(point.Date);
-        }
-
-        var sortedDates = dates.ToArray();
-        var dateLabels = new string[sortedDates.Length + 1];
-        for (var i = 0; i < sortedDates.Length; i++)
-            dateLabels[i] = sortedDates[i].ToString("MMM d", CultureInfo.InvariantCulture);
-        dateLabels[^1] = "Now";
-
-        var rows = new QuoteRow[quotes.Count];
-        for (var i = 0; i < quotes.Count; i++)
-        {
-            var q = quotes[i];
-            var capHistory = BuildCapSeries(q, sortedDates);
-            var intradayPct = _intradayCache.GetValueOrDefault(q.Company.Ticker) ?? [];
-
-            rows[i] = new QuoteRow(
-                Ticker: q.Company.Ticker,
-                Price: q.Price,
-                PrevClose: q.PrevClose,
-                ChangePct: q.ChangePct,
-                MarketCapUsd: q.MarketCapUsd,
-                CapHistory: capHistory,
-                IntradayPct: intradayPct);
-        }
-
-        return new MarketSnapshot(
-            Version: Cache.CurrentVersion,
-            UpdatedUtc: nowUtc,
-            Rows: rows,
-            DateLabels: dateLabels,
-            Fx: fx,
-            Cached: false);
-    }
-
-    private float[] BuildCapSeries(RawQuote quote, ReadOnlySpan<DateOnly> dates)
-    {
-        if (dates.IsEmpty || !_dailyCache.TryGetValue(quote.Company.Ticker, out var points) || points.Length < 2)
-            return [];
-
-        var lastClose = points[0].Close;
-        var capPerUnitPriceTrillions = quote.MarketCapUsd / quote.Price / 1e12f;
-        var values = new float[dates.Length + 1];
-        var p = 0;
-
-        for (var i = 0; i < dates.Length; i++)
-        {
-            var target = dates[i];
-            while (p + 1 < points.Length && points[p + 1].Date <= target)
-                p++;
-
-            if (points[p].Date <= target)
-                lastClose = points[p].Close;
-
-            values[i] = lastClose * capPerUnitPriceTrillions;
-        }
-
-        values[^1] = quote.MarketCapUsd / 1e12f;
-        return values;
-    }
-
-    private static HttpClient CreateHttpClient()
-    {
-        var handler = new SocketsHttpHandler
-        {
-            AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
-            PooledConnectionLifetime = TimeSpan.FromMinutes(2),
-            PooledConnectionIdleTimeout = TimeSpan.FromSeconds(30),
-            MaxConnectionsPerServer = 2,
-        };
-
-        var http = new HttpClient(handler)
-        {
-            Timeout = Timeout.InfiniteTimeSpan,
-        };
-
-        http.DefaultRequestHeaders.UserAgent.ParseAdd(
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131.0 Safari/537.36");
-
-        return http;
-    }
-
-    private readonly record struct RawQuote(
-        Company Company,
-        float Price,
-        float PrevClose,
-        float ChangePct,
-        float MarketCapUsd);
 }
+
+internal readonly record struct QuoteFeed(List<RawQuote> Quotes, FxSnapshot Fx);
+
+internal readonly record struct RawQuote(
+    Company Company,
+    float Price,
+    float PrevClose,
+    float ChangePct,
+    float MarketCapUsd);
 
 // ---------------------------------------------------------------------------
 // 6. Strongly-typed wire DTOs, AOT JsonSerializerContext, and disk cache.
 // ---------------------------------------------------------------------------
+
+internal sealed record EmQuoteResponse(
+    [property: JsonPropertyName("data")] EmQuoteData? Data);
+
+internal sealed record EmQuoteData(
+    [property: JsonPropertyName("diff")] EmQuoteRow[]? Diff);
+
+// Numeric fields arrive as JSON numbers, or as "-" when the exchange has no value,
+// so they stay JsonElement until TryNumber inspects them.
+internal sealed record EmQuoteRow(
+    [property: JsonPropertyName("f2")] JsonElement Price,
+    [property: JsonPropertyName("f3")] JsonElement ChangePct,
+    [property: JsonPropertyName("f4")] JsonElement ChangeAbs,
+    [property: JsonPropertyName("f12")] string? Code,
+    [property: JsonPropertyName("f13")] int? Market,
+    [property: JsonPropertyName("f20")] JsonElement MarketCap)
+{
+    [JsonIgnore]
+    public string SecId => $"{Market}.{Code}";
+}
+
+internal sealed record EmKlineResponse(
+    [property: JsonPropertyName("data")] EmKlineData? Data);
+
+internal sealed record EmKlineData(
+    [property: JsonPropertyName("klines")] string[]? Klines);
+
+internal sealed record EmTrendsResponse(
+    [property: JsonPropertyName("data")] EmTrendsData? Data);
+
+internal sealed record EmTrendsData(
+    [property: JsonPropertyName("preClose")] JsonElement PreClose,
+    [property: JsonPropertyName("trends")] string[]? Trends);
 
 internal sealed record TvScanRequest(
     [property: JsonPropertyName("symbols")] TvSymbols Symbols,
@@ -1675,15 +2110,25 @@ internal sealed record YahooSparkSeries(
     [property: JsonPropertyName("close")] float?[]? Closes,
     [property: JsonPropertyName("chartPreviousClose")] float? PreviousClose);
 
+/// <summary>What the disk file holds: the chosen feed, and the snapshot it last produced.</summary>
+internal sealed record MarketState(
+    int Version,
+    string Source,
+    MarketSnapshot? Snapshot);
+
+[JsonSerializable(typeof(EmQuoteResponse))]
+[JsonSerializable(typeof(EmKlineResponse))]
+[JsonSerializable(typeof(EmTrendsResponse))]
 [JsonSerializable(typeof(TvScanRequest))]
 [JsonSerializable(typeof(TvScanResponse))]
 [JsonSerializable(typeof(Dictionary<string, YahooSparkSeries>))]
+[JsonSerializable(typeof(MarketState))]
 [JsonSerializable(typeof(MarketSnapshot))]
 internal partial class MarketJsonContext : JsonSerializerContext;
 
 internal static class Cache
 {
-    public const int CurrentVersion = 2;
+    public const int CurrentVersion = 4;
 
     private static readonly string FilePath = Path.Combine(StateRoot(), "GlobalMarketCap", "snapshot.json");
 
@@ -1692,19 +2137,19 @@ internal static class Cache
             ? root
             : Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
 
-    public static MarketSnapshot? Load()
+    public static MarketState? Load()
     {
         try
         {
             if (!File.Exists(FilePath)) return null;
 
             using var stream = File.OpenRead(FilePath);
-            var snapshot = JsonSerializer.Deserialize(stream, MarketJsonContext.Default.MarketSnapshot);
+            var state = JsonSerializer.Deserialize(stream, MarketJsonContext.Default.MarketState);
 
-            if (snapshot is not { Version: CurrentVersion, Rows.Length: > 0 })
-                return null;
+            if (state is not { Version: CurrentVersion }) return null;
+            if (state.Snapshot is not { Rows.Length: > 0 } snapshot) return state with { Snapshot = null };
 
-            return snapshot with { Cached = true };
+            return state with { Snapshot = snapshot with { Cached = true } };
         }
         catch (Exception ex)
         {
@@ -1713,19 +2158,20 @@ internal static class Cache
         }
     }
 
-    public static void Save(MarketSnapshot snapshot)
+    public static void Save(string source, MarketSnapshot? snapshot)
     {
-        if (snapshot.Rows.Length == 0) return;
+        if (snapshot is { Rows.Length: 0 }) return;
 
         try
         {
             if (Path.GetDirectoryName(FilePath) is { } dir)
                 Directory.CreateDirectory(dir);
 
+            var state = new MarketState(CurrentVersion, source, snapshot);
             var tempPath = FilePath + ".tmp";
             using (var stream = File.Create(tempPath))
             {
-                JsonSerializer.Serialize(stream, snapshot, MarketJsonContext.Default.MarketSnapshot);
+                JsonSerializer.Serialize(stream, state, MarketJsonContext.Default.MarketState);
             }
 
             File.Move(tempPath, FilePath, overwrite: true);
