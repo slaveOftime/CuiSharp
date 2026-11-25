@@ -26,6 +26,33 @@ public unsafe ref partial struct Ui
     }
 
     /// <summary>
+    /// Updates a rectangle within an existing RGBA8 texture in place and requests a redraw, so
+    /// live video, a camera preview or a dynamic bitmap never reallocates the texture.
+    /// </summary>
+    /// <param name="texture">The texture to update, from <see cref="CreateImage"/> or <see cref="LoadImage"/>.</param>
+    /// <param name="x">Left edge of the updated rectangle, in pixels.</param>
+    /// <param name="y">Top edge of the updated rectangle, in pixels.</param>
+    /// <param name="width">Width of the updated rectangle, in pixels.</param>
+    /// <param name="height">Height of the updated rectangle, in pixels.</param>
+    /// <param name="rgba">The new pixels, row by row from the rectangle's top left.</param>
+    /// <param name="stride">Byte distance between source rows; 0 means tightly packed width * 4.</param>
+    public void UpdateImage(ulong texture, int x, int y, int width, int height, ReadOnlySpan<byte> rgba, int stride = 0)
+    {
+        if (texture == 0) throw new ArgumentException("The texture must be a live handle.", nameof(texture));
+        if (width <= 0) throw new ArgumentOutOfRangeException(nameof(width));
+        if (height <= 0) throw new ArgumentOutOfRangeException(nameof(height));
+        if (x < 0 || y < 0) throw new ArgumentOutOfRangeException(nameof(x), "The rectangle must start inside the texture.");
+        if (stride == 0) stride = width * 4;
+        if (stride < width * 4)
+            throw new ArgumentException("stride must be at least width * 4 bytes.", nameof(stride));
+        if (rgba.Length < (long)stride * (height - 1) + (long)width * 4)
+            throw new ArgumentException("rgba must hold stride * (height - 1) + width * 4 bytes.", nameof(rgba));
+
+        fixed (byte* pixels = rgba)
+            Native.ImageUpdate(Handle, (nuint)texture, x, y, width, height, (nint)pixels, stride);
+    }
+
+    /// <summary>
     /// Decodes a PNG or JPEG from disk into a texture and reports its pixel size.
     /// Returns false when the file cannot be read or decoded; the texture is then 0.
     /// Release it with <see cref="DestroyImage"/>.

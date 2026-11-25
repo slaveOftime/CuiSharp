@@ -5065,7 +5065,7 @@
             "Spelling": "double",
             "Kind": "Double"
           },
-          "Doc": "in the chart's x units: the point's index for line and bar charts, x_min to x_max for the dot chart"
+          "Doc": "in the chart's x units: x_min to x_max, or the point's index in a line or bar chart that sets neither"
         },
         {
           "CName": "y",
@@ -5124,6 +5124,18 @@
             "Kind": "Bool"
           },
           "Doc": "the line, dot and label in the accent color"
+        },
+        {
+          "CName": "color",
+          "CsName": "Color",
+          "CsType": "NativeColor",
+          "CType": "cui_color",
+          "Offset": 41,
+          "Type": {
+            "Spelling": "cui_color",
+            "Kind": "Record"
+          },
+          "Doc": "the line, dot and label in this color, e.g. CUI_COLOR_SUCCESS; default: `accent` decides"
         }
       ],
       "Doc": ""
@@ -5131,7 +5143,7 @@
     {
       "CName": "cui_chart_opts",
       "CsName": "NativeChartOpts",
-      "Size": 72,
+      "Size": 88,
       "Helpers": [],
       "Fields": [
         {
@@ -5344,6 +5356,30 @@
             "Kind": "Bool"
           },
           "Doc": "line chart: every series filled with dots that thin out from its line to the bottom of its band (implies `area`); with `stacked`, bands never mix colors"
+        },
+        {
+          "CName": "x_min",
+          "CsName": "XMin",
+          "CsType": "double",
+          "CType": "double",
+          "Offset": 72,
+          "Type": {
+            "Spelling": "double",
+            "Kind": "Double"
+          },
+          "Doc": "line and bar charts: what the first and last point stand for, in annotation x units; equal: annotation x is the point's index"
+        },
+        {
+          "CName": "x_max",
+          "CsName": "XMax",
+          "CsType": "double",
+          "CType": "double",
+          "Offset": 80,
+          "Type": {
+            "Spelling": "double",
+            "Kind": "Double"
+          },
+          "Doc": "line and bar charts: what the first and last point stand for, in annotation x units; equal: annotation x is the point's index"
         }
       ],
       "Doc": ""
@@ -7355,7 +7391,7 @@
     {
       "CName": "cui_tree_table_opts",
       "CsName": "NativeTreeTableOpts",
-      "Size": 72,
+      "Size": 88,
       "Helpers": [],
       "Fields": [
         {
@@ -7491,7 +7527,35 @@
               "Kind": "Void"
             }
           },
-          "Doc": "passed to `label` as its first argument"
+          "Doc": "passed to `label` and `can_drop` as their first argument"
+        },
+        {
+          "CName": "draggable",
+          "CsName": "Draggable",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 72,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "rows drag to move nodes; the drop arrives in cui_tree_table_events"
+        },
+        {
+          "CName": "can_drop",
+          "CsName": "CanDrop",
+          "CsType": "nint",
+          "CType": "_Bool (*)(void *, int, int)",
+          "Offset": 80,
+          "Type": {
+            "Spelling": "_Bool (*)(void *, int, int)",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "_Bool (void *, int, int)",
+              "Kind": "FunctionProto"
+            }
+          },
+          "Doc": "optional: false refuses a drop of the dragged (selected) nodes there"
         }
       ],
       "Doc": ""
@@ -7499,7 +7563,7 @@
     {
       "CName": "cui_tree_table_events",
       "CsName": "NativeTreeTableEvents",
-      "Size": 32,
+      "Size": 56,
       "Helpers": [],
       "Fields": [
         {
@@ -7589,6 +7653,59 @@
             "Kind": "Bool"
           },
           "Doc": "re-sort every sibling list by *sort"
+        },
+        {
+          "CName": "dropped",
+          "CsName": "Dropped",
+          "CsType": "nint",
+          "CType": "const int *",
+          "Offset": 32,
+          "Type": {
+            "Spelling": "const int *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const int",
+              "Kind": "Int",
+              "IsConst": true
+            }
+          },
+          "Doc": "nodes dropped this frame (.draggable), in tree order, none inside another; valid this frame"
+        },
+        {
+          "CName": "drop_count",
+          "CsName": "DropCount",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 40,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "number of nodes in `dropped`, 0 without a drop"
+        },
+        {
+          "CName": "drop_target",
+          "CsName": "DropTarget",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 44,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "they go CUI_TREE_DROP_BEFORE, _INSIDE (as the last children) or _AFTER this node, else -1"
+        },
+        {
+          "CName": "drop_where",
+          "CsName": "DropWhere",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 48,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "they go CUI_TREE_DROP_BEFORE, _INSIDE (as the last children) or _AFTER this node, else -1"
         }
       ],
       "Doc": ""
@@ -7820,7 +7937,7 @@
           "Doc": "seconds since 1970 (UTC); 0 unknown"
         }
       ],
-      "Doc": "File browser and file picker (an open or save dialog drawn by CUI, like the rest of the window; cui_app_file_dialog in cui_app.h opens the system's own). The browser lists a folder (name, date modified and size; folders first, any column sorts), with back, forward and up, a path bar you can type into, a filter field and a sidebar of places. Double-click or Enter opens a folder or picks a file; Backspace goes up, Alt+Left and Alt+Right go back and forward, F5 reloads, and typing a letter jumps to the next name that starts with it. A folder is read when you enter it (or reload), not every frame, and only the rows in view are built."
+      "Doc": "File browser and file picker (an open or save dialog drawn by CUI, like the rest of the window; cui_app_file_dialog in cui_app.h opens the system's own). The browser lists a folder (name, date modified and size; folders first, any column sorts), with back, forward and up, a path bar you can type into, a filter field and a scrollable sidebar of places and native drives/volumes; the default sidebar highlights only the most specific enclosing place or volume. Double-click or Enter opens a folder or picks a file; Backspace goes up, Alt+Left and Alt+Right go back and forward, F5 reloads the folder and native sidebar, and typing a letter jumps to the next name that starts with it. A folder is read when you enter it (or reload), not every frame, and only the rows in view are built."
     },
     {
       "CName": "cui_file_browser_opts",
@@ -7936,7 +8053,7 @@
               }
             }
           },
-          "Doc": "full paths for the sidebar, each shown by its last part; at most 6"
+          "Doc": "full paths for the scrollable sidebar, each shown by its last part"
         },
         {
           "CName": "place_count",
@@ -7948,7 +8065,7 @@
             "Spelling": "int",
             "Kind": "Int"
           },
-          "Doc": "entries in `places`; with `places` NULL the sidebar shows home, desktop, documents, downloads and the root"
+          "Doc": "entries in `places`; when places is NULL: home, desktop, documents, downloads and native drives/mounts"
         },
         {
           "CName": "list",
@@ -24019,6 +24136,74 @@
       "Doc": ""
     },
     {
+      "CName": "cui_trace_link",
+      "CsName": "NativeTraceLink",
+      "Size": 20,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "from",
+          "CsName": "From",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "indices into the spans: from the end of `from` to the start of `to`"
+        },
+        {
+          "CName": "to",
+          "CsName": "To",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "indices into the spans: from the end of `from` to the start of `to`"
+        },
+        {
+          "CName": "tone",
+          "CsName": "Tone",
+          "CsType": "Tone",
+          "CType": "cui_tone",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "cui_tone",
+            "Kind": "Enum"
+          },
+          "Doc": "the curve's color; CUI_TONE_NEUTRAL (0): the emphasis color"
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "float",
+          "CType": "float",
+          "Offset": 12,
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          },
+          "Doc": "line width in points; 0: 1.25"
+        },
+        {
+          "CName": "dashed",
+          "CsName": "Dashed",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "a weaker or inferred dependency"
+        }
+      ],
+      "Doc": ""
+    },
+    {
       "CName": "cui_trace_view",
       "CsName": "NativeTraceView",
       "Size": 40,
@@ -24089,7 +24274,7 @@
     {
       "CName": "cui_trace_opts",
       "CsName": "NativeTraceOpts",
-      "Size": 40,
+      "Size": 56,
       "Helpers": [],
       "Fields": [
         {
@@ -24167,6 +24352,35 @@
             "Kind": "Int"
           },
           "Doc": "number of `markers`"
+        },
+        {
+          "CName": "links",
+          "CsName": "Links",
+          "CsType": "nint",
+          "CType": "const cui_trace_link *",
+          "Offset": 40,
+          "Type": {
+            "Spelling": "const cui_trace_link *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_trace_link",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          },
+          "Doc": "dependencies drawn as curves between spans"
+        },
+        {
+          "CName": "link_count",
+          "CsName": "LinkCount",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 48,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "number of `links`"
         }
       ],
       "Doc": ""
@@ -24174,7 +24388,7 @@
     {
       "CName": "cui_trace_result",
       "CsName": "NativeTraceResult",
-      "Size": 8,
+      "Size": 12,
       "Helpers": [],
       "Fields": [
         {
@@ -24211,6 +24425,18 @@
             "Kind": "Int"
           },
           "Doc": "span under the pointer, or -1"
+        },
+        {
+          "CName": "hovered_link",
+          "CsName": "HoveredLink",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": "link under the pointer (when no span is), or -1"
         }
       ],
       "Doc": ""
@@ -26159,7 +26385,7 @@
     {
       "CName": "cui_dot_chart_opts",
       "CsName": "NativeDotChartOpts",
-      "Size": 104,
+      "Size": 136,
       "Helpers": [],
       "Fields": [
         {
@@ -26396,6 +26622,70 @@
             "Kind": "Int"
           },
           "Doc": "number of `annotations`"
+        },
+        {
+          "CName": "x_label",
+          "CsName": "XLabel",
+          "CsType": "nint",
+          "CType": "cui_axis_label_fn",
+          "Offset": 104,
+          "Type": {
+            "Spelling": "cui_axis_label_fn",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "void (void *, double, char *, unsigned long long)",
+              "Kind": "FunctionProto"
+            }
+          },
+          "Doc": "writes the x labels and the readout's x in place of x_units and x_format; x_units still picks the spacing"
+        },
+        {
+          "CName": "x_label_user",
+          "CsName": "XLabelUser",
+          "CsType": "nint",
+          "CType": "void *",
+          "Offset": 112,
+          "Type": {
+            "Spelling": "void *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "void",
+              "Kind": "Void"
+            }
+          },
+          "Doc": "passed to `x_label` as its first argument"
+        },
+        {
+          "CName": "value_label",
+          "CsName": "ValueLabel",
+          "CsType": "nint",
+          "CType": "cui_axis_label_fn",
+          "Offset": 120,
+          "Type": {
+            "Spelling": "cui_axis_label_fn",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "void (void *, double, char *, unsigned long long)",
+              "Kind": "FunctionProto"
+            }
+          },
+          "Doc": "writes the readout's value in place of `format`; `unit` still follows it"
+        },
+        {
+          "CName": "value_label_user",
+          "CsName": "ValueLabelUser",
+          "CsType": "nint",
+          "CType": "void *",
+          "Offset": 128,
+          "Type": {
+            "Spelling": "void *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "void",
+              "Kind": "Void"
+            }
+          },
+          "Doc": "passed to `value_label` as its first argument"
         }
       ],
       "Doc": ""
@@ -26459,7 +26749,7 @@
     {
       "CName": "cui_event_track_opts",
       "CsName": "NativeEventTrackOpts",
-      "Size": 64,
+      "Size": 80,
       "Helpers": [],
       "Fields": [
         {
@@ -26589,6 +26879,38 @@
             "Kind": "Bool"
           },
           "Doc": "hides the axis labels under the dots"
+        },
+        {
+          "CName": "label",
+          "CsName": "Label",
+          "CsType": "nint",
+          "CType": "cui_axis_label_fn",
+          "Offset": 64,
+          "Type": {
+            "Spelling": "cui_axis_label_fn",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "void (void *, double, char *, unsigned long long)",
+              "Kind": "FunctionProto"
+            }
+          },
+          "Doc": "writes the axis labels and the selected event's time in place of units and format; units still picks the spacing"
+        },
+        {
+          "CName": "label_user",
+          "CsName": "LabelUser",
+          "CsType": "nint",
+          "CType": "void *",
+          "Offset": 72,
+          "Type": {
+            "Spelling": "void *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "void",
+              "Kind": "Void"
+            }
+          },
+          "Doc": "passed to `label` as its first argument"
         }
       ],
       "Doc": "Event track: moments on a time axis, as dots you drag along it. A click on an empty spot adds an event there and a double-click on one removes it. You own the array: the track keeps it sorted, edits it in place and never grows it past `capacity`."
@@ -28016,7 +28338,7 @@
           "Doc": ""
         }
       ],
-      "Doc": ""
+      "Doc": "`rect` is where the canvas was laid out in the previous frame, in window points (zero in its first frame), and `mouse` is the pointer relative to that rectangle's top-left corner. The paint callback gets this frame's final rectangle, which differs when the canvas moved or resized; for hits kept in window coordinates, use cui_mouse_pos."
     },
     {
       "CName": "cui_vertex",
@@ -28420,7 +28742,7 @@
     {
       "CName": "cui_app_desc",
       "CsName": "NativeAppDesc",
-      "Size": 56,
+      "Size": 64,
       "Helpers": [],
       "Fields": [
         {
@@ -28599,6 +28921,23 @@
             }
           },
           "Doc": "Linux: the app's ID, which is the name of its .desktop file without \".desktop\", e.g. \"org.example.Notes\". The desktop uses it to show the app's name and icon for the window (taskbar, dock, Alt+Tab) and to group its windows. Sets WM_CLASS on X11 and the app_id on Wayland (SDL2, and GLFW 3.4). Read when the window is created; ignored on Windows and macOS. Default: none (the X11 backend then sets WM_CLASS to the title and \"CUI\")."
+        },
+        {
+          "CName": "placement",
+          "CsName": "Placement",
+          "CsType": "nint",
+          "CType": "const cui_window_placement *",
+          "Offset": 56,
+          "Type": {
+            "Spelling": "const cui_window_placement *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_window_placement",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          },
+          "Doc": "Where to open, for an app that reopens where it was closed: the size and place from cui_app_placement, and whether the window was maximized. Its size replaces width and height. A place that is on no screen is left to the system, and a fixed-size window is not maximized. Copied when the window is created. Default: none, the system picks the place."
         }
       ],
       "Doc": ""
@@ -28686,7 +29025,7 @@
               "IsConst": true
             }
           },
-          "Doc": "save dialogs"
+          "Doc": "save dialogs: suggested name, optionally with its directory on Windows"
         }
       ],
       "Doc": ""
@@ -29584,6 +29923,67 @@
         }
       ],
       "Doc": ""
+    },
+    {
+      "CName": "cui_input_event_kind",
+      "CsName": "InputEventKind",
+      "Values": [
+        {
+          "CName": "CUI_INPUT_MOUSE_MOVE",
+          "CsName": "MouseMove",
+          "Value": "0",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_INPUT_MOUSE_BUTTON",
+          "CsName": "MouseButton",
+          "Value": "1",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_INPUT_MOUSE_LEAVE",
+          "CsName": "MouseLeave",
+          "Value": "2",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_INPUT_SCROLL",
+          "CsName": "Scroll",
+          "Value": "3",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_INPUT_KEY",
+          "CsName": "Key",
+          "Value": "4",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_INPUT_TEXT",
+          "CsName": "Text",
+          "Value": "5",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_INPUT_FOCUS",
+          "CsName": "Focus",
+          "Value": "6",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_INPUT_TOUCH",
+          "CsName": "Touch",
+          "Value": "7",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_INPUT_TOUCH_MOVE",
+          "CsName": "TouchMove",
+          "Value": "8",
+          "Doc": ""
+        }
+      ],
+      "Doc": "Optional application-owned input capture, before legacy aggregation. Runs synchronously on the UI thread. Event and text storage are borrowed only during the callback. true consumes the event; false preserves the existing widget behavior. No UI construction or input injection is allowed inside the callback. Copy retained text. Unregister before freeing user. To replay captured input, unregister, call the existing cui_input_* entry points, then register again. Legacy replay retains existing text-size limits. The caller owns queue limits and error policy. Key events preserve each call, including repeated down and modifier-only CUI_KEY_NONE events. Touch events (cui_input_touch and cui_input_touch_move) also pass through this interface as CUI_INPUT_TOUCH and CUI_INPUT_TOUCH_MOVE. File drops are not intercepted by this interface."
     },
     {
       "CName": "cui_size_kind",
@@ -30902,9 +31302,40 @@
           "CsName": "Software",
           "Value": "2",
           "Doc": ""
+        },
+        {
+          "CName": "CUI_RENDERER_GPU",
+          "CsName": "Gpu",
+          "Value": "3",
+          "Doc": "the platform's GPU renderer, in builds that have it: Direct3D 12 on Windows (CUI_D3D12), Vulkan on Linux (CUI_VULKAN), Metal on macOS (CUI_METAL). Also CUI_RENDERER=gpu, or its name"
         }
       ],
       "Doc": ""
+    },
+    {
+      "CName": "cui_window_state",
+      "CsName": "WindowState",
+      "Values": [
+        {
+          "CName": "CUI_WINDOW_NORMAL",
+          "CsName": "Normal",
+          "Value": "0",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_WINDOW_MAXIMIZED",
+          "CsName": "Maximized",
+          "Value": "1",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_WINDOW_MINIMIZED",
+          "CsName": "Minimized",
+          "Value": "2",
+          "Doc": ""
+        }
+      ],
+      "Doc": "How the window is shown."
     },
     {
       "CName": "cui_file_dialog_kind",
@@ -30929,7 +31360,7 @@
           "Doc": ""
         }
       ],
-      "Doc": "Native file dialogs. Blocking; returns true and writes the chosen path (UTF-8) to out when the user confirms. On Linux this uses zenity or kdialog when installed. Pass NULL as app to use the current app (handy in cui_app_run callbacks)."
+      "Doc": "Native file dialogs. Blocking; returns true and writes the chosen path (UTF-8) to out when the user confirms. On Linux this uses zenity or kdialog when installed. Pass NULL as app to use the current app (handy in cui_app_run callbacks). On Windows the folder chooser also works when the calling thread already uses a multithreaded COM apartment."
     },
     {
       "CName": "cui_sw_format",
@@ -31020,6 +31451,31 @@
           "CsName": "Skipped",
           "Value": "4",
           "Doc": ""
+        }
+      ],
+      "Doc": ""
+    },
+    {
+      "CName": "CUI_TREE_DROP_BEFORE",
+      "CsName": "TreeDrop",
+      "Values": [
+        {
+          "CName": "CUI_TREE_DROP_BEFORE",
+          "CsName": "Before",
+          "Value": "0",
+          "Doc": "where dropped nodes go, next to a target node"
+        },
+        {
+          "CName": "CUI_TREE_DROP_INSIDE",
+          "CsName": "Inside",
+          "Value": "1",
+          "Doc": "where dropped nodes go, next to a target node"
+        },
+        {
+          "CName": "CUI_TREE_DROP_AFTER",
+          "CsName": "After",
+          "Value": "2",
+          "Doc": "where dropped nodes go, next to a target node"
         }
       ],
       "Doc": ""
@@ -31779,6 +32235,185 @@
       "Doc": ""
     },
     {
+      "CName": "cui_set_input_hook",
+      "CsName": "SetInputHook",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "hook",
+          "CsName": "hook",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_input_hook_fn",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "_Bool (struct cui_ctx *, const struct cui_input_event *, void *)",
+              "Kind": "FunctionProto"
+            }
+          }
+        },
+        {
+          "CName": "user",
+          "CsName": "user",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "void *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "void",
+              "Kind": "Void"
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "Input (called by the platform layer)",
+      "Doc": "NULL unregisters. Install before input delivery; do not change inside hook."
+    },
+    {
+      "CName": "cui_dispatch_input",
+      "CsName": "DispatchInput",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "event",
+          "CsName": "@event",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const cui_input_event *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_input_event",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "route",
+          "CsName": "route",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_input_route_fn",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "_Bool (struct cui_ctx *, void *, const struct cui_input_event *)",
+              "Kind": "FunctionProto"
+            }
+          }
+        },
+        {
+          "CName": "user",
+          "CsName": "user",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "void *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "void",
+              "Kind": "Void"
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "Input (called by the platform layer)",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_input_repeated",
+      "CsName": "InputRepeated",
+      "CsReturn": "byte",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "_Bool",
+        "Kind": "Bool"
+      },
+      "Module": "Input (called by the platform layer)",
+      "Doc": "Valid inside route: whether this key-down repeats a physical held key."
+    },
+    {
+      "CName": "cui_key_action_down",
+      "CsName": "KeyActionDown",
+      "CsReturn": "byte",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "key",
+          "CsName": "key",
+          "CsType": "Key",
+          "Type": {
+            "Spelling": "cui_key",
+            "Kind": "Enum"
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "_Bool",
+        "Kind": "Bool"
+      },
+      "Module": "Input (called by the platform layer)",
+      "Doc": "Held state eligible for default actions. cui_key_down remains physical state."
+    },
+    {
       "CName": "cui_input_mouse_move",
       "CsName": "InputMouseMove",
       "CsReturn": "void",
@@ -32065,6 +32700,322 @@
       "Doc": ""
     },
     {
+      "CName": "cui_input_touch",
+      "CsName": "InputTouch",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "finger",
+          "CsName": "finger",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "down",
+          "CsName": "down",
+          "CsType": "byte",
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          }
+        },
+        {
+          "CName": "x",
+          "CsName": "x",
+          "CsType": "float",
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          }
+        },
+        {
+          "CName": "y",
+          "CsName": "y",
+          "CsType": "float",
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "Input (called by the platform layer)",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_input_touch_move",
+      "CsName": "InputTouchMove",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "finger",
+          "CsName": "finger",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "x",
+          "CsName": "x",
+          "CsType": "float",
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          }
+        },
+        {
+          "CName": "y",
+          "CsName": "y",
+          "CsType": "float",
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "Input (called by the platform layer)",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_input_touch_cancel",
+      "CsName": "InputTouchCancel",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "finger",
+          "CsName": "finger",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "Input (called by the platform layer)",
+      "Doc": "a system gesture stole the finger"
+    },
+    {
+      "CName": "cui_touch_count",
+      "CsName": "TouchCount",
+      "CsReturn": "int",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "int",
+        "Kind": "Int"
+      },
+      "Module": "Input (called by the platform layer)",
+      "Doc": "Touches this frame: count, per-finger state and position; finger -1 reads the first active touch (the one that landed earliest), and on the frame the last finger lifts, that finger. A finger that lifted this frame keeps its last position in cui_touch_pos for that frame, so a tap can be placed."
+    },
+    {
+      "CName": "cui_touch_down",
+      "CsName": "TouchDown",
+      "CsReturn": "byte",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "finger",
+          "CsName": "finger",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "_Bool",
+        "Kind": "Bool"
+      },
+      "Module": "Input (called by the platform layer)",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_touch_pressed",
+      "CsName": "TouchPressed",
+      "CsReturn": "byte",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "finger",
+          "CsName": "finger",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "_Bool",
+        "Kind": "Bool"
+      },
+      "Module": "Input (called by the platform layer)",
+      "Doc": "landed this frame"
+    },
+    {
+      "CName": "cui_touch_released",
+      "CsName": "TouchReleased",
+      "CsReturn": "byte",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "finger",
+          "CsName": "finger",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "_Bool",
+        "Kind": "Bool"
+      },
+      "Module": "Input (called by the platform layer)",
+      "Doc": "lifted this frame"
+    },
+    {
+      "CName": "cui_touch_pos",
+      "CsName": "TouchPos",
+      "CsReturn": "NativeVec2",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "finger",
+          "CsName": "finger",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "cui_vec2",
+        "Kind": "Record"
+      },
+      "Module": "Input (called by the platform layer)",
+      "Doc": ""
+    },
+    {
       "CName": "cui_input_file_hover",
       "CsName": "InputFileHover",
       "CsReturn": "void",
@@ -32320,6 +33271,41 @@
       },
       "Module": "Input (called by the platform layer)",
       "Doc": ""
+    },
+    {
+      "CName": "cui_set_cursor",
+      "CsName": "SetCursor",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "cursor",
+          "CsName": "cursor",
+          "CsType": "Cursor",
+          "Type": {
+            "Spelling": "cui_cursor",
+            "Kind": "Enum"
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "Input (called by the platform layer)",
+      "Doc": "Request a cursor during component submission or painting. The last request wins. At end of frame the platform hook receives it; the next frame starts with CUI_CURSOR_ARROW."
     },
     {
       "CName": "cui_get_cursor",
@@ -33849,6 +34835,55 @@
       "Doc": ""
     },
     {
+      "CName": "cui_scroll_reveal",
+      "CsName": "ScrollReveal",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "scroll_id",
+          "CsName": "scrollId",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "row",
+          "CsName": "row",
+          "CsType": "uint",
+          "Type": {
+            "Spelling": "cui_id",
+            "Kind": "UInt"
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "Layout",
+      "Doc": "Scrolls the area the least that shows `row` (any id from cui_box_begin, cui_last_id or cui_make_id), comparing both rectangles from the latest layout: nothing when the row is wholly in view or either rectangle is not known yet, else just enough to show its clipped edge; a row taller than the view gets its top at the top. For keyboard selection in a list."
+    },
+    {
       "CName": "cui_split_begin",
       "CsName": "SplitBegin",
       "CsReturn": "void",
@@ -34285,6 +35320,76 @@
     {
       "CName": "cui_pop_disabled",
       "CsName": "PopDisabled",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "Identity",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_push_focus_scope",
+      "CsName": "PushFocusScope",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "uint",
+          "Type": {
+            "Spelling": "cui_id",
+            "Kind": "UInt"
+          }
+        },
+        {
+          "CName": "active",
+          "CsName": "active",
+          "CsType": "byte",
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "Identity",
+      "Doc": "Restrict Tab / Shift+Tab navigation to widgets built inside the active scope (for example, the focused pane in a multi-pane workspace). An inactive scope and its descendants remain clickable but outside the Tab order. With no active scope, Tab visits unscoped controls. An open modal takes precedence."
+    },
+    {
+      "CName": "cui_pop_focus_scope",
+      "CsName": "PopFocusScope",
       "CsReturn": "void",
       "Params": [
         {
@@ -39226,6 +40331,100 @@
       "Doc": "Images"
     },
     {
+      "CName": "cui_image_update",
+      "CsName": "ImageUpdate",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "tex",
+          "CsName": "tex",
+          "CsType": "nuint",
+          "Type": {
+            "Spelling": "cui_texture",
+            "Kind": "ULongLong"
+          }
+        },
+        {
+          "CName": "x",
+          "CsName": "x",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "y",
+          "CsName": "y",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "w",
+          "CsName": "w",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "h",
+          "CsName": "h",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "rgba",
+          "CsName": "rgba",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const void *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const void",
+              "Kind": "Void",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "stride",
+          "CsName": "stride",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "Data display",
+      "Doc": "Update a rectangle within an existing RGBA8 texture and request a redraw. stride is the byte distance between source rows: at least w * 4, or 0 for tightly packed."
+    },
+    {
       "CName": "cui_image_load",
       "CsName": "ImageLoad",
       "CsReturn": "nuint",
@@ -41826,6 +43025,85 @@
       "Doc": ""
     },
     {
+      "CName": "cui_tree_table_menu_begin",
+      "CsName": "TreeTableMenuBegin",
+      "CsReturn": "byte",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "node",
+          "CsName": "node",
+          "CsType": "ref int",
+          "Type": {
+            "Spelling": "int *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "int",
+              "Kind": "Int"
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "_Bool",
+        "Kind": "Bool"
+      },
+      "Module": "Tree table and path bar",
+      "Doc": "The context menu of table `id` (after cui_tree_table_end): true while it is open, with the node it was opened for in *node; fill it with cui_menu_item and friends, then call cui_tree_table_menu_end."
+    },
+    {
+      "CName": "cui_tree_table_menu_end",
+      "CsName": "TreeTableMenuEnd",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "Tree table and path bar",
+      "Doc": ""
+    },
+    {
       "CName": "cui_tree_sort",
       "CsName": "TreeSort",
       "CsReturn": "int",
@@ -41894,6 +43172,91 @@
       },
       "Module": "Tree table and path bar",
       "Doc": "Sorts every sibling list (stable) by cmp, relinking the nodes. Returns the new first top level node."
+    },
+    {
+      "CName": "cui_tree_move",
+      "CsName": "TreeMove",
+      "CsReturn": "int",
+      "Params": [
+        {
+          "CName": "nodes",
+          "CsName": "nodes",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_tree_node *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_tree_node",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "node_count",
+          "CsName": "nodeCount",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "root",
+          "CsName": "root",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "move",
+          "CsName": "move",
+          "CsType": "in int",
+          "Type": {
+            "Spelling": "const int *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const int",
+              "Kind": "Int",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "move_count",
+          "CsName": "moveCount",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "target",
+          "CsName": "target",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "where",
+          "CsName": "where",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "int",
+        "Kind": "Int"
+      },
+      "Module": "Tree table and path bar",
+      "Doc": "Moves nodes, each with its subtree, before, into (after the last child) or after target, keeping their order, and relinks the nodes. Returns the new first top level node. A target that is one of the nodes or inside one, or a node listed twice, moves nothing. Flags stay as they are: open the target yourself if you want the moved nodes in view."
     },
     {
       "CName": "cui_path_bar_ex",
@@ -47528,7 +48891,7 @@
         "Kind": "Int"
       },
       "Module": "Planning",
-      "Doc": "Returns the activated event index or -1. Read-only events still activate."
+      "Doc": "Returns the activated event index or -1. Read-only events still activate. Pointer activation requires staying within the drag threshold through release. A drag ends when the event list shrinks, the calendar is disabled or `read_only` changes; moving the event again takes a new press."
     },
     {
       "CName": "cui_month_calendar_ex",
@@ -47712,7 +49075,7 @@
         "Kind": "Int"
       },
       "Module": "Planning",
-      "Doc": "Returns the activated task index or -1. Read-only tasks still activate."
+      "Doc": "Returns the activated task index or -1. Read-only tasks still activate. A drag ends when the task list shrinks, the chart is disabled or `read_only` changes; moving the bar again takes a new press."
     },
     {
       "CName": "cui_hover_card_begin",
@@ -56118,6 +57481,55 @@
       "Doc": ""
     },
     {
+      "CName": "cui_trace_span_rect",
+      "CsName": "TraceSpanRect",
+      "CsReturn": "NativeRect",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "trace",
+          "CsName": "trace",
+          "CsType": "uint",
+          "Type": {
+            "Spelling": "cui_id",
+            "Kind": "UInt"
+          }
+        },
+        {
+          "CName": "span",
+          "CsName": "span",
+          "CsType": "in NativeTraceSpan",
+          "Type": {
+            "Spelling": "const cui_trace_span *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_trace_span",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "cui_rect",
+        "Kind": "Record"
+      },
+      "Module": "Trace viewer",
+      "Doc": "Where a span is drawn, in points (zero size when out of view or in a folded lane below its top row): its time extent and row, as cui_flame_span_rect gives one; the bar inside is a point narrower, the gap between neighbours, and a selected sliver is widened to 3 points. trace is the view's id: cui_last_id(ui) right after the call. Asked right after the call, it answers at this frame's view in the rectangle of the previous frame, as this frame is not laid out yet; after cui_end_frame, where this frame drew it, until the next frame begins."
+    },
+    {
       "CName": "cui_regex_search",
       "CsName": "RegexSearch",
       "CsReturn": "int",
@@ -59144,6 +60556,446 @@
       "Doc": ""
     },
     {
+      "CName": "cui_canvas_ex",
+      "CsName": "CanvasEx",
+      "CsReturn": "NativeCanvasResult",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "width",
+          "CsName": "width",
+          "CsType": "NativeSize",
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          }
+        },
+        {
+          "CName": "height",
+          "CsName": "height",
+          "CsType": "NativeSize",
+          "Type": {
+            "Spelling": "cui_size",
+            "Kind": "Record"
+          }
+        },
+        {
+          "CName": "paint",
+          "CsName": "paint",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_paint_fn",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "void (struct cui_ctx *, struct cui_rect, void *)",
+              "Kind": "FunctionProto"
+            }
+          }
+        },
+        {
+          "CName": "user",
+          "CsName": "user",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const void *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const void",
+              "Kind": "Void",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "user_size",
+          "CsName": "userSize",
+          "CsType": "nuint",
+          "Type": {
+            "Spelling": "size_t",
+            "Kind": "ULongLong"
+          }
+        },
+        {
+          "CName": "opts",
+          "CsName": "opts",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const cui_canvas_opts *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_canvas_opts",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "cui_canvas_result",
+        "Kind": "Record"
+      },
+      "Module": "Custom drawing",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_request_component_focus",
+      "CsName": "RequestComponentFocus",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "uint",
+          "Type": {
+            "Spelling": "cui_id",
+            "Kind": "UInt"
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "Custom drawing",
+      "Doc": "Request focus for a submitted canvas with component_input enabled. The last request wins at end_frame and expires there. An absent, disabled, or nonparticipating target leaves the current focus unchanged. Removal revokes participating focus; built-in forward-focus behavior is unchanged."
+    },
+    {
+      "CName": "cui_component_has_input",
+      "CsName": "ComponentHasInput",
+      "CsReturn": "byte",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "uint",
+          "Type": {
+            "Spelling": "cui_id",
+            "Kind": "UInt"
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "_Bool",
+        "Kind": "Bool"
+      },
+      "Module": "Custom drawing",
+      "Doc": "Test eligibility from a completed submission: call after end_frame or before submitting components in the next frame. Includes window, modal and popup exclusion. Unsubmitted host visibility/disabled changes remain host-owned."
+    },
+    {
+      "CName": "cui_focused_id",
+      "CsName": "FocusedId",
+      "CsReturn": "uint",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "cui_id",
+        "Kind": "UInt"
+      },
+      "Module": "Custom drawing",
+      "Doc": "Current owner, including built-ins. Ownership alone does not imply eligibility."
+    },
+    {
+      "CName": "cui_window_focused",
+      "CsName": "WindowFocused",
+      "CsReturn": "byte",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "_Bool",
+        "Kind": "Bool"
+      },
+      "Module": "Custom drawing",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_focus_visible",
+      "CsName": "FocusVisible",
+      "CsReturn": "byte",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "uint",
+          "Type": {
+            "Spelling": "cui_id",
+            "Kind": "UInt"
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "_Bool",
+        "Kind": "Bool"
+      },
+      "Module": "Custom drawing",
+      "Doc": "Whether `id` has keyboard focus with its ring showing; for a painter."
+    },
+    {
+      "CName": "cui_frame_alloc",
+      "CsName": "FrameAlloc",
+      "CsReturn": "nint",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "size",
+          "CsName": "size",
+          "CsType": "nuint",
+          "Type": {
+            "Spelling": "size_t",
+            "Kind": "ULongLong"
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void *",
+        "Kind": "Pointer",
+        "Element": {
+          "Spelling": "void",
+          "Kind": "Void"
+        }
+      },
+      "Module": "Custom drawing",
+      "Doc": "Frame-scoped arena allocation: zero-initialized memory valid until the next cui_begin_frame. Useful for passing temporary strings or slices into a deferred cui_canvas paint callback without heap churn. Returns NULL for a null context, zero size, or a size the frame arena cannot represent."
+    },
+    {
+      "CName": "cui_frame_strdup",
+      "CsName": "FrameStrdup",
+      "CsReturn": "nint",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "s",
+          "CsName": "s",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "const char *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const char",
+              "Kind": "Char_S",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "char *",
+        "Kind": "Pointer",
+        "Element": {
+          "Spelling": "char",
+          "Kind": "Char_S"
+        }
+      },
+      "Module": "Custom drawing",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_wheel_region",
+      "CsName": "WheelRegion",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "uint",
+          "Type": {
+            "Spelling": "cui_id",
+            "Kind": "UInt"
+          }
+        },
+        {
+          "CName": "rect",
+          "CsName": "rect",
+          "CsType": "NativeRect",
+          "Type": {
+            "Spelling": "cui_rect",
+            "Kind": "Record"
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "Custom drawing",
+      "Doc": "Marks the part of a canvas that takes the wheel, for a canvas that zooms, pans or scrolls what it draws the way the built-in charts, graphs and timelines do. Call it from the paint callback; over the rectangle the wheel stops there instead of scrolling an enclosing scroll area or the page. Give it an id of its own, not the canvas's: the region keeps scroll state under that id. A canvas in a disabled scope marks nothing, so the wheel scrolls the page there. Like every hit area, the region is the one painted on the previous frame."
+    },
+    {
+      "CName": "cui_wheel_take",
+      "CsName": "WheelTake",
+      "CsReturn": "byte",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "id",
+          "CsName": "id",
+          "CsType": "uint",
+          "Type": {
+            "Spelling": "cui_id",
+            "Kind": "UInt"
+          }
+        },
+        {
+          "CName": "delta",
+          "CsName": "delta",
+          "CsType": "ref NativeVec2",
+          "Type": {
+            "Spelling": "cui_vec2 *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_vec2",
+              "Kind": "Record"
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "_Bool",
+        "Kind": "Bool"
+      },
+      "Module": "Custom drawing",
+      "Doc": "Returns the wheel aimed at a cui_wheel_region id this frame, in lines with +y up as cui_input_scroll gives it, and consumes it, so call it once per frame. Returns false and leaves *delta alone when no wheel came, and in a disabled scope: call it in the scope the canvas was built in."
+    },
+    {
       "CName": "cui_state",
       "CsName": "State",
       "CsReturn": "nint",
@@ -59705,6 +61557,167 @@
       "Doc": "Maximizes the window on its display, as the title bar's maximize button does. NULL means the running app, so a cui_app_run callback can call it on its first frame; with the loop form it is fine right after cui_app_create. Nothing happens for a fixed-size window or where the window manager does not support it (an X11 window manager without EWMH)."
     },
     {
+      "CName": "cui_app_minimize",
+      "CsName": "AppMinimize",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "app",
+          "CsName": "app",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_app *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_app",
+              "Kind": "Record"
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "cui_app",
+      "Doc": "Minimizes the window to the taskbar or the dock. Nothing happens where the window manager does not support it."
+    },
+    {
+      "CName": "cui_app_restore",
+      "CsName": "AppRestore",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "app",
+          "CsName": "app",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_app *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_app",
+              "Kind": "Record"
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "cui_app",
+      "Doc": "Undoes a maximize or a minimize: a maximized window gets its normal size and place back, a minimized one comes back as it was before, maximized or not."
+    },
+    {
+      "CName": "cui_app_window_state",
+      "CsName": "AppWindowState",
+      "CsReturn": "WindowState",
+      "Params": [
+        {
+          "CName": "app",
+          "CsName": "app",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_app *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_app",
+              "Kind": "Record"
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "cui_window_state",
+        "Kind": "Enum"
+      },
+      "Module": "cui_app",
+      "Doc": "Normal, maximized or minimized, as the system reports it now. On X11 the window manager carries out what cui_app_maximize, cui_app_minimize and cui_app_restore ask for, so the new state can take a few frames to show here."
+    },
+    {
+      "CName": "cui_app_set_position",
+      "CsName": "AppSetPosition",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "app",
+          "CsName": "app",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_app *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_app",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "x",
+          "CsName": "x",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        },
+        {
+          "CName": "y",
+          "CsName": "y",
+          "CsType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "cui_app",
+      "Doc": "Moves the window so the top-left corner of its content is at x, y, in the desktop coordinates of cui_window_placement. Meant for a normal window: on Windows a maximized or minimized one takes the new place when it is restored; elsewhere the window manager decides. Nothing happens where windows cannot place themselves (Wayland)."
+    },
+    {
+      "CName": "cui_app_placement",
+      "CsName": "AppPlacement",
+      "CsReturn": "byte",
+      "Params": [
+        {
+          "CName": "app",
+          "CsName": "app",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_app *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_app",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "out",
+          "CsName": "@out",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_window_placement *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_window_placement",
+              "Kind": "Record"
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "_Bool",
+        "Kind": "Bool"
+      },
+      "Module": "cui_app",
+      "Doc": "Writes the window's normal size and place, and whether it is or comes back maximized, to out, also while it is maximized or minimized, so an app can save them when it closes. Returns false when there is no app."
+    },
+    {
       "CName": "cui_app_follow_system_theme",
       "CsName": "AppFollowSystemTheme",
       "CsReturn": "void",
@@ -59970,7 +61983,7 @@
         "Kind": "Bool"
       },
       "Module": "cui_app",
-      "Doc": "Renders the current UI into an RGBA buffer (any backend). Handy for screenshots and tests. Returns false when the buffer is too small."
+      "Doc": "Renders the entire current UI into an RGBA buffer (any backend). The buffer can be empty or reused. Returns false when it is too small."
     },
     {
       "CName": "cui_sw_create",
@@ -60560,6 +62573,190 @@
       },
       "Module": "OpenGL renderer",
       "Doc": "True when the OpenGL driver draws on the CPU (Mesa llvmpipe, SwiftShader and the like, as in virtual machines and remote sessions). CUI's own software renderer, which redraws only what changed, is then much cheaper."
+    },
+    {
+      "CName": "cui_gpu_create",
+      "CsName": "GpuCreate",
+      "CsReturn": "nint",
+      "Params": [
+        {
+          "CName": "window",
+          "CsName": "window",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "void *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "void",
+              "Kind": "Void"
+            }
+          }
+        },
+        {
+          "CName": "vsync",
+          "CsName": "vsync",
+          "CsType": "byte",
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "cui_gpu_renderer *",
+        "Kind": "Pointer",
+        "Element": {
+          "Spelling": "cui_gpu_renderer",
+          "Kind": "Record"
+        }
+      },
+      "Module": "Direct3D 12, Vulkan and Metal (built with CUI_D3D12, CUI_VULKAN, CUI_METAL)",
+      "Doc": "window: an HWND, on Linux a cui_x11_window *, on macOS an NSWindow * (its content view gets a CAMetalLayer). NULL when the device or window cannot be set up. CUI_GPU set to part of an adapter's name (e.g. \"nvidia\") picks the GPU."
+    },
+    {
+      "CName": "cui_gpu_destroy",
+      "CsName": "GpuDestroy",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "r",
+          "CsName": "r",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_gpu_renderer *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_gpu_renderer",
+              "Kind": "Record"
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "Direct3D 12, Vulkan and Metal (built with CUI_D3D12, CUI_VULKAN, CUI_METAL)",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_gpu_iface",
+      "CsName": "GpuIface",
+      "CsReturn": "NativeRendererIface",
+      "Params": [
+        {
+          "CName": "r",
+          "CsName": "r",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_gpu_renderer *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_gpu_renderer",
+              "Kind": "Record"
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "cui_renderer_iface",
+        "Kind": "Record"
+      },
+      "Module": "Direct3D 12, Vulkan and Metal (built with CUI_D3D12, CUI_VULKAN, CUI_METAL)",
+      "Doc": ""
+    },
+    {
+      "CName": "cui_gpu_render",
+      "CsName": "GpuRender",
+      "CsReturn": "void",
+      "Params": [
+        {
+          "CName": "r",
+          "CsName": "r",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_gpu_renderer *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_gpu_renderer",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "dd",
+          "CsName": "dd",
+          "CsType": "in NativeDrawData",
+          "Type": {
+            "Spelling": "const cui_draw_data *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_draw_data",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "void",
+        "Kind": "Void"
+      },
+      "Module": "Direct3D 12, Vulkan and Metal (built with CUI_D3D12, CUI_VULKAN, CUI_METAL)",
+      "Doc": "Draws and presents."
+    },
+    {
+      "CName": "cui_gpu_render_capture",
+      "CsName": "GpuRenderCapture",
+      "CsReturn": "byte",
+      "Params": [
+        {
+          "CName": "r",
+          "CsName": "r",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_gpu_renderer *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_gpu_renderer",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "dd",
+          "CsName": "dd",
+          "CsType": "in NativeDrawData",
+          "Type": {
+            "Spelling": "const cui_draw_data *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "const cui_draw_data",
+              "Kind": "Record",
+              "IsConst": true
+            }
+          }
+        },
+        {
+          "CName": "rgba",
+          "CsName": "rgba",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "void *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "void",
+              "Kind": "Void"
+            }
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "_Bool",
+        "Kind": "Bool"
+      },
+      "Module": "Direct3D 12, Vulkan and Metal (built with CUI_D3D12, CUI_VULKAN, CUI_METAL)",
+      "Doc": "Draws, reads the frame back into rgba (width_px * height_px * 4, top-down) and presents."
     }
   ],
   "Constants": [

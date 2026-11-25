@@ -675,12 +675,13 @@ public class GeneratedAbiTests
         Assert.Equal(24, (int)Marshal.OffsetOf<NativeChartAnnotation>(nameof(NativeChartAnnotation.Label)));
         Assert.Equal(32, (int)Marshal.OffsetOf<NativeChartAnnotation>(nameof(NativeChartAnnotation.Detail)));
         Assert.Equal(40, (int)Marshal.OffsetOf<NativeChartAnnotation>(nameof(NativeChartAnnotation.Accent)));
+        Assert.Equal(41, (int)Marshal.OffsetOf<NativeChartAnnotation>(nameof(NativeChartAnnotation.Color)));
     }
 
     [Fact]
     public void NativeChartOpts_MatchesC()
     {
-        Assert.Equal(72, Unsafe.SizeOf<NativeChartOpts>());
+        Assert.Equal(88, Unsafe.SizeOf<NativeChartOpts>());
         Assert.Equal(0, (int)Marshal.OffsetOf<NativeChartOpts>(nameof(NativeChartOpts.Sentinel)));
         Assert.Equal(4, (int)Marshal.OffsetOf<NativeChartOpts>(nameof(NativeChartOpts.Width)));
         Assert.Equal(12, (int)Marshal.OffsetOf<NativeChartOpts>(nameof(NativeChartOpts.Height)));
@@ -697,6 +698,8 @@ public class GeneratedAbiTests
         Assert.Equal(56, (int)Marshal.OffsetOf<NativeChartOpts>(nameof(NativeChartOpts.Annotations)));
         Assert.Equal(64, (int)Marshal.OffsetOf<NativeChartOpts>(nameof(NativeChartOpts.AnnotationCount)));
         Assert.Equal(68, (int)Marshal.OffsetOf<NativeChartOpts>(nameof(NativeChartOpts.Dither)));
+        Assert.Equal(72, (int)Marshal.OffsetOf<NativeChartOpts>(nameof(NativeChartOpts.XMin)));
+        Assert.Equal(80, (int)Marshal.OffsetOf<NativeChartOpts>(nameof(NativeChartOpts.XMax)));
     }
 
     [Fact]
@@ -988,7 +991,7 @@ public class GeneratedAbiTests
     [Fact]
     public void NativeTreeTableOpts_MatchesC()
     {
-        Assert.Equal(72, Unsafe.SizeOf<NativeTreeTableOpts>());
+        Assert.Equal(88, Unsafe.SizeOf<NativeTreeTableOpts>());
         Assert.Equal(0, (int)Marshal.OffsetOf<NativeTreeTableOpts>(nameof(NativeTreeTableOpts.Sentinel)));
         Assert.Equal(4, (int)Marshal.OffsetOf<NativeTreeTableOpts>(nameof(NativeTreeTableOpts.Width)));
         Assert.Equal(12, (int)Marshal.OffsetOf<NativeTreeTableOpts>(nameof(NativeTreeTableOpts.Height)));
@@ -999,12 +1002,14 @@ public class GeneratedAbiTests
         Assert.Equal(48, (int)Marshal.OffsetOf<NativeTreeTableOpts>(nameof(NativeTreeTableOpts.Guides)));
         Assert.Equal(56, (int)Marshal.OffsetOf<NativeTreeTableOpts>(nameof(NativeTreeTableOpts.Label)));
         Assert.Equal(64, (int)Marshal.OffsetOf<NativeTreeTableOpts>(nameof(NativeTreeTableOpts.User)));
+        Assert.Equal(72, (int)Marshal.OffsetOf<NativeTreeTableOpts>(nameof(NativeTreeTableOpts.Draggable)));
+        Assert.Equal(80, (int)Marshal.OffsetOf<NativeTreeTableOpts>(nameof(NativeTreeTableOpts.CanDrop)));
     }
 
     [Fact]
     public void NativeTreeTableEvents_MatchesC()
     {
-        Assert.Equal(32, Unsafe.SizeOf<NativeTreeTableEvents>());
+        Assert.Equal(56, Unsafe.SizeOf<NativeTreeTableEvents>());
         Assert.Equal(0, (int)Marshal.OffsetOf<NativeTreeTableEvents>(nameof(NativeTreeTableEvents.Activated)));
         Assert.Equal(4, (int)Marshal.OffsetOf<NativeTreeTableEvents>(nameof(NativeTreeTableEvents.Expanded)));
         Assert.Equal(8, (int)Marshal.OffsetOf<NativeTreeTableEvents>(nameof(NativeTreeTableEvents.Collapsed)));
@@ -1012,6 +1017,10 @@ public class GeneratedAbiTests
         Assert.Equal(24, (int)Marshal.OffsetOf<NativeTreeTableEvents>(nameof(NativeTreeTableEvents.LoadCount)));
         Assert.Equal(28, (int)Marshal.OffsetOf<NativeTreeTableEvents>(nameof(NativeTreeTableEvents.SelectionChanged)));
         Assert.Equal(29, (int)Marshal.OffsetOf<NativeTreeTableEvents>(nameof(NativeTreeTableEvents.SortChanged)));
+        Assert.Equal(32, (int)Marshal.OffsetOf<NativeTreeTableEvents>(nameof(NativeTreeTableEvents.Dropped)));
+        Assert.Equal(40, (int)Marshal.OffsetOf<NativeTreeTableEvents>(nameof(NativeTreeTableEvents.DropCount)));
+        Assert.Equal(44, (int)Marshal.OffsetOf<NativeTreeTableEvents>(nameof(NativeTreeTableEvents.DropTarget)));
+        Assert.Equal(48, (int)Marshal.OffsetOf<NativeTreeTableEvents>(nameof(NativeTreeTableEvents.DropWhere)));
     }
 
     [Fact]
@@ -3299,6 +3308,17 @@ public class GeneratedAbiTests
     }
 
     [Fact]
+    public void NativeTraceLink_MatchesC()
+    {
+        Assert.Equal(20, Unsafe.SizeOf<NativeTraceLink>());
+        Assert.Equal(0, (int)Marshal.OffsetOf<NativeTraceLink>(nameof(NativeTraceLink.From)));
+        Assert.Equal(4, (int)Marshal.OffsetOf<NativeTraceLink>(nameof(NativeTraceLink.To)));
+        Assert.Equal(8, (int)Marshal.OffsetOf<NativeTraceLink>(nameof(NativeTraceLink.Tone)));
+        Assert.Equal(12, (int)Marshal.OffsetOf<NativeTraceLink>(nameof(NativeTraceLink.Width)));
+        Assert.Equal(16, (int)Marshal.OffsetOf<NativeTraceLink>(nameof(NativeTraceLink.Dashed)));
+    }
+
+    [Fact]
     public void NativeTraceView_MatchesC()
     {
         Assert.Equal(40, Unsafe.SizeOf<NativeTraceView>());
@@ -3312,22 +3332,25 @@ public class GeneratedAbiTests
     [Fact]
     public void NativeTraceOpts_MatchesC()
     {
-        Assert.Equal(40, Unsafe.SizeOf<NativeTraceOpts>());
+        Assert.Equal(56, Unsafe.SizeOf<NativeTraceOpts>());
         Assert.Equal(0, (int)Marshal.OffsetOf<NativeTraceOpts>(nameof(NativeTraceOpts.Sentinel)));
         Assert.Equal(4, (int)Marshal.OffsetOf<NativeTraceOpts>(nameof(NativeTraceOpts.Width)));
         Assert.Equal(12, (int)Marshal.OffsetOf<NativeTraceOpts>(nameof(NativeTraceOpts.Height)));
         Assert.Equal(16, (int)Marshal.OffsetOf<NativeTraceOpts>(nameof(NativeTraceOpts.RowHeight)));
         Assert.Equal(24, (int)Marshal.OffsetOf<NativeTraceOpts>(nameof(NativeTraceOpts.Markers)));
         Assert.Equal(32, (int)Marshal.OffsetOf<NativeTraceOpts>(nameof(NativeTraceOpts.MarkerCount)));
+        Assert.Equal(40, (int)Marshal.OffsetOf<NativeTraceOpts>(nameof(NativeTraceOpts.Links)));
+        Assert.Equal(48, (int)Marshal.OffsetOf<NativeTraceOpts>(nameof(NativeTraceOpts.LinkCount)));
     }
 
     [Fact]
     public void NativeTraceResult_MatchesC()
     {
-        Assert.Equal(8, Unsafe.SizeOf<NativeTraceResult>());
+        Assert.Equal(12, Unsafe.SizeOf<NativeTraceResult>());
         Assert.Equal(0, (int)Marshal.OffsetOf<NativeTraceResult>(nameof(NativeTraceResult.SelectionChanged)));
         Assert.Equal(1, (int)Marshal.OffsetOf<NativeTraceResult>(nameof(NativeTraceResult.ViewChanged)));
         Assert.Equal(4, (int)Marshal.OffsetOf<NativeTraceResult>(nameof(NativeTraceResult.Hovered)));
+        Assert.Equal(8, (int)Marshal.OffsetOf<NativeTraceResult>(nameof(NativeTraceResult.HoveredLink)));
     }
 
     [Fact]
@@ -3638,7 +3661,7 @@ public class GeneratedAbiTests
     [Fact]
     public void NativeDotChartOpts_MatchesC()
     {
-        Assert.Equal(104, Unsafe.SizeOf<NativeDotChartOpts>());
+        Assert.Equal(136, Unsafe.SizeOf<NativeDotChartOpts>());
         Assert.Equal(0, (int)Marshal.OffsetOf<NativeDotChartOpts>(nameof(NativeDotChartOpts.Sentinel)));
         Assert.Equal(4, (int)Marshal.OffsetOf<NativeDotChartOpts>(nameof(NativeDotChartOpts.Width)));
         Assert.Equal(12, (int)Marshal.OffsetOf<NativeDotChartOpts>(nameof(NativeDotChartOpts.Height)));
@@ -3657,6 +3680,10 @@ public class GeneratedAbiTests
         Assert.Equal(86, (int)Marshal.OffsetOf<NativeDotChartOpts>(nameof(NativeDotChartOpts.NoReadout)));
         Assert.Equal(88, (int)Marshal.OffsetOf<NativeDotChartOpts>(nameof(NativeDotChartOpts.Annotations)));
         Assert.Equal(96, (int)Marshal.OffsetOf<NativeDotChartOpts>(nameof(NativeDotChartOpts.AnnotationCount)));
+        Assert.Equal(104, (int)Marshal.OffsetOf<NativeDotChartOpts>(nameof(NativeDotChartOpts.XLabel)));
+        Assert.Equal(112, (int)Marshal.OffsetOf<NativeDotChartOpts>(nameof(NativeDotChartOpts.XLabelUser)));
+        Assert.Equal(120, (int)Marshal.OffsetOf<NativeDotChartOpts>(nameof(NativeDotChartOpts.ValueLabel)));
+        Assert.Equal(128, (int)Marshal.OffsetOf<NativeDotChartOpts>(nameof(NativeDotChartOpts.ValueLabelUser)));
     }
 
     [Fact]
@@ -3672,7 +3699,7 @@ public class GeneratedAbiTests
     [Fact]
     public void NativeEventTrackOpts_MatchesC()
     {
-        Assert.Equal(64, Unsafe.SizeOf<NativeEventTrackOpts>());
+        Assert.Equal(80, Unsafe.SizeOf<NativeEventTrackOpts>());
         Assert.Equal(0, (int)Marshal.OffsetOf<NativeEventTrackOpts>(nameof(NativeEventTrackOpts.Sentinel)));
         Assert.Equal(4, (int)Marshal.OffsetOf<NativeEventTrackOpts>(nameof(NativeEventTrackOpts.Width)));
         Assert.Equal(16, (int)Marshal.OffsetOf<NativeEventTrackOpts>(nameof(NativeEventTrackOpts.Step)));
@@ -3683,6 +3710,8 @@ public class GeneratedAbiTests
         Assert.Equal(56, (int)Marshal.OffsetOf<NativeEventTrackOpts>(nameof(NativeEventTrackOpts.NoAdd)));
         Assert.Equal(57, (int)Marshal.OffsetOf<NativeEventTrackOpts>(nameof(NativeEventTrackOpts.NoRemove)));
         Assert.Equal(58, (int)Marshal.OffsetOf<NativeEventTrackOpts>(nameof(NativeEventTrackOpts.NoAxis)));
+        Assert.Equal(64, (int)Marshal.OffsetOf<NativeEventTrackOpts>(nameof(NativeEventTrackOpts.Label)));
+        Assert.Equal(72, (int)Marshal.OffsetOf<NativeEventTrackOpts>(nameof(NativeEventTrackOpts.LabelUser)));
     }
 
     [Fact]
@@ -3936,7 +3965,7 @@ public class GeneratedAbiTests
     [Fact]
     public void NativeAppDesc_MatchesC()
     {
-        Assert.Equal(56, Unsafe.SizeOf<NativeAppDesc>());
+        Assert.Equal(64, Unsafe.SizeOf<NativeAppDesc>());
         Assert.Equal(0, (int)Marshal.OffsetOf<NativeAppDesc>(nameof(NativeAppDesc.Title)));
         Assert.Equal(8, (int)Marshal.OffsetOf<NativeAppDesc>(nameof(NativeAppDesc.Width)));
         Assert.Equal(12, (int)Marshal.OffsetOf<NativeAppDesc>(nameof(NativeAppDesc.Height)));
@@ -3951,6 +3980,7 @@ public class GeneratedAbiTests
         Assert.Equal(36, (int)Marshal.OffsetOf<NativeAppDesc>(nameof(NativeAppDesc.Accent)));
         Assert.Equal(40, (int)Marshal.OffsetOf<NativeAppDesc>(nameof(NativeAppDesc.FollowSystemTheme)));
         Assert.Equal(48, (int)Marshal.OffsetOf<NativeAppDesc>(nameof(NativeAppDesc.AppId)));
+        Assert.Equal(56, (int)Marshal.OffsetOf<NativeAppDesc>(nameof(NativeAppDesc.Placement)));
     }
 
     [Fact]

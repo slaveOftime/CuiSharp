@@ -54,6 +54,14 @@ public int TreeTableDepth()
 
 depth of the current row, 0 at the top
 
+## `TreeTableMenu`
+
+```csharp
+public OpenScope TreeTableMenu(UiText id, ref int node)
+```
+
+The context menu of table `id` (after cui_tree_table_end): true while it is open, with the node it was opened for in *node; fill it with cui_menu_item and friends, then call cui_tree_table_menu_end.
+
 ## `TreeTableName`
 
 ```csharp

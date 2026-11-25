@@ -239,6 +239,8 @@ C `cui_chart_opts`.
 - `Max`: float (default `Max`)
 - `Annotations`: ChartAnnotation[]? (default `ChartAnnotation.ToFrameArray(Annotations)`)
 - `Dither`: bool (default `(byte)(Dither ? 1 : 0)`)
+- `XMin`: double (default `XMin`)
+- `XMax`: double (default `XMax`)
 
 ## `ChatOpts`
 
@@ -1828,6 +1830,7 @@ C `cui_trace_opts`.
 - `Height`: float (default `Height`)
 - `RowHeight`: float (default `RowHeight`)
 - `Markers`: TraceMarker[]? (default `TraceMarker.ToFrameArray(Markers)`)
+- `Links`: TraceLink[]? (default `TraceLink.ToFrameArray(Links)`)
 
 ## `TreeOpts`
 
@@ -1846,6 +1849,7 @@ C `cui_tree_table_opts`.
 - `RowHeight`: float (default `RowHeight`)
 - `Root`: int (default `Root`)
 - `Guides`: bool (default `(byte)(Guides ? 1 : 0)`)
+- `Draggable`: bool (default `(byte)(Draggable ? 1 : 0)`)
 
 ## `TreemapOpts`
 

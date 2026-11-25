@@ -53,7 +53,13 @@
     "CUI_VOICE_SESSION_MUTE"
   ],
   "skipFunctions": [],
-  "skipStructs": [],
+  "skipStructs": [
+    "cui_canvas_opts",
+    "cui_gpu_renderer",
+    "cui_input_event",
+    "cui_window_placement",
+    "cui_x11_window"
+  ],
   "suppressGcTransition": [],
   "anonymousEnumNames": {
     "CUI_FONT_BODY": "Font",
@@ -65,7 +71,8 @@
     "CUI_WELL_CHANGED": "WellEvents",
     "CUI_FORMAT_CHANGED": "FormatEvents",
     "CUI_CANVAS_ZOOMED": "CanvasEvents",
-    "CUI_VOICE_SESSION_MUTE": "VoiceSessionEvents"
+    "CUI_VOICE_SESSION_MUTE": "VoiceSessionEvents",
+    "CUI_TREE_DROP_BEFORE": "TreeDrop"
   },
   "typeAliases": {
     "cui_font": {
@@ -288,6 +295,10 @@
     "cui_voice_note_ex.note": {
       "storage": "value",
       "why": "cui_voice_note is playback state: convert to VoiceNoteState, write back position, speed and playing, and preserve the caller-owned const levels array."
+    },
+    "cui_trace_span_rect.span": {
+      "storage": "value",
+      "why": "The span is input only: convert to the friendly TraceSpan for the call; an in value has nothing to copy back."
     }
   },
   "capacityParams": {
@@ -897,6 +908,15 @@
     },
     "cui_get_clipboard_text": {
       "why": "`Ui.GetClipboard()` (Ui/Ui.cs): copies the returned text out of CUI's frame memory before the frame ends."
+    },
+    "cui_event_track_ex": {
+      "why": "The times are a Span<double> the widget sorts and edits in place, and `label` is a C function pointer the bridge rents (Ui/Ui.Instruments.cs)."
+    },
+    "cui_image_update": {
+      "why": "ui.UpdateImage(tex, x, y, w, h, rgba, stride) (Ui/Ui.Images.cs): validates the rectangle and the stride against the pixel span, pins it and hands it over."
+    },
+    "cui_tree_move": {
+      "why": "CuiTree.Move(nodes, root, move, target, where) (Ui/Ui.TreeTable.cs): relinks the caller's node array in place, like CuiTree.Sort."
     }
   },
   "outParams": {
@@ -937,6 +957,9 @@
     },
     "Theme": {
       "why": "Theme control belongs to CuiApp (SetTheme/SetAccent); Ui keeps request-redraw only."
+    },
+    "Direct3D 12, Vulkan and Metal (built with CUI_D3D12, CUI_VULKAN, CUI_METAL)": {
+      "why": "A GPU renderer hands CUI a native interface of function pointers and device handles (IUnknown, VkInstance, MTLDevice) that CUI itself builds only behind compile-time flags, with OpenGL as the default; a managed renderer bridge is its own project. CuiSurface installs the software renderer."
     }
   },
   "recordFieldCounts": {
@@ -1409,6 +1432,10 @@
     "cui_voice_note": {
       "name": "VoiceNoteState",
       "why": "A recorded message's playback state: the levels, the position, the length and the speed. The bubble writes position, speed and playing back; named after the state because the widget is Ui.VoiceNote."
+    },
+    "cui_trace_link": {
+      "name": "TraceLink",
+      "why": "One dependency between two spans: the indices, the tone, the width and the dash. Copied into the frame arena by the wrapper."
     }
   },
   "extraOptionFields": {
@@ -1539,6 +1566,9 @@
     },
     "cui_voice_resample": {
       "why": "C helper: resamples a clip's levels into caller memory. A static utility with no frame and no cui_ctx."
+    },
+    "cui_tree_move": {
+      "why": "No cui_ctx: CuiTree.Move(nodes, root, move, target, where) (Ui/Ui.TreeTable.cs) relinks the caller's node array, like CuiTree.Sort."
     }
   },
   "arrayLengths": {
@@ -1994,6 +2024,27 @@
     },
     "cui_selection_bar_opts.item_count": {
       "why": "The length of `selected`, which the hand-written wrapper derives from the span it is given."
+    },
+    "cui_tree_table_opts.can_drop": {
+      "why": "A C function pointer called during the drag: ui.TreeTable(..., canDrop) passes it and the widget's user pointer through the frame-callback bridge (Ui/Ui.TreeTable.cs). Without one, every drop is allowed."
+    },
+    "cui_dot_chart_opts.x_label": {
+      "why": "A C function pointer: ui.DotChart(..., xLabel) passes it and its user pointer through the frame-callback bridge (Ui/Ui.Instruments.cs); without one x_units and x_format decide, as before."
+    },
+    "cui_dot_chart_opts.x_label_user": {
+      "why": "The `void *` for the x_label callback above; the bridge supplies the GCHandle address for it."
+    },
+    "cui_dot_chart_opts.value_label": {
+      "why": "A C function pointer: ui.DotChart(..., valueLabel) passes it and its user pointer through the frame-callback bridge (Ui/Ui.Instruments.cs); without one format and unit decide, as before."
+    },
+    "cui_dot_chart_opts.value_label_user": {
+      "why": "The `void *` for the value_label callback above; the bridge supplies the GCHandle address for it."
+    },
+    "cui_event_track_opts.label": {
+      "why": "A C function pointer: ui.EventTrack(..., label) passes it and its user pointer through the frame-callback bridge (Ui/Ui.Instruments.cs); without one units and format decide, as before."
+    },
+    "cui_event_track_opts.label_user": {
+      "why": "The `void *` for the label callback above; the bridge supplies the GCHandle address for it."
     }
   },
   "optionFieldCounts": {

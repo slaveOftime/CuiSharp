@@ -72,6 +72,22 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_frame_count")]
     public static partial ulong FrameCount(nint ui);
 
+    /// <summary>NULL unregisters. Install before input delivery; do not change inside hook.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_set_input_hook")]
+    public static partial void SetInputHook(nint ui, nint hook, nint user);
+
+    /// <summary>cui_dispatch_input</summary>
+    [LibraryImport("cui", EntryPoint = "cui_dispatch_input")]
+    public static partial void DispatchInput(nint ui, nint @event, nint route, nint user);
+
+    /// <summary>Valid inside route: whether this key-down repeats a physical held key.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_input_repeated")]
+    public static partial byte InputRepeated(nint ui);
+
+    /// <summary>Held state eligible for default actions. cui_key_down remains physical state.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_key_action_down")]
+    public static partial byte KeyActionDown(nint ui, Key key);
+
     /// <summary>cui_input_mouse_move</summary>
     [LibraryImport("cui", EntryPoint = "cui_input_mouse_move")]
     public static partial void InputMouseMove(nint ui, float x, float y);
@@ -100,6 +116,38 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_input_focus")]
     public static partial void InputFocus(nint ui, byte windowFocused);
 
+    /// <summary>cui_input_touch</summary>
+    [LibraryImport("cui", EntryPoint = "cui_input_touch")]
+    public static partial void InputTouch(nint ui, int finger, byte down, float x, float y);
+
+    /// <summary>cui_input_touch_move</summary>
+    [LibraryImport("cui", EntryPoint = "cui_input_touch_move")]
+    public static partial void InputTouchMove(nint ui, int finger, float x, float y);
+
+    /// <summary>a system gesture stole the finger</summary>
+    [LibraryImport("cui", EntryPoint = "cui_input_touch_cancel")]
+    public static partial void InputTouchCancel(nint ui, int finger);
+
+    /// <summary>Touches this frame: count, per-finger state and position; finger -1 reads the first active touch (the one that landed earliest), and on the frame the last finger lifts, that finger. A finger that lifted this frame keeps its last position in cui_touch_pos for that frame, so a tap can be placed.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_touch_count")]
+    public static partial int TouchCount(nint ui);
+
+    /// <summary>cui_touch_down</summary>
+    [LibraryImport("cui", EntryPoint = "cui_touch_down")]
+    public static partial byte TouchDown(nint ui, int finger);
+
+    /// <summary>landed this frame</summary>
+    [LibraryImport("cui", EntryPoint = "cui_touch_pressed")]
+    public static partial byte TouchPressed(nint ui, int finger);
+
+    /// <summary>lifted this frame</summary>
+    [LibraryImport("cui", EntryPoint = "cui_touch_released")]
+    public static partial byte TouchReleased(nint ui, int finger);
+
+    /// <summary>cui_touch_pos</summary>
+    [LibraryImport("cui", EntryPoint = "cui_touch_pos")]
+    public static partial NativeVec2 TouchPos(nint ui, int finger);
+
     /// <summary>Files dragged from the OS: hover while a drag is over the window (where the platform reports it), then the drop itself. Paths are UTF-8 and copied.</summary>
     [LibraryImport("cui", EntryPoint = "cui_input_file_hover")]
     public static partial void InputFileHover(nint ui, byte hovering, float x, float y);
@@ -123,6 +171,10 @@ public static unsafe partial class Native
     /// <summary>cui_set_platform</summary>
     [LibraryImport("cui", EntryPoint = "cui_set_platform")]
     public static partial void SetPlatform(nint ui, in NativePlatformIface platform);
+
+    /// <summary>Request a cursor during component submission or painting. The last request wins. At end of frame the platform hook receives it; the next frame starts with CUI_CURSOR_ARROW.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_set_cursor")]
+    public static partial void SetCursor(nint ui, Cursor cursor);
 
     /// <summary>cui_get_cursor</summary>
     [LibraryImport("cui", EntryPoint = "cui_get_cursor")]
@@ -296,6 +348,10 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_scroll_to")]
     public static partial void ScrollTo(nint ui, nint scrollId, float y);
 
+    /// <summary>Scrolls the area the least that shows `row` (any id from cui_box_begin, cui_last_id or cui_make_id), comparing both rectangles from the latest layout: nothing when the row is wholly in view or either rectangle is not known yet, else just enough to show its clipped edge; a row taller than the view gets its top at the top. For keyboard selection in a list.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_scroll_reveal")]
+    public static partial void ScrollReveal(nint ui, nint scrollId, uint row);
+
     /// <summary>Open a split with pane minimums that can fit the available main axis.</summary>
     [LibraryImport("cui", EntryPoint = "cui_split_begin")]
     public static partial void SplitBegin(nint ui, nint id, ref float ratio, in NativeSplitOpts opts);
@@ -351,6 +407,14 @@ public static unsafe partial class Native
     /// <summary>cui_pop_disabled</summary>
     [LibraryImport("cui", EntryPoint = "cui_pop_disabled")]
     public static partial void PopDisabled(nint ui);
+
+    /// <summary>Restrict Tab / Shift+Tab navigation to widgets built inside the active scope (for example, the focused pane in a multi-pane workspace). An inactive scope and its descendants remain clickable but outside the Tab order. With no active scope, Tab visits unscoped controls. An open modal takes precedence.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_push_focus_scope")]
+    public static partial void PushFocusScope(nint ui, uint id, byte active);
+
+    /// <summary>cui_pop_focus_scope</summary>
+    [LibraryImport("cui", EntryPoint = "cui_pop_focus_scope")]
+    public static partial void PopFocusScope(nint ui);
 
     /// <summary>cui_text_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_text_ex")]
@@ -720,6 +784,10 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_image_create")]
     public static partial nuint ImageCreate(nint ui, int w, int h, nint rgba);
 
+    /// <summary>Update a rectangle within an existing RGBA8 texture and request a redraw. stride is the byte distance between source rows: at least w * 4, or 0 for tightly packed.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_image_update")]
+    public static partial void ImageUpdate(nint ui, nuint tex, int x, int y, int w, int h, nint rgba, int stride);
+
     /// <summary>UTF-8 path, PNG/JPEG via stb_image</summary>
     [LibraryImport("cui", EntryPoint = "cui_image_load")]
     public static partial nuint ImageLoad(nint ui, nint path, ref int w, ref int h);
@@ -908,9 +976,21 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_tree_table_end")]
     public static partial NativeTreeTableEvents TreeTableEnd(nint ui);
 
+    /// <summary>The context menu of table `id` (after cui_tree_table_end): true while it is open, with the node it was opened for in *node; fill it with cui_menu_item and friends, then call cui_tree_table_menu_end.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_tree_table_menu_begin")]
+    public static partial byte TreeTableMenuBegin(nint ui, nint id, ref int node);
+
+    /// <summary>cui_tree_table_menu_end</summary>
+    [LibraryImport("cui", EntryPoint = "cui_tree_table_menu_end")]
+    public static partial void TreeTableMenuEnd(nint ui);
+
     /// <summary>Sorts every sibling list (stable) by cmp, relinking the nodes. Returns the new first top level node.</summary>
     [LibraryImport("cui", EntryPoint = "cui_tree_sort")]
     public static partial int TreeSort(nint nodes, int nodeCount, int root, nint cmp, nint user);
+
+    /// <summary>Moves nodes, each with its subtree, before, into (after the last child) or after target, keeping their order, and relinks the nodes. Returns the new first top level node. A target that is one of the nodes or inside one, or a node listed twice, moves nothing. Flags stay as they are: open the target yourself if you want the moved nodes in view.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_tree_move")]
+    public static partial int TreeMove(nint nodes, int nodeCount, int root, in int move, int moveCount, int target, int where);
 
     /// <summary>cui_path_bar_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_path_bar_ex")]
@@ -1260,7 +1340,7 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_kanban_end")]
     public static partial byte KanbanEnd(nint ui, ref NativeKanbanMove move);
 
-    /// <summary>Returns the activated event index or -1. Read-only events still activate.</summary>
+    /// <summary>Returns the activated event index or -1. Read-only events still activate. Pointer activation requires staying within the drag threshold through release. A drag ends when the event list shrinks, the calendar is disabled or `read_only` changes; moving the event again takes a new press.</summary>
     [LibraryImport("cui", EntryPoint = "cui_week_calendar_ex")]
     public static partial int WeekCalendar(nint ui, nint id, NativeDate weekStart, nint events, int count, in NativeWeekOpts opts);
 
@@ -1268,7 +1348,7 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_month_calendar_ex")]
     public static partial NativeMonthResult MonthCalendar(nint ui, nint id, ref NativeDate month, nint events, int count, in NativeMonthOpts opts);
 
-    /// <summary>Returns the activated task index or -1. Read-only tasks still activate.</summary>
+    /// <summary>Returns the activated task index or -1. Read-only tasks still activate. A drag ends when the task list shrinks, the chart is disabled or `read_only` changes; moving the bar again takes a new press.</summary>
     [LibraryImport("cui", EntryPoint = "cui_gantt_ex")]
     public static partial int Gantt(nint ui, nint id, nint tasks, int count, NativeDate origin, int days, in NativeGanttOpts opts);
 
@@ -1828,6 +1908,10 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_trace_sort")]
     public static partial void TraceSort(nint spans, int count);
 
+    /// <summary>Where a span is drawn, in points (zero size when out of view or in a folded lane below its top row): its time extent and row, as cui_flame_span_rect gives one; the bar inside is a point narrower, the gap between neighbours, and a selected sliver is widened to 3 points. trace is the view&apos;s id: cui_last_id(ui) right after the call. Asked right after the call, it answers at this frame&apos;s view in the rectangle of the previous frame, as this frame is not laid out yet; after cui_end_frame, where this frame drew it, until the next frame begins.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_trace_span_rect")]
+    public static partial NativeRect TraceSpanRect(nint ui, uint trace, in NativeTraceSpan span);
+
     /// <summary>cui_regex_search</summary>
     [LibraryImport("cui", EntryPoint = "cui_regex_search")]
     public static partial int RegexSearch(nint pattern, int flags, nint text, int len, int from, ref NativeRegexMatch m, nint error);
@@ -1996,6 +2080,46 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_canvas")]
     public static partial NativeCanvasResult Canvas(nint ui, nint id, NativeSize width, NativeSize height, nint paint, nint user, nuint userSize);
 
+    /// <summary>cui_canvas_ex</summary>
+    [LibraryImport("cui", EntryPoint = "cui_canvas_ex")]
+    public static partial NativeCanvasResult CanvasEx(nint ui, nint id, NativeSize width, NativeSize height, nint paint, nint user, nuint userSize, nint opts);
+
+    /// <summary>Request focus for a submitted canvas with component_input enabled. The last request wins at end_frame and expires there. An absent, disabled, or nonparticipating target leaves the current focus unchanged. Removal revokes participating focus; built-in forward-focus behavior is unchanged.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_request_component_focus")]
+    public static partial void RequestComponentFocus(nint ui, uint id);
+
+    /// <summary>Test eligibility from a completed submission: call after end_frame or before submitting components in the next frame. Includes window, modal and popup exclusion. Unsubmitted host visibility/disabled changes remain host-owned.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_component_has_input")]
+    public static partial byte ComponentHasInput(nint ui, uint id);
+
+    /// <summary>Current owner, including built-ins. Ownership alone does not imply eligibility.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_focused_id")]
+    public static partial uint FocusedId(nint ui);
+
+    /// <summary>cui_window_focused</summary>
+    [LibraryImport("cui", EntryPoint = "cui_window_focused")]
+    public static partial byte WindowFocused(nint ui);
+
+    /// <summary>Whether `id` has keyboard focus with its ring showing; for a painter.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_focus_visible")]
+    public static partial byte FocusVisible(nint ui, uint id);
+
+    /// <summary>Frame-scoped arena allocation: zero-initialized memory valid until the next cui_begin_frame. Useful for passing temporary strings or slices into a deferred cui_canvas paint callback without heap churn. Returns NULL for a null context, zero size, or a size the frame arena cannot represent.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_frame_alloc")]
+    public static partial nint FrameAlloc(nint ui, nuint size);
+
+    /// <summary>cui_frame_strdup</summary>
+    [LibraryImport("cui", EntryPoint = "cui_frame_strdup")]
+    public static partial nint FrameStrdup(nint ui, nint s);
+
+    /// <summary>Marks the part of a canvas that takes the wheel, for a canvas that zooms, pans or scrolls what it draws the way the built-in charts, graphs and timelines do. Call it from the paint callback; over the rectangle the wheel stops there instead of scrolling an enclosing scroll area or the page. Give it an id of its own, not the canvas&apos;s: the region keeps scroll state under that id. A canvas in a disabled scope marks nothing, so the wheel scrolls the page there. Like every hit area, the region is the one painted on the previous frame.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_wheel_region")]
+    public static partial void WheelRegion(nint ui, uint id, NativeRect rect);
+
+    /// <summary>Returns the wheel aimed at a cui_wheel_region id this frame, in lines with +y up as cui_input_scroll gives it, and consumes it, so call it once per frame. Returns false and leaves *delta alone when no wheel came, and in a disabled scope: call it in the scope the canvas was built in.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_wheel_take")]
+    public static partial byte WheelTake(nint ui, uint id, ref NativeVec2 delta);
+
     /// <summary>Persistent per-id storage for your own components (zeroed on first use). State not used for about 300 frames is freed (and zeroed again if it comes back), so it suits what can be rebuilt. For resources held in it, such as textures, set a function that frees them: it runs when the state goes or the context is destroyed.</summary>
     [LibraryImport("cui", EntryPoint = "cui_state")]
     public static partial nint State(nint ui, uint id, nuint size);
@@ -2056,6 +2180,26 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_app_maximize")]
     public static partial void AppMaximize(nint app);
 
+    /// <summary>Minimizes the window to the taskbar or the dock. Nothing happens where the window manager does not support it.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_app_minimize")]
+    public static partial void AppMinimize(nint app);
+
+    /// <summary>Undoes a maximize or a minimize: a maximized window gets its normal size and place back, a minimized one comes back as it was before, maximized or not.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_app_restore")]
+    public static partial void AppRestore(nint app);
+
+    /// <summary>Normal, maximized or minimized, as the system reports it now. On X11 the window manager carries out what cui_app_maximize, cui_app_minimize and cui_app_restore ask for, so the new state can take a few frames to show here.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_app_window_state")]
+    public static partial WindowState AppWindowState(nint app);
+
+    /// <summary>Moves the window so the top-left corner of its content is at x, y, in the desktop coordinates of cui_window_placement. Meant for a normal window: on Windows a maximized or minimized one takes the new place when it is restored; elsewhere the window manager decides. Nothing happens where windows cannot place themselves (Wayland).</summary>
+    [LibraryImport("cui", EntryPoint = "cui_app_set_position")]
+    public static partial void AppSetPosition(nint app, int x, int y);
+
+    /// <summary>Writes the window&apos;s normal size and place, and whether it is or comes back maximized, to out, also while it is maximized or minimized, so an app can save them when it closes. Returns false when there is no app.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_app_placement")]
+    public static partial byte AppPlacement(nint app, nint @out);
+
     /// <summary>Starts or stops following the OS light/dark setting, as cui_app_desc.follow_system_theme does at creation, for a theme switcher with Light, Dark and System. Starting applies the OS setting at once, where the platform reports one. Stopping keeps the current theme, so a cui_set_theme after it lasts. Later OS changes are followed on Windows and macOS.</summary>
     [LibraryImport("cui", EntryPoint = "cui_app_follow_system_theme")]
     public static partial void AppFollowSystemTheme(nint app, byte follow);
@@ -2080,7 +2224,7 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_app_open_url")]
     public static partial byte AppOpenUrl(nint url);
 
-    /// <summary>Renders the current UI into an RGBA buffer (any backend). Handy for screenshots and tests. Returns false when the buffer is too small.</summary>
+    /// <summary>Renders the entire current UI into an RGBA buffer (any backend). The buffer can be empty or reused. Returns false when it is too small.</summary>
     [LibraryImport("cui", EntryPoint = "cui_app_screenshot")]
     public static partial byte AppScreenshot(nint app, nint rgba, int width, int height);
 
@@ -2139,5 +2283,25 @@ public static unsafe partial class Native
     /// <summary>True when the OpenGL driver draws on the CPU (Mesa llvmpipe, SwiftShader and the like, as in virtual machines and remote sessions). CUI&apos;s own software renderer, which redraws only what changed, is then much cheaper.</summary>
     [LibraryImport("cui", EntryPoint = "cui_gl_is_software")]
     public static partial byte GlIsSoftware(nint r);
+
+    /// <summary>window: an HWND, on Linux a cui_x11_window *, on macOS an NSWindow * (its content view gets a CAMetalLayer). NULL when the device or window cannot be set up. CUI_GPU set to part of an adapter&apos;s name (e.g. &quot;nvidia&quot;) picks the GPU.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_gpu_create")]
+    public static partial nint GpuCreate(nint window, byte vsync);
+
+    /// <summary>cui_gpu_destroy</summary>
+    [LibraryImport("cui", EntryPoint = "cui_gpu_destroy")]
+    public static partial void GpuDestroy(nint r);
+
+    /// <summary>cui_gpu_iface</summary>
+    [LibraryImport("cui", EntryPoint = "cui_gpu_iface")]
+    public static partial NativeRendererIface GpuIface(nint r);
+
+    /// <summary>Draws and presents.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_gpu_render")]
+    public static partial void GpuRender(nint r, in NativeDrawData dd);
+
+    /// <summary>Draws, reads the frame back into rgba (width_px * height_px * 4, top-down) and presents.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_gpu_render_capture")]
+    public static partial byte GpuRenderCapture(nint r, in NativeDrawData dd, nint rgba);
 
 }

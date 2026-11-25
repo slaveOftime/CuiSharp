@@ -35,26 +35,26 @@ on every pull request, every shape in the on-demand job.
 
 | | Value | Where it is enforced |
 |---|---|---|
-| Gallery frame, real-time chart harness, 1280x720, software raster | **0.94 ms** mean (p50 0.78, p95 1.30, p99 1.88) | budget 1.00 ms, `--fps 900` |
-| Build only (a GPU would rasterize) | 0.07 ms | same run |
+| Gallery frame, real-time chart harness, 1280x720, software raster | **0.92 ms** mean (p50 0.78, p95 1.22, p99 1.32) | budget 1.00 ms, `--fps 900` |
+| Build only (a GPU would rasterize) | 0.06 ms | same run |
 | Managed allocation per frame | **0 B** | `FrameLifecycleTests`, `NewComponentTests` |
-| Gallery AOT executable, win-x64 | **3 177 984 B** | budget 3.20 MB |
+| Gallery AOT executable, win-x64 | **3 208 704 B** | budget 3.20 MB |
 | A million virtual list rows | ~12 µs | `--scale` |
 | A million chart points, undecimated | 45.9 ms | why decimation exists |
 | A million chart points, decimated to 800 | 0.018 ms | same |
 | Idle window CPU | 0 % | by construction: CUI sleeps between frames |
 
-0.4.3 takes the executable to 3 177 984 B, 223 232 B more than 0.4.2, and the budget with it: the
-148 commits of CUI added thirty-six functions and thirty-two structs, including the voice and
-creative controls drawn by three new gallery pages. XML summaries are not linked code; they do not
-explain executable growth.
+0.5.0 takes the executable to 3 208 704 B, 253 952 B more than 0.4.2, and the budget with it: the
+99 commits of CUI 1.5 added forty-one functions and five structs — the tree table's drag, the trace
+links, the axis-label bridge and the image update among them. XML summaries are not linked code;
+they do not explain executable growth.
 
-The frame ceiling deliberately moves from 0.90 to 1.00 ms for this sync. An isolated worktree of
-`main` (5fbab51, CUI 1.4.0), with its own freshly built native library, measured 0.82, 0.84 and
-0.82 ms. Alternating three runs of the new pin on the same machine measured 0.94, 0.94 and 0.94 ms;
-every run allocated 0 B. This is a repeatable roughly 14% regression across the sync, not a claim
-of run-to-run noise. The cause within the upstream/rendering changes has not been profiled, and
-binary size alone does not establish it. The row records the last new-pin run.
+The frame ceiling deliberately moved from 0.90 to 1.00 ms across the two recent syncs. An isolated
+worktree of `main` (5fbab51, CUI 1.4.0), with its own freshly built native library, measured 0.82,
+0.84 and 0.82 ms. The 1.4-window sync measured 0.94, 0.94 and 0.94 ms; this one measures 0.92 —
+the gap has narrowed but not closed, still a repeatable ~10% over the old pin, with 0 B in every
+run. The cause within the upstream changes has not been profiled, and binary size alone does not
+establish it. The row records the last run.
 
 Earlier, CUI 1.4 and its five instruments took the executable from 2 878 976 B to 2 918 400 B.
 At 0.4.2 it measured 2 954 752 B: the gallery carries its own `.ico` from 0.4.1, and the

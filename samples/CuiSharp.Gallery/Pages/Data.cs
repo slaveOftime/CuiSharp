@@ -216,6 +216,9 @@ internal sealed partial class GalleryApp
     private readonly bool[] _nodeLoaded = [true, true, true, true, false, false, false];
     private TableSort _treeSort;
     private int _treeCursor;
+    private int _menuNode = -1;
+    private Func<int, string?>? _treeLabel;
+    private Func<int, int, bool>? _treeCanDrop;
     private string _treeStatus = "Nothing selected";
     private bool _treeSeeded;
 
@@ -238,11 +241,16 @@ internal sealed partial class GalleryApp
             _treeSeeded = true;
         }
 
+        // The delegates are fields: a lambda that captures this would allocate on every call,
+        // and a steady frame allocates nothing.
+        _treeLabel ??= node => _nodeNames[node];
+        _treeCanDrop ??= (target, where) => (TreeDrop)where != TreeDrop.Inside || _nodeKinds[target] != "file";
         var events = ui.TreeTable("files", TreeColumns, _nodes, (ui, node, depth) =>
         {
             ui.TreeTableName(_nodeNames[node], _nodeKinds[node] == "folder" ? Icons.Folder : Icons.File);
             ui.DataGridCellText(_nodeKinds[node]);
-        }, ref _treeSort, ref _treeCursor, new TreeTableOpts { Height = 240, Guides = true }, node => _nodeNames[node]);
+        }, ref _treeSort, ref _treeCursor, new TreeTableOpts { Height = 240, Guides = true, Draggable = true },
+            _treeLabel, _treeCanDrop);
 
         foreach (int node in events.Load)
         {
@@ -251,8 +259,26 @@ internal sealed partial class GalleryApp
         }
 
         if (events.SortChanged) _ = CuiTree.Sort(_nodes, 0, (a, b) => string.CompareOrdinal(_nodeNames[a], _nodeNames[b]), "gallery-tree");
+        if (!events.Dropped.IsEmpty)
+        {
+            // The table reports the drop; the model moves here, subtree and all.
+            _ = CuiTree.Move(_nodes, 0, events.Dropped, events.DropTarget, events.DropWhere);
+            _treeStatus = events.Dropped.Length == 1
+                ? $"Moved {_nodeNames[events.Dropped[0]]}"
+                : $"Moved {events.Dropped.Length} nodes";
+        }
         if (events.Activated >= 0) _treeStatus = $"Activated {_nodeNames[events.Activated]}";
         else if (events.SelectionChanged) _treeStatus = DescribeSelection();
+
+        // The context menu for the row under the pointer: a right click opens it, Shift+F10
+        // opens it for the keyboard's row.
+        using (ui.TreeTableMenu("files-menu", ref _menuNode))
+        {
+            if (ui.MenuItem("New folder", new MenuItemOpts { Icon = Icons.Folder })) _treeStatus = "New folder under " + (_menuNode >= 0 ? _nodeNames[_menuNode] : "the root");
+            if (ui.MenuItem("Rename", new MenuItemOpts { Icon = Icons.Pencil, Disabled = _menuNode < 0 })) _treeStatus = "Rename " + _nodeNames[_menuNode];
+            ui.MenuSeparator();
+            if (ui.MenuItem("Delete", new MenuItemOpts { Icon = Icons.Trash2, Danger = true, Disabled = _menuNode < 0 })) _treeStatus = "Delete " + _nodeNames[_menuNode];
+        }
 
         ui.Muted(_treeStatus);
     }

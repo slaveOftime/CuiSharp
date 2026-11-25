@@ -70,7 +70,7 @@ reader.Dispose();
 var idiomatic = new Idiomatic(api, overrides);
 if (selfTest)
 {
-    BindgenChecks.Run(api, overrides);
+    BindgenChecks.Run(api, overrides, root);
     return 0;
 }
 Write(Path.Combine(bindingsDir, "api.json"), JsonSerializer.Serialize(api, Json.Options));
@@ -3511,7 +3511,7 @@ sealed class Idiomatic
 // never the upstream headers, checked-in overrides, or generated output files.
 static class BindgenChecks
 {
-    public static void Run(Api api, Overrides overrides)
+    public static void Run(Api api, Overrides overrides, string root)
     {
         int checks = 0;
         void Check(string name, bool passed)
@@ -3588,12 +3588,16 @@ static class BindgenChecks
             && !first.Records().Contains("public int SourceCount;", StringComparison.Ordinal)
             && !first.Records().Contains("public int OptionCount;", StringComparison.Ordinal));
         // A capacity is the array's length, so the caller cannot pass a second number that disagrees
-        // with the span, and the parameter leaves the signature entirely.
+        // with the span, and the parameter leaves the signature entirely. The double kind's in-place
+        // array is the hand-written EventTrack (its opts carry a callback), so its proof lives in the
+        // manual file the same way llms.txt is checked.
         string editors = string.Concat(first.Widgets().Values);
+        string manualInstruments = File.ReadAllText(Path.Combine(root, "src/CuiSharp/Ui/Ui.Instruments.cs"));
         Check("a capacity is derived, never passed",
             editors.Contains("(int)(keys.Length), in __opts", StringComparison.Ordinal)
             && !editors.Contains("CurveResult CurveEditor(UiText id, Span<CurveKey> keys, int count", StringComparison.Ordinal)
-            && editors.Contains("Span<double> times", StringComparison.Ordinal));
+            && manualInstruments.Contains("Span<double> times", StringComparison.Ordinal)
+            && manualInstruments.Contains("(int)(times.Length)", StringComparison.Ordinal));
         Check("C typedef, qualifiers and comments survive the IR", box.Fields.Any(f => f.Doc.Contains("identity", StringComparison.Ordinal))
             && api.Structs.Single(s => s.CName == "cui_text_opts").Fields.Single(f => f.CName == "font").CsType == "Font"
             && api.Functions.Single(f => f.CName == "cui_box_begin").Params.Single(p => p.CName == "opts").Type.Element!.IsConst);

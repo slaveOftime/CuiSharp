@@ -77,7 +77,7 @@ internal sealed partial class GalleryApp
         Section(ui, "Filter bar", "Chips for active filters, values in a list, and a search.");
         ui.FilterBar("filters", PersonFilters, _personFilters, ref _personSearch);
 
-        Section(ui, "Data grid", "2,000 rows, virtualized. Sort, resize columns, select with Shift and Ctrl, edit names with a double click.");
+        Section(ui, "People grid", "2,000 rows, virtualized. Sort, resize columns, select with Shift and Ctrl, edit names with a double click.");
         int selected = 0;
         for (int k = 0; k < PeopleCount; k++) selected += _personGrid.Selected[k] ? 1 : 0;
 

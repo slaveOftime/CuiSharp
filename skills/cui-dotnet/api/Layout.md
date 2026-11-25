@@ -62,6 +62,14 @@ public LayoutScope Scroll(ScrollOpts o = default)
 
 Scroll area with smooth scrolling and overlay scrollbars.
 
+## `ScrollReveal`
+
+```csharp
+public void ScrollReveal(UiText scrollId, uint row)
+```
+
+Scrolls the area the least that shows `row` (any id from cui_box_begin, cui_last_id or cui_make_id), comparing both rectangles from the latest layout: nothing when the row is wholly in view or either rectangle is not known yet, else just enough to show its clipped edge; a row taller than the view gets its top at the top. For keyboard selection in a list.
+
 ## `ScrollTo`
 
 ```csharp

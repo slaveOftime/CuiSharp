@@ -1036,6 +1036,10 @@ public partial struct ChartOpts
     public ChartAnnotation[]? Annotations;
     /// <summary>line chart: every series filled with dots that thin out from its line to the bottom of its band (implies `area`); with `stacked`, bands never mix colors</summary>
     public bool Dither;
+    /// <summary>line and bar charts: what the first and last point stand for, in annotation x units; equal: annotation x is the point&apos;s index</summary>
+    public double XMin;
+    /// <summary>line and bar charts: what the first and last point stand for, in annotation x units; equal: annotation x is the point&apos;s index</summary>
+    public double XMax;
     /// <summary>C# only: Upper bound on drawn points. 0 derives twice the viewport width; longer series are min/max decimated into the frame arena.</summary>
     public int MaxPoints;
     /// <summary>C# only: Scale each series against its own first finite nonzero sample so series of different magnitudes compare by shape; see ChartNormalizer.</summary>
@@ -1059,6 +1063,8 @@ public partial struct ChartOpts
         Annotations = ChartAnnotation.ToFrameArray(Annotations),
         AnnotationCount = Annotations?.Length ?? 0,
         Dither = (byte)(Dither ? 1 : 0),
+        XMin = XMin,
+        XMax = XMax,
     };
 }
 
@@ -1458,6 +1464,8 @@ public partial struct TreeTableOpts
     public int Root;
     /// <summary>quiet vertical lines for each indentation level</summary>
     public bool Guides;
+    /// <summary>rows drag to move nodes; the drop arrives in cui_tree_table_events</summary>
+    public bool Draggable;
 
     internal readonly NativeTreeTableOpts ToNative(nint sort, nint cursor) => new()
     {
@@ -1471,6 +1479,8 @@ public partial struct TreeTableOpts
         Guides = (byte)(Guides ? 1 : 0),
         Label = default,
         User = default,
+        Draggable = (byte)(Draggable ? 1 : 0),
+        CanDrop = default,
     };
 }
 
@@ -1520,7 +1530,7 @@ public partial struct FileBrowserOpts
     public bool Hidden;
     /// <summary>the sidebar of places</summary>
     public bool NoPlaces;
-    /// <summary>full paths for the sidebar, each shown by its last part; at most 6</summary>
+    /// <summary>full paths for the scrollable sidebar, each shown by its last part</summary>
     public string[]? Places;
     /// <summary>default 20,000</summary>
     public int MaxEntries;
@@ -4478,6 +4488,8 @@ public partial struct TraceOpts
     public float RowHeight;
     /// <summary>moments drawn as lines across every lane, named in a strip under the ruler</summary>
     public TraceMarker[]? Markers;
+    /// <summary>dependencies drawn as curves between spans</summary>
+    public TraceLink[]? Links;
 
     internal readonly NativeTraceOpts ToNative() => new()
     {
@@ -4487,6 +4499,8 @@ public partial struct TraceOpts
         RowHeight = RowHeight,
         Markers = TraceMarker.ToFrameArray(Markers),
         MarkerCount = Markers?.Length ?? 0,
+        Links = TraceLink.ToFrameArray(Links),
+        LinkCount = Links?.Length ?? 0,
     };
 }
 
@@ -4735,6 +4749,10 @@ public partial struct DotChartOpts
         NoReadout = (byte)(NoReadout ? 1 : 0),
         Annotations = ChartAnnotation.ToFrameArray(Annotations),
         AnnotationCount = Annotations?.Length ?? 0,
+        XLabel = default,
+        XLabelUser = default,
+        ValueLabel = default,
+        ValueLabelUser = default,
     };
 }
 
@@ -4770,6 +4788,8 @@ public partial struct EventTrackOpts
         NoAdd = (byte)(NoAdd ? 1 : 0),
         NoRemove = (byte)(NoRemove ? 1 : 0),
         NoAxis = (byte)(NoAxis ? 1 : 0),
+        Label = default,
+        LabelUser = default,
     };
 }
 
@@ -5002,7 +5022,7 @@ public partial struct FileDialogOpts
     public string? FilterName;
     /// <summary>extensions separated by &apos;;&apos;, e.g. &quot;png;jpg&quot;</summary>
     public string? Filter;
-    /// <summary>save dialogs</summary>
+    /// <summary>save dialogs: suggested name, optionally with its directory on Windows</summary>
     public string? DefaultName;
 
     internal readonly NativeFileDialogOpts ToNative() => new()

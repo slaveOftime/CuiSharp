@@ -13,22 +13,6 @@ public static unsafe class InstrumentsDotMatrixChartEventTrackReadoutDotMatrixDi
 {
     extension(Ui ui)
     {
-        /// <summary>Event track: moments on a time axis, as dots you drag along it. A click on an empty spot adds an event there and a double-click on one removes it. You own the array: the track keeps it sorted, edits it in place and never grows it past `capacity`.</summary>
-        public EventTrackResult EventTrack(UiText id, Span<double> times, ref int count, double min, double max, ref int selected, EventTrackOpts o = default)
-        {
-            var __times = Utf8.AllocFrame<double>(times.Length);
-            times.CopyTo(new Span<double>(__times, times.Length));
-            int __timesCount = count;
-            int __selected = (int)(selected);
-            var __opts = o.ToNative((nint)(&__selected));
-            var __result = Native.EventTrack(ui.Handle, Utf8.Get(id), (nint)__times, ref __timesCount, (int)(times.Length), min, max, in __opts);
-            new Span<double>(__times, Math.Min(__timesCount, times.Length)).CopyTo(times);
-            count = __timesCount;
-            selected = __selected;
-            WidgetRecorder.NoteValue(ui.Handle, "EventTrack", id, (double)selected);
-            return EventTrackResult.FromNative(__result);
-        }
-
         /// <summary>Readout: one figure as an instrument shows it. A small label, the value in the monospaced font with its unit, and a muted line of context under it.</summary>
         public void Readout(UiText label, UiText value, ReadoutOpts o = default)
         {

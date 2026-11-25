@@ -96,8 +96,10 @@ public readonly struct TreeTableEvents
     public readonly bool SortChanged;
 
     private readonly int[] _load;
+    private readonly int[] _dropped;
 
-    internal TreeTableEvents(int activated, int expanded, int collapsed, bool selectionChanged, bool sortChanged, int[] load)
+    internal TreeTableEvents(int activated, int expanded, int collapsed, bool selectionChanged, bool sortChanged,
+        int[] load, int[] dropped, int dropTarget, TreeDrop dropWhere)
     {
         Activated = activated;
         Expanded = expanded;
@@ -105,6 +107,9 @@ public readonly struct TreeTableEvents
         SelectionChanged = selectionChanged;
         SortChanged = sortChanged;
         _load = load;
+        _dropped = dropped;
+        DropTarget = dropTarget;
+        DropWhere = dropWhere;
     }
 
     /// <summary>
@@ -114,13 +119,29 @@ public readonly struct TreeTableEvents
     /// <remarks>The ids are copied out of frame memory, so the array stays valid.</remarks>
     public ReadOnlySpan<int> Load => _load;
 
+    /// <summary>
+    /// The nodes a drag dropped, in the order the table reports them. Move them (each with its
+    /// subtree) with <see cref="CuiTree.Move"/>; until then the model is unchanged.
+    /// </summary>
+    /// <remarks>The ids are copied out of frame memory, so the array stays valid.</remarks>
+    public ReadOnlySpan<int> Dropped => _dropped;
+
+    /// <summary>The node the drop landed at, or -1.</summary>
+    public readonly int DropTarget;
+
+    /// <summary>Where the dropped nodes go next to <see cref="DropTarget"/>.</summary>
+    public readonly TreeDrop DropWhere;
+
     internal static unsafe TreeTableEvents FromNative(NativeTreeTableEvents e)
     {
         int[] load = e.LoadCount > 0 && e.Load != 0
             ? new ReadOnlySpan<int>((void*)e.Load, e.LoadCount).ToArray()
             : [];
+        int[] dropped = e.DropCount > 0 && e.Dropped != 0
+            ? new ReadOnlySpan<int>((void*)e.Dropped, e.DropCount).ToArray()
+            : [];
         return new TreeTableEvents(e.Activated, e.Expanded, e.Collapsed,
-            e.SelectionChanged != 0, e.SortChanged != 0, load);
+            e.SelectionChanged != 0, e.SortChanged != 0, load, dropped, e.DropTarget, (TreeDrop)e.DropWhere);
     }
 }
 
@@ -148,6 +169,7 @@ public static unsafe class TreeTableUiExtensions
         /// <param name="cursor">The keyboard's node index, read and written.</param>
         /// <param name="o">Size, row height, root node, guides.</param>
         /// <param name="label">Optional names for type-ahead; hoist it, since a closure allocates.</param>
+        /// <param name="canDrop">Optional refusal for a drop: false keeps the drag from landing there. Called during the drag with the target node and the drop side; without it every drop is allowed.</param>
         /// <example><code>
         /// var events = ui.TreeTable("files", Columns, _nodes, DrawRow, ref _sort, ref _cursor,
         ///     new TreeTableOpts { Height = 320, Guides = true });
@@ -156,7 +178,8 @@ public static unsafe class TreeTableUiExtensions
         /// if (events.SortChanged) _root = CuiTree.Sort(_nodes, _root, Compare);
         /// </code></example>
         public TreeTableEvents TreeTable(UiText id, ReadOnlySpan<GridColumn> columns, TreeNode[] nodes,
-            TreeTableRow row, ref TableSort sort, ref int cursor, TreeTableOpts o = default, Func<int, string?>? label = null)
+            TreeTableRow row, ref TableSort sort, ref int cursor, TreeTableOpts o = default, Func<int, string?>? label = null,
+            Func<int, int, bool>? canDrop = null)
         {
             ArgumentNullException.ThrowIfNull(nodes);
             ArgumentNullException.ThrowIfNull(row);
@@ -166,7 +189,7 @@ public static unsafe class TreeTableUiExtensions
             fixed (TreeNode* model = nodes)
             {
                 var events = Run(ui, id, Columns(ui, columns), columns.Length, model, nodes.Length, row, ref nativeSort,
-                    ref keyboard, o, label);
+                    ref keyboard, o, label, canDrop);
                 sort = TableSort.FromNative(nativeSort);
                 cursor = keyboard;
                 return events;
@@ -178,7 +201,7 @@ public static unsafe class TreeTableUiExtensions
         /// state, which is all a static tree needs.
         /// </summary>
         public TreeTableEvents TreeTable(UiText id, ReadOnlySpan<GridColumn> columns, TreeNode[] nodes,
-            TreeTableRow row, TreeTableOpts o = default, Func<int, string?>? label = null)
+            TreeTableRow row, TreeTableOpts o = default, Func<int, string?>? label = null, Func<int, int, bool>? canDrop = null)
         {
             ArgumentNullException.ThrowIfNull(nodes);
             ArgumentNullException.ThrowIfNull(row);
@@ -187,7 +210,7 @@ public static unsafe class TreeTableUiExtensions
             int cursor = 0;
             fixed (TreeNode* model = nodes)
             {
-                return Run(ui, id, Columns(ui, columns), columns.Length, model, nodes.Length, row, ref sort, ref cursor, o, label);
+                return Run(ui, id, Columns(ui, columns), columns.Length, model, nodes.Length, row, ref sort, ref cursor, o, label, canDrop);
             }
         }
     }
@@ -200,18 +223,22 @@ public static unsafe class TreeTableUiExtensions
     }
 
     private static TreeTableEvents Run(Ui target, UiText id, NativeGridColumn* cols, int columnCount, TreeNode* model,
-        int nodeCount, TreeTableRow row, ref NativeTableSort sort, ref int cursor, TreeTableOpts o, Func<int, string?>? label)
+        int nodeCount, TreeTableRow row, ref NativeTableSort sort, ref int cursor, TreeTableOpts o, Func<int, string?>? label,
+        Func<int, int, bool>? canDrop)
     {
         var opts = o.ToNative((nint)Unsafe.AsPointer(ref sort), (nint)Unsafe.AsPointer(ref cursor));
-        if (label is not null)
+        if (label is not null || canDrop is not null)
         {
-            // CUI keeps the pointer for the frame, so the bridge keeps the delegate alive for
-            // exactly as long and reuses its handle while the same delegate keeps arriving.
-            nint user = FrameCallbacks.Rent(
-                "tree-table:" + target.MakeId(id).ToString(System.Globalization.CultureInfo.InvariantCulture), label);
+            // CUI keeps the pointer for the frame, so the bridge keeps the delegates alive for
+            // exactly as long and reuses its handle while the same delegates keep arriving. Both
+            // hooks share the one `void *user` CUI passes them, so they travel in one holder that
+            // the bridge reuses, and a steady frame allocates nothing.
+            nint user = FrameCallbacks.RentTreeHooks(
+                "tree-table:" + target.MakeId(id).ToString(System.Globalization.CultureInfo.InvariantCulture), label, canDrop);
             if (user != 0)
             {
-                opts.Label = FrameCallbacks.TreeLabelPointer;
+                if (label is not null) opts.Label = FrameCallbacks.TreeLabelPointer;
+                if (canDrop is not null) opts.CanDrop = FrameCallbacks.CanDropPointer;
                 opts.User = user;
             }
         }
@@ -251,6 +278,34 @@ public static unsafe class CuiTree
         {
             return Native.TreeSort((nint)model, nodes.Length, root,
                 FrameCallbacks.TreeComparePointer, user);
+        }
+    }
+
+    /// <summary>
+    /// Moves nodes — each with its subtree — before, into (after the last child) or after
+    /// <paramref name="target"/>, keeping their order, and relinks <paramref name="nodes"/>.
+    /// Returns the new first top level node. A target that is one of the moved nodes or inside
+    /// one, or a node listed twice, moves nothing. Flags stay as they are: open the target
+    /// yourself if you want the moved nodes in view.
+    /// </summary>
+    /// <param name="nodes">The model, rewritten in place.</param>
+    /// <param name="root">The current first top level node.</param>
+    /// <param name="move">The nodes to move, as <see cref="TreeTableEvents.Dropped"/> reports them.</param>
+    /// <param name="target">The node to move them next to, or a negative one to move nothing.</param>
+    /// <param name="where">Where they go next to <paramref name="target"/>.</param>
+    public static int Move(TreeNode[] nodes, int root, ReadOnlySpan<int> move, int target, TreeDrop where)
+    {
+        ArgumentNullException.ThrowIfNull(nodes);
+        if (nodes.Length == 0 || move.IsEmpty || target < 0) return root;
+
+        int none = 0;
+        fixed (TreeNode* model = nodes)
+        fixed (int* movePtr = move)
+        {
+            // Native.TreeMove takes the first node by `in`; an empty list moves nothing, and a
+            // local stands in for the pointer it would never read.
+            ref int first = ref move.IsEmpty ? ref none : ref *movePtr;
+            return Native.TreeMove((nint)model, nodes.Length, root, in first, move.Length, target, (int)where);
         }
     }
 }

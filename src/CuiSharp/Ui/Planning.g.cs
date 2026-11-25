@@ -63,7 +63,7 @@ public static unsafe class PlanningUiExtensions
             return new LayoutScope(ui.Handle, &Native.KanbanCardEnd, "KanbanCard", null);
         }
 
-        /// <summary>Returns the activated event index or -1. Read-only events still activate.</summary>
+        /// <summary>Returns the activated event index or -1. Read-only events still activate. Pointer activation requires staying within the drag threshold through release. A drag ends when the event list shrinks, the calendar is disabled or `read_only` changes; moving the event again takes a new press.</summary>
         public int WeekCalendar(UiText id, Date weekStart, Span<CalendarEvent> events, WeekOpts o = default)
         {
             var __events = Utf8.AllocFrame<NativeCalEvent>(events.Length);
@@ -97,7 +97,7 @@ public static unsafe class PlanningUiExtensions
             return MonthResult.FromNative(__result);
         }
 
-        /// <summary>Returns the activated task index or -1. Read-only tasks still activate.</summary>
+        /// <summary>Returns the activated task index or -1. Read-only tasks still activate. A drag ends when the task list shrinks, the chart is disabled or `read_only` changes; moving the bar again takes a new press.</summary>
         public int Gantt(UiText id, Span<GanttTask> tasks, Date origin, int days, GanttOpts o = default)
         {
             var __tasks = Utf8.AllocFrame<NativeGanttTask>(tasks.Length);

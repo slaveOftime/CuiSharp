@@ -9,6 +9,50 @@ using CuiSharp.Interop;
 
 namespace CuiSharp;
 
+/// <summary>Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct TraceLink
+{
+    /// <summary>indices into the spans: from the end of `from` to the start of `to`</summary>
+    public int From;
+    /// <summary>indices into the spans: from the end of `from` to the start of `to`</summary>
+    public int To;
+    /// <summary>the curve&apos;s color; CUI_TONE_NEUTRAL (0): the emphasis color</summary>
+    public Tone Tone;
+    /// <summary>line width in points; 0: 1.25</summary>
+    public float Width;
+    /// <summary>a weaker or inferred dependency</summary>
+    public bool Dashed;
+
+    public TraceLink(int From, int To = default, Tone Tone = default, float Width = default, bool Dashed = default) { this.From = From; this.To = To; this.Tone = Tone; this.Width = Width; this.Dashed = Dashed; }
+
+    internal readonly NativeTraceLink ToNative() => new()
+    {
+        From = From,
+        To = To,
+        Tone = Tone,
+        Width = Width,
+        Dashed = (byte)(Dashed ? 1 : 0),
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(TraceLink[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeTraceLink>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static TraceLink FromNative(NativeTraceLink n) => new()
+    {
+        From = n.From,
+        To = n.To,
+        Tone = n.Tone,
+        Width = n.Width,
+        Dashed = n.Dashed != 0,
+    };
+}
+
 /// <summary>Voice note: a recorded message in a bubble, with play and pause, its voice waveform as the seek bar (click or drag; the arrow keys step), the time played and the length, and a speed chip that cycles 1x, 1.5x and 2x. It plays nothing itself: you play the audio and pass the position on every frame. Returns CUI_PLAYER_TOGGLE, CUI_PLAYER_SEEK and CUI_PLAYER_SPEED. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct VoiceNoteState
 {
@@ -411,7 +455,7 @@ public unsafe partial struct ChartAnnotation
 {
     /// <summary>cui_annotation_kind kind</summary>
     public AnnotationKind Kind;
-    /// <summary>in the chart&apos;s x units: the point&apos;s index for line and bar charts, x_min to x_max for the dot chart</summary>
+    /// <summary>in the chart&apos;s x units: x_min to x_max, or the point&apos;s index in a line or bar chart that sets neither</summary>
     public double X;
     /// <summary>a value, in the chart&apos;s value units</summary>
     public double Y;
@@ -421,8 +465,10 @@ public unsafe partial struct ChartAnnotation
     public string? Detail;
     /// <summary>the line, dot and label in the accent color</summary>
     public bool Accent;
+    /// <summary>the line, dot and label in this color, e.g. CUI_COLOR_SUCCESS; default: `accent` decides</summary>
+    public Color Color;
 
-    public ChartAnnotation(AnnotationKind Kind, double X = default, double Y = default, string? Label = null, string? Detail = null, bool Accent = default) { this.Kind = Kind; this.X = X; this.Y = Y; this.Label = Label; this.Detail = Detail; this.Accent = Accent; }
+    public ChartAnnotation(AnnotationKind Kind, double X = default, double Y = default, string? Label = null, string? Detail = null, bool Accent = default, Color Color = default) { this.Kind = Kind; this.X = X; this.Y = Y; this.Label = Label; this.Detail = Detail; this.Accent = Accent; this.Color = Color; }
 
     internal readonly NativeChartAnnotation ToNative() => new()
     {
@@ -432,6 +478,7 @@ public unsafe partial struct ChartAnnotation
         Label = Utf8.Get(Label),
         Detail = Utf8.Get(Detail),
         Accent = (byte)(Accent ? 1 : 0),
+        Color = UiMarshal.ToNative(Color),
     };
 
     /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
@@ -451,6 +498,7 @@ public unsafe partial struct ChartAnnotation
         Label = Marshal.PtrToStringUTF8(n.Label),
         Detail = Marshal.PtrToStringUTF8(n.Detail),
         Accent = n.Accent != 0,
+        Color = UiMarshal.FromNative(n.Color),
     };
 }
 
@@ -855,14 +903,17 @@ public unsafe partial struct TraceResult
     public bool ViewChanged;
     /// <summary>span under the pointer, or -1</summary>
     public int Hovered;
+    /// <summary>link under the pointer (when no span is), or -1</summary>
+    public int HoveredLink;
 
-    public TraceResult(bool SelectionChanged, bool ViewChanged = default, int Hovered = default) { this.SelectionChanged = SelectionChanged; this.ViewChanged = ViewChanged; this.Hovered = Hovered; }
+    public TraceResult(bool SelectionChanged, bool ViewChanged = default, int Hovered = default, int HoveredLink = default) { this.SelectionChanged = SelectionChanged; this.ViewChanged = ViewChanged; this.Hovered = Hovered; this.HoveredLink = HoveredLink; }
 
     internal readonly NativeTraceResult ToNative() => new()
     {
         SelectionChanged = (byte)(SelectionChanged ? 1 : 0),
         ViewChanged = (byte)(ViewChanged ? 1 : 0),
         Hovered = Hovered,
+        HoveredLink = HoveredLink,
     };
 
     /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
@@ -879,6 +930,7 @@ public unsafe partial struct TraceResult
         SelectionChanged = n.SelectionChanged != 0,
         ViewChanged = n.ViewChanged != 0,
         Hovered = n.Hovered,
+        HoveredLink = n.HoveredLink,
     };
 }
 
@@ -2186,7 +2238,7 @@ public unsafe partial struct FileBrowserResult
     };
 }
 
-/// <summary>File browser and file picker (an open or save dialog drawn by CUI, like the rest of the window; cui_app_file_dialog in cui_app.h opens the system&apos;s own). The browser lists a folder (name, date modified and size; folders first, any column sorts), with back, forward and up, a path bar you can type into, a filter field and a sidebar of places. Double-click or Enter opens a folder or picks a file; Backspace goes up, Alt+Left and Alt+Right go back and forward, F5 reloads, and typing a letter jumps to the next name that starts with it. A folder is read when you enter it (or reload), not every frame, and only the rows in view are built. Elements are copied into the frame arena by the wrapper.</summary>
+/// <summary>File browser and file picker (an open or save dialog drawn by CUI, like the rest of the window; cui_app_file_dialog in cui_app.h opens the system&apos;s own). The browser lists a folder (name, date modified and size; folders first, any column sorts), with back, forward and up, a path bar you can type into, a filter field and a scrollable sidebar of places and native drives/volumes; the default sidebar highlights only the most specific enclosing place or volume. Double-click or Enter opens a folder or picks a file; Backspace goes up, Alt+Left and Alt+Right go back and forward, F5 reloads the folder and native sidebar, and typing a letter jumps to the next name that starts with it. A folder is read when you enter it (or reload), not every frame, and only the rows in view are built. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct FileEntry
 {
     /// <summary>const char * name</summary>

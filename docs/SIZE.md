@@ -13,7 +13,7 @@ pwsh tools/size-report.ps1 -All -Csv .tmp/size.csv
 
 ## Where the bytes go
 
-A minimal app — a column, a heading, a button, a line of text — publishes at **1 176 064 B**:
+A minimal app — a column, a heading, a button, a line of text — publishes at **1 181 184 B**:
 
 A hello world with no CuiSharp reference is **870 912 B**, roughly 74% of that size. The
 remaining **305 152 B** is the incremental cost of this app over that floor, not a linker-derived
@@ -52,32 +52,32 @@ way:
 | `dotnet new cui-app`, published | — | 2 282 496 |
 | `dotnet new cui-mini`, published | — | 1 198 080 |
 
-Those are historical profile measurements, not a same-library comparison with 0.4.4.
+Those are historical profile measurements, not a same-library comparison with 0.5.0.
 The current shipped snapshot is:
 
-| App | 0.4.7, shipped |
+| App | 0.5.0, shipped |
 |---|---|
-| minimal app | 1 176 576 B |
-| gallery, 32 pages | 3 177 984 B |
-| `dotnet new cui-app`, published | 2 312 704 B |
-| `dotnet new cui-mini`, published | 1 384 960 B |
+| minimal app | 1 181 184 B |
+| gallery, 32 pages | 3 208 704 B |
 
-The gallery adds 223 232 B over 0.4.2 with thirty-six new C functions, thirty-two structs and
-three new pages. That cross-revision growth does not measure the size profile's effectiveness.
-0.4.6 reworks the templates to teach one interaction end to end, and the two rows move in opposite
-directions: the scaffolded app loses 43 008 B to the simpler pages it now shows, while the
-file-based app gains 178 176 B because its example is now a `Mutation` — a three-second delay with
-a spinner — and background work brings the async machinery and the thread pool into the executable.
-The teaching example is the cost, not the framework: an app that never starts background work pays
-nothing of it.
+The gallery adds 253 952 B over 0.4.2 with the two recent CUI syncs: forty-one new C functions in
+1.5 alone, the drag and trace-link records, and the callback bridge. That cross-revision growth
+does not measure the size profile's effectiveness.
+0.4.6 reworks the templates to teach one interaction end to end, and the two template rows moved in
+opposite directions then: the scaffolded app lost 43 008 B to the simpler pages it now shows, while
+the file-based app gained 178 176 B because its example is now a `Mutation` — a three-second delay
+with a spinner — and background work brings the async machinery and the thread pool into the
+executable. The teaching example is the cost, not the framework: an app that never starts
+background work pays nothing of it.
 
 System-font fallbacks read their candidate files through a read-only memory mapping instead of
 copying them, which is what a 19 MB `.ttc` collection costs in a running app. In the executable
-that costs 512 B on `MIN` (1 176 576 B measured after the change) and 3 072 B on a published
-`cui-mini` where the change was authored — the reach `System.IO.MemoryMappedFiles` gives the
-trimmer. The gallery and the scaffolded app are byte-identical, and the mini measured byte-identical
-on the machine that produced this table: template-row bytes move by a few KB across SDK versions,
-the same tolerance the name-in-the-binary rows above carry. Measured runtime goes the other way: an idle disk app at 200 % scaling held
+that cost 512 B on `MIN` when it was authored; 3 072 B on a published `cui-mini` where the change
+was written — the reach `System.IO.MemoryMappedFiles` gives the trimmer. The gallery and the
+scaffolded app were byte-identical, and the mini measured byte-identical on the machine that
+produced that table: template-row bytes move by a few KB across SDK versions, the same tolerance
+the name-in-the-binary rows above carry. Measured runtime goes the other way: an idle disk app at
+200 % scaling held
 76.8 MiB of private working set when every chosen face was copied against 26.3 MiB mapped, with
 the same scripts installed.
 
@@ -105,9 +105,9 @@ Difference from the minimal app on the shipped width — the same frame plus one
 | Added | Cost |
 |---|---|
 | a table with eight rows | +7 168 B (0.6%) |
-| a line chart, 200 points | +56 320 B (4.8%) |
-| an inline edit, a checkbox, a slider | +35 840 B (3.0%) |
-| Markdown and a code block | +65 024 B (5.5%) |
+| a line chart, 200 points | +56 832 B (4.8%) |
+| an inline edit, a checkbox, a slider | +36 352 B (3.1%) |
+| Markdown and a code block | +65 536 B (5.5%) |
 
 **A feature costs tens of kilobytes, not hundreds.** An app that uses a table and a chart pays about
 3% over one that does not, which is why the work in this release was about the floor and not about
@@ -162,7 +162,7 @@ linker patch and none for a new component quietly arriving in every app.
 | `hello` | budget 900 000 B | the .NET AOT floor with no CuiSharp reference at all |
 | `MIN` | budget 1 200 000 B | a column, a heading, a button, a line of text |
 | `TABLE` | budget 1 210 000 B | MIN plus a table with eight rows |
-| `CHART` | budget 1 235 000 B | MIN plus a line chart of 200 points |
+| `CHART` | budget 1 240 000 B | MIN plus a line chart of 200 points |
 | `FORM` | budget 1 240 000 B | MIN plus an inline edit, a checkbox and a slider |
 | `RICH` | budget 1 265 000 B | MIN plus Markdown and a code block |
 

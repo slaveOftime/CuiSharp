@@ -34,6 +34,21 @@ public static unsafe class TreeTableAndPathBarUiExtensions
             return __result;
         }
 
+        /// <summary>The context menu of table `id` (after cui_tree_table_end): true while it is open, with the node it was opened for in *node; fill it with cui_menu_item and friends, then call cui_tree_table_menu_end.</summary>
+        public OpenScope TreeTableMenu(UiText id, ref int node)
+        {
+            var __result = Native.TreeTableMenuBegin(ui.Handle, Utf8.Get(id), ref node);
+            return new OpenScope(ui.Handle, &Native.TreeTableMenuEnd, "TreeTableMenu", id, __result != 0);
+        }
+
+        /// <summary>Draws the body only when the container opens, and closes it on exceptions.</summary>
+        public void TreeTableMenu(UiText id, ref int node, DrawFn body)
+        {
+            ArgumentNullException.ThrowIfNull(body);
+            using var scope = ui.TreeTableMenu(id, ref node);
+            if (scope) body(ui);
+        }
+
         /// <summary>Path bar: a breadcrumb for file and scene paths. Segments are clickable, the last one is the current place. Middle segments that do not fit collapse into a &quot;...&quot; menu. With .menus, the chevron after segment k opens a menu you fill with the children of segment k (cui_path_bar_menu_begin). Click the empty part (or the current segment), or press Ctrl+L, to type a path: Enter submits it, Esc or clicking away cancels.</summary>
         public PathBarResult PathBar(UiText id, ReadOnlySpan<string> segments, PathBarOpts o = default)
         {
