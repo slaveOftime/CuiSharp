@@ -121,6 +121,7 @@ internal sealed class DocLibrary
         "widgets-more" => 3,
         "hosting" => 4,
         "native-abi" => 5,
+        "rendering" => 6,
         _ => 10,
     };
 
@@ -881,6 +882,11 @@ internal static class BundledTopics
             "0 B per frame, virtualized rows, decimated charts, and the numbers that prove it",
             ["SKILL#long-series-and-live-data", "SKILL#frame-numbers", "SKILL#pitfalls"],
             "Measure before claiming: `CUI_TRACE=trace.txt` writes the frame costs a WinExe cannot print."),
+
+        ("rendering",
+            "which renderer draws, the draw-data contract, and a renderer of your own",
+            ["rendering"],
+            "The windowless paths are `CuiSurface.Create` (software, tests and benchmarks) and `CuiSurface.CreateGpu` (your draw-data consumer)."),
 
         ("theming",
             "the theme, the accent, the design tokens and the rules that stop a UI looking generic",

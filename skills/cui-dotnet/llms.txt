@@ -375,6 +375,7 @@
 - [Options](api/Options.md): every option struct and its fields.
 - [Records](api/Records.md): item types for the widgets that take arrays.
 - [Hosting](hosting.md): components, mutation, dependency injection.
+- [Rendering](rendering.md): which renderer draws, the draw-data contract, and a renderer of your own.
 
 ## Members with no C function behind them
 

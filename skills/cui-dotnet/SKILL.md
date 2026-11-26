@@ -585,11 +585,13 @@ ownership. With just the tool installed, run `dotnet cui docs read hosting`.
 | `Renderer.Auto` (default) | OpenGL 3.3 if the driver offers it, else the software rasterizer |
 | `Renderer.OpenGL` | demand a GL context |
 | `Renderer.Software` | force the CPU rasterizer (works in VMs and over remote desktop) |
+| `Renderer.Gpu` | the platform GPU renderer, in builds compiled with one — not in the shipped package ([Rendering](rendering.md)) |
 
 Your draw code, layout, text shaping and geometry building always run on the CPU; the renderer only
 fills triangles. So the frame budget is a CPU problem first, and `app.IsSoftwareRenderer` /
 `app.Backend` tell you what you got. `CuiSurface` (tests, benchmarks, snapshots) always uses the
-software rasterizer, which is what makes the numbers reproducible.
+software rasterizer, which is what makes the numbers reproducible. The draw-data contract and the
+windowless paths are their own page: [Rendering](rendering.md).
 
 ## Keyboard
 

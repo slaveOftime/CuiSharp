@@ -3480,6 +3480,7 @@ sealed class Idiomatic
         sb.AppendLine("- [Options](api/Options.md): every option struct and its fields.");
         sb.AppendLine("- [Records](api/Records.md): item types for the widgets that take arrays.");
         sb.AppendLine("- [Hosting](hosting.md): components, mutation, dependency injection.");
+        sb.AppendLine("- [Rendering](rendering.md): which renderer draws, the draw-data contract, and a renderer of your own.");
         if (manual.Count > 0)
         {
             sb.AppendLine();

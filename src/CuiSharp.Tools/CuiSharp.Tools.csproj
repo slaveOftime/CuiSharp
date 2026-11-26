@@ -61,6 +61,7 @@
     <EmbeddedResource Include="..\..\skills\cui-dotnet\widgets.md" LogicalName="CuiSharp.Tools.docs.widgets.md" />
     <EmbeddedResource Include="..\..\skills\cui-dotnet\widgets-more.md" LogicalName="CuiSharp.Tools.docs.widgets-more.md" />
     <EmbeddedResource Include="..\..\skills\cui-dotnet\hosting.md" LogicalName="CuiSharp.Tools.docs.hosting.md" />
+    <EmbeddedResource Include="..\..\skills\cui-dotnet\rendering.md" LogicalName="CuiSharp.Tools.docs.rendering.md" />
     <EmbeddedResource Include="..\..\skills\cui-dotnet\native-abi.md" LogicalName="CuiSharp.Tools.docs.native-abi.md" />
     <EmbeddedResource Include="..\..\skills\cui-dotnet\api\*.md" LogicalName="CuiSharp.Tools.docs.api.%(Filename).md" />
   </ItemGroup>
