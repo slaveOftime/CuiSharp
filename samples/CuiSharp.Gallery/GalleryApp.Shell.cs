@@ -6,6 +6,8 @@ namespace CuiSharp.Gallery;
 
 internal sealed partial class GalleryApp
 {
+    private DrawFn? _drawComponentMenu, _drawTitleBarActions;
+
     public void Frame(Ui ui)
     {
         if (!ui.WantsKeyboard)
@@ -17,6 +19,58 @@ internal sealed partial class GalleryApp
         bool narrow = ui.ViewportSize().X < 760f;
         if (!narrow) _drawer = false;
 
+        using (ui.Column(new Box { Width = Size.Fill, Height = Size.Fill }))
+        {
+            using (ui.Disabled(_drawer || _dialogOpen || _confirmOpen || _sheetOpen || _paletteOpen))
+            {
+                ui.TitleBar("CuiSharp Gallery",
+                    leading: narrow ? _drawComponentMenu ??= DrawComponentMenu : DrawBrand,
+                    trailing: _drawTitleBarActions ??= DrawTitleBarActions);
+            }
+            Workspace(ui, narrow);
+        }
+
+        // The scene textures belong to the render context but only the media page
+        // shows them; off that page they are released, and made again on the way back.
+        if (Page != MediaPage) ReleaseSceneTextures(ui);
+
+        using (var sheet = ui.Sheet("CUI", ref _drawer, new SheetOpts { Side = Side.Left, Size = 280 }))
+        {
+            if (sheet.Open) Sidebar(ui, drawer: true);
+        }
+
+        Dialogs(ui);
+    }
+
+    private static void DrawBrand(Ui ui)
+    {
+        using (ui.Box(new Box
+        {
+            Width = 28,
+            Height = 28,
+            Radius = 9,
+            Bg = Color.Foreground,
+            Align = Align.Center,
+            Justify = Justify.Center,
+        }))
+        {
+            ui.Text("C", new TextOpts { Font = Font.Display, Size = 16, Color = Color.Surface, LineHeight = 1f });
+        }
+    }
+
+    private void DrawComponentMenu(Ui ui)
+    {
+        if (ui.IconButton(Icons.Menu, new ButtonOpts { Size = ControlSize.Sm, Tooltip = "Components" })) _drawer = true;
+    }
+
+    private void DrawTitleBarActions(Ui ui)
+    {
+        if (ui.ViewportSize().X >= 760f) ui.Badge($"v{ReleaseVersion}", new BadgeOpts { Size = ControlSize.Sm });
+        if (ui.IconButton(Icons.Command, new ButtonOpts { Size = ControlSize.Sm, Tooltip = "Command palette" })) _paletteOpen = true;
+    }
+
+    private void Workspace(Ui ui, bool narrow)
+    {
         using (ui.Row(new Box
         {
             Width = Size.Fill,
@@ -42,15 +96,6 @@ internal sealed partial class GalleryApp
                 Gap = 20,
             }))
             {
-                if (narrow)
-                {
-                    using (ui.Row(new Box { Gap = 8, Width = Size.Fill }))
-                    {
-                        if (ui.IconButton(Icons.Menu, new ButtonOpts { Tooltip = "Components" })) _drawer = true;
-                        ui.Text("CUI", new TextOpts { Font = Font.Medium, Size = 15 });
-                    }
-                }
-
                 if (Page != 0)
                 {
                     using (ui.Column(new Box { Gap = 6, PadBottom = 8 }))
@@ -75,17 +120,6 @@ internal sealed partial class GalleryApp
                 }
             }
         }
-
-        // The scene textures belong to the render context but only the media page
-        // shows them; off that page they are released, and made again on the way back.
-        if (Page != MediaPage) ReleaseSceneTextures(ui);
-
-        using (var sheet = ui.Sheet("CUI", ref _drawer, new SheetOpts { Side = Side.Left, Size = 280 }))
-        {
-            if (sheet.Open) Sidebar(ui, drawer: true);
-        }
-
-        Dialogs(ui);
     }
 
     private void DrawPage(Ui ui)
@@ -138,34 +172,6 @@ internal sealed partial class GalleryApp
             Gap = 2,
         }))
         {
-            if (!drawer)
-            {
-                using (ui.Row(new Box { Gap = 10, PadX = 8, PadTop = 6, PadBottom = 18 }))
-                {
-                    using (ui.Box(new Box
-                    {
-                        Width = Size.Px(28),
-                        Height = Size.Px(28),
-                        Radius = 9,
-                        Bg = Color.Foreground,
-                        Align = Align.Center,
-                        Justify = Justify.Center,
-                    }))
-                    {
-                        ui.Text("C", new TextOpts
-                        {
-                            Font = Font.Display,
-                            Size = 16,
-                            Color = Color.Surface,
-                            LineHeight = 1f,
-                        });
-                    }
-                    ui.Text("CuiSharp", new TextOpts { Font = Font.Medium, Size = 15, NoWrap = true });
-                    ui.Spacer();
-                    ui.Badge($"v{ReleaseVersion}", new BadgeOpts { Size = ControlSize.Sm });
-                }
-            }
-
             using (ui.Scroll(new ScrollOpts { Id = "nav", Height = Size.Fill, Gap = 2 }))
             {
                 ui.NavSection("Components");

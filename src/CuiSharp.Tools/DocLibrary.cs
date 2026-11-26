@@ -121,6 +121,7 @@ internal sealed class DocLibrary
         "widgets-more" => 3,
         "hosting" => 4,
         "native-abi" => 5,
+        "rendering" => 6,
         _ => 10,
     };
 
@@ -863,8 +864,8 @@ internal static class BundledTopics
             "A `tree`, a `click` or a `png` is evidence, not a fix: end with a test that fails without the change."),
 
         ("layout",
-            "sizing, nesting, alignment and the rectangles a container actually got",
-            ["SKILL#sizing", "SKILL#containers-are-using-scopes", "SKILL#containers-that-may-be-closed", "api/Layout"],
+            "the flexbox model: sizing, alignment defaults, grids, wrap, stacks, scrolling, split views, RTL and the rectangles a container actually got",
+            ["SKILL#the-layout-model", "SKILL#sizing", "SKILL#containers-are-using-scopes", "SKILL#containers-that-may-be-closed", "api/Layout"],
             "Then `dotnet cui layout` prints the rectangles, the observed union bounds and overflow."),
 
         ("live-debugging",
@@ -881,6 +882,11 @@ internal static class BundledTopics
             "0 B per frame, virtualized rows, decimated charts, and the numbers that prove it",
             ["SKILL#long-series-and-live-data", "SKILL#frame-numbers", "SKILL#pitfalls"],
             "Measure before claiming: `CUI_TRACE=trace.txt` writes the frame costs a WinExe cannot print."),
+
+        ("rendering",
+            "which renderer draws, the draw-data contract, and a renderer of your own",
+            ["rendering"],
+            "The windowless paths are `CuiSurface.Create` (software, tests and benchmarks) and `CuiSurface.CreateGpu` (your draw-data consumer)."),
 
         ("theming",
             "the theme, the accent, the design tokens and the rules that stop a UI looking generic",

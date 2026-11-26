@@ -37,8 +37,8 @@ retained-pointer storage.
 | `src/CuiSharp.Tests/OptionMappings.g.cs` | One consolidated test covering every generated option's populated fields, sentinel and null/false defaults. A swapped field is a single generator bug, so it is one test, not one per option. |
 
 Current state: **195** option structs, **113** data records, **305** generated wrappers, **201**
-deliberate hand-written ones, **23** excluded, **4** variadic skipped separately, **0** pending —
-573 non-variadic C functions, every one with a status. `pwsh skills/cui-sync/scripts/sync-status.ps1` prints these
+deliberate hand-written ones, **24** excluded, **4** variadic skipped separately, **0** pending —
+574 non-variadic C functions, every one with a status. `pwsh skills/cui-sync/scripts/sync-status.ps1` prints these
 numbers from `coverage.txt` and fails when the prose here or in `README.md` disagrees. Pointer-heavy options are withheld rather than exposed with guessed
 ownership. Charts, texture handles, text-buffer inputs and reorder are hand-written on purpose, and
 `coverage.txt` names the member and the file for every one of them.

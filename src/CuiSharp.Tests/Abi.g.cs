@@ -78,15 +78,25 @@ public class GeneratedAbiTests
     }
 
     [Fact]
+    public void NativeWindowFrame_MatchesC()
+    {
+        Assert.Equal(2, Unsafe.SizeOf<NativeWindowFrame>());
+        Assert.Equal(0, (int)Marshal.OffsetOf<NativeWindowFrame>(nameof(NativeWindowFrame.Maximized)));
+        Assert.Equal(1, (int)Marshal.OffsetOf<NativeWindowFrame>(nameof(NativeWindowFrame.Resizable)));
+    }
+
+    [Fact]
     public void NativePlatformIface_MatchesC()
     {
-        Assert.Equal(48, Unsafe.SizeOf<NativePlatformIface>());
+        Assert.Equal(64, Unsafe.SizeOf<NativePlatformIface>());
         Assert.Equal(0, (int)Marshal.OffsetOf<NativePlatformIface>(nameof(NativePlatformIface.User)));
         Assert.Equal(8, (int)Marshal.OffsetOf<NativePlatformIface>(nameof(NativePlatformIface.SetClipboard)));
         Assert.Equal(16, (int)Marshal.OffsetOf<NativePlatformIface>(nameof(NativePlatformIface.GetClipboard)));
         Assert.Equal(24, (int)Marshal.OffsetOf<NativePlatformIface>(nameof(NativePlatformIface.SetCursor)));
         Assert.Equal(32, (int)Marshal.OffsetOf<NativePlatformIface>(nameof(NativePlatformIface.SetTextInputRect)));
         Assert.Equal(40, (int)Marshal.OffsetOf<NativePlatformIface>(nameof(NativePlatformIface.DrawEmoji)));
+        Assert.Equal(48, (int)Marshal.OffsetOf<NativePlatformIface>(nameof(NativePlatformIface.WindowFrame)));
+        Assert.Equal(56, (int)Marshal.OffsetOf<NativePlatformIface>(nameof(NativePlatformIface.WindowButton)));
     }
 
     [Fact]
@@ -3985,7 +3995,7 @@ public class GeneratedAbiTests
     [Fact]
     public void NativeAppDesc_MatchesC()
     {
-        Assert.Equal(64, Unsafe.SizeOf<NativeAppDesc>());
+        Assert.Equal(72, Unsafe.SizeOf<NativeAppDesc>());
         Assert.Equal(0, (int)Marshal.OffsetOf<NativeAppDesc>(nameof(NativeAppDesc.Title)));
         Assert.Equal(8, (int)Marshal.OffsetOf<NativeAppDesc>(nameof(NativeAppDesc.Width)));
         Assert.Equal(12, (int)Marshal.OffsetOf<NativeAppDesc>(nameof(NativeAppDesc.Height)));
@@ -4001,6 +4011,7 @@ public class GeneratedAbiTests
         Assert.Equal(40, (int)Marshal.OffsetOf<NativeAppDesc>(nameof(NativeAppDesc.FollowSystemTheme)));
         Assert.Equal(48, (int)Marshal.OffsetOf<NativeAppDesc>(nameof(NativeAppDesc.AppId)));
         Assert.Equal(56, (int)Marshal.OffsetOf<NativeAppDesc>(nameof(NativeAppDesc.Placement)));
+        Assert.Equal(64, (int)Marshal.OffsetOf<NativeAppDesc>(nameof(NativeAppDesc.CustomTitleBar)));
     }
 
     [Fact]

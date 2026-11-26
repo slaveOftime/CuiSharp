@@ -93,7 +93,17 @@ public unsafe struct NativeCtxDesc
     public Direction Direction;
 }
 
-/// <summary>Platform services. The built-in backends set these. (48 bytes)</summary>
+/// <summary>The state of a window that draws its own title bar with cui_title_bar, as a platform layer reports it through cui_platform_iface.window_frame. (2 bytes)</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeWindowFrame
+{
+    /// <summary>_Bool (offset 0)</summary>
+    public byte Maximized;
+    /// <summary>false: no maximize button (a fixed-size window) (offset 1)</summary>
+    public byte Resizable;
+}
+
+/// <summary>Platform services. The built-in backends set these. (64 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativePlatformIface
 {
@@ -109,6 +119,10 @@ public unsafe struct NativePlatformIface
     public nint SetTextInputRect;
     /// <summary>Optional: draws one emoji (UTF-8) into a px by px RGBA buffer (straight alpha), for when no emoji font is loaded; the browser build uses the browser&apos;s emoji. (offset 40)</summary>
     public nint DrawEmoji;
+    /// <summary>Optional, for a window without the system&apos;s title bar, whose content draws one with cui_title_bar: writes the window&apos;s state and returns true. Without the hook, or when it returns false, the system draws the title bar and cui_title_bar has no window buttons. The platform moves the window over what cui_title_bar_hit_test calls the caption. (offset 48)</summary>
+    public nint WindowFrame;
+    /// <summary>Optional: carries out a click on one of cui_title_bar&apos;s window buttons. (offset 56)</summary>
+    public nint WindowButton;
 }
 
 /// <summary>cui_shadow (16 bytes)</summary>
@@ -6018,7 +6032,7 @@ public unsafe struct NativeWindowPlacement
     public byte HasPosition;
 }
 
-/// <summary>cui_app_desc (64 bytes)</summary>
+/// <summary>cui_app_desc (72 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeAppDesc
 {
@@ -6052,6 +6066,8 @@ public unsafe struct NativeAppDesc
     public nint AppId;
     /// <summary>Where to open, for an app that reopens where it was closed: the size and place from cui_app_placement, and whether the window was maximized. Its size replaces width and height. A place that is on no screen is left to the system, and a fixed-size window is not maximized. Copied when the window is created. Default: none, the system picks the place. (offset 56)</summary>
     public nint Placement;
+    /// <summary>The app draws the title bar with cui_title_bar: the system&apos;s title bar goes, and the window keeps its border, shadow and resizing. On Windows; elsewhere the system&apos;s title bar stays and cui_title_bar is a bar without window buttons. Default: the system&apos;s title bar. (offset 64)</summary>
+    public byte CustomTitleBar;
 }
 
 /// <summary>cui_file_dialog_opts (40 bytes)</summary>

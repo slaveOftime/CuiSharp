@@ -17,9 +17,14 @@ internal static unsafe partial class Win32
     internal const uint WmClose = 0x0010;
     internal const uint WmSetIcon = 0x0080;
     internal const uint WmNcDestroy = 0x0082;
+    internal const uint WmNcHitTest = 0x0084;
     internal const uint WmApp = 0x8000;
     internal const uint WmEnterSizeMove = 0x0231;
     internal const uint WmExitSizeMove = 0x0232;
+
+    internal const int HtClient = 1;
+    internal const int HtCaption = 2;
+    internal const int HtMaxButton = 9;
 
     /// <summary>The parent that makes a window message-only: it exists to receive messages, not to show.</summary>
     internal static readonly nint HWNDMessage = -3;
@@ -70,6 +75,16 @@ internal static unsafe partial class Win32
     [LibraryImport("user32.dll", EntryPoint = "GetClientRect")]
     internal static partial int GetClientRect(nint hwnd, out Rect rect);
 
+    /// <summary>BOOL ScreenToClient(HWND, LPPOINT).</summary>
+    [LibraryImport("user32.dll")]
+    internal static partial int ScreenToClient(nint hwnd, ref Point point);
+
+    [LibraryImport("user32.dll")]
+    internal static partial uint GetDpiForWindow(nint hwnd);
+
+    [LibraryImport("user32.dll")]
+    internal static partial nint GetCapture();
+
     /// <summary>HMODULE GetModuleHandleW(LPCWSTR).</summary>
     [LibraryImport("kernel32.dll", EntryPoint = "GetModuleHandleW", StringMarshalling = StringMarshalling.Utf16)]
     internal static partial nint GetModuleHandle(string? name);
@@ -93,6 +108,13 @@ internal static unsafe partial class Win32
     /// <summary>DWORD GetCurrentThreadId(void).</summary>
     [LibraryImport("kernel32.dll", EntryPoint = "GetCurrentThreadId")]
     internal static partial uint GetCurrentThreadId();
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct Point
+    {
+        internal int X;
+        internal int Y;
+    }
 
     /// <summary>A window rectangle, in the layout RECT uses.</summary>
     [StructLayout(LayoutKind.Sequential)]

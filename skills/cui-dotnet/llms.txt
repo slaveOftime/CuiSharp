@@ -49,7 +49,7 @@
 - `ui.LastId` -> `uint` — the id of the widget just drawn; what `TourStep.Target` and the other point-at-this APIs take.
 - `ui.Terminal(UiText id, Terminal terminal, TerminalOpts o = default)` -> `TerminalResult` — the `Terminal` class owns the scrollback (`Write`, `WriteLine`, `Clear`, `LineCount`).
 - `ui.LogView(UiText id, LogBuffer log, LogViewOpts o = default)` — `LogBuffer` owns the ring (`Append`, `AppendLine`, `Text`, `Clear`), the view adds level filters, search, follow and copy.
-- `ui.MeasureText(text, size, font)` -> `TextMetrics`; `ui.Time`, `ui.DeltaTime`, `ui.FrameCount`, `ui.DpiScale`; `ui.MousePosition`, `ui.MouseDown`, `ui.MouseClicked`, `ui.KeyDown`, `ui.KeyPressed`, `ui.Modifiers`, `ui.WantsMouse`, `ui.Cursor`, `ui.FocusedId`, `ui.IsWindowFocused`; `ui.RectOf(id)`; `ui.IsDisabled` and `using (ui.Disabled(flag)) { ... }`.
+- `ui.MeasureText(text, size, font)` -> `TextMetrics`; `ui.Time`, `ui.DeltaTime`, `ui.FrameCount`, `ui.DpiScale`; `ui.MousePosition`, `ui.MouseDown`, `ui.MouseClicked`, `ui.KeyDown`, `ui.KeyPressed`, `ui.Modifiers`, `ui.WantsMouse`, `ui.Cursor`, `ui.FocusedId`, `ui.IsWindowFocused`; `ui.RectOf(id)` reads a named box's rectangle from the latest layout, `ui.LastRect` is the most recent component's, and `ui.ViewportSize()` is the window's size in points; `ui.IsDisabled` and `using (ui.Disabled(flag)) { ... }`.
 - `ui.DrawRect`, `DrawRectGradient`, `DrawShadow`, `DrawLine`, `DrawPolyline`, `DrawPolygon`, `DrawCircle`, `DrawArc`, `DrawText`, `DrawIcon`, `DrawImage`, `using (ui.Clip(rect))` — the primitives a custom control paints with.
 - `ui.HexView(id, Span<byte>, ref HexSelection, HexViewOpts)` — the editable hex view; the span is pinned, so a typed byte lands in your array.
 - `ui.TreeTable(id, columns, TreeNode[], row, [ref TableSort, ref int], TreeTableOpts, label)` -> `TreeTableEvents` — a tree over a flat node array the table rewrites; `events.Load` names the nodes whose children it wants, and `CuiTree.Sort(nodes, root, compare)` relinks siblings.
@@ -375,6 +375,7 @@
 - [Options](api/Options.md): every option struct and its fields.
 - [Records](api/Records.md): item types for the widgets that take arrays.
 - [Hosting](hosting.md): components, mutation, dependency injection.
+- [Rendering](rendering.md): which renderer draws, the draw-data contract, and a renderer of your own.
 
 ## Members with no C function behind them
 
@@ -455,6 +456,7 @@ Hand-written, because the wrapper needs state a C call cannot carry; they are pa
 - `ui.Sort(...)` — hand-written in `Ui/Ui.TreeTable.cs`
 - `ui.TagInput(...)` — hand-written in `Ui/Ui.Overlays.cs`
 - `ui.Terminal(...)` — hand-written in `Ui/Ui.Terminal.cs`
+- `ui.TitleBar(...)` — hand-written in `Ui/Ui.TitleBar.cs`
 - `ui.ToString(...)` — hand-written in `Ui/Ui.Style.cs`
 - `ui.ToggleGroup(...)` — hand-written in `Ui/Ui.BoolGroups.cs`
 - `ui.ToggleTheme(...)` — hand-written in `Ui/Ui.Frame.cs`

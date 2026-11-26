@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using CuiSharp.Interop;
 
 namespace CuiSharp.Tests;
 
@@ -17,6 +18,70 @@ public partial class WindowControlTests
 
     [LibraryImport("user32.dll")]
     private static partial int GetWindowRect(nint hwnd, out Rect rect);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct Point
+    {
+        public int X, Y;
+    }
+
+    [LibraryImport("user32.dll")]
+    private static partial int ClientToScreen(nint hwnd, ref Point point);
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void ATitleBarReplacesTheSystemCaptionOnlyWhenOptedIn(bool custom, bool fixedSize)
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        using var app = CuiApp.Create(new CuiAppOptions
+        {
+            Width = 420,
+            Height = 320,
+            Hidden = true,
+            Continuous = true,
+            Renderer = Renderer.Software,
+            CustomTitleBar = custom,
+            FixedSize = fixedSize,
+        });
+        Assert.NotNull(app);
+        nint hwnd = app.NativeWindow;
+        var origin = new Point();
+        Assert.NotEqual(0, ClientToScreen(hwnd, ref origin));
+        Assert.NotEqual(0, GetWindowRect(hwnd, out var outer));
+        if (!custom)
+        {
+            Assert.True(origin.Y > outer.Top);
+            return;
+        }
+
+        Assert.Equal(outer.Top, origin.Y);
+        float scale = Win32.GetDpiForWindow(hwnd) / 96f;
+        nint Hit(int x, int y)
+        {
+            int screenX = origin.X + (int)(x * scale), screenY = origin.Y + (int)(y * scale);
+            nint coords = (ushort)screenX | ((nint)(ushort)screenY << 16);
+            return Win32.SendMessage(hwnd, Win32.WmNcHitTest, 0, coords);
+        }
+
+        Assert.True(app.Frame());
+        app.Ui.TitleBar("Window under test");
+        Assert.True(app.Frame()); // CUI has now laid out the preceding frame.
+        app.Ui.TitleBar("Window under test");
+
+        Assert.Equal(Win32.HtCaption, Hit(80, 24));
+        Assert.Equal(Win32.HtClient, Hit(393, 24)); // Close is an ordinary CUI control.
+        Assert.Equal(fixedSize ? Win32.HtClient : Win32.HtMaxButton, Hit(353, 24));
+        if (!fixedSize) Assert.Equal(12, Hit(80, 1)); // HTTOP: the resize border still wins.
+
+        Assert.True(app.Frame());
+        var ui = app.Ui;
+        using (ui.Disabled(true)) ui.TitleBar("Window under test");
+        Assert.Equal(Win32.HtClient, Hit(80, 24));
+        Assert.Equal(Win32.HtClient, Hit(353, 24));
+    }
 
     [Fact]
     public void MaximizeAndRestoreChangeTheWindowSize()

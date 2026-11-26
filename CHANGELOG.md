@@ -20,6 +20,10 @@ different things.
   and `SetFollowSystemTheme(follow)`, and `CuiAppOptions.Placement` reopens a window at its saved
   normal bounds and maximized state. Headless runs use the normal size unless `CUISHARP_VIEWPORT`
   overrides it. Switching to System no longer discards a pending accent change.
+- **Custom window caption on Windows.** Set `CuiAppOptions.CustomTitleBar` and draw `ui.TitleBar`
+  once per frame. The widget owns the drag region and window buttons; optional leading and trailing
+  controls stay clickable. CUI keeps the native resize borders and shadow. The gallery uses the
+  same API for its branded bar.
 - **Signature stroke export.** `ui.SignaturePoints(id, out strokeCount, points, strokeEnds)` copies
   the points and stroke-end indices drawn on a `SignaturePad` into caller spans (or reports the
   counts when passed empty spans). The gallery's Capture page shows both counts once signed.
@@ -40,7 +44,12 @@ different things.
 
 - **Seventeen fewer exclusions.** Every function in `cui_app.h`, the custom-canvas input and wheel
   surface, `cui_set_cursor`, and `cui_signature_points` are bound now: 195 option structs, 113
-  records, 305 generated wrappers, 201 manual, 23 excluded, 0 pending.
+  records, 305 generated wrappers, 201 manual, 24 excluded, 0 pending.
+- **CUI is now pinned at `6864776`, nine commits past the `v1.5.0` tag** (upstream has tagged nothing
+  newer). `cui_title_bar_hit_test`, `cui_app_desc.custom_title_bar`, and the `window_frame` and
+  `window_button` hooks are available as raw interop. The hit test has no higher-level wrapper until
+  upstream ships the `cui_title_bar` widget; see [PLAN.md](docs/PLAN.md). The build keeps platform
+  hooks when `cui_app_create` merges its own.
 
 ## [0.5.0] — 2026-11-26
 

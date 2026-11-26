@@ -121,7 +121,7 @@ GENERATED cui_hex_result -> HexResult (+ write-back)
 
 WIDGETS
 One status per non-variadic C function; RAW-SKIP lists unsupported declarations separately.
-Generated wrappers: 305; raw functions covered including scope ends: 349/573
+Generated wrappers: 305; raw functions covered including scope ends: 349/574
 MANUAL cui_create: `CuiSurface.Create` owns context creation (CuiSurface.cs).
 MANUAL cui_destroy: `CuiSurface.Dispose` (CuiSurface.cs).
 MANUAL cui_set_renderer: `CuiSurface.Create` installs the software renderer; CuiApp lets CUI pick (CuiSurface.cs).
@@ -162,6 +162,7 @@ MANUAL cui_dropped_file_count: `CuiSurface.DroppedFileCount` (CuiSurface.Input.c
 MANUAL cui_dropped_file: `CuiSurface.DroppedFile(index)` (CuiSurface.Input.cs) and `ui.DroppedFile(index)` (Ui/Ui.Overlays.cs): the path of the dropped file, decoded from the native buffer.
 MANUAL cui_file_drag_active: `CuiSurface.FileDragActive` (CuiSurface.Input.cs).
 MANUAL cui_set_platform: CuiSurface.SetPlatform (CuiSurface.cs) installs native host callbacks on a windowless context.
+EXCLUDED cui_title_bar_hit_test: Only a platform layer answering WM_NCHITTEST on a window whose content drew a bar with `cui_title_bar` calls it, and CUI 1.5 has no such component: no managed frame can draw a bar or hit one, while CUI's own Win32 backend calls this by itself. Bind as `CuiSurface.TitleBarHitTest` with cui_title_bar (PLAN.md).
 MANUAL cui_set_cursor: `ui.Cursor` (Ui.Frame.cs): the setter.
 MANUAL cui_get_cursor: `ui.Cursor` (Ui.Frame.cs).
 MANUAL cui_set_clipboard_text: `Ui.SetClipboard(text)` (Ui/Ui.cs): the platform clipboard hook, for a menu or status bar item that copies.

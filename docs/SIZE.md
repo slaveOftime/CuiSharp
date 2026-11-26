@@ -63,13 +63,19 @@ The current shipped snapshot is:
 | `dotnet new cui-mini`, published | 1 388 544 B |
 
 The cross-revision gallery growth includes native and managed changes together, not the cost of
-any one feature or the size profile's effectiveness. The gallery drawn today measures 3 365 888 B:
+any one feature or the size profile's effectiveness. The gallery drawn today measures 3 372 544 B:
 the only change since 0.5.0 is its Draw installing the system font fallbacks, and the same commit
 published without that call measured 3 211 264 B, so the face lists and the probe are the whole
-154 624 B. [PERFORMANCE.md](PERFORMANCE.md) carries the ceiling that follows from it.
+154 624 B; the `6864776` pin added 6 656 B of native title-bar code to that. The file-based app
+(`dotnet new cui-mini`, published) measures 1 391 616 B, 3 072 B more than at `f9597a3` for the same
+reason. [PERFORMANCE.md](PERFORMANCE.md) carries the ceiling that follows from it.
 
-The CHART row now measures 1 238 016 B; its ceiling was raised from 1 235 000 B to 1 240 000 B in
-this sync. This does not isolate which CUI change raised the chart size.
+The CHART row measures 1 242 624 B at the `6864776` pin, against 1 239 552 B at `f9597a3` on the same
+machine — 448 B under this ceiling before the bump and 2 624 B over it after. The cause is measured,
+not guessed: `MIN` grew by the same 3 072 B (1 182 720 → 1 185 792 B), so the increment is in CUI's
+native code that every app links (the title-bar work in the core), not in the managed surface a
+chart app uses. The ceiling moved from 1 240 000 B to 1 250 000 B for it, which leaves 7 376 B —
+the tightest of the six rows, and the one to watch when the title bar's own component lands.
 0.4.6 reworks the templates to teach one interaction end to end, and the two template rows moved in
 opposite directions then: the scaffolded app lost 43 008 B to the simpler pages it now shows, while
 the file-based app gained 178 176 B because its example is now a `Mutation` — a three-second delay
@@ -169,7 +175,7 @@ linker patch and none for a new component quietly arriving in every app.
 | `hello` | budget 900 000 B | the .NET AOT floor with no CuiSharp reference at all |
 | `MIN` | budget 1 200 000 B | a column, a heading, a button, a line of text |
 | `TABLE` | budget 1 210 000 B | MIN plus a table with eight rows |
-| `CHART` | budget 1 240 000 B | MIN plus a line chart of 200 points |
+| `CHART` | budget 1 250 000 B | MIN plus a line chart of 200 points |
 | `FORM` | budget 1 240 000 B | MIN plus an inline edit, a checkbox and a slider |
 | `RICH` | budget 1 265 000 B | MIN plus Markdown and a code block |
 

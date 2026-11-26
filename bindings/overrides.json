@@ -1511,6 +1511,9 @@
     },
     "cui_timeline_editor_ex": {
       "why": "A timeline track holds three nested arrays (keys, clips, selections), so the record would need array-of-record support one level deeper than the generator has. Available through the raw layer."
+    },
+    "cui_title_bar_hit_test": {
+      "why": "Only a platform layer answering WM_NCHITTEST on a window whose content drew a bar with `cui_title_bar` calls it, and CUI 1.5 has no such component: no managed frame can draw a bar or hit one, while CUI's own Win32 backend calls this by itself. Bind as `CuiSurface.TitleBarHitTest` with cui_title_bar (PLAN.md)."
     }
   },
   "arrayLengths": {

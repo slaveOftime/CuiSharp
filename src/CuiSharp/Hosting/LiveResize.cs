@@ -68,7 +68,7 @@ internal static unsafe class LiveResize
     };
 
     /// <summary>Hooks the window once. Safe to call from the frame loop: the second call does nothing.</summary>
-    internal static void Install(nint hwnd, bool noVsync)
+    internal static void Install(nint hwnd, bool noVsync, WindowTitleBar? titleBar)
     {
         if (!OperatingSystem.IsWindows() || hwnd == 0 || Installed.ContainsKey(hwnd)) return;
 
@@ -76,7 +76,7 @@ internal static unsafe class LiveResize
         nint previous = Win32.HookWindowProc(hwnd, _proc);
         if (previous == 0) return;
 
-        Installed[hwnd] = new Hook(hwnd, previous, wantsVsync: !noVsync);
+        Installed[hwnd] = new Hook(hwnd, previous, wantsVsync: !noVsync, titleBar);
     }
 
     /// <summary>Puts the window procedure back, and the display interval with it.</summary>
@@ -133,7 +133,34 @@ internal static unsafe class LiveResize
             return 0;
         }
 
-        return Win32.CallWindowProc(hook.Previous, hwnd, message, wparam, lparam);
+        nint result = Win32.CallWindowProc(hook.Previous, hwnd, message, wparam, lparam);
+        // CUI still owns the non-client frame and resize edges. Only reclassify an ordinary
+        // client pixel, and never take over an in-progress drag on a CUI control.
+        if (message == Win32.WmNcHitTest && result == Win32.HtClient && hook.TitleBar is { } titleBar)
+            return TitleBarHitTest(hwnd, lparam, titleBar);
+        return result;
+    }
+
+    private static int TitleBarHitTest(nint hwnd, nint lparam, WindowTitleBar titleBar)
+    {
+        if (Win32.GetCapture() != 0) return Win32.HtClient;
+        var point = new Win32.Point
+        {
+            X = unchecked((short)lparam),
+            Y = unchecked((short)(lparam >> 16)),
+        };
+        uint dpi = Win32.GetDpiForWindow(hwnd);
+        if (dpi == 0 || Win32.ScreenToClient(hwnd, ref point) == 0) return Win32.HtClient;
+
+        float scale = 96f / dpi;
+        return titleBar.HitTest(point.X * scale, point.Y * scale) switch
+        {
+            TitleBarHit.Caption => Win32.HtCaption,
+            // CUI's window procedure already routes the resulting non-client mouse messages
+            // back to the button. Windows gets its maximize target for the Snap Layout flyout.
+            TitleBarHit.Maximize => Win32.HtMaxButton,
+            _ => Win32.HtClient,
+        };
     }
 
     /// <summary>
@@ -180,13 +207,15 @@ internal static unsafe class LiveResize
     }
 
     /// <summary>The state of one hooked window.</summary>
-    private sealed class Hook(nint handle, nint previous, bool wantsVsync)
+    private sealed class Hook(nint handle, nint previous, bool wantsVsync, WindowTitleBar? titleBar)
     {
         internal nint Handle { get; } = handle;
 
         internal nint Previous { get; } = previous;
 
         internal bool WantsVsync { get; } = wantsVsync;
+
+        internal WindowTitleBar? TitleBar { get; } = titleBar;
 
         internal bool InSizeMove { get; set; }
 
