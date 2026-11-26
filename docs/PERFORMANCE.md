@@ -38,16 +38,20 @@ on every pull request, every shape in the on-demand job.
 | Gallery frame, real-time chart harness, 1280x720, software raster | **0.92 ms** mean (p50 0.79, p95 1.21, p99 1.28) | budget 1.00 ms, `--fps 900` |
 | Build only (a GPU would rasterize) | 0.06 ms | same run |
 | Managed allocation per frame | **0 B** | `FrameLifecycleTests`, `NewComponentTests` |
-| Gallery AOT executable, win-x64 | **3 211 264 B** | budget 3.20 MiB |
+| Gallery AOT executable, win-x64 | **3 365 888 B** | budget 3.30 MiB |
 | A million virtual list rows | ~12 µs | `--scale` |
 | A million chart points, undecimated | 45.9 ms | why decimation exists |
 | A million chart points, decimated to 800 | 0.018 ms | same |
 | Idle window CPU | 0 % | by construction: CUI sleeps between frames |
 
-The 0.5.0 gallery is 3 211 264 B on Windows x64. The ceiling remains 3.20 MiB; the gate has
-always used binary multipliers and now labels the unit explicitly. CUI v1.5.0 and the gallery's
-new tree and trace behavior arrived together, so the cross-revision size difference does not
-isolate their individual costs. XML summaries are not linked code.
+The 0.5.0 gallery measured 3 211 264 B on Windows x64. The gallery now calls
+`ui.UseSystemFontFallbacks()`, which is the only caller that roots the fallback search — the
+candidate face lists of every platform, the mapped-file probe and the probe's pixel comparison —
+so one commit published twice measures 3 365 888 B with the call and 3 211 264 B without it. The
+ceiling moved from 3.20 to 3.30 MiB for that feature (+154 624 B, 4.8%); the gate has always used
+binary multipliers and labels the unit explicitly. CUI v1.5.0 and the gallery's new tree and trace
+behavior arrived together, so the cross-revision size difference does not isolate their individual
+costs. XML summaries are not linked code.
 
 The frame ceiling moved from 0.90 to 1.00 ms in the earlier post-1.4.0 sync. Alternating runs of
 an isolated `main` worktree (5fbab51, CUI 1.4.0) measured 0.82, 0.84 and 0.82 ms; that sync measured

@@ -75,4 +75,14 @@ in [ARCHITECTURE.md](ARCHITECTURE.md). Every item here passes the same gates as 
   `Hosting/HotReloadWake` arms under `dotnet watch` off Windows. A `cui_app_screenshot` that honours
   `NULL` retires the second, and both belong upstream, not in `native/patches/`. Do not substitute a
   background render loop or silently start a headless app.
+- **One intermittent allocation in a steady-state frame.**
+  `GalleryPageTests.TheNewGalleryPagesDrawWithoutAllocating` measured 2 256 B in one frame of the
+  Collaboration page on a `windows-11-arm` runner, and again in
+  `ConvenienceApiTests.ConvenienceControlsAllocateNothingInSteadyState` on Windows x64. Both move with the
+  run: the paid test differs, and neither reproduces alone — 20 isolated runs and 4 full-suite runs
+  passed, then one full suite failed. That shape is a process-wide first use that lands in whichever
+  draw reaches it first, not a page's own cost, and the candidates are still open (a formatter
+  cache, the UTF-8 arena growing a chunk beside its managed capacity array, a recorded label). Both
+  tests now settle before they measure, which still fails a page that allocates per frame. Find the
+  source with an allocation trace on a reproduction rather than by raising the tolerance.
 - **macOS signing and notarization** for a distributed `.app`.

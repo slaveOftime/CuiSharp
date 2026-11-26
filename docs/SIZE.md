@@ -63,9 +63,13 @@ The current shipped snapshot is:
 | `dotnet new cui-mini`, published | 1 388 544 B |
 
 The cross-revision gallery growth includes native and managed changes together, not the cost of
-any one feature or the size profile's effectiveness. The CHART row now measures 1 238 016 B; its
-ceiling was raised from 1 235 000 B to 1 240 000 B in this sync. This does not isolate which CUI
-change raised the chart size.
+any one feature or the size profile's effectiveness. The gallery drawn today measures 3 365 888 B:
+the only change since 0.5.0 is its Draw installing the system font fallbacks, and the same commit
+published without that call measured 3 211 264 B, so the face lists and the probe are the whole
+154 624 B. [PERFORMANCE.md](PERFORMANCE.md) carries the ceiling that follows from it.
+
+The CHART row now measures 1 238 016 B; its ceiling was raised from 1 235 000 B to 1 240 000 B in
+this sync. This does not isolate which CUI change raised the chart size.
 0.4.6 reworks the templates to teach one interaction end to end, and the two template rows moved in
 opposite directions then: the scaffolded app lost 43 008 B to the simpler pages it now shows, while
 the file-based app gained 178 176 B because its example is now a `Mutation` — a three-second delay

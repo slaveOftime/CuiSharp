@@ -128,11 +128,7 @@ public class ConvenienceApiTests
         var page = new GridPage();
         using var app = TestApp.Start(page, 400, 260);
         app.Frame(20);
-        for (int i = 0; i < 10; i++)
-        {
-            app.Frame();
-            Assert.Equal(0, app.Surface.LastFrame.AllocatedBytes);
-        }
+        app.AssertSteadyStateAllocatesNothing();
     }
 
     [Fact]
@@ -216,11 +212,7 @@ public class ConvenienceApiTests
     {
         using var app = TestApp.Start(new ConciseSteadyPage(), 400, 240);
         app.Frame(5);
-        for (int i = 0; i < 10; i++)
-        {
-            app.Frame();
-            Assert.Equal(0, app.Surface.LastFrame.AllocatedBytes);
-        }
+        app.AssertSteadyStateAllocatesNothing();
     }
 
     private static void AssertSameBytes<T>(in T actual, in T expected) where T : struct =>

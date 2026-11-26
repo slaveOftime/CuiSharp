@@ -16,10 +16,10 @@
     and asking for every shape is a deliberate, slower job.
 
 .EXAMPLE
-    pwsh tools/budget-check.ps1 -Benchmark artifacts/benchmark.txt -AotBytes 2862592
+    pwsh tools/budget-check.ps1 -Benchmark artifacts/benchmark.txt -AotBytes 3365888
 
 .EXAMPLE
-    pwsh tools/budget-check.ps1 -AotBytes 2862592     # gallery size only, no benchmark run
+    pwsh tools/budget-check.ps1 -AotBytes 3365888     # gallery size only, no benchmark run
 
 .EXAMPLE
     pwsh tools/size-report.ps1 -All -Widths shipped -Csv artifacts/size.csv

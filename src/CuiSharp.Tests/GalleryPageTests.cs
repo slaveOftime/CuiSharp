@@ -16,11 +16,7 @@ public class GalleryPageTests
         Assert.True(app.Find("Heading", heading).Rect.W > 0);
         Assert.True(app.PaintedAnything());
         app.Frame(30);
-        for (int i = 0; i < 10; i++)
-        {
-            app.Frame();
-            Assert.Equal(0, app.Surface.LastFrame.AllocatedBytes);
-        }
+        app.AssertSteadyStateAllocatesNothing();
         Assert.Empty(app.Faults);
     }
 }
