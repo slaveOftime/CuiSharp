@@ -3,7 +3,8 @@ using CuiSharp.Interop;
 namespace CuiSharp.Hosting;
 
 // The platform asks after layout, so keep ids rather than copying the previous frame's rectangles
-// during draw. CUI can then answer with the same geometry it painted, including after a resize.
+// during draw. Query the layout CUI actually painted, including after a resize. The native
+// title-bar hit test cannot see these IDs: only the not-yet-shipped native widget can register them.
 internal sealed class WindowTitleBar(CuiWindow window, nint context, bool fixedSize)
 {
     internal CuiWindow Window { get; } = window;

@@ -3,10 +3,9 @@
     Prints where a CUI sync stands, and fails when a number in the docs has drifted.
 
 .DESCRIPTION
-    A sync used to start with six greps and two file reads to answer "what am I looking at": which
-    revision is pinned, whether upstream has moved, which version the two files agree on, and whether
-    the counts quoted in the READMEs still match coverage.txt. This answers all of it in one call, so
-    an agent spends its context on the C rather than on arithmetic.
+    Reports the CUI checkout against the newest local release tag, the package version, and whether
+    the counts quoted in the READMEs still match coverage.txt. It does not contact upstream; follow
+    SKILL.md to verify the remote release tags and default branch before selecting a sync target.
 
     Exit code 0 means the sync is in a state worth continuing from: no PENDING entry, and every number
     the docs quote matches coverage.txt. Exit code 1 means something printed under "stale" is wrong.
@@ -52,15 +51,21 @@ $head = @(Invoke-Git @('rev-parse', '--short', 'HEAD')) -join ''
 if (-not $pinned) {
     Problem "no CUI checkout at $Submodule (git submodule update --init --recursive)"
 } else {
-    Note "pinned      $pinned ($head)"
-    $tags = @(Invoke-Git @('tag', '--sort=-v:refname')) | Where-Object { $_ -match '^v\d' }
+    Note "checkout    $pinned ($head)"
+    $tags = @(Invoke-Git @('tag', '--sort=-v:refname') | Where-Object { $_ -match '^v\d' })
     if ($tags.Count -gt 0) {
         $newest = $tags[0].Trim()
-        $behind = @(Invoke-Git @('rev-list', '--count', "HEAD..$newest")) -join ''
-        Note "newest      $newest ($behind commits ahead)"
-        if ($pinned -ne $newest -and $behind -ne '0') { Note 'status      a bump is available: steps 1-3 of SKILL.md' }
-        else { Note 'status      up to date with the newest tag' }
-    }
+        $distance = @(Invoke-Git @('rev-list', '--left-right', '--count', "HEAD...$newest")) -join ''
+        Note "newest local release tag  $newest"
+        if ($distance -match '^(\d+)\s+(\d+)$') {
+            $ahead = [int]$Matches[1]
+            $behind = [int]$Matches[2]
+            Note "checkout versus tag       $ahead ahead, $behind behind"
+        } else {
+            Problem "could not compare checkout with $newest"
+        }
+    } else { Note 'no local release tag found' }
+    Note 'remote refs not checked; see step 1 of SKILL.md'
 }
 
 # --- versions ----------------------------------------------------------------------------------

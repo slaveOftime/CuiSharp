@@ -92,8 +92,10 @@ return CuiApp.Run(new CuiAppOptions { Title = "Notes", CustomTitleBar = true }, 
 
 Draw the bar once at the top of every frame. On Windows, the option removes the system caption and
 `ui.TitleBar` supplies the drag area and window buttons. Pass `leading:` or `trailing:` to draw
-extra controls outside the drag area. In headless mode and on other platforms, the bar still
-draws, without desktop window buttons; the system caption is unchanged.
+extra controls outside the drag area. On Windows, wrap the bar in `using (ui.Disabled(overlayOpen))`
+while a modal overlay should block dragging and window buttons; overlap alone does not disable the
+caption. In headless mode and on other platforms, the bar still draws without desktop window
+buttons and the system caption is unchanged.
 
 ## Cheat sheet
 

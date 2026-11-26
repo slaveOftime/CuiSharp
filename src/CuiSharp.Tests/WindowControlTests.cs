@@ -76,6 +76,14 @@ public partial class WindowControlTests
         Assert.Equal(fixedSize ? Win32.HtClient : Win32.HtMaxButton, Hit(353, 24));
         if (!fixedSize) Assert.Equal(12, Hit(80, 1)); // HTTOP: the resize border still wins.
 
+        if (!fixedSize)
+        {
+            // Compare the same points on the same frame: replacing the Windows hook with
+            // the raw query would lose both hits; managed widgets do not register native chrome.
+            Assert.Equal(TitleBarHit.None, Native.TitleBarHitTest(app.Ui.Handle, 80, 24));
+            Assert.Equal(TitleBarHit.None, Native.TitleBarHitTest(app.Ui.Handle, 353, 24));
+        }
+
         Assert.True(app.Frame());
         var ui = app.Ui;
         using (ui.Disabled(true)) ui.TitleBar("Window under test");
