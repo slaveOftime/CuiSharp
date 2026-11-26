@@ -119,8 +119,8 @@ GENERATED cui_scatter_series -> ScatterSeries
 GENERATED cui_hex_result -> HexResult (+ write-back)
 
 WIDGETS
-Wrapper emission is being migrated by header section (Phase 2, Step 2). Not a completed coverage gate.
-Generated wrappers: 304; raw functions covered including scope ends: 348/573
+One status per non-variadic C function; RAW-SKIP lists unsupported declarations separately.
+Generated wrappers: 305; raw functions covered including scope ends: 349/573
 MANUAL cui_create: `CuiSurface.Create` owns context creation (CuiSurface.cs).
 MANUAL cui_destroy: `CuiSurface.Dispose` (CuiSurface.cs).
 MANUAL cui_set_renderer: `CuiSurface.Create` installs the software renderer; CuiApp lets CUI pick (CuiSurface.cs).
@@ -136,10 +136,10 @@ MANUAL cui_request_wakeup: A delayed wakeup timer: wrapped by hand in Ui.Termina
 MANUAL cui_time: `ui.Time` (Ui.Frame.cs).
 MANUAL cui_delta_time: `ui.DeltaTime` (Ui.Frame.cs).
 MANUAL cui_frame_count: `ui.FrameCount` (Ui.Frame.cs).
-EXCLUDED cui_set_input_hook: Platform input is delivered by the window backend and the test harness, not by draw code.
-EXCLUDED cui_dispatch_input: Platform input is delivered by the window backend and the test harness, not by draw code.
-EXCLUDED cui_input_repeated: Platform input is delivered by the window backend and the test harness, not by draw code.
-EXCLUDED cui_key_action_down: Platform input is delivered by the window backend and the test harness, not by draw code.
+EXCLUDED cui_set_input_hook: CuiApp and CuiSurface own input delivery. Raw hook routing, touch injection/query and cursor control have no managed API in this section.
+EXCLUDED cui_dispatch_input: CuiApp and CuiSurface own input delivery. Raw hook routing, touch injection/query and cursor control have no managed API in this section.
+EXCLUDED cui_input_repeated: CuiApp and CuiSurface own input delivery. Raw hook routing, touch injection/query and cursor control have no managed API in this section.
+EXCLUDED cui_key_action_down: CuiApp and CuiSurface own input delivery. Raw hook routing, touch injection/query and cursor control have no managed API in this section.
 MANUAL cui_input_mouse_move: Platform input: the Win32/X11/Cocoa backends feed it for a window, and `CuiSurface.MouseMove` feeds it headless (CuiSurface.Input.cs).
 MANUAL cui_input_mouse_button: `CuiSurface.MouseDown`/`MouseUp`/`Click` (CuiSurface.Input.cs); the backends call it for a window.
 MANUAL cui_input_mouse_leave: `CuiSurface.MouseLeave` (CuiSurface.Input.cs).
@@ -147,21 +147,21 @@ MANUAL cui_input_scroll: `CuiSurface.Scroll(dy, dx)` (CuiSurface.Input.cs).
 MANUAL cui_input_key: `CuiSurface.KeyDown`/`KeyUp(key, mods)` (CuiSurface.Input.cs).
 MANUAL cui_input_text: `CuiSurface.Type(text)` (CuiSurface.Input.cs) delivers UTF-8 as the keyboard layout would.
 MANUAL cui_input_focus: `CuiSurface.Focus(bool)` (CuiSurface.Input.cs).
-EXCLUDED cui_input_touch: Platform input is delivered by the window backend and the test harness, not by draw code.
-EXCLUDED cui_input_touch_move: Platform input is delivered by the window backend and the test harness, not by draw code.
-EXCLUDED cui_input_touch_cancel: Platform input is delivered by the window backend and the test harness, not by draw code.
-EXCLUDED cui_touch_count: Platform input is delivered by the window backend and the test harness, not by draw code.
-EXCLUDED cui_touch_down: Platform input is delivered by the window backend and the test harness, not by draw code.
-EXCLUDED cui_touch_pressed: Platform input is delivered by the window backend and the test harness, not by draw code.
-EXCLUDED cui_touch_released: Platform input is delivered by the window backend and the test harness, not by draw code.
-EXCLUDED cui_touch_pos: Platform input is delivered by the window backend and the test harness, not by draw code.
+EXCLUDED cui_input_touch: CuiApp and CuiSurface own input delivery. Raw hook routing, touch injection/query and cursor control have no managed API in this section.
+EXCLUDED cui_input_touch_move: CuiApp and CuiSurface own input delivery. Raw hook routing, touch injection/query and cursor control have no managed API in this section.
+EXCLUDED cui_input_touch_cancel: CuiApp and CuiSurface own input delivery. Raw hook routing, touch injection/query and cursor control have no managed API in this section.
+EXCLUDED cui_touch_count: CuiApp and CuiSurface own input delivery. Raw hook routing, touch injection/query and cursor control have no managed API in this section.
+EXCLUDED cui_touch_down: CuiApp and CuiSurface own input delivery. Raw hook routing, touch injection/query and cursor control have no managed API in this section.
+EXCLUDED cui_touch_pressed: CuiApp and CuiSurface own input delivery. Raw hook routing, touch injection/query and cursor control have no managed API in this section.
+EXCLUDED cui_touch_released: CuiApp and CuiSurface own input delivery. Raw hook routing, touch injection/query and cursor control have no managed API in this section.
+EXCLUDED cui_touch_pos: CuiApp and CuiSurface own input delivery. Raw hook routing, touch injection/query and cursor control have no managed API in this section.
 MANUAL cui_input_file_hover: `CuiSurface.FileHover(x, y)` and `FileHoverEnd()` (CuiSurface.Input.cs).
 MANUAL cui_input_file_drop: `CuiSurface.FileDrop(paths, x, y)` (CuiSurface.Input.cs).
 MANUAL cui_dropped_file_count: `CuiSurface.DroppedFileCount` (CuiSurface.Input.cs) and `ui.DroppedFileCount` (Ui/Ui.Overlays.cs): the surface feeds drops, a frame reads them.
 MANUAL cui_dropped_file: `CuiSurface.DroppedFile(index)` (CuiSurface.Input.cs) and `ui.DroppedFile(index)` (Ui/Ui.Overlays.cs): the path of the dropped file, decoded from the native buffer.
 MANUAL cui_file_drag_active: `CuiSurface.FileDragActive` (CuiSurface.Input.cs).
-EXCLUDED cui_set_platform: Platform input is delivered by the window backend and the test harness, not by draw code.
-EXCLUDED cui_set_cursor: Platform input is delivered by the window backend and the test harness, not by draw code.
+EXCLUDED cui_set_platform: CuiApp and CuiSurface own input delivery. Raw hook routing, touch injection/query and cursor control have no managed API in this section.
+EXCLUDED cui_set_cursor: CuiApp and CuiSurface own input delivery. Raw hook routing, touch injection/query and cursor control have no managed API in this section.
 MANUAL cui_get_cursor: `ui.Cursor` (Ui.Frame.cs).
 MANUAL cui_set_clipboard_text: `Ui.SetClipboard(text)` (Ui/Ui.cs): the platform clipboard hook, for a menu or status bar item that copies.
 MANUAL cui_get_clipboard_text: `Ui.GetClipboard()` (Ui/Ui.cs): copies the returned text out of CUI's frame memory before the frame ends.
@@ -220,8 +220,8 @@ MANUAL cui_last_hovered: `ui.Canvas` reports Hovered through CanvasResult; the r
 MANUAL cui_is_disabled: `ui.IsDisabled` (Ui.Frame.cs).
 MANUAL cui_push_disabled: `ui.Disabled(bool)` and `ui.Disabled(bool, body)` (Ui.Frame.cs): a DisabledScope the caller closes.
 MANUAL cui_pop_disabled: The DisabledScope's Dispose (Ui.Frame.cs).
-EXCLUDED cui_push_focus_scope: ui.Id/Keyed id scopes are hand-written in Step 3 with the extension composition API; raw push/pop stay internal.
-EXCLUDED cui_pop_focus_scope: ui.Id/Keyed id scopes are hand-written in Step 3 with the extension composition API; raw push/pop stay internal.
+EXCLUDED cui_push_focus_scope: Ui.Id/Keyed own managed id scopes. Raw identity and Tab-focus scopes are not exposed by this section.
+EXCLUDED cui_pop_focus_scope: Ui.Id/Keyed own managed id scopes. Raw identity and Tab-focus scopes are not exposed by this section.
 GENERATED cui_text_ex
 GENERATED cui_heading
 GENERATED cui_label
@@ -613,7 +613,7 @@ GENERATED cui_blame_ex
 GENERATED cui_feature_flags_ex
 GENERATED cui_api_explorer_ex
 MANUAL cui_dot_chart_ex: A dot series carries its samples as a bare pointer, and their number is the call's, not the series': the wrapper builds the array in the frame arena from managed series, as the line and bar charts do.
-MANUAL cui_event_track_ex: The times are a Span<double> the widget sorts and edits in place, and `label` is a C function pointer the bridge rents (Ui/Ui.Instruments.cs).
+GENERATED cui_event_track_ex
 GENERATED cui_readout_ex
 GENERATED cui_dot_display_ex
 GENERATED cui_format_bar_ex
@@ -638,16 +638,16 @@ MANUAL cui_draw_image: `ui.DrawImage` (Ui.Draw.cs): destination, uv, tint and ra
 MANUAL cui_push_clip: `ui.PushClip` and the `using (ui.Clip(rect))` scope (Ui.Draw.cs).
 MANUAL cui_pop_clip: `ui.PopClip`, closed by the ClipScope's Dispose (Ui.Draw.cs).
 MANUAL cui_canvas: `ui.Canvas` (Ui.Draw.cs): a PaintFn plus a CanvasResult with rect/hover/pressed/clicked.
-EXCLUDED cui_canvas_ex: Drawing primitives keep ergonomic overloads (radius, RectF, Color) in the manual drawing partial.
-EXCLUDED cui_request_component_focus: Drawing primitives keep ergonomic overloads (radius, RectF, Color) in the manual drawing partial.
-EXCLUDED cui_component_has_input: Drawing primitives keep ergonomic overloads (radius, RectF, Color) in the manual drawing partial.
-EXCLUDED cui_focused_id: Drawing primitives keep ergonomic overloads (radius, RectF, Color) in the manual drawing partial.
-EXCLUDED cui_window_focused: Drawing primitives keep ergonomic overloads (radius, RectF, Color) in the manual drawing partial.
-EXCLUDED cui_focus_visible: Drawing primitives keep ergonomic overloads (radius, RectF, Color) in the manual drawing partial.
-EXCLUDED cui_frame_alloc: Drawing primitives keep ergonomic overloads (radius, RectF, Color) in the manual drawing partial.
-EXCLUDED cui_frame_strdup: Drawing primitives keep ergonomic overloads (radius, RectF, Color) in the manual drawing partial.
-EXCLUDED cui_wheel_region: Drawing primitives keep ergonomic overloads (radius, RectF, Color) in the manual drawing partial.
-EXCLUDED cui_wheel_take: Drawing primitives keep ergonomic overloads (radius, RectF, Color) in the manual drawing partial.
+EXCLUDED cui_canvas_ex: Ui.Draw.cs owns the supported drawing and Canvas surface. Raw frame allocation and advanced canvas input routing are not exposed.
+EXCLUDED cui_request_component_focus: Ui.Draw.cs owns the supported drawing and Canvas surface. Raw frame allocation and advanced canvas input routing are not exposed.
+EXCLUDED cui_component_has_input: Ui.Draw.cs owns the supported drawing and Canvas surface. Raw frame allocation and advanced canvas input routing are not exposed.
+EXCLUDED cui_focused_id: Ui.Draw.cs owns the supported drawing and Canvas surface. Raw frame allocation and advanced canvas input routing are not exposed.
+EXCLUDED cui_window_focused: Ui.Draw.cs owns the supported drawing and Canvas surface. Raw frame allocation and advanced canvas input routing are not exposed.
+EXCLUDED cui_focus_visible: Ui.Draw.cs owns the supported drawing and Canvas surface. Raw frame allocation and advanced canvas input routing are not exposed.
+EXCLUDED cui_frame_alloc: Ui.Draw.cs owns the supported drawing and Canvas surface. Raw frame allocation and advanced canvas input routing are not exposed.
+EXCLUDED cui_frame_strdup: Ui.Draw.cs owns the supported drawing and Canvas surface. Raw frame allocation and advanced canvas input routing are not exposed.
+EXCLUDED cui_wheel_region: Ui.Draw.cs owns the supported drawing and Canvas surface. Raw frame allocation and advanced canvas input routing are not exposed.
+EXCLUDED cui_wheel_take: Ui.Draw.cs owns the supported drawing and Canvas surface. Raw frame allocation and advanced canvas input routing are not exposed.
 MANUAL cui_state: `ui.State<T>(id)` (Ui.Draw.cs): a Span<T> over CUI's per-id storage.
 MANUAL cui_state_on_free: `ui.State<T>(id, onFree)` (Ui.Draw.cs) reserves a state block whose header holds the callback, and the frame-callback bridge supplies the disposer CUI calls when it evicts that id.
 MANUAL cui_animate: `ui.Animate` (Ui.Draw.cs).
@@ -689,11 +689,11 @@ MANUAL cui_gl_iface: CuiApp lets CUI manage the GL renderer.
 MANUAL cui_gl_render: CuiApp renders through CUI's own loop.
 MANUAL cui_gl_read_pixels: `CuiApp.Screenshot` reads the frame back (CuiApp.cs).
 MANUAL cui_gl_is_software: `CuiApp.IsSoftwareRenderer` answers the same question (CuiApp.cs).
-EXCLUDED cui_gpu_create: A GPU renderer hands CUI a native interface of function pointers and device handles (IUnknown, VkInstance, MTLDevice) that CUI itself builds only behind compile-time flags, with OpenGL as the default; a managed renderer bridge is its own project. CuiSurface installs the software renderer.
-EXCLUDED cui_gpu_destroy: A GPU renderer hands CUI a native interface of function pointers and device handles (IUnknown, VkInstance, MTLDevice) that CUI itself builds only behind compile-time flags, with OpenGL as the default; a managed renderer bridge is its own project. CuiSurface installs the software renderer.
-EXCLUDED cui_gpu_iface: A GPU renderer hands CUI a native interface of function pointers and device handles (IUnknown, VkInstance, MTLDevice) that CUI itself builds only behind compile-time flags, with OpenGL as the default; a managed renderer bridge is its own project. CuiSurface installs the software renderer.
-EXCLUDED cui_gpu_render: A GPU renderer hands CUI a native interface of function pointers and device handles (IUnknown, VkInstance, MTLDevice) that CUI itself builds only behind compile-time flags, with OpenGL as the default; a managed renderer bridge is its own project. CuiSurface installs the software renderer.
-EXCLUDED cui_gpu_render_capture: A GPU renderer hands CUI a native interface of function pointers and device handles (IUnknown, VkInstance, MTLDevice) that CUI itself builds only behind compile-time flags, with OpenGL as the default; a managed renderer bridge is its own project. CuiSurface installs the software renderer.
+EXCLUDED cui_gpu_create: CuiSharp's native build does not enable the optional Direct3D 12, Vulkan or Metal exports. Wrapping these requires a build and device-lifetime contract for each platform.
+EXCLUDED cui_gpu_destroy: CuiSharp's native build does not enable the optional Direct3D 12, Vulkan or Metal exports. Wrapping these requires a build and device-lifetime contract for each platform.
+EXCLUDED cui_gpu_iface: CuiSharp's native build does not enable the optional Direct3D 12, Vulkan or Metal exports. Wrapping these requires a build and device-lifetime contract for each platform.
+EXCLUDED cui_gpu_render: CuiSharp's native build does not enable the optional Direct3D 12, Vulkan or Metal exports. Wrapping these requires a build and device-lifetime contract for each platform.
+EXCLUDED cui_gpu_render_capture: CuiSharp's native build does not enable the optional Direct3D 12, Vulkan or Metal exports. Wrapping these requires a build and device-lifetime contract for each platform.
 RAW-SKIP function cui_textf: variadic
 RAW-SKIP function cui_table_cell_textf: variadic
 RAW-SKIP function cui_log_append: variadic

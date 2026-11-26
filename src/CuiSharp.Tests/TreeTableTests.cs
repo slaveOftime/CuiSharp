@@ -226,7 +226,7 @@ public class TreeTableTests
     }
 
     private static TreeTableEvents DragFromAlphaToBeta(CuiSurface surface, TreeNode[] nodes,
-        TreeTableOpts o, Func<int, string?>? label = null, Func<int, int, bool>? canDrop = null)
+        TreeTableOpts o, Func<int, string?>? label = null, Func<int, TreeDrop, bool>? canDrop = null)
     {
         var pixels = new byte[surface.PixelWidth * surface.PixelHeight * 4];
         var sort = new TableSort();
@@ -306,16 +306,56 @@ public class TreeTableTests
 
         var nodes = NewDragModel();
         using var surface = CuiSurface.Create(600, 400);
+        var attempts = new List<(int Target, TreeDrop Where)>();
         var events = DragFromAlphaToBeta(surface, nodes, new TreeTableOpts { Height = 300, Draggable = true },
-            canDrop: (_, _) => false);
+            label: node => DragNames[node], canDrop: (target, where) =>
+            {
+                attempts.Add((target, where));
+                return false;
+            });
 
+        Assert.Contains((2, TreeDrop.After), attempts);
         Assert.True(events.Dropped.IsEmpty, "a drop the callback refuses must not be reported");
         Assert.Equal(0, nodes[1].Parent);
         Assert.Equal(2, nodes[1].NextSibling);
     }
 
     [Fact]
-    public void MoveRelinksTheModelBeforeIntoAndAfter()
+    public void TheContextMenuBelongsToTheTableAndReportsTheClickedRow()
+    {
+        using var surface = CuiSurface.Create(600, 400);
+        var nodes = NewDragModel();
+        int contextNode = -1;
+        bool opened = false;
+        void Draw()
+        {
+            surface.BeginFrame();
+            var ui = surface.Ui;
+            ui.TreeTable("tree", Columns, nodes, (draw, node, _) => draw.TreeTableName(DragNames[node], ""),
+                new TreeTableOpts { Height = 240 });
+            using (var menu = ui.TreeTableMenu("tree", ref contextNode))
+            {
+                opened = menu.Open;
+                if (menu) ui.MenuItem("Inspect");
+            }
+            surface.EndFrame();
+        }
+        Draw();
+        Assert.False(opened);
+        surface.Focus(true);
+        surface.MouseMove(120, 88);
+        Draw();
+        surface.MouseDown(MouseButton.Right);
+        Draw();
+        surface.MouseUp(MouseButton.Right);
+        Draw();
+        Assert.True(opened);
+        Assert.Equal(1, contextNode);
+        Assert.Empty(surface.Faults);
+    }
+
+    [Fact]
+    public void MoveRelinksTheModelAndRejectsACycle()
     {
         if (!OperatingSystem.IsWindows()) return;
 

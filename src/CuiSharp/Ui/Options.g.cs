@@ -4754,6 +4754,24 @@ public partial struct DotChartOpts
         ValueLabel = default,
         ValueLabelUser = default,
     };
+    /// <summary>writes the x labels and the readout&apos;s x in place of x_units and x_format; x_units still picks the spacing</summary>
+    public Func<double, string?>? XLabel;
+    /// <summary>writes the readout&apos;s value in place of `format`; `unit` still follows it</summary>
+    public Func<double, string?>? ValueLabel;
+
+    internal readonly void BindCallbacks(UiFrameState frame, ref NativeDotChartOpts options)
+    {
+        if (XLabel is { } labelXLabel)
+        {
+            options.XLabelUser = FrameCallbacks.RentAxisLabel(frame, labelXLabel);
+            options.XLabel = FrameCallbacks.AxisLabelPointer;
+        }
+        if (ValueLabel is { } labelValueLabel)
+        {
+            options.ValueLabelUser = FrameCallbacks.RentAxisLabel(frame, labelValueLabel);
+            options.ValueLabel = FrameCallbacks.AxisLabelPointer;
+        }
+    }
 }
 
 /// <summary>Event track: moments on a time axis, as dots you drag along it. A click on an empty spot adds an event there and a double-click on one removes it. You own the array: the track keeps it sorted, edits it in place and never grows it past `capacity`. All fields are optional; zero selects the native default.</summary>
@@ -4791,6 +4809,17 @@ public partial struct EventTrackOpts
         Label = default,
         LabelUser = default,
     };
+    /// <summary>writes the axis labels and the selected event&apos;s time in place of units and format; units still picks the spacing</summary>
+    public Func<double, string?>? Label;
+
+    internal readonly void BindCallbacks(UiFrameState frame, ref NativeEventTrackOpts options)
+    {
+        if (Label is { } labelLabel)
+        {
+            options.LabelUser = FrameCallbacks.RentAxisLabel(frame, labelLabel);
+            options.Label = FrameCallbacks.AxisLabelPointer;
+        }
+    }
 }
 
 /// <summary>Readout: one figure as an instrument shows it. A small label, the value in the monospaced font with its unit, and a muted line of context under it. All fields are optional; zero selects the native default.</summary>

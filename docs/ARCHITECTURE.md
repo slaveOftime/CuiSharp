@@ -279,11 +279,14 @@ upstream wake API that would retire the fallback is in [PLAN.md](PLAN.md).
 
 ## Native callbacks
 
-A `void (*)(…)` argument crosses into native code from managed code in exactly one way:
-`Runtime/FrameCallbacks.cs` puts a delegate in a `Holder` kept alive by a `GCHandle`, keyed and
-reused, records the handle per thread, and frees it at the next `Utf8.BeginFrame()`. Handing C a
-managed object address is never allowed. This is what unlocks `ui.TreeTable(...)` events and
-`ui.State<T>(id, onFree)`.
+Widget delegates cross as a C thunk and `GCHandle` token, not a managed address.
+`UiFrameState` reuses distinct slots for each submission, keeps them through native paint, and
+releases them after the context is destroyed. A tree table's label and drop predicate share a slot
+because C shares their `void *user`. Tree labels return frame-arena UTF-8, not a pointer to an
+array whose pin has expired. Axis labels write whole UTF-8 scalars into CUI's bounded buffer;
+`axisLabels` generates the pairing and binding call without moving the widget out of bindgen.
+Callback failures report to the headless surface or stderr and return a safe value.
+The sort comparator and persistent state disposer retain their separate keyed registrations.
 
 ## Semantics (recording, tree, query)
 

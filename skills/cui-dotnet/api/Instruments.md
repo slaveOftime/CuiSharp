@@ -7,7 +7,7 @@ Call these inside a frame, on a `Ui` value:
 ```csharp
 protected override void Draw(Ui ui)
 {
-    using (ui.Readout(/* options */))
+    using (ui.EventTrack(/* options */))
     {
         // ...
     }
@@ -21,6 +21,14 @@ public void DotDisplay(UiText text, DotDisplayOpts o = default)
 ```
 
 Dot-matrix display: text drawn with a 5 by 7 dot font, for clocks, counters and status lines. Printable ASCII, the degree sign and the middle dot have glyphs; anything else is a box. Unlit dots show dimly unless `no_dim` is set. In a box narrower than the text, the dots shrink to fit, or with `marquee` the text scrolls.
+
+## `EventTrack`
+
+```csharp
+public EventTrackResult EventTrack(UiText id, Span<double> times, ref int count, double min, double max, ref int selected, EventTrackOpts o = default)
+```
+
+Event track: moments on a time axis, as dots you drag along it. A click on an empty spot adds an event there and a double-click on one removes it. You own the array: the track keeps it sorted, edits it in place and never grows it past `capacity`.
 
 ## `FormatBar`
 

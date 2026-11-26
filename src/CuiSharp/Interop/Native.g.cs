@@ -990,7 +990,7 @@ public static unsafe partial class Native
 
     /// <summary>Moves nodes, each with its subtree, before, into (after the last child) or after target, keeping their order, and relinks the nodes. Returns the new first top level node. A target that is one of the nodes or inside one, or a node listed twice, moves nothing. Flags stay as they are: open the target yourself if you want the moved nodes in view.</summary>
     [LibraryImport("cui", EntryPoint = "cui_tree_move")]
-    public static partial int TreeMove(nint nodes, int nodeCount, int root, in int move, int moveCount, int target, int where);
+    public static partial int TreeMove(nint nodes, int nodeCount, int root, nint move, int moveCount, int target, int where);
 
     /// <summary>cui_path_bar_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_path_bar_ex")]

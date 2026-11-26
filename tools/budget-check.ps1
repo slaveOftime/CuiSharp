@@ -68,13 +68,15 @@ $failures = @()
 function Get-Ceiling([string] $metric) {
     # The table states the ceiling as "budget <number> <unit>" in the row's last column: plain
     # ASCII, so nothing between the doc and this regex can mangle the sign.
-    $row = [regex]::Match($text, "(?m)^\| $metric[^|]*\|[^|]*\|[^|]*budget\s+([\d\.]+)\s*(ms|KB|MB|B)")
+    $row = [regex]::Match($text, "(?m)^\| $metric[^|]*\|[^|]*\|[^|]*budget\s+([\d\.]+)\s*(ms|KiB|MiB|KB|MB|B)\b")
     if (-not $row.Success) { throw "budget: docs/PERFORMANCE.md has no 'budget <value> <unit>' in the row for '$metric'" }
 
     $value = [double]$row.Groups[1].Value
     $unit = $row.Groups[2].Value
-    $scale = switch ($unit) { 'KB' { 1KB } 'MB' { 1MB } default { 1 } }
-    return @{ Value = ($value * $scale); Label = "$value $unit" }
+    # Historical KB/MB rows used PowerShell's binary multipliers; print the actual unit.
+    $scale = switch -Regex ($unit) { '^Ki?B$' { 1KB } '^Mi?B$' { 1MB } default { 1 } }
+    $label = switch ($unit) { 'KB' { 'KiB' } 'MB' { 'MiB' } default { $unit } }
+    return @{ Value = ($value * $scale); Label = "$value $label" }
 }
 
 if ($Benchmark) {

@@ -169,7 +169,6 @@ public static unsafe class TreeTableUiExtensions
         /// <param name="cursor">The keyboard's node index, read and written.</param>
         /// <param name="o">Size, row height, root node, guides.</param>
         /// <param name="label">Optional names for type-ahead; hoist it, since a closure allocates.</param>
-        /// <param name="canDrop">Optional refusal for a drop: false keeps the drag from landing there. Called during the drag with the target node and the drop side; without it every drop is allowed.</param>
         /// <example><code>
         /// var events = ui.TreeTable("files", Columns, _nodes, DrawRow, ref _sort, ref _cursor,
         ///     new TreeTableOpts { Height = 320, Guides = true });
@@ -178,8 +177,13 @@ public static unsafe class TreeTableUiExtensions
         /// if (events.SortChanged) _root = CuiTree.Sort(_nodes, _root, Compare);
         /// </code></example>
         public TreeTableEvents TreeTable(UiText id, ReadOnlySpan<GridColumn> columns, TreeNode[] nodes,
-            TreeTableRow row, ref TableSort sort, ref int cursor, TreeTableOpts o = default, Func<int, string?>? label = null,
-            Func<int, int, bool>? canDrop = null)
+            TreeTableRow row, ref TableSort sort, ref int cursor, TreeTableOpts o = default, Func<int, string?>? label = null) =>
+            ui.TreeTable(id, columns, nodes, row, ref sort, ref cursor, canDrop: null, o: o, label: label);
+
+        /// <summary>Draws the tree and lets <paramref name="canDrop"/> refuse candidate destinations during a drag.</summary>
+        public TreeTableEvents TreeTable(UiText id, ReadOnlySpan<GridColumn> columns, TreeNode[] nodes,
+            TreeTableRow row, ref TableSort sort, ref int cursor, TreeTableOpts o, Func<int, string?>? label,
+            Func<int, TreeDrop, bool>? canDrop)
         {
             ArgumentNullException.ThrowIfNull(nodes);
             ArgumentNullException.ThrowIfNull(row);
@@ -201,7 +205,12 @@ public static unsafe class TreeTableUiExtensions
         /// state, which is all a static tree needs.
         /// </summary>
         public TreeTableEvents TreeTable(UiText id, ReadOnlySpan<GridColumn> columns, TreeNode[] nodes,
-            TreeTableRow row, TreeTableOpts o = default, Func<int, string?>? label = null, Func<int, int, bool>? canDrop = null)
+            TreeTableRow row, TreeTableOpts o = default, Func<int, string?>? label = null) =>
+            ui.TreeTable(id, columns, nodes, row, canDrop: null, o: o, label: label);
+
+        /// <summary>Draws the tree with a drop predicate and without exposing its sort or cursor.</summary>
+        public TreeTableEvents TreeTable(UiText id, ReadOnlySpan<GridColumn> columns, TreeNode[] nodes,
+            TreeTableRow row, TreeTableOpts o, Func<int, string?>? label, Func<int, TreeDrop, bool>? canDrop)
         {
             ArgumentNullException.ThrowIfNull(nodes);
             ArgumentNullException.ThrowIfNull(row);
@@ -224,33 +233,30 @@ public static unsafe class TreeTableUiExtensions
 
     private static TreeTableEvents Run(Ui target, UiText id, NativeGridColumn* cols, int columnCount, TreeNode* model,
         int nodeCount, TreeTableRow row, ref NativeTableSort sort, ref int cursor, TreeTableOpts o, Func<int, string?>? label,
-        Func<int, int, bool>? canDrop)
+        Func<int, TreeDrop, bool>? canDrop)
     {
         var opts = o.ToNative((nint)Unsafe.AsPointer(ref sort), (nint)Unsafe.AsPointer(ref cursor));
         if (label is not null || canDrop is not null)
         {
-            // CUI keeps the pointer for the frame, so the bridge keeps the delegates alive for
-            // exactly as long and reuses its handle while the same delegates keep arriving. Both
-            // hooks share the one `void *user` CUI passes them, so they travel in one holder that
-            // the bridge reuses, and a steady frame allocates nothing.
-            nint user = FrameCallbacks.RentTreeHooks(
-                "tree-table:" + target.MakeId(id).ToString(System.Globalization.CultureInfo.InvariantCulture), label, canDrop);
-            if (user != 0)
-            {
-                if (label is not null) opts.Label = FrameCallbacks.TreeLabelPointer;
-                if (canDrop is not null) opts.CanDrop = FrameCallbacks.CanDropPointer;
-                opts.User = user;
-            }
+            opts.User = FrameCallbacks.RentTreeHooks(target.FrameState, label, canDrop);
+            if (label is not null) opts.Label = FrameCallbacks.TreeLabelPointer;
+            if (canDrop is not null) opts.CanDrop = FrameCallbacks.CanDropPointer;
         }
 
         Native.TreeTableBegin(target.Handle, Utf8.Get(id), (nint)cols, columnCount, (nint)model, nodeCount, in opts);
-        int node;
-        while ((node = Native.TreeTableRow(target.Handle)) >= 0)
+        NativeTreeTableEvents nativeEvents;
+        try
         {
-            row(target, node, Native.TreeTableDepth(target.Handle));
+            int node;
+            while ((node = Native.TreeTableRow(target.Handle)) >= 0)
+                row(target, node, Native.TreeTableDepth(target.Handle));
+        }
+        finally
+        {
+            nativeEvents = Native.TreeTableEnd(target.Handle);
         }
 
-        var events = TreeTableEvents.FromNative(Native.TreeTableEnd(target.Handle));
+        var events = TreeTableEvents.FromNative(nativeEvents);
         WidgetRecorder.Note(target.Handle, "TreeTable", id);
         return events;
     }
@@ -298,14 +304,8 @@ public static unsafe class CuiTree
         ArgumentNullException.ThrowIfNull(nodes);
         if (nodes.Length == 0 || move.IsEmpty || target < 0) return root;
 
-        int none = 0;
         fixed (TreeNode* model = nodes)
         fixed (int* movePtr = move)
-        {
-            // Native.TreeMove takes the first node by `in`; an empty list moves nothing, and a
-            // local stands in for the pointer it would never read.
-            ref int first = ref move.IsEmpty ? ref none : ref *movePtr;
-            return Native.TreeMove((nint)model, nodes.Length, root, in first, move.Length, target, (int)where);
-        }
+            return Native.TreeMove((nint)model, nodes.Length, root, (nint)movePtr, move.Length, target, (int)where);
     }
 }

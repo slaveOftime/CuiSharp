@@ -32,7 +32,7 @@ $GalleryPages = @(
     [pscustomobject]@{ Number = '17'; Key = 'capture';     Label = 'Capture';              Heading = 'Capture'; Scrolled = $true }
     [pscustomobject]@{ Number = '18'; Key = 'disclosure';  Label = 'Disclosure';           Heading = 'Disclosure'; Scrolled = $true }
     [pscustomobject]@{ Number = '19'; Key = 'reader';      Label = 'Reader';               Heading = 'Reader'; Scrolled = $true }
-    [pscustomobject]@{ Number = '20'; Key = 'datagrid';    Label = 'Data grid';            Heading = 'Data grid'; Scrolled = $true }
+    [pscustomobject]@{ Number = '20'; Key = 'datagrid';    Label = 'Data grid';            Heading = 'Filter bar'; Scrolled = $true }
     [pscustomobject]@{ Number = '21'; Key = 'code';        Label = 'Code';                 Heading = 'Code'; Scrolled = $true }
     [pscustomobject]@{ Number = '22'; Key = 'social';      Label = 'Social and media';     Heading = 'Social and media'; Scrolled = $true }
     [pscustomobject]@{ Number = '23'; Key = 'planning';    Label = 'Planning';             Heading = 'Planning'; Scrolled = $true }

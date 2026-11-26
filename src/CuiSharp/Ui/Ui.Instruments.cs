@@ -37,11 +37,8 @@ public unsafe ref partial struct Ui
     /// <param name="id">The widget id, which is also the identity of its hover and keyboard state.</param>
     /// <param name="series">The series to stack, each in its own band.</param>
     /// <param name="count">Samples per series, spread evenly from <see cref="DotChartOpts.XMin"/> to <see cref="DotChartOpts.XMax"/>.</param>
-    /// <param name="o">Axis, readout and annotation options.</param>
-    /// <param name="xLabel">Writes each x label and the readout's x, in place of <see cref="DotChartOpts.XFormat"/>; the spacing still comes from the axis units. Keep it hoisted — a closure allocates.</param>
-    /// <param name="valueLabel">Writes the readout's value, in place of <see cref="DotChartOpts.Format"/>; the unit still follows it.</param>
-    public DotChartResult DotChart(UiText id, scoped ReadOnlySpan<DotSeries> series, int count, DotChartOpts o = default,
-        Func<double, string?>? xLabel = null, Func<double, string?>? valueLabel = null)
+    /// <param name="o">Axis, optional label callbacks, readout and annotation options.</param>
+    public DotChartResult DotChart(UiText id, scoped ReadOnlySpan<DotSeries> series, int count, DotChartOpts o = default)
     {
         // Native reads `count` values from every series, so each one is copied into a block of
         // exactly that length: a short series is padded with zero rather than read past its end.
@@ -67,58 +64,10 @@ public unsafe ref partial struct Ui
         }
 
         var opts = o.ToNative();
-        if (xLabel is not null)
-        {
-            nint user = FrameCallbacks.Rent("dot-chart-x:" + MakeId(id).ToString(System.Globalization.CultureInfo.InvariantCulture), xLabel);
-            opts.XLabel = FrameCallbacks.AxisLabelPointer;
-            opts.XLabelUser = user;
-        }
-        if (valueLabel is not null)
-        {
-            nint user = FrameCallbacks.Rent("dot-chart-v:" + MakeId(id).ToString(System.Globalization.CultureInfo.InvariantCulture), valueLabel);
-            opts.ValueLabel = FrameCallbacks.AxisLabelPointer;
-            opts.ValueLabelUser = user;
-        }
+        o.BindCallbacks(FrameState, ref opts);
         var result = Native.DotChart(Handle, Utf8.Get(id), (nint)native, series.Length, samples, in opts);
         WidgetRecorder.Note(Handle, "DotChart", id);
         return DotChartResult.FromNative(result);
     }
 
-    /// <summary>
-    /// An event track: moments on a time axis, as dots you drag along it. A click on an empty spot
-    /// adds an event there and a double-click on one removes it. You own the array: the track keeps
-    /// it sorted, edits it in place and never grows it past its length.
-    /// </summary>
-    /// <param name="id">The widget id, which is also the identity of its drag state.</param>
-    /// <param name="times">The event times, in seconds; sorted and edited in place, and copied back every frame.</param>
-    /// <param name="count">How many of <paramref name="times"/> hold events; the track reports the new count here.</param>
-    /// <param name="min">The left end of the axis, in seconds.</param>
-    /// <param name="max">The right end of the axis, in seconds.</param>
-    /// <param name="selected">The selected event, or -1; the track's click and keys move it.</param>
-    /// <param name="o">Axis and interaction options.</param>
-    /// <param name="label">Writes the axis labels and the selected event's time, in place of <see cref="EventTrackOpts.Format"/>; the spacing still comes from the axis units.</param>
-    public EventTrackResult EventTrack(UiText id, scoped Span<double> times, ref int count, double min, double max,
-        ref int selected, EventTrackOpts o = default, Func<double, string?>? label = null)
-    {
-        var __times = Utf8.AllocFrame<double>(times.Length);
-        times.CopyTo(new Span<double>(__times, times.Length));
-        int __timesCount = count;
-        int __selected = (int)(selected);
-        var __opts = o.ToNative((nint)(&__selected));
-        if (label is not null)
-        {
-            nint user = FrameCallbacks.Rent("event-track:" + MakeId(id).ToString(System.Globalization.CultureInfo.InvariantCulture), label);
-            __opts.Label = FrameCallbacks.AxisLabelPointer;
-            __opts.LabelUser = user;
-        }
-        var __result = Native.EventTrack(Handle, Utf8.Get(id), (nint)__times, ref __timesCount, (int)(times.Length), min, max, in __opts);
-
-        // A primitive in-place array comes back every frame: native sorts and clamps it before it
-        // draws, and the selected index refers to its order.
-        new Span<double>(__times, Math.Min(__timesCount, times.Length)).CopyTo(times);
-        count = __timesCount;
-        selected = __selected;
-        WidgetRecorder.NoteValue(Handle, "EventTrack", id, (double)selected);
-        return EventTrackResult.FromNative(__result);
-    }
 }

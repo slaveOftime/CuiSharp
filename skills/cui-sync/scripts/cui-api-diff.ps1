@@ -21,6 +21,7 @@ param(
     [string] $From,
     [string] $To,
     [switch] $Notes,
+    [switch] $Commits,
     [string] $Submodule
 )
 
@@ -63,10 +64,13 @@ function Read-Api([string] $Revision) {
     }
     # Comments may contain example calls and preprocessing contains function-like macros.
     $code = [regex]::Replace($text, '(?s)/\*.*?\*/|//[^\r\n]*', ' ')
-    $code = [regex]::Replace($code, '(?m)^\s*#[^\r\n]*(?:\\\r?\n[^\r\n]*)*', '')
+    $code = [regex]::Replace($code, '(?m)^[ \t]*#(?:\\\r?\n|[^\r\n])*', '')
     $functions = [System.Collections.Generic.SortedDictionary[string,string]]::new([StringComparer]::Ordinal)
     foreach ($match in [regex]::Matches($code, '\bCUI_API\s+[^;{}]*?\b(cui_\w+)\s*\)?\s*\([^;{}]*\)\s*;')) {
-        $functions[$match.Groups[1].Value] = [regex]::Replace($match.Value, '\s+', ' ').Trim()
+        $name = $match.Groups[1].Value
+        $declaration = [regex]::Replace($match.Value, "\(\s*$name\s*\)(?=\s*\()", $name)
+        # Normalize spacing without merging C tokens (unsigned long is not unsignedlong).
+        $functions[$name] = [regex]::Matches($declaration, '\w+|[^\s\w]') -join ' '
     }
     $structs = [System.Collections.Generic.SortedSet[string]]::new([StringComparer]::Ordinal)
     foreach ($match in [regex]::Matches($code, '\btypedef\s+struct\s+(cui_\w+)')) { [void]$structs.Add($match.Groups[1].Value) }
@@ -74,8 +78,9 @@ function Read-Api([string] $Revision) {
 }
 
 $range = "$From..$To"
-Write-Host "CUI $range" -ForegroundColor Cyan
-(Invoke-Git @('log', '--oneline', $range)) | ForEach-Object { Write-Host "  $_" }
+$count = Invoke-Git @('rev-list', '--count', $range)
+Write-Host "CUI $range ($count commits on the target side)" -ForegroundColor Cyan
+if ($Commits) { (Invoke-Git @('log', '--oneline', $range)) | ForEach-Object { Write-Host "  $_" } }
 Write-Host ''
 $before = Read-Api $From
 $after = Read-Api $To

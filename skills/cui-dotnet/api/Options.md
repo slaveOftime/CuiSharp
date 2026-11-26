@@ -534,6 +534,8 @@ C `cui_dot_chart_opts`.
 - `NoAxis`: bool (default `(byte)(NoAxis ? 1 : 0)`)
 - `NoReadout`: bool (default `(byte)(NoReadout ? 1 : 0)`)
 - `Annotations`: ChartAnnotation[]? (default `ChartAnnotation.ToFrameArray(Annotations)`)
+- `XLabel`: Func<double, string?> (optional; invoked during paint)
+- `ValueLabel`: Func<double, string?> (optional; invoked during paint)
 
 ## `DotDisplayOpts`
 
@@ -594,6 +596,7 @@ C `cui_event_track_opts`.
 - `NoAdd`: bool (default `(byte)(NoAdd ? 1 : 0)`)
 - `NoRemove`: bool (default `(byte)(NoRemove ? 1 : 0)`)
 - `NoAxis`: bool (default `(byte)(NoAxis ? 1 : 0)`)
+- `Label`: Func<double, string?> (optional; invoked during paint)
 
 ## `ExpandableCardOpts`
 

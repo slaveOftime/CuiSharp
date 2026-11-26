@@ -199,6 +199,7 @@
 - `ui.ResponseStatus(int status, double seconds, double bytes)` → `void`  ([HTTP request bar](api/HttpRequestBar.md))
 - `ui.HexViewGoto(UiText id, ulong offset)` → `void` — Go to offset: on the view's next frame its cursor moves to offset, that byte becomes the selection and it scrolls into view (to the middle when it was out of sight). Wire a "Go to" field to it; it is safe to call every frame.  ([Hex viewer](api/HexViewer.md))
 - `ui.DotDisplay(UiText text, DotDisplayOpts o = default)` → `void` — Dot-matrix display: text drawn with a 5 by 7 dot font, for clocks, counters and status lines. Printable ASCII, the degree sign and the middle dot have glyphs; anything else is a box. Unlit dots show dimly unless `no_dim` is set. In a box narrower than the text, the dots shrink to fit, or with `marquee` the text scrolls.  ([Instruments: dot-matrix chart, event track, readout, dot-matrix display](api/Instruments.md))
+- `ui.EventTrack(UiText id, Span<double> times, ref int count, double min, double max, ref int selected, EventTrackOpts o = default)` → `EventTrackResult` — Event track: moments on a time axis, as dots you drag along it. A click on an empty spot adds an event there and a double-click on one removes it. You own the array: the track keeps it sorted, edits it in place and never grows it past `capacity`.  ([Instruments: dot-matrix chart, event track, readout, dot-matrix display](api/Instruments.md))
 - `ui.FormatBar(UiText id, ref TextFormat format, FormatBarOpts o = default)` → `FormatEvents` — Returns CUI_FORMAT_* flags.  ([Instruments: dot-matrix chart, event track, readout, dot-matrix display](api/Instruments.md))
 - `ui.LiveCursors(UiText id, ReadOnlySpan<LiveUser> users, ref NodeView nodeview, LiveCursorsOpts o = default)` → `void`  ([Instruments: dot-matrix chart, event track, readout, dot-matrix display](api/Instruments.md))
 - `ui.PresencePill(UiText id, ReadOnlySpan<LiveUser> users, PresencePillOpts o = default)` → `void` — Presence pill: who is here, as overlapping avatars in their colors. Whoever is speaking gets a ring, and the pill shows moving level bars and their name.  ([Instruments: dot-matrix chart, event track, readout, dot-matrix display](api/Instruments.md))
@@ -408,7 +409,6 @@ Hand-written, because the wrapper needs state a C call cannot carry; they are pa
 - `ui.DrawShadow(...)` — hand-written in `Ui/Ui.Draw.cs`
 - `ui.DrawText(...)` — hand-written in `Ui/Ui.Draw.cs`
 - `ui.DroppedFile(...)` — hand-written in `Ui/Ui.Overlays.cs`
-- `ui.EventTrack(...)` — hand-written in `Ui/Ui.Instruments.cs`
 - `ui.FilterBar(...)` — hand-written in `Ui/Ui.BoolGroups.cs`
 - `ui.GetEnumerator(...)` — hand-written in `Ui/Ui.IdScopes.cs`
 - `ui.GetHeading(...)` — hand-written in `Ui/Ui.Style.cs`

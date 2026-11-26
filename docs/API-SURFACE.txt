@@ -344,6 +344,7 @@ struct CuiSharp.CarouselOpts
   field Single Gap
   field Single Height
 struct CuiSharp.ChartAnnotation
+  ctor(AnnotationKind, Double, Double, String, String, Boolean)
   ctor(AnnotationKind, Double, Double, String, String, Boolean, Color)
   field AnnotationKind Kind
   field Boolean Accent
@@ -1150,6 +1151,8 @@ struct CuiSharp.DotChartOpts
   field Double XMax
   field Double XMin
   field Double XStep
+  field Func<Double, String> ValueLabel
+  field Func<Double, String> XLabel
   field Single Height
   field Single Max
   field Single Min
@@ -1234,6 +1237,7 @@ struct CuiSharp.EventTrackOpts
   field Boolean NoRemove
   field Double LabelStep
   field Double Step
+  field Func<Double, String> Label
   field Size Width
   field String Format
 struct CuiSharp.EventTrackResult
@@ -2022,6 +2026,7 @@ struct CuiSharp.InspectorOpts
   field Size Width
 class CuiSharp.InstrumentsDotMatrixChartEventTrackReadoutDotMatrixDisplayUiExtensions
   static Boolean ResultCard(Ui, UiText, UInt64, UiText, ResultCardOpts)
+  static EventTrackResult EventTrack(Ui, UiText, Span<Double>, ref Int32, Double, Double, ref Int32, EventTrackOpts)
   static FormatEvents FormatBar(Ui, UiText, ref TextFormat, FormatBarOpts)
   static Void DotDisplay(Ui, UiText, DotDisplayOpts)
   static Void LiveCursors(Ui, UiText, ReadOnlySpan<LiveUser>, ref NodeView, LiveCursorsOpts)
@@ -2030,6 +2035,7 @@ class CuiSharp.InstrumentsDotMatrixChartEventTrackReadoutDotMatrixDisplayUiExten
   static Void SelectionRing(Ui, Color, SelectionRingOpts)
 class CuiSharp.InstrumentsDotMatrixChartEventTrackReadoutDotMatrixDisplayUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
   Boolean ResultCard(UiText, UInt64, UiText, ResultCardOpts)
+  EventTrackResult EventTrack(UiText, Span<Double>, ref Int32, Double, Double, ref Int32, EventTrackOpts)
   FormatEvents FormatBar(UiText, ref TextFormat, FormatBarOpts)
   Void DotDisplay(UiText, DotDisplayOpts)
   Void LiveCursors(UiText, ReadOnlySpan<LiveUser>, ref NodeView, LiveCursorsOpts)
@@ -2267,7 +2273,7 @@ class CuiSharp.Interop.Native
   static Int32 Toc(IntPtr, IntPtr, IntPtr, Int32)
   static Int32 TouchCount(IntPtr)
   static Int32 Tour(IntPtr, IntPtr, IntPtr, Int32, ref Int32, in NativeTourOpts)
-  static Int32 TreeMove(IntPtr, Int32, Int32, in Int32, Int32, Int32, Int32)
+  static Int32 TreeMove(IntPtr, Int32, Int32, IntPtr, Int32, Int32, Int32)
   static Int32 TreeSort(IntPtr, Int32, Int32, IntPtr, IntPtr)
   static Int32 TreeTableDepth(IntPtr)
   static Int32 TreeTableRow(IntPtr)
@@ -6812,6 +6818,7 @@ struct CuiSharp.TraceOpts
   field TraceLink[] Links
   field TraceMarker[] Markers
 struct CuiSharp.TraceResult
+  ctor(Boolean, Boolean, Int32)
   ctor(Boolean, Boolean, Int32, Int32)
   field Boolean SelectionChanged
   field Boolean ViewChanged
@@ -6912,11 +6919,15 @@ class CuiSharp.TreeTableRow : MulticastDelegate
   Void Invoke(Ui, Int32, Int32)
   ctor(Object, IntPtr)
 class CuiSharp.TreeTableUiExtensions
-  static TreeTableEvents TreeTable(Ui, UiText, ReadOnlySpan<GridColumn>, TreeNode[], TreeTableRow, TreeTableOpts, Func<Int32, String>, Func<Int32, Int32, Boolean>)
-  static TreeTableEvents TreeTable(Ui, UiText, ReadOnlySpan<GridColumn>, TreeNode[], TreeTableRow, ref TableSort, ref Int32, TreeTableOpts, Func<Int32, String>, Func<Int32, Int32, Boolean>)
+  static TreeTableEvents TreeTable(Ui, UiText, ReadOnlySpan<GridColumn>, TreeNode[], TreeTableRow, TreeTableOpts, Func<Int32, String>)
+  static TreeTableEvents TreeTable(Ui, UiText, ReadOnlySpan<GridColumn>, TreeNode[], TreeTableRow, TreeTableOpts, Func<Int32, String>, Func<Int32, TreeDrop, Boolean>)
+  static TreeTableEvents TreeTable(Ui, UiText, ReadOnlySpan<GridColumn>, TreeNode[], TreeTableRow, ref TableSort, ref Int32, TreeTableOpts, Func<Int32, String>)
+  static TreeTableEvents TreeTable(Ui, UiText, ReadOnlySpan<GridColumn>, TreeNode[], TreeTableRow, ref TableSort, ref Int32, TreeTableOpts, Func<Int32, String>, Func<Int32, TreeDrop, Boolean>)
 class CuiSharp.TreeTableUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
-  TreeTableEvents TreeTable(UiText, ReadOnlySpan<GridColumn>, TreeNode[], TreeTableRow, TreeTableOpts, Func<Int32, String>, Func<Int32, Int32, Boolean>)
-  TreeTableEvents TreeTable(UiText, ReadOnlySpan<GridColumn>, TreeNode[], TreeTableRow, ref TableSort, ref Int32, TreeTableOpts, Func<Int32, String>, Func<Int32, Int32, Boolean>)
+  TreeTableEvents TreeTable(UiText, ReadOnlySpan<GridColumn>, TreeNode[], TreeTableRow, TreeTableOpts, Func<Int32, String>)
+  TreeTableEvents TreeTable(UiText, ReadOnlySpan<GridColumn>, TreeNode[], TreeTableRow, TreeTableOpts, Func<Int32, String>, Func<Int32, TreeDrop, Boolean>)
+  TreeTableEvents TreeTable(UiText, ReadOnlySpan<GridColumn>, TreeNode[], TreeTableRow, ref TableSort, ref Int32, TreeTableOpts, Func<Int32, String>)
+  TreeTableEvents TreeTable(UiText, ReadOnlySpan<GridColumn>, TreeNode[], TreeTableRow, ref TableSort, ref Int32, TreeTableOpts, Func<Int32, String>, Func<Int32, TreeDrop, Boolean>)
 class CuiSharp.TreeTableUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4+<M>$D152016828D0F2CB0A8B78500F4F70D3
 struct CuiSharp.TreemapOpts
   field Single Height
@@ -6945,8 +6956,7 @@ struct CuiSharp.Ui
   Color TokenColor(Token)
   DisabledScope Disabled(Boolean)
   DisabledScope Disabled(Boolean, DrawFn)
-  DotChartResult DotChart(UiText, ReadOnlySpan<DotSeries>, Int32, DotChartOpts, Func<Double, String>, Func<Double, String>)
-  EventTrackResult EventTrack(UiText, Span<Double>, ref Int32, Double, Double, ref Int32, EventTrackOpts, Func<Double, String>)
+  DotChartResult DotChart(UiText, ReadOnlySpan<DotSeries>, Int32, DotChartOpts)
   IdScope Id(Int32)
   IdScope Id(UiText)
   InputResult Input(UiText, ref String, InputOpts)

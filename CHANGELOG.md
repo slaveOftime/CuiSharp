@@ -8,9 +8,9 @@ different things.
 
 ### Added
 
-- **CUI is now at v1.5.0 (`f9597a3`), 99 commits past `6e6b353`**: 41 new functions, 5 new structs
-  and the Direct3D 12/Vulkan/Metal section; every function has a decided status in
-  [bindings/coverage.txt](bindings/coverage.txt) — 573 C functions, 0 pending.
+- **CUI is now at v1.5.0 (`f9597a3`), 99 commits past `6e6b353`**: 41 new functions, five new
+  struct definitions plus an opaque GPU handle, and the Direct3D 12/Vulkan/Metal section.
+  [bindings/coverage.txt](bindings/coverage.txt) accounts for 573 non-variadic functions with 0 pending.
 - **Tree tables drag and drop** (`TreeTableOpts.Draggable`): rows drag to move nodes, with a drop
   line or outline, edge scrolling and Esc to cancel; the table reports
   `TreeTableEvents.Dropped`/`DropTarget`/`DropWhere` and `CuiTree.Move(nodes, root, move, target,
@@ -21,9 +21,9 @@ different things.
 - **Trace viewer links**: `TraceOpts.Links` draws dependencies between spans as curves with an
   arrowhead; `TraceResult.HoveredLink` says which one is under the pointer, and `ui.TraceSpanRect`
   says where a span was drawn, for overlays.
-- **Axis-label callbacks** on the dot chart (`xLabel`, `valueLabel`) and the event track (`label`):
-  a `Func<double, string?>` rented through the frame-callback bridge, for month names, dates and a
-  decimal comma that a format string cannot write. Without one, the format strings decide as before.
+- **Axis-label callbacks** in `DotChartOpts.XLabel` / `ValueLabel` and `EventTrackOpts.Label`:
+  a `Func<double, string?>` for month names, dates, or a decimal comma, held through paint and
+  written as bounded UTF-8. Without a callback the format strings still decide.
 - **`ui.ScrollReveal(scroll, row)`** keeps a row of a scroll area in view with the least movement.
 - **`ui.UpdateImage(tex, x, y, w, h, rgba, stride)`** updates a rectangle of an existing RGBA8
   texture in place, for live video and dynamic bitmaps; the wrapper validates the stride and the
@@ -32,15 +32,15 @@ different things.
 
 ### Changed
 
-- **`ChartAnnotation` and `TraceResult` constructors gained fields** (`Color`, `HoveredLink`);
-  positional callers update, named and object-initializer callers do not.
-- **The excluded count grew from 6 to 41** because upstream moved its new touch input, input hook,
-  cursor shaping, focus scopes, window-state and custom-canvas calls into sections this binding has
-  excluded since 0.1.0, each with a written reason; what that leaves out is tracked in PLAN.md.
-- **Budgets move with the code, with the cause written down**: the gallery's AOT ceiling stays
-  3.20 MB at 3 208 704 B measured, the frame ceiling stays 1.00 ms at 0.92 ms measured, and the
-  CHART app shape's ceiling moves 1 235 000 → 1 240 000 B — CUI 1.5's chart annotation color,
-  x-range units and dither shading are code the chart shape now carries.
+- **Existing chart, event-track and tree-table signatures remain available.** `ChartAnnotation`
+  and `TraceResult` have new fields; their previous constructor overloads still work.
+- **The excluded count grew from 6 to 41.** New touch, input-hook, cursor, focus-scope, window-state
+  and custom-canvas calls fall under existing section exclusions. The optional GPU renderer is
+  newly excluded; these exclusions do not mean CuiSharp ships managed support for those features.
+- **Release measurements:** gallery AOT 3 211 264 B under the existing 3.20 MiB ceiling; chart
+  harness 0.92 ms and 0 B/frame under the existing 1.00 ms ceiling. The CHART app shape measured
+  1 238 016 B and its ceiling moves from 1 235 000 to 1 240 000 B. The measurements do not isolate
+  the cost of individual upstream features.
 - **One frame owner per background operation.** Start `Mutation` or `Progressive<T>` during
   its window or surface's draw (a click or `OnInitialized`), not from a constructor. Other
   surfaces no longer consume its result or redraw demand. Cancellation and replacement detach

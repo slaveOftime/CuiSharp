@@ -29,6 +29,7 @@ internal sealed class UiFrameState
     internal bool IsLive => WantsFrames || Work is { NextFrameSeconds: >= 0f };
 
     internal readonly List<PaintFn> Painters = new();
+    internal FrameCallbacks.WidgetSlots? Callbacks;
 
     // cui_reorder_begin keeps the order array until reorder_end, past the
     // P/Invoke pin. The frame arena copy is stable for the whole frame, and the
@@ -134,6 +135,8 @@ internal sealed class UiFrameState
         LastFrameReady = false;
         SystemFontFallbacks?.ReleaseAfterContextDestroyed();
         SystemFontFallbacks = null;
+        Callbacks?.Release();
+        Callbacks = null;
         FreeRetired();
     }
 
@@ -141,6 +144,7 @@ internal sealed class UiFrameState
     {
         FrameReady = false;
         Painters.Clear();
+        Callbacks?.Reset();
         ReorderOrder = null;
         unsafe { ReorderStorage = null; }
         Text.BeginFrame();

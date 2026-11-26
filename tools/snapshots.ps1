@@ -4,10 +4,8 @@
 
 .DESCRIPTION
     The images in docs/images/gallery are not drawn by a mock-up: this script runs the gallery
-    headless, clicks each page in its navigation and saves the frame the app drew. Regenerate
-    them after changing a page, and the README cannot go stale.
-
-    One process draws the whole set, so a run is a couple of seconds.
+    headless with the requested page selected and checks its heading before capturing.
+    It builds once and stages the PNGs; a failed page leaves existing images untouched.
 
 .EXAMPLE
     pwsh tools/snapshots.ps1
@@ -24,7 +22,8 @@ param(
     # Appended to each file name, e.g. -dark for 01-overview-dark.png.
     [string] $Suffix = '',
 
-    # Frames drawn after a click, so a page that animates its entrance has settled.
+    # Frames drawn before capture, so a page that animates its entrance has settled.
+    [ValidateRange(1, 600)]
     [int] $Settle = 6,
 
     # Where the PNGs go: relative to the repository root, or absolute.
@@ -63,50 +62,30 @@ foreach ($project in @(
     & dotnet build $project -c Release --nologo -v quiet
     if ($LASTEXITCODE -ne 0) { throw "$project does not build" }
 }
-$cui = Join-Path $root 'src/CuiSharp.Tools/bin/Release/net10.0/CuiSharp.Tools.exe'
-
-# One process for the whole set: one startup, then a click and a save per page.
-$script = [System.Text.StringBuilder]::new()
-$written = [System.Collections.Generic.List[string]]::new()
-foreach ($page in $chosen) {
-    $path = Join-Path $out ('{0}-{1}{2}.png' -f $page.Number, $page.Key, $Suffix)
-    if (Test-Path $path) { Remove-Item $path -Force }
-    $written.Add($path)
-
-    # The nav list scrolls, and a click on an item below its fold hits whatever is drawn
-    # there. Park the scroll at the top first, and wheel down for the items that live there.
-    [void]$script.AppendLine('wheel 120 400 400')
-    [void]$script.AppendLine('frame 25')
-    if ($page.Scrolled) {
-        [void]$script.AppendLine('wheel 120 400 -40')
-        [void]$script.AppendLine('frame 25')
-    }
-
-    # Click first, then save: the frame a click produces is the page it opened.
-    [void]$script.AppendLine("click NavItem `"$($page.Label)`"")
-    [void]$script.AppendLine("frame $Settle")
-    # Prove the click landed where it was aimed: the shell draws the page's name as the
-    # heading, and a find that misses fails the session, not just the picture.
-    [void]$script.AppendLine("find Heading `"$($page.Heading)`"")
-    # Off the navigation, or the picture is of a hover.
-    [void]$script.AppendLine('move 5 5')
-    [void]$script.AppendLine('frame 2')
-    [void]$script.AppendLine("png $path")
-}
-[void]$script.AppendLine('quit')
+$cui = Join-Path $root 'src/CuiSharp.Tools/bin/Release/net10.0/CuiSharp.Tools.dll'
 
 Write-Host "==> drawing $($chosen.Count) page(s), $Theme" -ForegroundColor Cyan
-$env:CUI_THEME = $Theme
+$stage = Join-Path $out ('.snapshots-' + [guid]::NewGuid().ToString('N'))
+New-Item -ItemType Directory $stage | Out-Null
 try {
-    $script.ToString() | & $cui session --no-build --project $gallery | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw 'dotnet cui failed' }
+    $total = 0L
+    foreach ($page in $chosen) {
+        $index = [int]$page.Number - 1
+        $path = Join-Path $stage ('{0}-{1}{2}.png' -f $page.Number, $page.Key, $Suffix)
+        $commands = @("pulse $Settle", "find Heading `"$($page.Heading)`"", "png $path", 'faults', 'quit')
+        $output = @($commands | dotnet $cui session --no-build --project $gallery --env "CUI_THEME=$Theme" -- "--page=$index")
+        if ($LASTEXITCODE -ne 0) { throw "dotnet cui failed for $($page.Key) ($Theme)" }
+        if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "no PNG for $($page.Key) ($Theme)" }
+        # `faults` and `quit` are silent on success; anything after the PNG response is a fault.
+        $pngAnswer = [array]::FindIndex([string[]]$output, [Predicate[string]]{ param($line) $line.Trim() -eq $path })
+        if ($pngAnswer -lt 0) { throw "no PNG reply for $($page.Key) ($Theme)" }
+        $faults = @($output | Select-Object -Skip ($pngAnswer + 1) | Where-Object { $_.Trim() })
+        if ($faults.Count) { throw "$($page.Key) reported faults: $($faults -join '; ')" }
+        $total += (Get-Item -LiteralPath $path).Length
+    }
+    Get-ChildItem -LiteralPath $stage -Filter '*.png' | Move-Item -Destination $out -Force
+    Write-Host ('    wrote {0} PNG(s), {1:N0} KB' -f $chosen.Count, ($total / 1KB)) -ForegroundColor Green
 }
 finally {
-    Remove-Item Env:CUI_THEME -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $stage -Recurse -Force
 }
-
-$missing = @($written | Where-Object { -not (Test-Path $_) })
-if ($missing.Count -gt 0) { throw "the app wrote no PNG for: $($missing -join ', ')" }
-
-$total = ($written | ForEach-Object { (Get-Item $_).Length } | Measure-Object -Sum).Sum
-Write-Host ('    wrote {0} PNG(s), {1:N0} KB' -f $written.Count, ($total / 1KB)) -ForegroundColor Green

@@ -67,11 +67,10 @@ internal sealed partial class GalleryApp
         new("deploy", 0.5, Tone.Info),
     ];
 
-    /// <summary>Dependencies between spans: the request waited on the query, the handler on the encode.</summary>
     private static readonly TraceLink[] Links =
     [
-        new(3, 0),                      // query -> request
-        new(4, 5, Tone.Danger, 1.5f, Dashed: true),   // render waits on the worker's encode
+        new(1, 3),                               // router -> query
+        new(5, 4, Tone.Violet, 1.5f, Dashed: true), // worker encode -> render
     ];
 
     private static readonly NetRequest[] Requests =

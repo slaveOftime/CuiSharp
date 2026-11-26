@@ -138,16 +138,18 @@ public class ImageApiTests
         using var surface = CuiSurface.Create(64, 64);
         var pixels = new byte[surface.PixelWidth * surface.PixelHeight * 4];
 
-        // Two rows of 8 pixels at the packed stride of 32 need 32 + 32 = 64 bytes and one
-        // more; the wrapper refuses less rather than letting native read past the span, and a
-        // stride below w * 4 cannot address the rows it claims.
+        // Two rows of 8 pixels need 64 packed bytes. With padding, only the last row's
+        // actual pixels must fit; a stride below width * 4 cannot address the rows.
         Assert.Throws<ArgumentException>(() => surface.Draw(
             ui => ui.UpdateImage(7, 0, 0, 8, 2, new byte[63]), pixels));
         Assert.Throws<ArgumentException>(() => surface.Draw(
             ui => ui.UpdateImage(7, 0, 0, 8, 2, new byte[96], stride: 31), pixels));
 
-        // 64 bytes is exactly two packed rows, and a stride of 32 is packed: both are valid.
-        surface.Draw(ui => ui.UpdateImage(7, 0, 0, 8, 2, new byte[64]), pixels);
-        surface.Draw(ui => ui.UpdateImage(7, 0, 0, 8, 2, new byte[96], stride: 32), pixels);
+        Assert.Throws<ArgumentException>(() => surface.Draw(
+            ui => ui.UpdateImage(7, 0, 0, 8, 2, new byte[95], stride: 64), pixels));
+        Assert.Throws<ArgumentOutOfRangeException>(() => surface.Draw(
+            ui => ui.UpdateImage(7, 0, 0, 1 << 30, 1, []), pixels));
+        Assert.Throws<ArgumentOutOfRangeException>(() => surface.Draw(
+            ui => ui.UpdateImage(7, int.MaxValue, 0, 1, 1, new byte[4]), pixels));
     }
 }

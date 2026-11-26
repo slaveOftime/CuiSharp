@@ -43212,7 +43212,7 @@
         {
           "CName": "move",
           "CsName": "move",
-          "CsType": "in int",
+          "CsType": "nint",
           "Type": {
             "Spelling": "const int *",
             "Kind": "Pointer",
