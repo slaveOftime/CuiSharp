@@ -40,7 +40,15 @@ different things.
 
 - **Seventeen fewer exclusions.** Every function in `cui_app.h`, the custom-canvas input and wheel
   surface, `cui_set_cursor`, and `cui_signature_points` are bound now: 195 option structs, 113
-  records, 305 generated wrappers, 201 manual, 23 excluded, 0 pending.
+  records, 305 generated wrappers, 201 manual, 24 excluded, 0 pending.
+- **CUI is now pinned at `6864776`, nine commits past the `v1.5.0` tag** (upstream has tagged nothing
+  newer). The one new function, `cui_title_bar_hit_test`, stays excluded and the rest of that change
+  is bound as types only: `cui_app_desc.custom_title_bar`, the `window_frame` and `window_button`
+  platform hooks, and the hit test are one feature whose component — `cui_title_bar`, which draws the
+  bar — upstream ships in its own change. Setting the option before then would give a window with no
+  system title bar, no caption to drag it by and no window buttons, so the option and hooks stay
+  unexposed and [PLAN.md](docs/PLAN.md) says what binds with it. The build carries upstream's Win32
+  fix that keeps platform hooks when `cui_app_create` merges its own.
 
 ## [0.5.0] — 2026-11-26
 

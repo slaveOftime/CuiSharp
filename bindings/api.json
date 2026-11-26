@@ -375,9 +375,41 @@
       "Doc": ""
     },
     {
+      "CName": "cui_window_frame",
+      "CsName": "NativeWindowFrame",
+      "Size": 2,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "maximized",
+          "CsName": "Maximized",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "resizable",
+          "CsName": "Resizable",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 1,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "false: no maximize button (a fixed-size window)"
+        }
+      ],
+      "Doc": "The state of a window that draws its own title bar with cui_title_bar, as a platform layer reports it through cui_platform_iface.window_frame."
+    },
+    {
       "CName": "cui_platform_iface",
       "CsName": "NativePlatformIface",
-      "Size": 48,
+      "Size": 64,
       "Helpers": [],
       "Fields": [
         {
@@ -474,6 +506,38 @@
             }
           },
           "Doc": "Optional: draws one emoji (UTF-8) into a px by px RGBA buffer (straight alpha), for when no emoji font is loaded; the browser build uses the browser's emoji."
+        },
+        {
+          "CName": "window_frame",
+          "CsName": "WindowFrame",
+          "CsType": "nint",
+          "CType": "_Bool (*)(void *, cui_window_frame *)",
+          "Offset": 48,
+          "Type": {
+            "Spelling": "_Bool (*)(void *, cui_window_frame *)",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "_Bool (void *, cui_window_frame *)",
+              "Kind": "FunctionProto"
+            }
+          },
+          "Doc": "Optional, for a window without the system's title bar, whose content draws one with cui_title_bar: writes the window's state and returns true. Without the hook, or when it returns false, the system draws the title bar and cui_title_bar has no window buttons. The platform moves the window over what cui_title_bar_hit_test calls the caption."
+        },
+        {
+          "CName": "window_button",
+          "CsName": "WindowButton",
+          "CsType": "nint",
+          "CType": "void (*)(void *, cui_window_button)",
+          "Offset": 56,
+          "Type": {
+            "Spelling": "void (*)(void *, cui_window_button)",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "void (void *, cui_window_button)",
+              "Kind": "FunctionProto"
+            }
+          },
+          "Doc": "Optional: carries out a click on one of cui_title_bar's window buttons."
         }
       ],
       "Doc": "Platform services. The built-in backends set these."
@@ -28854,7 +28918,7 @@
     {
       "CName": "cui_app_desc",
       "CsName": "NativeAppDesc",
-      "Size": 64,
+      "Size": 72,
       "Helpers": [],
       "Fields": [
         {
@@ -29050,6 +29114,18 @@
             }
           },
           "Doc": "Where to open, for an app that reopens where it was closed: the size and place from cui_app_placement, and whether the window was maximized. Its size replaces width and height. A place that is on no screen is left to the system, and a fixed-size window is not maximized. Copied when the window is created. Default: none, the system picks the place."
+        },
+        {
+          "CName": "custom_title_bar",
+          "CsName": "CustomTitleBar",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 64,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "The app draws the title bar with cui_title_bar: the system's title bar goes, and the window keeps its border, shadow and resizing. On Windows; elsewhere the system's title bar stays and cui_title_bar is a bar without window buttons. Default: the system's title bar."
         }
       ],
       "Doc": ""
@@ -30096,6 +30172,62 @@
         }
       ],
       "Doc": "Optional application-owned input capture, before legacy aggregation. Runs synchronously on the UI thread. Event and text storage are borrowed only during the callback. true consumes the event; false preserves the existing widget behavior. No UI construction or input injection is allowed inside the callback. Copy retained text. Unregister before freeing user. To replay captured input, unregister, call the existing cui_input_* entry points, then register again. Legacy replay retains existing text-size limits. The caller owns queue limits and error policy. Key events preserve each call, including repeated down and modifier-only CUI_KEY_NONE events. Touch events (cui_input_touch and cui_input_touch_move) also pass through this interface as CUI_INPUT_TOUCH and CUI_INPUT_TOUCH_MOVE. File drops are not intercepted by this interface."
+    },
+    {
+      "CName": "cui_window_button",
+      "CsName": "WindowButton",
+      "Values": [
+        {
+          "CName": "CUI_WINDOW_BUTTON_MINIMIZE",
+          "CsName": "Minimize",
+          "Value": "0",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_WINDOW_BUTTON_MAXIMIZE",
+          "CsName": "Maximize",
+          "Value": "1",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_WINDOW_BUTTON_RESTORE",
+          "CsName": "Restore",
+          "Value": "2",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_WINDOW_BUTTON_CLOSE",
+          "CsName": "Close",
+          "Value": "3",
+          "Doc": ""
+        }
+      ],
+      "Doc": "The window buttons of cui_title_bar, as cui_platform_iface.window_button receives them."
+    },
+    {
+      "CName": "cui_title_bar_hit",
+      "CsName": "TitleBarHit",
+      "Values": [
+        {
+          "CName": "CUI_TITLE_BAR_NONE",
+          "CsName": "None",
+          "Value": "0",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_TITLE_BAR_CAPTION",
+          "CsName": "Caption",
+          "Value": "1",
+          "Doc": ""
+        },
+        {
+          "CName": "CUI_TITLE_BAR_MAXIMIZE",
+          "CsName": "Maximize",
+          "Value": "2",
+          "Doc": ""
+        }
+      ],
+      "Doc": "For a platform layer whose window_frame hook returns true: what the last frame's cui_title_bar has at x, y (window points). CUI_TITLE_BAR_CAPTION moves the window: the bar's empty space and its title. CUI_TITLE_BAR_MAXIMIZE is the maximize button, where Windows 11 offers its snap layouts. CUI_TITLE_BAR_NONE is everything else: the controls, a popup or a dialog over the bar, any point while a control is being dragged, and every point of a frame without a title bar."
     },
     {
       "CName": "cui_size_kind",
@@ -33383,6 +33515,50 @@
       },
       "Module": "Input (called by the platform layer)",
       "Doc": ""
+    },
+    {
+      "CName": "cui_title_bar_hit_test",
+      "CsName": "TitleBarHitTest",
+      "CsReturn": "TitleBarHit",
+      "Params": [
+        {
+          "CName": "ui",
+          "CsName": "ui",
+          "CsType": "nint",
+          "Type": {
+            "Spelling": "cui_ctx *",
+            "Kind": "Pointer",
+            "Element": {
+              "Spelling": "cui_ctx",
+              "Kind": "Record"
+            }
+          }
+        },
+        {
+          "CName": "x",
+          "CsName": "x",
+          "CsType": "float",
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          }
+        },
+        {
+          "CName": "y",
+          "CsName": "y",
+          "CsType": "float",
+          "Type": {
+            "Spelling": "float",
+            "Kind": "Float"
+          }
+        }
+      ],
+      "ReturnType": {
+        "Spelling": "cui_title_bar_hit",
+        "Kind": "Enum"
+      },
+      "Module": "Input (called by the platform layer)",
+      "Doc": "In the core, not in a component file: the Win32 backend calls it from WM_NCHITTEST in every app, also in one that never draws cui_title_bar."
     },
     {
       "CName": "cui_set_cursor",

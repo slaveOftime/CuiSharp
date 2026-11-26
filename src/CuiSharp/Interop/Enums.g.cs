@@ -205,6 +205,23 @@ public enum InputEventKind
     TouchMove = 8,
 }
 
+/// <summary>The window buttons of cui_title_bar, as cui_platform_iface.window_button receives them.</summary>
+public enum WindowButton
+{
+    Minimize = 0,
+    Maximize = 1,
+    Restore = 2,
+    Close = 3,
+}
+
+/// <summary>For a platform layer whose window_frame hook returns true: what the last frame&apos;s cui_title_bar has at x, y (window points). CUI_TITLE_BAR_CAPTION moves the window: the bar&apos;s empty space and its title. CUI_TITLE_BAR_MAXIMIZE is the maximize button, where Windows 11 offers its snap layouts. CUI_TITLE_BAR_NONE is everything else: the controls, a popup or a dialog over the bar, any point while a control is being dragged, and every point of a frame without a title bar.</summary>
+public enum TitleBarHit
+{
+    None = 0,
+    Caption = 1,
+    Maximize = 2,
+}
+
 /// <summary>cui_size_kind</summary>
 public enum SizeKind
 {

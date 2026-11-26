@@ -172,6 +172,10 @@ public static unsafe partial class Native
     [LibraryImport("cui", EntryPoint = "cui_set_platform")]
     public static partial void SetPlatform(nint ui, in NativePlatformIface platform);
 
+    /// <summary>In the core, not in a component file: the Win32 backend calls it from WM_NCHITTEST in every app, also in one that never draws cui_title_bar.</summary>
+    [LibraryImport("cui", EntryPoint = "cui_title_bar_hit_test")]
+    public static partial TitleBarHit TitleBarHitTest(nint ui, float x, float y);
+
     /// <summary>Request a cursor during component submission or painting. The last request wins. At end of frame the platform hook receives it; the next frame starts with CUI_CURSOR_ARROW.</summary>
     [LibraryImport("cui", EntryPoint = "cui_set_cursor")]
     public static partial void SetCursor(nint ui, Cursor cursor);

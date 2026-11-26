@@ -35,10 +35,10 @@ on every pull request, every shape in the on-demand job.
 
 | | Value | Where it is enforced |
 |---|---|---|
-| Gallery frame, real-time chart harness, 1280x720, software raster | **0.92 ms** mean (p50 0.79, p95 1.21, p99 1.28) | budget 1.00 ms, `--fps 900` |
-| Build only (a GPU would rasterize) | 0.06 ms | same run |
+| Gallery frame, real-time chart harness, 1280x720, software raster | **0.97 ms** mean (p50 0.78, p95 1.23, p99 1.88) | budget 1.00 ms, `--fps 900` |
+| Build only (a GPU would rasterize) | 0.07 ms | same run |
 | Managed allocation per frame | **0 B** | `FrameLifecycleTests`, `NewComponentTests` |
-| Gallery AOT executable, win-x64 | **3 365 888 B** | budget 3.30 MiB |
+| Gallery AOT executable, win-x64 | **3 372 544 B** | budget 3.30 MiB |
 | A million virtual list rows | ~12 µs | `--scale` |
 | A million chart points, undecimated | 45.9 ms | why decimation exists |
 | A million chart points, decimated to 800 | 0.018 ms | same |
@@ -51,12 +51,18 @@ so one commit published twice measures 3 365 888 B with the call and 3 211 264 B
 ceiling moved from 3.20 to 3.30 MiB for that feature (+154 624 B, 4.8%); the gate has always used
 binary multipliers and labels the unit explicitly. CUI v1.5.0 and the gallery's new tree and trace
 behavior arrived together, so the cross-revision size difference does not isolate their individual
-costs. XML summaries are not linked code.
+costs. XML summaries are not linked code. The `6864776` pin moved the gallery to 3 372 544 B
+(+6 656 B) and every app shape by 3 072 B — `MIN` went from 1 182 720 to 1 185 792 B and `CHART` by
+the same bytes — so that increment is CUI's native title-bar code in the core, which every app
+links, not anything CuiSharp adds to a frame.
 
 The frame ceiling moved from 0.90 to 1.00 ms in the earlier post-1.4.0 sync. Alternating runs of
 an isolated `main` worktree (5fbab51, CUI 1.4.0) measured 0.82, 0.84 and 0.82 ms; that sync measured
 0.94 ms three times. This v1.5.0 run measured 0.92 ms with 0 B/frame. It passes the current budget,
-but it is not an isolated old/new comparison that establishes an improvement or its cause.
+but it is not an isolated old/new comparison that establishes an improvement or its cause. The
+`6864776` pin measured 0.97 ms mean (p50 0.78, p95 1.23, p99 1.88) with 0 B/frame on the same
+machine: inside the 1.00 ms budget, with a p99 that moved from 1.28 ms — recorded, not explained,
+because one run cannot separate a cost from the tail moving.
 
 Earlier, CUI 1.4 and its five instruments took the executable from 2 878 976 B to 2 918 400 B.
 At 0.4.2 it measured 2 954 752 B: the gallery carries its own `.ico` from 0.4.1, and the

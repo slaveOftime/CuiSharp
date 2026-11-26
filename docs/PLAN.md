@@ -26,6 +26,15 @@ in [ARCHITECTURE.md](ARCHITECTURE.md). Every item here passes the same gates as 
 
 `native/CUI` is pristine (D2). These are its work, not ours:
 
+- **A `cui_title_bar` component.** CUI 1.5's custom title bar is half shipped: `cui_app_desc.custom_title_bar`
+  removes the system's bar while keeping the border, shadow and resizing, `cui_platform_iface` takes
+  `window_frame` and `window_button` hooks, and `cui_title_bar_hit_test` says which part of the last
+  frame's bar a point is on — but nothing draws the bar yet, so such a window has no caption to drag
+  it by and no window buttons. Upstream's changelog says the component follows in its own change.
+  Until it does, CuiSharp exposes none of the three: not the option, not the hooks, and not the hit
+  test (`EXCLUDED` with that reason, not with its section's). Then bind all of it together, with
+  `CuiSurface.TitleBarHitTest` for a host that answers the platform's own hit testing.
+
 - **A glyph-coverage query** (`cui_font_has_glyph`). `UseSystemFontFallback` currently decides by
   painting a sample and comparing pixels, because a missing glyph still reports a `.notdef` advance.
 - **A window icon** on all three platforms, and `_NET_WM_ICON` on X11. The handle is now reachable

@@ -2385,6 +2385,7 @@ class CuiSharp.Interop.Native
   static Single DpiScale(IntPtr)
   static Single NextWakeup(IntPtr)
   static Theme GetThemeMode(IntPtr)
+  static TitleBarHit TitleBarHitTest(IntPtr, Single, Single)
   static UInt32 BoxBegin(IntPtr, in NativeBox)
   static UInt32 ColumnBegin(IntPtr, in NativeBox)
   static UInt32 FocusedId(IntPtr)
@@ -2674,6 +2675,7 @@ struct CuiSharp.Interop.NativeApiParam
 struct CuiSharp.Interop.NativeAppDesc
   field Accent Accent
   field Byte Continuous
+  field Byte CustomTitleBar
   field Byte FixedSize
   field Byte FollowSystemTheme
   field Byte Hidden
@@ -4014,6 +4016,8 @@ struct CuiSharp.Interop.NativePlatformIface
   field IntPtr SetCursor
   field IntPtr SetTextInputRect
   field IntPtr User
+  field IntPtr WindowButton
+  field IntPtr WindowFrame
 struct CuiSharp.Interop.NativePopoverOpts
   field Int32 Sentinel
   field Placement Placement
@@ -4972,6 +4976,9 @@ struct CuiSharp.Interop.NativeWheelOpts
   field Int32 Rows
   field Int32 Sentinel
   field NativeSize Width
+struct CuiSharp.Interop.NativeWindowFrame
+  field Byte Maximized
+  field Byte Resizable
 struct CuiSharp.Interop.NativeWindowPlacement
   field Byte HasPosition
   field Int32 Height
@@ -6716,6 +6723,10 @@ struct CuiSharp.TimelineView
   field Single End
   field Single Scroll
   field Single Start
+enum CuiSharp.TitleBarHit
+  Caption
+  Maximize
+  None
 struct CuiSharp.ToastOpts
   field Boolean ShowTimer
   field Single Duration
@@ -7234,6 +7245,11 @@ class CuiSharp.WidgetRecorder
   static Void NoteValue(IntPtr, String, UiText, Boolean, SemanticState)
   static Void NoteValue(IntPtr, String, UiText, Double, SemanticState)
   static Void NoteValue(IntPtr, String, UiText, String, SemanticState)
+enum CuiSharp.WindowButton
+  Close
+  Maximize
+  Minimize
+  Restore
 struct CuiSharp.WindowPlacement
   ctor(Int32, Int32, Int32, Int32, WindowState, Boolean)
   field Boolean HasPosition
