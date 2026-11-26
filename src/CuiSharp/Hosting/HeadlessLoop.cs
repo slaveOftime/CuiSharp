@@ -44,7 +44,7 @@ public static class HeadlessLoop
     /// this to screenshot the same app at several sizes without editing the app; an app that does
     /// not set it keeps its own width and height.
     /// </summary>
-    internal static CuiAppOptions WithViewport(CuiAppOptions window)
+    private static CuiAppOptions WithViewport(CuiAppOptions window)
     {
         string? text = Environment.GetEnvironmentVariable(ViewportEnvironmentVariable);
         if (string.IsNullOrWhiteSpace(text)) return window;
@@ -64,7 +64,7 @@ public static class HeadlessLoop
                 $"{ViewportEnvironmentVariable} must be a positive WxH size (at most {MaxViewportDimension}x{MaxViewportDimension}), not \"{text}\".");
         }
 
-        return window with { Width = width, Height = height };
+        return window with { Width = width, Height = height, Placement = null };
     }
 
     /// <summary>
@@ -113,10 +113,21 @@ public static class HeadlessLoop
         ArgumentNullException.ThrowIfNull(window);
         window = WithViewport(window);
         if (input is null && output is null) ClaimStandardOutput();
+        int width = window.Width;
+        int height = window.Height;
+        if (window.Placement is { } saved)
+        {
+            // Match cui_app_create for saved normal bounds. The explicit headless viewport
+            // clears Placement above so that tools can still draw below the window minimums.
+            width = Math.Max(saved.Width > 0 ? saved.Width : width > 0 ? width : 1080,
+                window.MinWidth > 0 ? window.MinWidth : 360);
+            height = Math.Max(saved.Height > 0 ? saved.Height : height > 0 ? height : 720,
+                window.MinHeight > 0 ? window.MinHeight : 280);
+        }
         using HeadlessApp app = HeadlessApp.Start(
             draw,
-            window.Width,
-            window.Height,
+            width,
+            height,
             theme: window.Theme,
             accent: window.Accent);
         return Run(app, input, output);

@@ -54,10 +54,8 @@
   ],
   "skipFunctions": [],
   "skipStructs": [
-    "cui_canvas_opts",
     "cui_gpu_renderer",
     "cui_input_event",
-    "cui_window_placement",
     "cui_x11_window"
   ],
   "suppressGcTransition": [],
@@ -492,6 +490,30 @@
     "cui_canvas": {
       "why": "`ui.Canvas` (Ui.Draw.cs): a PaintFn plus a CanvasResult with rect/hover/pressed/clicked."
     },
+    "cui_canvas_ex": {
+      "why": "`ui.Canvas(id, width, height, paint, opts)` (Ui.Draw.cs): focusable and keyboard-input canvases."
+    },
+    "cui_request_component_focus": {
+      "why": "`ui.RequestComponentFocus` (Ui.Draw.cs)."
+    },
+    "cui_component_has_input": {
+      "why": "`ui.ComponentHasInput` (Ui.Draw.cs)."
+    },
+    "cui_focused_id": {
+      "why": "`ui.FocusedId` (Ui.Frame.cs)."
+    },
+    "cui_window_focused": {
+      "why": "`ui.IsWindowFocused` (Ui.Frame.cs)."
+    },
+    "cui_focus_visible": {
+      "why": "`ui.IsFocusVisible` (Ui.Draw.cs)."
+    },
+    "cui_wheel_region": {
+      "why": "`ui.WheelRegion` (Ui.Draw.cs)."
+    },
+    "cui_wheel_take": {
+      "why": "`ui.TryTakeWheel` (Ui.Draw.cs)."
+    },
     "cui_state": {
       "why": "`ui.State<T>(id)` (Ui.Draw.cs): a Span<T> over CUI's per-id storage."
     },
@@ -551,6 +573,9 @@
     },
     "cui_get_cursor": {
       "why": "`ui.Cursor` (Ui.Frame.cs)."
+    },
+    "cui_set_cursor": {
+      "why": "`ui.Cursor` (Ui.Frame.cs): the setter."
     },
     "cui_key_name": {
       "why": "`Ui.KeyName(Key)` (Ui.Frame.cs): the label the UI shows for a key."
@@ -672,11 +697,32 @@
     "cui_app_quit": {
       "why": "`CuiApp.Quit` and `CuiApp.RequestClose` (CuiApp.cs)."
     },
+    "cui_app_maximize": {
+      "why": "`CuiWindow.ToggleMaximize` (CuiWindow.cs), which lets CUI refuse a fixed-size window."
+    },
+    "cui_app_minimize": {
+      "why": "`CuiWindow.Minimize` (CuiWindow.cs)."
+    },
+    "cui_app_restore": {
+      "why": "`CuiWindow.ToggleMaximize` (CuiWindow.cs) restores a window that the system reports as maximized."
+    },
+    "cui_app_window_state": {
+      "why": "`CuiWindow.IsMaximized` (CuiWindow.cs) reads the state back instead of remembering it."
+    },
+    "cui_app_set_position": {
+      "why": "`CuiWindow.SetPosition` (CuiWindow.cs)."
+    },
+    "cui_app_placement": {
+      "why": "`CuiWindow.TryGetPlacement` (CuiWindow.cs) and `CuiAppOptions.Placement` (CuiApp.cs)."
+    },
+    "cui_app_follow_system_theme": {
+      "why": "`CuiWindow.SetFollowSystemTheme` (CuiWindow.cs) and `CuiAppOptions.FollowSystemTheme` (CuiApp.cs)."
+    },
     "cui_app_set_title": {
       "why": "`CuiAppOptions.Title`; `CuiApplicationBuilder.Window` updates it (CuiApp.cs)."
     },
     "cui_app_set_size": {
-      "why": "`CuiAppOptions.Width`/`Height` (CuiApp.cs)."
+      "why": "`CuiWindow.SetSize` (CuiWindow.cs) and `CuiAppOptions.Width`/`Height` (CuiApp.cs)."
     },
     "cui_app_size": {
       "why": "`CuiApp` reports the size through `Ui.ViewportSize()`."
@@ -816,6 +862,9 @@
     "cui_path_has_extension": {
       "why": "`CuiMath.PathMatches(path, filter)` (Ui/CuiMath.cs): the same matching rule the file picker applies to `*.png;*.jpg`."
     },
+    "cui_signature_points": {
+      "why": "`ui.SignaturePoints` (Ui.Draw.cs) copies the points and stroke ends into caller spans."
+    },
     "cui_hex_view_ex": {
       "why": "`ui.HexView(id, Span<byte>, ref HexSelection, opts)` (Ui/Ui.Hex.cs) pins the caller's own memory, so a typed byte lands in the array the caller holds; the generated read-only overload copies into the frame arena."
     },
@@ -950,7 +999,7 @@
       "why": "Ui.Id/Keyed own managed id scopes. Raw identity and Tab-focus scopes are not exposed by this section."
     },
     "Custom drawing": {
-      "why": "Ui.Draw.cs owns the supported drawing and Canvas surface. Raw frame allocation and advanced canvas input routing are not exposed."
+      "why": "Ui.Draw.cs owns the drawing and Canvas surface; raw frame allocation stays internal to Utf8."
     },
     "Fonts": {
       "why": "Font loading and measuring belong to CuiSurface/CuiApp bootstrapping, not to per-frame draw code."
@@ -989,6 +1038,10 @@
     }
   },
   "recordNames": {
+    "cui_window_placement": {
+      "name": "WindowPlacement",
+      "why": "Window placement is saved on close (`CuiWindow.TryGetPlacement`) and passed back in `CuiAppOptions.Placement`."
+    },
     "cui_choice": {
       "name": "Choice",
       "why": "Radio card items are built by callers as a small immutable record, not a native array entry."
@@ -1455,9 +1508,6 @@
   "excludedFunctions": {
     "cui_log_appendv": {
       "why": "Takes a C `va_list`, which a managed caller cannot supply. `LogBuffer.AppendLine` formats in C# and calls `cui_log_append_text`, the same entry point without the variadic wrapper."
-    },
-    "cui_signature_points": {
-      "why": "Takes a caller-built `const cui_vec2 **`, i.e. a jagged C array. Signature capture is not needed by any sample; wrapping it would need an ownership rule nothing uses yet."
     },
     "cui_timeline_editor_ex": {
       "why": "A timeline track holds three nested arrays (keys, clips, selections), so the record would need array-of-record support one level deeper than the generator has. Available through the raw layer."

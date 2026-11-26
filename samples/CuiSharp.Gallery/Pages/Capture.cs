@@ -60,5 +60,8 @@ internal sealed partial class GalleryApp
         {
             ui.SignaturePad("signature", new SignatureOpts { Height = 180 });
         }
+        int signaturePoints = ui.SignaturePoints("signature", out int signatureStrokes);
+        if (signaturePoints > 0)
+            ui.Muted($"{signatureStrokes} stroke(s), {signaturePoints} points");
     }
 }

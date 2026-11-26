@@ -7,10 +7,6 @@ namespace CuiSharp.Interop;
 
 internal static unsafe partial class Win32
 {
-    internal const int SwMaximize = 3;
-    internal const int SwMinimize = 6;
-    internal const int SwRestore = 9;
-
     /// <summary>Posts nothing and does nothing: the wake a waiting loop needs, with no effect of its own.</summary>
     internal const uint WmNull = 0x0000;
 
@@ -30,14 +26,6 @@ internal static unsafe partial class Win32
 
     private const int GwlWndProc = -4;
     private const int GwlUserData = -21;
-
-    /// <summary>BOOL ShowWindow(HWND, int).</summary>
-    [LibraryImport("user32.dll", EntryPoint = "ShowWindow")]
-    internal static partial int ShowWindow(nint hwnd, int command);
-
-    /// <summary>BOOL IsZoomed(HWND): non-zero when the window is maximized.</summary>
-    [LibraryImport("user32.dll", EntryPoint = "IsZoomed")]
-    internal static partial int IsZoomed(nint hwnd);
 
     /// <summary>BOOL PostMessageW(HWND, UINT, WPARAM, LPARAM).</summary>
     [LibraryImport("user32.dll", EntryPoint = "PostMessageW")]

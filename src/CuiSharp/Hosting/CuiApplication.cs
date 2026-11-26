@@ -37,9 +37,8 @@ public sealed class CuiApplication : IDisposable
     public IServiceProvider Services => _services;
 
     /// <summary>
-    /// The OS window — the native handle, the backend, and which renderer actually drew — available
-    /// from the first frame onward, and null before the loop starts. This is what
-    /// <see cref="CuiAppOptions.WindowCreated"/> hands over.
+    /// The OS window supplied by <see cref="CuiAppOptions.WindowCreated"/> from the first frame
+    /// onward on Windows. Null before the loop starts, on other platforms, and when running headless.
     /// </summary>
     public CuiWindow? Window { get; private set; }
 

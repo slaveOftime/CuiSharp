@@ -96,6 +96,38 @@ public class HeadlessLoopTests
         Assert.StartsWith("CUI-READY 400 300\n", output.ToString(), StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData(null, 200, 190, 360, 280, 360, 280)]
+    [InlineData(null, 420, 390, 0, 0, 420, 390)]
+    [InlineData(null, 0, 0, 520, 430, 520, 430)]
+    [InlineData("240x210", 200, 190, 360, 280, 240, 210)]
+    public void HeadlessPlacementUsesNormalBoundsUnlessTheClientSetsAViewport(
+        string? viewport, int savedWidth, int savedHeight, int minWidth, int minHeight, int width, int height)
+    {
+        string key = HeadlessLoop.ViewportEnvironmentVariable;
+        string? previous = Environment.GetEnvironmentVariable(key);
+        try
+        {
+            Environment.SetEnvironmentVariable(key, viewport);
+            var options = new CuiAppOptions
+            {
+                Width = 500,
+                Height = 400,
+                MinWidth = minWidth,
+                MinHeight = minHeight,
+                Placement = new WindowPlacement { Width = savedWidth, Height = savedHeight, State = WindowState.Maximized },
+            };
+            using var input = new StringReader("quit\n");
+            using var output = new StringWriter();
+            Assert.Equal(0, HeadlessLoop.Run(static ui => ui.Label("Ready"), options, input, output));
+            Assert.StartsWith($"CUI-READY {width} {height}\n", output.ToString(), StringComparison.Ordinal);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(key, previous);
+        }
+    }
+
     [Fact]
     public void TreeDescribesTheFrameAndClickAnswersWithTheNextOne()
     {

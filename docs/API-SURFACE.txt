@@ -292,6 +292,9 @@ enum CuiSharp.CanvasEvents
   None
   Toggled
   Zoomed
+struct CuiSharp.CanvasOpts
+  field Boolean ComponentInput
+  field Boolean Focusable
 struct CuiSharp.CanvasResult
   field Boolean Clicked
   field Boolean Hovered
@@ -659,11 +662,15 @@ struct CuiSharp.CropperOpts
 class CuiSharp.CuiApp
   Boolean Frame()
   Boolean Screenshot(Byte[], Int32, Int32)
+  Boolean TryGetPlacement(out WindowPlacement)
   Void Dispose()
   Void Minimize()
   Void Quit()
   Void RequestClose()
   Void SetAccent(Accent)
+  Void SetFollowSystemTheme(Boolean)
+  Void SetPosition(Int32, Int32)
+  Void SetSize(Int32, Int32)
   Void SetTheme(Theme)
   Void ToggleMaximize()
   property Boolean IsMaximized { get; }
@@ -697,6 +704,7 @@ class CuiSharp.CuiAppOptions
   property Int32 MinHeight { get; set; }
   property Int32 MinWidth { get; set; }
   property Int32 Width { get; set; }
+  property Nullable<WindowPlacement> Placement { get; set; }
   property Renderer Renderer { get; set; }
   property String Title { get; set; }
   property Theme Theme { get; set; }
@@ -800,9 +808,13 @@ class CuiSharp.CuiVoice
   field Single Silent
   static Int32 Resample(ReadOnlySpan<Single>, Span<Single>)
 class CuiSharp.CuiWindow
+  Boolean TryGetPlacement(out WindowPlacement)
   FilePickResult PickFile(FileDialogOpts)
   Void Minimize()
   Void RequestClose()
+  Void SetFollowSystemTheme(Boolean)
+  Void SetPosition(Int32, Int32)
+  Void SetSize(Int32, Int32)
   Void SetTitle(String)
   Void ToggleMaximize()
   property Boolean IsMaximized { get; }
@@ -2052,7 +2064,7 @@ class CuiSharp.Interop.Native
   static Byte AppFrame(IntPtr)
   static Byte AppIsSoftware(IntPtr)
   static Byte AppOpenUrl(IntPtr)
-  static Byte AppPlacement(IntPtr, IntPtr)
+  static Byte AppPlacement(IntPtr, ref NativeWindowPlacement)
   static Byte AppScreenshot(IntPtr, IntPtr, Int32, Int32)
   static Byte AspectPicker(IntPtr, IntPtr, ref Int32, in NativeAspectPickerOpts)
   static Byte Banner(IntPtr, IntPtr, IntPtr, in NativeBannerOpts)
@@ -2313,7 +2325,7 @@ class CuiSharp.Interop.Native
   static NativeApiExplorerResult ApiExplorer(IntPtr, IntPtr, IntPtr, Int32, in NativeApiExplorerOpts)
   static NativeBlameResult Blame(IntPtr, IntPtr, IntPtr, IntPtr, Int32, IntPtr, Int32, in NativeBlameOpts)
   static NativeCanvasResult Canvas(IntPtr, IntPtr, NativeSize, NativeSize, IntPtr, IntPtr, UIntPtr)
-  static NativeCanvasResult CanvasEx(IntPtr, IntPtr, NativeSize, NativeSize, IntPtr, IntPtr, UIntPtr, IntPtr)
+  static NativeCanvasResult CanvasEx(IntPtr, IntPtr, NativeSize, NativeSize, IntPtr, IntPtr, UIntPtr, in NativeCanvasOpts)
   static NativeCodeEditorResult CodeEditor(IntPtr, IntPtr, IntPtr, UIntPtr, in NativeCodeEditorOpts)
   static NativeColor Alpha(NativeColor, Single)
   static NativeColor ColorOf(IntPtr, NativeColor)
@@ -2820,6 +2832,9 @@ struct CuiSharp.Interop.NativeCanvasControlsOpts
   field IntPtr Steps
   field IntPtr Toggles
   field NativeRect Content
+struct CuiSharp.Interop.NativeCanvasOpts
+  field Byte ComponentInput
+  field Byte Focusable
 struct CuiSharp.Interop.NativeCanvasResult
   field Byte Clicked
   field Byte Hovered
@@ -4957,6 +4972,13 @@ struct CuiSharp.Interop.NativeWheelOpts
   field Int32 Rows
   field Int32 Sentinel
   field NativeSize Width
+struct CuiSharp.Interop.NativeWindowPlacement
+  field Byte HasPosition
+  field Int32 Height
+  field Int32 Width
+  field Int32 X
+  field Int32 Y
+  field WindowState State
 enum CuiSharp.JobStatus
   Canceled
   Failed
@@ -6936,8 +6958,11 @@ struct CuiSharp.TreemapOpts
   field String Format
 struct CuiSharp.Ui
   AutomationScope Automation(UiText)
+  Boolean ComponentHasInput(UInt32)
+  Boolean ComponentHasInput(UiText)
   Boolean DateToday(out Date)
   Boolean FilterBar(UiText, ReadOnlySpan<FilterField>, Span<UInt32>, ref String, Int32)
+  Boolean IsFocusVisible(UInt32)
   Boolean KeyDown(Key)
   Boolean KeyPressed(Key)
   Boolean LoadImage(UiText, out UInt64, out Int32, out Int32)
@@ -6950,8 +6975,11 @@ struct CuiSharp.Ui
   Boolean Shortcut(Mods, Key)
   Boolean TagInput(UiText, ref String, TagOpts)
   Boolean ToggleGroup(UiText, ReadOnlySpan<String>, Span<Boolean>, ToggleGroupOpts)
+  Boolean TryTakeWheel(UInt32, out ValueTuple<Single, Single>)
+  Boolean TryTakeWheel(UiText, out ValueTuple<Single, Single>)
   CanvasEvents CanvasControls(UiText, ref NodeView, Span<CanvasToggle>, CanvasControlsOpts)
   CanvasResult Canvas(UiText, Size, Size, PaintFn)
+  CanvasResult Canvas(UiText, Size, Size, PaintFn, CanvasOpts)
   ClipScope Clip(RectF)
   Color ColorOf(Color)
   Color TokenColor(Token)
@@ -6964,6 +6992,7 @@ struct CuiSharp.Ui
   InputResult Search(UiText, ref String, InputOpts)
   InputResult TextArea(UiText, ref String, InputOpts)
   Int32 SelectionBar(UiText, Span<Boolean>, ReadOnlySpan<SelectionAction>, SelectionBarOpts)
+  Int32 SignaturePoints(UiText, out Int32, Span<ValueTuple<Single, Single>>, Span<Int32>)
   KeyedScope<T> Keyed(IReadOnlyList<T>, Func<T, Int32>)
   KeyedScope<T> Keyed(ReadOnlySpan<T>, Func<T, Int32>)
   KeyedScope<T> Keyed(T[], KeyFn<T>)
@@ -7004,21 +7033,25 @@ struct CuiSharp.Ui
   Void PopClip()
   Void PushClip(RectF)
   Void ReorderBegin(UiText, Int32[])
+  Void RequestComponentFocus(UInt32)
+  Void RequestComponentFocus(UiText)
   Void RequestRedraw()
   Void SetClipboard(UiText)
   Void SetLocalization(Localization)
   Void SetReducedMotion(Boolean)
   Void ToggleTheme()
   Void UpdateImage(UInt64, Int32, Int32, Int32, Int32, ReadOnlySpan<Byte>, Int32)
+  Void WheelRegion(UInt32, RectF)
   WellEvents PaletteStrip(UiText, Span<Color>, Span<Boolean>, PaletteStripOpts)
   WellEvents PaletteStrip(UiText, ref UInt32, Span<Color>, Span<Boolean>, PaletteStripOpts)
   property Accent Accent { get; set; }
   property Boolean FileDragActive { get; }
   property Boolean IsDisabled { get; }
+  property Boolean IsWindowFocused { get; }
   property Boolean NeedsRedraw { get; }
   property Boolean WantsKeyboard { get; }
   property Boolean WantsMouse { get; }
-  property Cursor Cursor { get; }
+  property Cursor Cursor { get; set; }
   property Double Time { get; }
   property Int32 DroppedFileCount { get; }
   property Localization Localization { get; }
@@ -7028,6 +7061,7 @@ struct CuiSharp.Ui
   property Single DpiScale { get; }
   property Theme Theme { get; set; }
   property ThemeStyle Style { get; }
+  property UInt32 FocusedId { get; }
   property UInt32 LastId { get; }
   property UInt64 FrameCount { get; }
   property ValueTuple<Single, Single> MousePosition { get; }
@@ -7200,6 +7234,14 @@ class CuiSharp.WidgetRecorder
   static Void NoteValue(IntPtr, String, UiText, Boolean, SemanticState)
   static Void NoteValue(IntPtr, String, UiText, Double, SemanticState)
   static Void NoteValue(IntPtr, String, UiText, String, SemanticState)
+struct CuiSharp.WindowPlacement
+  ctor(Int32, Int32, Int32, Int32, WindowState, Boolean)
+  field Boolean HasPosition
+  field Int32 Height
+  field Int32 Width
+  field Int32 X
+  field Int32 Y
+  field WindowState State
 enum CuiSharp.WindowState
   Maximized
   Minimized

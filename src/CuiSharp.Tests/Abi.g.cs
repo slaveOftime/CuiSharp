@@ -3915,6 +3915,14 @@ public class GeneratedAbiTests
     }
 
     [Fact]
+    public void NativeCanvasOpts_MatchesC()
+    {
+        Assert.Equal(2, Unsafe.SizeOf<NativeCanvasOpts>());
+        Assert.Equal(0, (int)Marshal.OffsetOf<NativeCanvasOpts>(nameof(NativeCanvasOpts.Focusable)));
+        Assert.Equal(1, (int)Marshal.OffsetOf<NativeCanvasOpts>(nameof(NativeCanvasOpts.ComponentInput)));
+    }
+
+    [Fact]
     public void NativeVertex_MatchesC()
     {
         Assert.Equal(64, Unsafe.SizeOf<NativeVertex>());
@@ -3960,6 +3968,18 @@ public class GeneratedAbiTests
         Assert.Equal(48, (int)Marshal.OffsetOf<NativeDrawData>(nameof(NativeDrawData.HeightPx)));
         Assert.Equal(52, (int)Marshal.OffsetOf<NativeDrawData>(nameof(NativeDrawData.ClearColor)));
         Assert.Equal(56, (int)Marshal.OffsetOf<NativeDrawData>(nameof(NativeDrawData.FontAtlas)));
+    }
+
+    [Fact]
+    public void NativeWindowPlacement_MatchesC()
+    {
+        Assert.Equal(24, Unsafe.SizeOf<NativeWindowPlacement>());
+        Assert.Equal(0, (int)Marshal.OffsetOf<NativeWindowPlacement>(nameof(NativeWindowPlacement.X)));
+        Assert.Equal(4, (int)Marshal.OffsetOf<NativeWindowPlacement>(nameof(NativeWindowPlacement.Y)));
+        Assert.Equal(8, (int)Marshal.OffsetOf<NativeWindowPlacement>(nameof(NativeWindowPlacement.Width)));
+        Assert.Equal(12, (int)Marshal.OffsetOf<NativeWindowPlacement>(nameof(NativeWindowPlacement.Height)));
+        Assert.Equal(16, (int)Marshal.OffsetOf<NativeWindowPlacement>(nameof(NativeWindowPlacement.State)));
+        Assert.Equal(20, (int)Marshal.OffsetOf<NativeWindowPlacement>(nameof(NativeWindowPlacement.HasPosition)));
     }
 
     [Fact]

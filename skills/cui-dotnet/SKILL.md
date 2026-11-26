@@ -340,6 +340,18 @@ Primitives inside a canvas: `DrawRect` (fill, border, gradient), `DrawShadow`, `
 `DrawPolyline`, `DrawPolygon`, `DrawCircle`, `DrawArc`, `DrawText`, `DrawIcon`, `DrawImage`,
 `using (ui.Clip(rect))`, `ui.MeasureText(text, size)`.
 
+Interactive canvases: pass `new CanvasOpts { Focusable = true }` for a Tab stop (Enter/Space clicks
+it) or `new CanvasOpts { ComponentInput = true }` when the canvas handles keys itself; ask for focus
+with `ui.RequestComponentFocus(id)` and check eligibility with `ui.ComponentHasInput(id)`.
+
+While building the canvas, resolve `canvasId = ui.MakeId(id)` for the focus ring and
+`wheelId = ui.MakeId("plot-wheel")` for the wheel region. Pass those numeric IDs to the painter:
+`paint.IsFocusVisible(canvasId)` and `paint.WheelRegion(wheelId, box)`. Paint runs after build-time
+ID scopes have closed, so hashing the same text in paint would lose the scope. Store the resolved
+IDs in the control's own state if you use a cached paint delegate to avoid per-frame closures.
+In the next build, `ui.TryTakeWheel(wheelId, out var delta)` consumes the wheel once (lines, +Y up)
+instead of letting it scroll the page. Set `ui.Cursor = Cursor.Hand` when hovered.
+
 ## Long series and live data
 
 **Rows are fine at any count**: `VirtualList` builds only the visible window, so a million rows cost
@@ -858,9 +870,9 @@ dialog is modal, a dropzone returns the paths it received.
 - **Without a frame** — the pure helpers the widgets use, callable from a component or a test: `CuiRegex.TrySearch(…)` with its groups, `CuiCron.TryNext(…)`, `CuiHttp.ParseQuery`/`SetQuery`/`Reason`/`MethodName`, `CuiQuery.Text`/`Match`/`OperatorName`, `CuiFiles.ListDirectory`/`SortFlameSpans`/`SortTraceSpans`, `CuiMath.EvaluateCurve`/`EvaluateGradient`/`DiffLines`
 - **AI interfaces** — `ChatComposer`, `ModelPicker`, `PromptSuggestions`, `Reasoning`, `ResponseActions`, `Citation`, `ContextMeter`, `AgentPlan`, `AgentStatus`
 - **Onboarding** — `Tour(id, steps, ref int step, TourOpts)`; build each `TourStep.Target` from `ui.LastId` right after the control
-- **Custom drawing** — inside `ui.Canvas(...)`, see [Custom controls](#custom-controls)
+- **Custom drawing** — inside `ui.Canvas(...)` (with `CanvasOpts` for focus and `WheelRegion` / `TryTakeWheel` for the wheel), plus `ui.SignaturePoints` to read strokes from `SignaturePad`; see [Custom controls](#custom-controls)
 - **Per-id state** — `ui.State<T>(id)`, `ui.State<T>(id, onFree)` when it owns something CUI should release
-- **Gates and clocks** — `using (ui.Disabled(flag)) { … }`, `ui.Time`, `ui.DeltaTime`, `ui.FrameCount`, `ui.MousePosition`, `ui.MouseDown`, `ui.MouseClicked`, `ui.KeyDown`, `ui.KeyPressed`, `ui.RectOf(id)`
+- **Gates and clocks** — `using (ui.Disabled(flag)) { … }`, `ui.Time`, `ui.DeltaTime`, `ui.FrameCount`, `ui.MousePosition`, `ui.MouseDown`, `ui.MouseClicked`, `ui.KeyDown`, `ui.KeyPressed`, `ui.Cursor`, `ui.FocusedId`, `ui.IsWindowFocused`, `ui.RectOf(id)`
 - **Icons** — 168 constants generated from `cui_icons.h`: `Icons.Check`, `Icons.Plus`, `Icons.Search`, …
 
 Each generated component has one line of documentation with its exact signature in `llms.txt`, and a

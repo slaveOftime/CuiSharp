@@ -375,8 +375,8 @@ What changed, per version: [CHANGELOG.md](CHANGELOG.md).
 ## Status
 
 Pre-1.0: the API may still change. All 573 non-variadic CUI functions in v1.5.0 (`f9597a3`) are
-accounted for: 194 option structs, 112 records, 305 generated wrappers, 183 deliberate hand-written
-wrappers, 41 excluded, 4 variadic skipped separately, 0 pending. See
+accounted for: 195 option structs, 113 records, 305 generated wrappers, 201 deliberate hand-written
+wrappers, 23 excluded, 4 variadic skipped separately, 0 pending. See
 [bindings/coverage.txt](bindings/coverage.txt) for the status of each function. The gallery's 32 pages walk the components section
 by section, light and dark; what is still missing is the page shape that needs a device — a capture
 pipeline, an audio stream.
