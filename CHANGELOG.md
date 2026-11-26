@@ -4,6 +4,27 @@ Every user-visible change, newest first. Pre-1.0 the minor number carries new su
 carries fixes. The section for a tag is what the GitHub release publishes, so the two cannot say
 different things.
 
+## [0.5.1] — unreleased
+
+### Fixed
+
+- **The window controls go through CUI instead of Win32.** `CuiWindow` and `CuiApp` expose
+  `Minimize`, `ToggleMaximize` and `IsMaximized`, but both only ever called Win32 directly and did
+  nothing elsewhere, while CUI has carried out the same requests on X11 and macOS all along. Both
+  now ask CUI (`cui_app_minimize`/`cui_app_maximize`/`cui_app_restore`) and read the state back from
+  `cui_app_window_state`, so an app that holds a `CuiApp` or `CuiWindow` (from `CuiApp.Create`, or
+  from `WindowCreated` on Windows where `CuiApp.Run` recovers the handle) drives the same CUI path
+  everywhere. A fixed-size window no longer maximizes: CUI refuses one, and the old Win32 path did
+  not. Disposing a `CuiApp` now also releases its `CuiWindow` and uninstalls its live-resize hook,
+  matching `CuiApp.Run`.
+
+### Changed
+
+- **Four fewer exclusions.** `cui_app_maximize`, `cui_app_minimize`, `cui_app_restore` and
+  `cui_app_window_state` are hand-written wrappers on `CuiWindow` now instead of excluded with the
+  `cui_app` section: 36 excluded, 188 manual, 0 pending. Placement, positioning and the runtime
+  system-theme switch stay excluded until something asks for them.
+
 ## [0.5.0] — 2026-11-26
 
 ### Added

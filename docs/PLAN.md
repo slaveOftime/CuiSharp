@@ -19,10 +19,10 @@ in [ARCHITECTURE.md](ARCHITECTURE.md). Every item here passes the same gates as 
   `cui_wheel_region`/`cui_wheel_take`, `cui_set_cursor` and `cui_request_component_focus` are
   excluded with the Custom drawing section; a managed surface for keyboard focus, wheel takeover
   and cursor shaping on a hand-drawn canvas is its own design.
-- **Expose the window-state calls through CuiApp** — `cui_app_minimize`/`restore`/
-  `set_position`/`window_state`/`placement` are excluded with the `cui_app` section because
-  window ownership belongs to CuiApp; a supported subset on `CuiWindow` (like the live session's)
-  would let apps save and reopen where they were.
+- **Window placement and the runtime theme switch** — `cui_app_placement`, `cui_app_set_position`
+  and `cui_app_follow_system_theme` stay excluded: `CuiWindow` asks CUI for minimize, maximize and
+  the state now, but saving and reopening where a window was is one workflow and should ship as
+  one, and a Light/Dark/System switch needs a decision on who owns the theme.
 - **A managed GPU renderer bridge** — `cui_gpu_*` are excluded: CUI builds them behind compile-time
   flags and hands over a native interface of function pointers and device handles. Worth a design
   only if an app needs to skip OpenGL.

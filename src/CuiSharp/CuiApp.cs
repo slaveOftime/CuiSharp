@@ -211,33 +211,22 @@ public sealed unsafe class CuiApp : IDisposable
     public void Quit() { if (_handle != 0) Native.AppQuit(_handle); }
 
     /// <summary>True when this window is maximized.</summary>
-    public bool IsMaximized => _handle != 0 && OperatingSystem.IsWindows() && Win32.IsZoomed(NativeWindow) != 0;
+    public bool IsMaximized => _window.IsMaximized;
 
-    /// <summary>Minimizes this window.</summary>
-    public void Minimize()
-    {
-        if (_handle != 0 && OperatingSystem.IsWindows()) Win32.ShowWindow(NativeWindow, Win32.SwMinimize);
-    }
+    /// <summary>Minimizes this window, to the taskbar or the dock.</summary>
+    public void Minimize() => _window.Minimize();
 
     /// <summary>Maximizes this window, or restores it when it is already maximized.</summary>
-    public void ToggleMaximize()
-    {
-        if (_handle == 0 || !OperatingSystem.IsWindows()) return;
-        Win32.ShowWindow(NativeWindow, Win32.IsZoomed(NativeWindow) != 0 ? Win32.SwRestore : Win32.SwMaximize);
-    }
+    public void ToggleMaximize() => _window.ToggleMaximize();
 
     /// <summary>Closes this window, exactly as its own close button would.</summary>
-    public void RequestClose()
-    {
-        if (_handle == 0) return;
-        if (OperatingSystem.IsWindows()) Win32.RequestClose(NativeWindow);
-        else Native.AppQuit(_handle);
-    }
+    public void RequestClose() => _window.RequestClose();
 
     /// <summary>Renders the current UI into an RGBA buffer. Handy for tests and screenshots.</summary>
     public bool Screenshot(byte[] rgba, int width, int height)
     {
         ArgumentNullException.ThrowIfNull(rgba);
+        if (_handle == 0) return false;
         fixed (byte* p = rgba) return Native.AppScreenshot(_handle, (nint)p, width, height) != 0;
     }
 
@@ -498,7 +487,10 @@ public sealed unsafe class CuiApp : IDisposable
         if (_handle == 0) return;
         _frame.CloseWork();
         if (_inFrame) _drawScope.Dispose();
-        HotReloadWake.Detach(NativeWindow);
+        nint window = NativeWindow;
+        HotReloadWake.Detach(window);
+        LiveResize.Uninstall(window);
+        _window.Release();
         Native.AppDestroy(_handle);
         _handle = 0;
         _inFrame = false;

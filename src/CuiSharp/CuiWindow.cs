@@ -12,9 +12,11 @@ namespace CuiSharp;
 /// window exists.
 /// </para>
 /// <para>
-/// Windows-only members report <c>0</c>/<c>false</c> elsewhere: the app loop keeps its
-/// <c>cui_app*</c> to itself, and Windows is the one platform where the window can be asked for
-/// it back (its user data is that pointer).
+/// The app loop keeps its <c>cui_app*</c> to itself, and Windows is the one platform where the
+/// window can be asked for it back (its user data is that pointer): under
+/// <see cref="CuiApp.Run(CuiAppOptions, DrawFn)"/> a window exists there and nowhere else. The state
+/// calls below go through CUI, so they work on every backend where the window manager carries
+/// them out.
 /// </para>
 /// </summary>
 public sealed class CuiWindow
@@ -56,8 +58,12 @@ public sealed class CuiWindow
         }
     }
 
-    /// <summary>True when the window is maximized.</summary>
-    public bool IsMaximized => _app != 0 && OperatingSystem.IsWindows() && Win32.IsZoomed(NativeWindow) != 0;
+    /// <summary>True when the window is maximized, as the system reports it now.</summary>
+    /// <remarks>
+    /// Read back rather than remembered: on X11 the window manager carries out a request, so the new
+    /// state can take a few frames to arrive.
+    /// </remarks>
+    public bool IsMaximized => _app != 0 && Native.AppWindowState(_app) == WindowState.Maximized;
 
     /// <summary>Retitles the window. Safe to call from a frame.</summary>
     public void SetTitle(string title)
@@ -66,17 +72,20 @@ public sealed class CuiWindow
         if (_app != 0) Native.AppSetTitle(_app, Utf8.Get(title));
     }
 
-    /// <summary>Minimizes the window.</summary>
+    /// <summary>Minimizes the window, to the taskbar or the dock. Nothing happens where the window
+    /// manager does not support it.</summary>
     public void Minimize()
     {
-        if (_app != 0 && OperatingSystem.IsWindows()) Win32.ShowWindow(NativeWindow, Win32.SwMinimize);
+        if (_app != 0) Native.AppMinimize(_app);
     }
 
     /// <summary>Maximizes the window, or restores it when it is already maximized.</summary>
+    /// <remarks>A fixed-size window has no maximized state, so this does nothing for one.</remarks>
     public void ToggleMaximize()
     {
-        if (_app == 0 || !OperatingSystem.IsWindows()) return;
-        Win32.ShowWindow(NativeWindow, Win32.IsZoomed(NativeWindow) != 0 ? Win32.SwRestore : Win32.SwMaximize);
+        if (_app == 0) return;
+        if (Native.AppWindowState(_app) == WindowState.Maximized) Native.AppRestore(_app);
+        else Native.AppMaximize(_app);
     }
 
     /// <summary>Closes the window, exactly as its own close button would.</summary>

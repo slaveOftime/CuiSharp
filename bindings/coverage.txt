@@ -483,7 +483,7 @@ GENERATED cui_knob_ex
 GENERATED cui_fader_ex
 GENERATED cui_level_meter_ex
 GENERATED cui_signature_pad_ex
-EXCLUDED cui_signature_points: Takes a caller-built `const cui_vec2 **`, i.e. a jagged C array. Signature capture is not needed by any sample; wrapping it would need an ownership rule nothing uses yet.
+EXCLUDED cui_signature_points: Writes two out-pointers (`*points` into widget storage and `*stroke_ends` into a process-wide static buffer). No sample exports signature strokes yet; a wrapper should copy both spans out when something needs it.
 GENERATED cui_signature_clear
 GENERATED cui_dropzone_ex
 MANUAL cui_path_has_extension: `CuiMath.PathMatches(path, filter)` (Ui/CuiMath.cs): the same matching rule the file picker applies to `*.png;*.jpg`.
@@ -662,10 +662,10 @@ MANUAL cui_app_quit: `CuiApp.Quit` and `CuiApp.RequestClose` (CuiApp.cs).
 MANUAL cui_app_set_title: `CuiAppOptions.Title`; `CuiApplicationBuilder.Window` updates it (CuiApp.cs).
 MANUAL cui_app_set_size: `CuiAppOptions.Width`/`Height` (CuiApp.cs).
 MANUAL cui_app_size: `CuiApp` reports the size through `Ui.ViewportSize()`.
-EXCLUDED cui_app_maximize: Window/app ownership belongs to CuiApp; CuiSurface exposes the supported subset.
-EXCLUDED cui_app_minimize: Window/app ownership belongs to CuiApp; CuiSurface exposes the supported subset.
-EXCLUDED cui_app_restore: Window/app ownership belongs to CuiApp; CuiSurface exposes the supported subset.
-EXCLUDED cui_app_window_state: Window/app ownership belongs to CuiApp; CuiSurface exposes the supported subset.
+MANUAL cui_app_maximize: `CuiWindow.ToggleMaximize` (CuiWindow.cs), which lets CUI refuse a fixed-size window.
+MANUAL cui_app_minimize: `CuiWindow.Minimize` (CuiWindow.cs).
+MANUAL cui_app_restore: `CuiWindow.ToggleMaximize` (CuiWindow.cs) restores a window that the system reports as maximized.
+MANUAL cui_app_window_state: `CuiWindow.IsMaximized` (CuiWindow.cs) reads the state back instead of remembering it.
 EXCLUDED cui_app_set_position: Window/app ownership belongs to CuiApp; CuiSurface exposes the supported subset.
 EXCLUDED cui_app_placement: Window/app ownership belongs to CuiApp; CuiSurface exposes the supported subset.
 EXCLUDED cui_app_follow_system_theme: Window/app ownership belongs to CuiApp; CuiSurface exposes the supported subset.
