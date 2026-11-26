@@ -55,12 +55,18 @@ way:
 Those are historical profile measurements, not a same-library comparison with 0.5.0.
 The current shipped snapshot is:
 
-| App | 0.5.0, shipped |
+| App | 0.5.1, shipped |
 |---|---|
-| minimal app | 1 181 184 B |
-| gallery, 32 pages | 3 211 264 B |
-| `dotnet new cui-app`, published | 2 319 872 B |
-| `dotnet new cui-mini`, published | 1 388 544 B |
+| minimal app | 1 187 328 B |
+| gallery, 32 pages | 3 379 200 B |
+| `dotnet new cui-app`, published | 2 324 992 B |
+| `dotnet new cui-mini`, published | 1 394 176 B |
+
+Rows are one machine's coherent set, this one. The narrative above carries the
+`6864776` numbers from the machine that measured the bump itself; between two
+SDK 11 installs the same rows differ by a few KB (the gallery 6 656 B, CHART
+1 536 B), which is why ceilings leave room and the snapshot is re-measured per
+release rather than copied forward.
 
 The cross-revision gallery growth includes native and managed changes together, not the cost of
 any one feature or the size profile's effectiveness. The gallery drawn today measures 3 372 544 B:
