@@ -16,7 +16,8 @@ a UI that needs an accessibility tree (CUI publishes none).
 
 1. [The one rule](#the-one-rule) · [A whole app](#a-whole-app) · [Cheat sheet](#cheat-sheet)
 2. [Frame-local types](#frame-local-types-and-text) · [Containers](#containers-are-using-scopes) ·
-   [Sizing](#sizing) · [Options](#options-are-structs-of-fields) · [Colours](#colours-come-from-the-theme)
+   [Sizing](#sizing) · [Layout model](#the-layout-model) · [Options](#options-are-structs-of-fields) ·
+   [Colours](#colours-come-from-the-theme)
 3. [State in `ref`](#state-goes-in-ref) · [Grid state](#grid-state-and-value-selection) ·
    [Conditional containers](#containers-that-may-be-closed) · [Custom controls](#custom-controls) ·
    [Long series](#long-series-and-live-data)
@@ -195,6 +196,135 @@ size.TryGetPercent(out float percent)
 `IsFill` is true for `Fill` and every `Grow(weight)`; `TryGetPoints` succeeds only for a fixed size,
 and `TryGetPercent` only for a percentage. `ToString()` prints `Fit`, `Fill`, `240px` or `50%`.
 
+## The layout model
+
+CUI lays out the boxes you described once per frame, after your body has run. It is a small,
+predictable subset of flexbox: children size themselves from their content, `Size.Fill` and
+`Size.Grow(n)` share whatever is left, and a fixed size never shrinks. When children want more
+space than there is, flexible children shrink down to their minimum content — the longest word for
+wrapping text, an ellipsis for single-line text. Components with a default width (selects, the
+pickers, `ui.Number`, the shortcut recorder) take that width when there is room and shrink to fit
+a narrower column; pin one with `Size.Px`.
+
+Alignment has defaults, and they are usually right:
+
+- **Columns stretch** their children to the full width — paragraphs wrap, inputs and cards fill.
+- **Rows center** their children vertically.
+- Components with an intrinsic size (`Button`, `Badge`, `Switch`, an avatar) never stretch: in a
+  column they sit at the start; in a row they follow the row's alignment.
+
+`Align.Default` means exactly that. `Align.Start`/`Center`/`End`/`Stretch` override it on the cross
+axis; `Justify.Start`/`Center`/`End`/`Between`/`Around` distribute the children on the main axis.
+Center one thing by giving its parent both:
+
+```csharp
+using (ui.Column(new Box { Width = Size.Fill, Height = Size.Fill,
+                           Align = Align.Center, Justify = Justify.Center }))
+{
+    ui.Spinner(24);
+}
+```
+
+A content column that fills a narrow window and stops growing on a wide one:
+
+```csharp
+using (ui.Row(new Box { Justify = Justify.Center }))
+using (ui.Column(new Box { Width = Size.Fill, MaxWidth = 920, PadX = 40, Gap = 20 }))
+{
+    ui.Heading("Settings", 1);
+}
+```
+
+Three spacing helpers: `ui.Spacer()` is a flexible gap that pushes what follows to the end,
+`ui.Gap(24)` is a fixed gap, and `ui.Separator()` draws a hairline — horizontal in a column,
+vertical in a row.
+
+**Grids.** `Dir = Dir.Grid` places children in equal columns, row by row. Each row is as tall as
+its tallest child and children stretch to fill their cell. Add `MinColumnWidth` and the grid picks
+its own column count — as many columns of at least that width as fit, never fewer than one — which
+is the one line that makes a metric strip work from a phone to a wide monitor:
+
+```csharp
+using (ui.Box(new Box { Dir = Dir.Grid, Columns = 4, MinColumnWidth = 180, Gap = 16 }))
+{
+    ui.Metric("Revenue", "$64,210", new MetricOpts { Delta = 12.4f });
+    ui.Metric("Customers", "2,040", new MetricOpts { Delta = 7.3f });
+}
+```
+
+**Wrap.** `Wrap = true` on a row lets children that do not fit continue on a new line. Each line is
+laid out like its own row — `Justify` applies per line — and `Gap` also separates the lines. A
+child breaks onto the next line at its content width; a growing child breaks at its `MinWidth` and
+then shares the free space on its line. That turns side-by-side panels into a stack below a width,
+with no breakpoint code:
+
+```csharp
+using (ui.Row(new Box { Width = Size.Fill, Gap = 16, Wrap = true, Align = Align.Stretch }))
+{
+    using (ui.Card(new Card { Pad = 16, Width = Size.Grow(2), MinWidth = 320 })) Chart();
+    using (ui.Card(new Card { Pad = 16, Width = Size.Grow(1), MinWidth = 260 })) Breakdown();
+}
+```
+
+**Stacks.** `Dir = Dir.Stack` draws children on top of each other: `Align` places them
+horizontally and `Justify` vertically — how a badge sits on an image.
+
+**Scrolling.** `ui.Scroll` fills the remaining height of its parent, scrolls smoothly with the
+wheel, and shows a thin scrollbar while scrolling or hovered near the edge.
+`ScrollOpts { Horizontal = true }` scrolls both ways; `FadeEdges = true` fades the content at an
+edge that has more to scroll instead of cutting it off. Jump with `ui.ScrollTo("messages", 0)`. To
+keep a keyboard-selected row of any height in view, give the row an id and call
+`ui.ScrollReveal("messages", rowId)` on the frame the selection changes — it scrolls the least
+that shows the row, and does nothing before the first layout. For a long list, build only the
+visible window: `ui.VirtualList(id, count, rowHeight, height, out first, out last)`.
+
+**Split views.** Two panes with a divider that highlights on hover and drags:
+
+```csharp
+float ratio = 0.3f;
+using (ui.Split("main", ref ratio, new SplitOpts { MinFirst = 220, MinSecond = 360 }))
+{
+    Sidebar();
+    ui.SplitNext();
+    Editor();
+}
+```
+
+`SplitOpts { Vertical = true }` splits top and bottom. When both minimums cannot fit, the panes
+share the space in proportion to what they asked for.
+
+**Reading layout results.** Layout is computed at the end of the frame, and interaction uses the
+previous frame's rectangles — invisible in practice, and what keeps every component a single
+method call. To read a rectangle yourself, name the box (`Id = "preview"`) and ask after it:
+`ui.RectOf("preview")` returns its `RectF` from the latest layout, and `ui.LastRect` is the
+rectangle of the component drawn most recently.
+
+**Responsive layout.** In order of preference: fill up to a width instead of fixing one; wrap rows
+and `MinColumnWidth` grids for anything that reflows; and only where the structure itself must
+change, read `ui.ViewportSize().X` and branch:
+
+```csharp
+bool narrow = ui.ViewportSize().X < 760;
+using (ui.Row(new Box { Width = Size.Fill, Height = Size.Fill, Align = Align.Stretch }))
+{
+    if (!narrow) { Sidebar(); ui.Separator(); }
+    Content(narrow);   // when narrow, a menu button opens the drawer instead
+}
+```
+
+Most components already adapt to the space they get — tabs scroll sideways rather than truncate,
+tables scroll once their columns would get too narrow, chart legends wrap — so branch only when
+the layout cannot say it for you.
+
+**Reading direction.** `Box.Direction` and `TextOpts.Direction` default to `Direction.Inherit`:
+left to right, inherited down the tree. `Direction.Rtl` on the outermost container mirrors every
+row, wrapped row, column, grid and stack inside it — start/end alignment and horizontal padding
+follow the direction, vertical positions do not — and `Direction.Ltr` overrides an RTL parent.
+`Direction.Auto` picks the first strong character in descendant text only when upstream's
+`CUI_TEXT_SHAPING` build flag is on; CuiSharp's native build leaves it off, so `Auto` resolves to
+LTR — keep RTL explicit. Draw calls stay in physical coordinates (`DrawRect` x grows right in both
+directions), and code, hex and number views keep left to right on purpose.
+
 ## Options are structs of fields
 
 One struct per component, named `<Component>Opts`, all-defaulted to CUI's own defaults. Its members
@@ -325,6 +455,10 @@ the menu's title, or by its tooltip when `IconOnly` — so it exists in the tree
 `Button` if a script has to reach it.
 
 ## Custom controls
+
+Compose first: most custom controls are a row or column of built-ins under an id scope
+(`using (ui.Id(title))`), and that is a control already — keyboard, theme and testing for free.
+Reach for a canvas only when what you draw is not made of boxes: a curve, a gauge face, a plot.
 
 Anything CUI lacks becomes an extension member on `Ui`, called exactly like a built-in: no base
 class, no registration, no allocation per frame.

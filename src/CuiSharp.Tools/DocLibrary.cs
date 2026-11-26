@@ -863,8 +863,8 @@ internal static class BundledTopics
             "A `tree`, a `click` or a `png` is evidence, not a fix: end with a test that fails without the change."),
 
         ("layout",
-            "sizing, nesting, alignment and the rectangles a container actually got",
-            ["SKILL#sizing", "SKILL#containers-are-using-scopes", "SKILL#containers-that-may-be-closed", "api/Layout"],
+            "the flexbox model: sizing, alignment defaults, grids, wrap, stacks, scrolling, split views, RTL and the rectangles a container actually got",
+            ["SKILL#the-layout-model", "SKILL#sizing", "SKILL#containers-are-using-scopes", "SKILL#containers-that-may-be-closed", "api/Layout"],
             "Then `dotnet cui layout` prints the rectangles, the observed union bounds and overflow."),
 
         ("live-debugging",
