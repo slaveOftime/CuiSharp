@@ -4,7 +4,7 @@ Every user-visible change, newest first. Pre-1.0 the minor number carries new su
 carries fixes. The section for a tag is what the GitHub release publishes, so the two cannot say
 different things.
 
-## [0.5.0] — unreleased
+## [0.5.0] — 2026-11-26
 
 ### Added
 
@@ -37,8 +37,9 @@ different things.
 - **The excluded count grew from 6 to 41.** New touch, input-hook, cursor, focus-scope, window-state
   and custom-canvas calls fall under existing section exclusions. The optional GPU renderer is
   newly excluded; these exclusions do not mean CuiSharp ships managed support for those features.
-- **Release measurements:** gallery AOT 3 211 264 B under the existing 3.20 MiB ceiling; chart
-  harness 0.92 ms and 0 B/frame under the existing 1.00 ms ceiling. The CHART app shape measured
+- **Release measurements:** the gallery publishes at 3 365 888 B, its own face lists installed,
+  under the 3.30 MiB ceiling that installing them moved to (3 211 264 B without the call); the
+  chart harness runs 0.92 ms and 0 B/frame under its 1.00 ms ceiling. The CHART app shape measured
   1 238 016 B and its ceiling moves from 1 235 000 to 1 240 000 B. The measurements do not isolate
   the cost of individual upstream features.
 - **One frame owner per background operation.** Start `Mutation` or `Progressive<T>` during

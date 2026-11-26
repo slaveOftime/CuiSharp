@@ -6,7 +6,7 @@ CuiSharp binds [CUI](https://github.com/yappologistic/CUI), a 160-component UI l
 every widget itself. You describe the screen again each frame; your fields are the state.
 
 ![.NET](https://img.shields.io/badge/.NET-10%20%7C%2011-512bd4)
-![NativeAOT](https://img.shields.io/badge/one%20file-3.0%20MB-success)
+![NativeAOT](https://img.shields.io/badge/one%20file-3.2%20MB-success)
 ![alloc](https://img.shields.io/badge/steady--state-0%20B%2Fframe-success)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
@@ -69,7 +69,7 @@ or holding them across an `await`. Nothing can outlive the frame, so nothing can
 
 | | |
 |---|---|
-| **One executable** | NativeAOT links CUI in statically: no runtime, no `cui.dll`, no VC++ redistributable. The gallery, all thirty-two pages, is 3.0 MB. |
+| **One executable** | NativeAOT links CUI in statically: no runtime, no `cui.dll`, no VC++ redistributable. The gallery, all thirty-two pages, is 3.2 MB — its own face lists installed. |
 | **No UI framework** | CUI creates the window, owns the message loop and the GL context. `CuiApp.Run` is the entire host. |
 | **Sub-millisecond frames** | 0.85 ms mean for the live gallery, software rasterizer, 1240×820 (`--fps 900`). |
 | **0 B per frame** | Labels, options and interpolated text come from a per-frame arena. A live chart with a million samples allocates nothing. |
