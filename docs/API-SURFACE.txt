@@ -765,6 +765,7 @@ class CuiSharp.CuiSurface
   Void Render(Byte[], PixelFormat)
   Void Resize(Int32, Int32, Nullable<Single>)
   Void Scroll(Single, Single)
+  Void SetPlatform(in NativePlatformIface)
   Void Type(UiText)
   property Boolean FileDragActive { get; }
   property Boolean Incremental { get; set; }

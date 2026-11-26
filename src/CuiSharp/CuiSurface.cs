@@ -221,6 +221,18 @@ public sealed unsafe partial class CuiSurface : IDisposable
         return new CuiSurface(0, ctx, width, height, scale, RendererKind.Gpu);
     }
 
+    /// <summary>Replaces the native platform hooks for this windowless context.</summary>
+    /// <remarks>
+    /// Call between frames on the owning thread. CUI copies the table, but the host must keep its
+    /// unmanaged callbacks and user data valid until replacement or disposal. Use <c>default</c>
+    /// to clear the hooks. Callback ABIs must match the C header for the target platform.
+    /// </remarks>
+    public void SetPlatform(in NativePlatformIface platform)
+    {
+        ObjectDisposedException.ThrowIf(_ctx == 0, this);
+        Native.SetPlatform(_ctx, in platform);
+    }
+
     /// <summary>Starts a frame. Call <see cref="EndFrame"/> when the UI is built.</summary>
     /// <remarks>
     /// <see cref="EndFrame"/> runs layout and paint, so by the time the next

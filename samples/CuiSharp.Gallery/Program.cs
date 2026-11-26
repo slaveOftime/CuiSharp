@@ -45,6 +45,8 @@ internal static class Program
     {
         if (_failure is not null) return;
 
+        ui.UseSystemFontFallbacks();
+
         try
         {
             Gallery.Frame(ui);

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.WebAssembly">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
@@ -9,6 +9,7 @@
     <AssemblyName>CuiSharp.Gallery.Browser</AssemblyName>
     <RootNamespace>CuiSharp.Gallery.Browser</RootNamespace>
     <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
+    <StaticWebAssetDefaultDocumentEnabled>true</StaticWebAssetDefaultDocumentEnabled>
     <InvariantGlobalization>true</InvariantGlobalization>
     <InvariantTimezone>true</InvariantTimezone>
     <PublishTrimmed>true</PublishTrimmed>
@@ -19,6 +20,11 @@
     <EmccExtraLDFlags>-Wl,--gc-sections</EmccExtraLDFlags>
     <CuiSharpSizeProfile>true</CuiSharpSizeProfile>
     <CuiSharpHeadless>false</CuiSharpHeadless>
+    <!-- The untrimmed Debug link keeps the P/Invoke stubs for the excluded
+         cui_app_* layer (the browser host owns the app loop, so the archive has
+         no cui_app.c). Nothing calls them; let them link undefined. The Release
+         publish keeps the strict check that catches a real missing symbol. -->
+    <WasmAllowUndefinedSymbols Condition="'$(Configuration)' != 'Release'">true</WasmAllowUndefinedSymbols>
   </PropertyGroup>
 
   <Import Project="../../src/CuiSharp/build/CuiSharp.Size.targets" />
@@ -29,6 +35,14 @@
     <Compile Include="../CuiSharp.Gallery/Pages/*.cs" Link="Gallery/Pages/%(Filename)%(Extension)" />
     <!-- The basename is the P/Invoke module name. Keep this as cui.a, not libcui.a. -->
     <NativeFileReference Include="../../artifacts/wasm/cui.a" />
+  </ItemGroup>
+
+  <!-- The .NET 11 gateway serves fingerprinted static assets and proxies the watch
+       browser-tools route. It is a development host, not part of the published app. -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Gateway"
+                      Version="11.0.0"
+                      PrivateAssets="all" />
   </ItemGroup>
 
 </Project>

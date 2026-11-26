@@ -230,8 +230,6 @@ const measureFrames = query.has('perf');
 // keep the drawing buffer readable between frames: the CI smoke test and
 // page screenshots read pixels from CDP after the frame has composited
 const keepBuffer = smoke || query.has('shots');
-let smokeState = 0;
-let selectedNameHash = 0;
 const frameCosts = [];
 const frameIntervals = [];
 let previousFrameTimestamp = 0;
@@ -243,6 +241,86 @@ const textures = {
   update(t, x, y, w, h, px, stride) { gpu?.updateTexture(t, x, y, w, h, px, stride); },
   destroy(t) { gpu?.destroyTexture(t); },
 };
+
+// CUI has no access to system font files in wasm. Rasterize its emoji requests with
+// the browser's system font fallback and copy straight-alpha RGBA into the CUI atlas.
+const utf8 = new TextDecoder();
+let emojiContext;
+function drawEmoji(pointer, length, px, out) {
+  // A selection from the picker is inserted by managed gallery code, not by a
+  // browser input event. Warm the text fallback as soon as the picker draws.
+  loadEmojiFallback();
+  emojiContext ??= document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+  if (!emojiContext) return false;
+  const c = emojiContext;
+  if (c.canvas.width !== px || c.canvas.height !== px) c.canvas.width = c.canvas.height = px;
+  c.clearRect(0, 0, px, px);
+  c.font = `${Math.round(px * 0.84)}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Twemoji Mozilla", sans-serif`;
+  c.textAlign = 'center';
+  c.textBaseline = 'middle';
+  c.fillText(utf8.decode(heapBytes(pointer, length)), px / 2, px * 0.54);
+  const pixels = c.getImageData(0, 0, px, px).data;
+  for (let i = 3; i < pixels.length; i += 4) {
+    if (!pixels[i]) continue;
+    heapBytes(out, pixels.length).set(pixels);
+    return true;
+  }
+  return false;
+}
+
+// Browsers anchor composition to a focused DOM editor. CUI reports its caret in
+// canvas points (CSS pixels), not bitmap pixels; focus the proxy only while editing.
+let caret = null;
+let composing = false;
+function placeIme() {
+  const active = document.activeElement;
+  if (!caret) {
+    if (active === keyboardSink && !composing) canvas.focus({ preventScroll: true });
+    return;
+  }
+  const rect = canvas.getBoundingClientRect();
+  const height = Math.max(1, caret.height);
+  Object.assign(keyboardSink.style, {
+    left: `${Math.max(0, Math.min(innerWidth - 1, rect.left + caret.x))}px`,
+    top: `${Math.max(0, Math.min(innerHeight - height, rect.top + caret.y))}px`,
+    height: `${height}px`,
+    lineHeight: `${height}px`,
+    fontSize: `${Math.max(10, Math.round(height * 0.75))}px`,
+  });
+  if (active === canvas) keyboardSink.focus({ preventScroll: true });
+}
+
+function setCaret(x, y, height, focused) {
+  caret = focused ? { x, y, height } : null;
+  placeIme();
+}
+
+// Text is drawn by CUI, not CSS. Download a known SFNT face only when needed and
+// install it between frames; never block startup or defer input to a different field.
+let cjkFont;
+let emojiFont;
+function loadEmojiFallback() {
+  return emojiFont ??= loadFallbackFont('GalleryEmoji-Regular.ttf');
+}
+
+function typeText(text) {
+  if (!text) return;
+  if (/[\p{Script=Han}\u3000-\u303f\uff00-\uffef]/u.test(text)) cjkFont ??= loadFallbackFont('GallerySansSC-Regular.otf');
+  if (/[\p{Extended_Pictographic}\p{Emoji_Presentation}]/u.test(text)) loadEmojiFallback();
+  host.TypeText(text);
+}
+
+async function loadFallbackFont(asset) {
+  try {
+    const response = await fetch(new URL(`./fonts/${asset}`, import.meta.url));
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    if (!host.AddFont(new Uint8Array(await response.arrayBuffer()))) throw new Error('invalid font');
+    return true;
+  } catch (error) {
+    console.warn(`Font fallback ${asset} was not installed:`, error);
+    return false;
+  }
+}
 
 function modifiers(event) {
   return (event.shiftKey ? 1 : 0) | (event.ctrlKey ? 2 : 0)
@@ -269,6 +347,7 @@ function resize() {
     imageData = undefined;
   }
   host.Resize(width, height, scale);
+  placeIme();   // the canvas moved or resized under the caret
 }
 
 function present(pointer, width, height, x, y, dirtyWidth, dirtyHeight) {
@@ -299,22 +378,6 @@ function animationFrame(timestamp) {
   if (!host) return;
   const started = performance.now();
   host.Frame(timestamp);
-  if (smoke && smokeState === 0) startInputSmoke();
-  else if (smoke && smokeState === 2) smokeState = 3;
-  else if (smoke && smokeState === 4) {
-    selectedNameHash = hashNameField();
-    smokeState = 5;
-  } else if (smoke && smokeState === 6) {
-    const typedNameHash = hashNameField();
-    status.style.display = 'grid';
-    const passed = typedNameHash !== selectedNameHash;
-    smokeState = 7;
-    status.style.opacity = passed ? '0' : '1';
-    status.textContent = passed
-      ? 'BROWSER-SMOKE-OK: canvas rendered and text input changed'
-      : 'BROWSER-SMOKE-FAIL: text input did not change';
-    if (typedNameHash === selectedNameHash) console.error(status.textContent);
-  }
   if (measureFrames) {
     frameCosts.push(performance.now() - started);
     if (previousFrameTimestamp !== 0) frameIntervals.push(timestamp - previousFrameTimestamp);
@@ -335,57 +398,113 @@ function animationFrame(timestamp) {
   requestAnimationFrame(animationFrame);
 }
 
-// A cheap fingerprint of a canvas region, used by the smoke test to prove text
-// input changed what the frame shows. Works over both renderers.
-function hashNameField() {
-  const rect = canvas.getBoundingClientRect();
-  const scale = canvas.width / rect.width;
-  const x = Math.round(rect.width * 0.28 * scale);
-  const y = Math.round(220 * scale);
-  const width = Math.max(1, Math.round(rect.width * 0.31 * scale));
-  const height = Math.max(1, Math.round(50 * scale));
-  const pixels = readRegion(x, y, width, height);
-  let hash = 2166136261;
-  for (let i = 0; i < pixels.length; i++) hash = Math.imul(hash ^ pixels[i], 16777619) >>> 0;
-  return hash;
-}
-
 function readRegion(x, y, width, height) {
-  if (context) return context.getImageData(x, y, width, height).data;
+  const scale = canvas.width / canvas.getBoundingClientRect().width;
+  const left = Math.round(x * scale);
+  const top = Math.round(y * scale);
+  const w = Math.round(width * scale);
+  const h = Math.round(height * scale);
+  if (context) return context.getImageData(left, top, w, h).data;
   const gl = gpu.gl;
-  const pixels = new Uint8Array(width * height * 4);
-  gl.readPixels(x, canvas.height - y - height, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+  const pixels = new Uint8Array(w * h * 4);
+  gl.readPixels(left, canvas.height - top - h, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
   return pixels;
 }
 
-function startInputSmoke() {
-  const rect = canvas.getBoundingClientRect();
-  const x = rect.left + rect.width * 0.45;
-  const y = rect.top + 245;
-  const pointer = { bubbles: true, pointerId: 1, pointerType: 'mouse', button: 0, clientX: x, clientY: y };
-  canvas.dispatchEvent(new PointerEvent('pointermove', { ...pointer, buttons: 0 }));
-  canvas.dispatchEvent(new PointerEvent('pointerdown', { ...pointer, buttons: 1 }));
-  smokeState = 1;
-  requestAnimationFrame(() => {
-    // Let CUI see the pressed button in one full frame before releasing it.
-    requestAnimationFrame(() => {
-      canvas.dispatchEvent(new PointerEvent('pointerup', { ...pointer, buttons: 0 }));
-      smokeState = 2;
-      requestAnimationFrame(() => {
-        window.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, code: 'ControlLeft', key: 'Control', ctrlKey: true }));
-        window.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, code: 'KeyA', key: 'a', ctrlKey: true }));
-        smokeState = 4;
-        requestAnimationFrame(() => {
-          window.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, code: 'KeyA', key: 'a', ctrlKey: true }));
-          window.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, code: 'ControlLeft', key: 'Control' }));
-          keyboardSink.dispatchEvent(new InputEvent('beforeinput', {
-            bubbles: true, cancelable: true, inputType: 'insertText', data: 'Browser Input',
-          }));
-          smokeState = 6;
-        });
-      });
-    });
-  });
+// Check the text ink inside the left end of the field, away from its border and caret.
+function hasTextInk(x, y, height) {
+  const pixels = readRegion(x + 8, y + 7, 18, height - 14);
+  let ink = 0;
+  for (let i = 0; i < pixels.length; i += 4) {
+    if (pixels[i] < 160 && pixels[i + 1] < 160 && pixels[i + 2] < 160) ink++;
+  }
+  return ink > 10;
+}
+
+async function runSmoke() {
+  const frame = () => new Promise(resolve => requestAnimationFrame(resolve));
+  const check = (condition, message) => { if (!condition) throw new Error(message); };
+  const key = (type, code, options) => keyboardSink.dispatchEvent(new KeyboardEvent(type, { bubbles: true, code, ...options }));
+  const input = (inputType, data, isComposing = false) => keyboardSink.dispatchEvent(new InputEvent('beforeinput', {
+    bubbles: true, cancelable: true, inputType, data, isComposing,
+  }));
+  const selectAll = async () => {
+    key('keydown', 'ControlLeft', { ctrlKey: true });
+    key('keydown', 'KeyA', { ctrlKey: true });
+    await frame();
+    key('keyup', 'KeyA', { ctrlKey: true });
+    key('keyup', 'ControlLeft');
+  };
+  try {
+    await frame();
+    const [x, y, width, height] = host.SmokeBounds('name');
+    check(width > 0 && height > 0, 'name field has no layout bounds');
+    const rect = canvas.getBoundingClientRect();
+    const pointer = { bubbles: true, pointerId: 1, pointerType: 'mouse', button: 0,
+      clientX: rect.left + x + width / 2, clientY: rect.top + y + height / 2 };
+    canvas.dispatchEvent(new PointerEvent('pointerdown', { ...pointer, buttons: 1 }));
+    await frame();
+    canvas.dispatchEvent(new PointerEvent('pointerup', pointer));
+    await frame();
+    const anchor = keyboardSink.getBoundingClientRect();
+    check(document.activeElement === keyboardSink && anchor.left >= rect.left + x
+      && anchor.left <= rect.left + x + width && anchor.top >= rect.top + y
+      && anchor.top < rect.top + y + height, `IME proxy is not anchored inside the name field (${anchor.left}, ${anchor.top})`);
+
+    await selectAll();
+    input('insertText', 'Browser Input');
+    await frame();
+    check(host.SmokeInputValue() === 'Browser Input', 'ordinary input did not replace the field value');
+
+    await selectAll();
+    keyboardSink.dispatchEvent(new CompositionEvent('compositionstart'));
+    input('insertCompositionText', 'zhong', true);
+    key('keydown', 'Backspace', { isComposing: true });
+    await frame();
+    check(host.SmokeInputValue() === 'Browser Input', 'IME preedit or its key leaked into the field');
+    keyboardSink.dispatchEvent(new CompositionEvent('compositionend', { data: '中文' }));
+    check(await cjkFont, 'Chinese font fallback did not load');
+    await frame();
+    check(host.SmokeInputValue() === '中文', 'IME commit was lost or duplicated');
+    check(hasTextInk(x, y, height), 'the committed Chinese text did not paint');
+
+    await selectAll();
+    input('insertText', '🙂');
+    check(await emojiFont, 'emoji text fallback did not load');
+    await frame();
+    check(host.SmokeInputValue() === '🙂', 'the text field did not retain the emoji');
+    check(hasTextInk(x, y, height), 'the emoji in the text field did not paint');
+
+    // Require warm-colored pixels in the picker itself. Counting raster callbacks
+    // would also pass if the browser returned tofu or the renderer dropped the texture.
+    host.SetPage(10);
+    host.PointerMove(rect.width - 8, rect.height / 2); // scroll the page, not the terminal or the log
+    await frame();
+    let colorPixels = 0;
+    for (let i = 0; i < 18 && colorPixels < 20; i++) {
+      const [left, top, w, h] = host.SmokeBounds('emoji');
+      const topVisible = Math.max(0, top);
+      const visibleHeight = Math.min(rect.height, top + h) - topVisible;
+      if (w > 0 && visibleHeight > 20) {
+        const pixels = readRegion(left, topVisible, w, visibleHeight);
+        colorPixels = 0;
+        for (let j = 0; j < pixels.length; j += 4) {
+          const r = pixels[j], g = pixels[j + 1], b = pixels[j + 2];
+          if (r > 160 && g > 100 && r > b + 70 && g > b + 45) colorPixels++;
+        }
+      }
+      if (colorPixels < 20) {
+        host.Scroll(-6, 0);
+        await frame();
+      }
+    }
+    check(colorPixels >= 20, 'the Tools page picker did not display color emoji');
+    status.textContent = 'BROWSER-SMOKE-OK: text input, IME anchor and commit, font fallback, and emoji';
+  } catch (error) {
+    status.style.display = 'grid';
+    status.textContent = `BROWSER-SMOKE-FAIL: ${error.message}`;
+    console.error(error);
+  }
 }
 
 function preventBrowserNavigation(event) {
@@ -401,7 +520,9 @@ async function start() {
     const dotnetRuntime = await dotnet.create();
     dotnetRuntime.setModuleImports('main.js', {
       canvas: { present, presentGpu },
+      ime: { place: setCaret },
       textures,
+      emoji: { draw: drawEmoji },
     });
     await dotnetRuntime.runMain();
     const exports = await dotnetRuntime.getAssemblyExports(dotnetRuntime.getConfig().mainAssemblyName);
@@ -422,7 +543,7 @@ async function start() {
         else await new Promise(resolve => setTimeout(resolve, 250));
       }
     }
-    await host.Initialize(!!gpu);
+    host.Initialize(!!gpu, smoke);
     if (!gpu) {
       context = canvas.getContext('2d', { alpha: false });
       if (!context) throw new Error('neither WebGL2 nor a 2d context is available');
@@ -431,27 +552,43 @@ async function start() {
     // on a canvas without a context that would create a 2d one and lock the
     // canvas out of webgl2.
     document.documentElement.dataset.renderer = gpu ? 'webgl2' : '2d';
-    if (query.has('debug')) window.__cui = { get gpu() { return gpu; }, textures, get host() { return host; } };
+    if (query.has('debug')) {
+      window.__cui = {
+        get gpu() { return gpu; },
+        textures,
+        get host() { return host; },
+      };
+    }
 
-    const requestedPage = Number(new URLSearchParams(location.search).get('page'));
-    if (Number.isInteger(requestedPage) && requestedPage >= 0 && requestedPage < 28)
-      host.SetPage(requestedPage);
+    const requestedPage = smoke ? 2 : Number(query.get('page'));
+    if (Number.isInteger(requestedPage)) host.SetPage(requestedPage);
 
     resize();
     new ResizeObserver(resize).observe(canvas);
     window.addEventListener('resize', resize, { passive: true });
 
-    canvas.addEventListener('pointermove', event => {
+    function movePointer(event) {
       const rect = canvas.getBoundingClientRect();
       host.PointerMove(event.clientX - rect.left, event.clientY - rect.top);
-    });
+    }
+    canvas.addEventListener('pointermove', movePointer);
     canvas.addEventListener('pointerdown', event => {
+      if (event.button > 2) return;
       try { canvas.setPointerCapture(event.pointerId); } catch { /* synthetic smoke-test pointer */ }
-      keyboardSink.focus({ preventScroll: true });
+      if (document.activeElement !== keyboardSink) canvas.focus({ preventScroll: true });
+      movePointer(event);
       host.PointerDown(buttonCode(event.button));
       event.preventDefault();
     });
-    canvas.addEventListener('pointerup', event => host.PointerUp(buttonCode(event.button)));
+    canvas.addEventListener('pointerup', event => {
+      if (event.button > 2) return;
+      movePointer(event);
+      host.PointerUp(buttonCode(event.button));
+    });
+    canvas.addEventListener('pointercancel', () => {
+      host.PointerLeave();
+      for (let button = 0; button < 3; button++) host.PointerUp(button);
+    });
     canvas.addEventListener('pointerleave', event => {
       if (event.buttons === 0) host.PointerLeave();
     });
@@ -463,33 +600,84 @@ async function start() {
       event.preventDefault();
     }, { passive: false });
 
-    keyboardSink.addEventListener('focus', () => host.Focus(true));
-    keyboardSink.addEventListener('blur', () => host.Focus(false));
-    window.addEventListener('blur', () => host.Focus(false));
-    window.addEventListener('keydown', event => {
-      host.KeyDown(event.code, modifiers(event));
-      preventBrowserNavigation(event);
+    const ownsKeyboard = element => element === canvas || element === keyboardSink;
+    const held = new Set();
+    function loseFocus() {
+      held.clear();
+      host.Focus(false);
+    }
+    for (const element of [canvas, keyboardSink]) {
+      // Moving focus from the canvas to its editor is not a focus loss in CUI.
+      element.addEventListener('focus', event => {
+        if (!ownsKeyboard(event.relatedTarget)) host.Focus(true);
+      });
+      element.addEventListener('blur', event => {
+        if (!ownsKeyboard(event.relatedTarget)) loseFocus();
+      });
+      element.addEventListener('keydown', event => {
+        // Some IMEs send their first key before compositionstart with keyCode 229.
+        if (composing || event.isComposing || event.keyCode === 229) return;
+        held.add(event.code);
+        host.KeyDown(event.code, modifiers(event));
+        // Type-to-search controls can consume characters without owning a text caret.
+        // Only the textarea gets beforeinput, so send printable canvas keys directly.
+        if (element === canvas && [...event.key].length === 1
+            && ((!event.ctrlKey && !event.metaKey && !event.altKey) || event.getModifierState('AltGraph'))) {
+          typeText(event.key);
+          event.preventDefault();
+        }
+        preventBrowserNavigation(event);
+      });
+      element.addEventListener('keyup', event => {
+        if (held.delete(event.code)) host.KeyUp(event.code, modifiers(event));
+      });
+      element.addEventListener('paste', event => {
+        if (composing) return;
+        event.preventDefault();
+        typeText(event.clipboardData?.getData('text/plain'));
+      });
+    }
+    window.addEventListener('blur', loseFocus);
+    window.addEventListener('focus', () => {
+      if (ownsKeyboard(document.activeElement)) host.Focus(true);
+      placeIme();
     });
-    window.addEventListener('keyup', event => host.KeyUp(event.code, modifiers(event)));
+    keyboardSink.addEventListener('compositionstart', () => {
+      composing = true;
+      keyboardSink.classList.add('composing');
+    });
+    keyboardSink.addEventListener('compositionend', event => {
+      composing = false;
+      keyboardSink.classList.remove('composing');
+      keyboardSink.value = '';
+      keyboardSink.style.width = '';
+      if (caret && document.activeElement === keyboardSink) typeText(event.data);
+      placeIme();
+    });
+    keyboardSink.addEventListener('input', () => {
+      if (composing) {
+        keyboardSink.style.width = '1px';
+        keyboardSink.style.width = `${keyboardSink.scrollWidth + 2}px`;
+      } else {
+        keyboardSink.value = '';
+      }
+    });
     keyboardSink.addEventListener('beforeinput', event => {
-      if (event.inputType === 'insertText' || event.inputType === 'insertReplacementText'
-          || event.inputType === 'insertFromComposition') {
-        if (event.data) host.TypeText(event.data);
+      // Preedit belongs to the DOM. Only compositionend sends the committed text to CUI.
+      if (composing || event.isComposing) return;
+      if (event.inputType === 'insertText' || event.inputType === 'insertReplacementText') {
+        typeText(event.data);
         event.preventDefault();
       } else if (event.inputType.startsWith('delete') || event.inputType === 'insertLineBreak') {
         event.preventDefault();
       }
-    });
-    keyboardSink.addEventListener('paste', event => {
-      event.preventDefault();
-      const text = event.clipboardData?.getData('text/plain');
-      if (text) host.TypeText(text);
     });
     window.addEventListener('pagehide', () => host?.Shutdown(), { once: true });
 
     if (smoke) status.style.display = 'none';
     else status.remove();
     requestAnimationFrame(animationFrame);
+    if (smoke) void runSmoke();
   } catch (error) {
     status.textContent = `CuiSharp browser startup failed: ${error}`;
     console.error(error);

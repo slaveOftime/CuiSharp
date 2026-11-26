@@ -160,7 +160,7 @@ MANUAL cui_input_file_drop: `CuiSurface.FileDrop(paths, x, y)` (CuiSurface.Input
 MANUAL cui_dropped_file_count: `CuiSurface.DroppedFileCount` (CuiSurface.Input.cs) and `ui.DroppedFileCount` (Ui/Ui.Overlays.cs): the surface feeds drops, a frame reads them.
 MANUAL cui_dropped_file: `CuiSurface.DroppedFile(index)` (CuiSurface.Input.cs) and `ui.DroppedFile(index)` (Ui/Ui.Overlays.cs): the path of the dropped file, decoded from the native buffer.
 MANUAL cui_file_drag_active: `CuiSurface.FileDragActive` (CuiSurface.Input.cs).
-EXCLUDED cui_set_platform: CuiApp and CuiSurface own input delivery. Raw hook routing, touch injection/query and cursor control have no managed API in this section.
+MANUAL cui_set_platform: CuiSurface.SetPlatform (CuiSurface.cs) installs native host callbacks on a windowless context.
 EXCLUDED cui_set_cursor: CuiApp and CuiSurface own input delivery. Raw hook routing, touch injection/query and cursor control have no managed API in this section.
 MANUAL cui_get_cursor: `ui.Cursor` (Ui.Frame.cs).
 MANUAL cui_set_clipboard_text: `Ui.SetClipboard(text)` (Ui/Ui.cs): the platform clipboard hook, for a menu or status bar item that copies.

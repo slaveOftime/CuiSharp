@@ -8,6 +8,7 @@ on:
     # when a release goes out and not before the packages are on nuget.org.
     paths:
       - 'samples/CuiSharp.Gallery.Browser/**'
+      - 'samples/CuiSharp.Gallery/**'
       - 'src/CuiSharp/**'
       - 'native/**'
       - 'tools/build-cui-wasm.ps1'
@@ -45,9 +46,10 @@ jobs:
 
       - name: Install browser workloads
         working-directory: samples/CuiSharp.Gallery.Browser
-        # Both SDKs are installed; this sample's global.json pins its SDK band, because a wasm
-        # workload belongs to the feature band that installed it and the app targets net10.0.
-        run: dotnet workload install wasm-tools wasm-experimental
+        # Both SDKs are installed and the muxer picks the newest, so the workload lands in the
+        # 11.0 band — the one the net11.0 app links against. A wasm workload belongs to the SDK
+        # feature band that installed it, and that band's Emscripten must match build-cui-wasm.
+        run: dotnet workload install wasm-tools
 
       - uses: actions/setup-python@v6
         with:
@@ -58,7 +60,7 @@ jobs:
 
       - name: Build CUI for wasm32
         shell: pwsh
-        run: pwsh tools/build-cui-wasm.ps1 -TargetFramework net10.0
+        run: pwsh tools/build-cui-wasm.ps1 -TargetFramework net11.0
 
       - name: Publish browser gallery
         working-directory: samples/CuiSharp.Gallery.Browser

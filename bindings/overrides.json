@@ -914,6 +914,9 @@
     },
     "cui_tree_move": {
       "why": "CuiTree.Move(nodes, root, move, target, where) (Ui/Ui.TreeTable.cs): relinks the caller's node array in place, like CuiTree.Sort."
+    },
+    "cui_set_platform": {
+      "why": "CuiSurface.SetPlatform (CuiSurface.cs) installs native host callbacks on a windowless context."
     }
   },
   "outParams": {
