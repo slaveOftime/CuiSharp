@@ -21,6 +21,7 @@ public static unsafe class InstrumentsDotMatrixChartEventTrackReadoutDotMatrixDi
             int __timesCount = count;
             int __selected = (int)(selected);
             var __opts = o.ToNative((nint)(&__selected));
+            o.BindCallbacks(ui.FrameState, ref __opts);
             var __result = Native.EventTrack(ui.Handle, Utf8.Get(id), (nint)__times, ref __timesCount, (int)(times.Length), min, max, in __opts);
             new Span<double>(__times, Math.Min(__timesCount, times.Length)).CopyTo(times);
             count = __timesCount;

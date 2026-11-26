@@ -11,10 +11,24 @@ in [ARCHITECTURE.md](ARCHITECTURE.md). Every item here passes the same gates as 
   a separate assembly so command-line analyzers do not depend on Workspaces. Still needed: safe rewrites for the remaining rules and sequential
   fix-all for overlapping scope bodies. Nested loops and ambiguous row keys remain manual.
 
-- **Profile the real-time chart regression across the latest CUI sync.** Alternating isolated old-
-  and new-pin builds measured 0.82–0.84 ms versus 0.94 ms at 1280x720, with 0 B/frame throughout.
-  The frame ceiling moved to 1.00 ms explicitly; identify the cost before claiming a cause or
-  dismissing it as noise. Native fixes still belong upstream.
+- **Profile the real-time chart regression since the post-1.4.0 sync.** Alternating old-pin and
+  post-1.4.0 builds measured 0.82–0.84 ms versus 0.94 ms at 1280x720, with 0 B/frame. The
+  subsequent v1.5.0 measurement is not an isolated comparison; identify the cost before assigning
+  it to upstream. Native fixes still belong upstream.
+- **Bind the custom canvas's input surface** — `cui_canvas_ex` (focusable canvases),
+  `cui_wheel_region`/`cui_wheel_take`, `cui_set_cursor` and `cui_request_component_focus` are
+  excluded with the Custom drawing section; a managed surface for keyboard focus, wheel takeover
+  and cursor shaping on a hand-drawn canvas is its own design.
+- **Expose the window-state calls through CuiApp** — `cui_app_minimize`/`restore`/
+  `set_position`/`window_state`/`placement` are excluded with the `cui_app` section because
+  window ownership belongs to CuiApp; a supported subset on `CuiWindow` (like the live session's)
+  would let apps save and reopen where they were.
+- **A managed GPU renderer bridge** — `cui_gpu_*` are excluded: CUI builds them behind compile-time
+  flags and hands over a native interface of function pointers and device handles. Worth a design
+  only if an app needs to skip OpenGL.
+- **Remove the Data display page's other idle allocations.** The page allocated before v1.5.0;
+  the tree table's callbacks now reuse frame slots and the gallery caches their delegates. Profile
+  the non-tree demo before attributing the remaining bytes.
 
 ## 2. Where upstream has to move first
 
@@ -61,4 +75,14 @@ in [ARCHITECTURE.md](ARCHITECTURE.md). Every item here passes the same gates as 
   `Hosting/HotReloadWake` arms under `dotnet watch` off Windows. A `cui_app_screenshot` that honours
   `NULL` retires the second, and both belong upstream, not in `native/patches/`. Do not substitute a
   background render loop or silently start a headless app.
+- **One intermittent allocation in a steady-state frame.**
+  `GalleryPageTests.TheNewGalleryPagesDrawWithoutAllocating` measured 2 256 B in one frame of the
+  Collaboration page on a `windows-11-arm` runner, and again in
+  `ConvenienceApiTests.ConvenienceControlsAllocateNothingInSteadyState` on Windows x64. Both move with the
+  run: the paid test differs, and neither reproduces alone — 20 isolated runs and 4 full-suite runs
+  passed, then one full suite failed. That shape is a process-wide first use that lands in whichever
+  draw reaches it first, not a page's own cost, and the candidates are still open (a formatter
+  cache, the UTF-8 arena growing a chunk beside its managed capacity array, a recorded label). Both
+  tests now settle before they measure, which still fails a page that allocates per frame. Find the
+  source with an allocation trace on a reproduction rather than by raising the tolerance.
 - **macOS signing and notarization** for a distributed `.app`.

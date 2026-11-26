@@ -12,6 +12,8 @@
     Pass -NoNative to skip step 1 when the native artifacts are already current,
     -NoDiff to fail if regeneration changed anything (what CI runs), and -NoTest to
     stop after the build when the suite is run elsewhere (it needs the native library).
+    -Plan reports field changes and unresolved bindings without rebuilding native,
+    building the solution, or replacing any generated files.
 
 .EXAMPLE
     pwsh tools/regen.ps1
@@ -21,13 +23,18 @@
 param(
     [switch] $NoNative,
     [switch] $NoDiff,
-    [switch] $NoTest
+    [switch] $NoTest,
+    [switch] $Plan
 )
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 Push-Location $root
 try {
+    if ($Plan) {
+        & dotnet run (Join-Path $root 'tools/bindgen.cs') -- --plan
+        exit $LASTEXITCODE
+    }
     if (-not $NoNative) {
         if ($IsWindows) {
             & pwsh -File (Join-Path $root 'native/build-native.ps1')
@@ -112,11 +119,10 @@ try {
 
     # Snapshotted before staging, so a copy that was edited by hand is a diff, not a silent repair.
     $before = Get-GeneratedHash
-    Copy-Bundled
-
     Write-Host 'bindgen: reading headers'
     & dotnet run (Join-Path $root 'tools/bindgen.cs')
-    if ($LASTEXITCODE -ne 0) { throw 'bindgen failed' }
+    if ($LASTEXITCODE -ne 0) { throw 'bindgen failed; resolve the diagnostics before rebuilding' }
+    Copy-Bundled
 
     if ($NoDiff) {
         $after = Get-GeneratedHash
@@ -130,7 +136,6 @@ try {
         }
         Write-Host 'bindgen: no diff'
     }
-    if ($NoDiff) { Write-Host 'bindgen: no diff' }
 
     Write-Host 'bindgen: contract checks (isolated IR/config copies)'
     & dotnet run (Join-Path $root 'tools/bindgen.cs') -- --self-test

@@ -72,11 +72,19 @@ $template = Join-Path $root 'src/CuiSharp.Templates/CuiSharp.App/.template.confi
 $templateVersion = ([regex]::Match((Get-Content $template -Raw), '"defaultValue":\s*"([0-9][^"]*)"')).Groups[1].Value
 $changelog = Join-Path $root 'CHANGELOG.md'
 $logged = ([regex]::Match((Get-Content $changelog -Raw), '(?m)^## \[?([0-9][0-9.]*)')).Groups[1].Value
+$app = Get-Content (Join-Path $root 'samples/CuiSharp.Gallery/GalleryApp.cs') -Raw
+$badgeVersion = ([regex]::Match($app, 'ReleaseVersion = "([^"]+)"')).Groups[1].Value
+$catalog = Get-Content (Join-Path $root 'skills/cui-dotnet/api/catalog.json') -Raw | ConvertFrom-Json -AsHashtable
 Note "Directory.Build.props  $version"
-Note "template.json          $templateVersion"
-Note "CHANGELOG.md newest    $logged"
-if ($version -ne $templateVersion) { Problem "the template says $templateVersion, the assembly $version (TemplateVersionTests)" }
-if ($version -ne $logged) { Problem "CHANGELOG.md's newest section is $logged, the build is $version (ReleaseNotesTests)" }
+if (-not $version) { Problem 'Directory.Build.props has no Version' }
+foreach ($copy in @(
+    @{ File = 'template.json'; Value = $templateVersion },
+    @{ File = 'CHANGELOG.md newest'; Value = $logged },
+    @{ File = 'GalleryApp.cs badge'; Value = $badgeVersion },
+    @{ File = 'api/catalog.json'; Value = $catalog.version })) {
+    Note "$($copy.File): $($copy.Value)"
+    if ($copy.Value -cne $version) { Problem "$($copy.File) disagrees with build version $version" }
+}
 
 # --- coverage ----------------------------------------------------------------------------------
 
@@ -89,9 +97,10 @@ $optionsPending = ([regex]::Match((@($coverage) -match '^Generated: ') -join '',
 $records = ([regex]::Match((@($coverage) -match 'Data records generated as array items'), 'items: (\d+)')).Groups[1].Value
 $wrappers = ([regex]::Match((@($coverage) -match '^Generated wrappers: '), 'wrappers: (\d+)')).Groups[1].Value
 
-# One entry per C function, from the WIDGETS section on. `-clike`, because PowerShell's `-like` is
-# case-insensitive and would count the "Generated wrappers: 277" summary line as a status entry.
-$widgets = @($coverage | Select-Object -Skip 113)
+# The report's record list can grow; split on its section marker, never a fixed line number.
+$start = [array]::IndexOf($coverage, 'WIDGETS')
+if ($start -lt 0) { throw 'coverage.txt has no WIDGETS section; run tools/regen.ps1' }
+$widgets = @($coverage | Select-Object -Skip ($start + 1))
 function Count-Status([string] $Status) {
     @($widgets | Where-Object { $_.StartsWith("$Status ", [StringComparison]::Ordinal) }).Count
 }
@@ -99,20 +108,21 @@ function Count-Status([string] $Status) {
 $generated = Count-Status 'GENERATED'
 $manual = Count-Status 'MANUAL'
 $excluded = Count-Status 'EXCLUDED'
-$skipped = Count-Status 'RAW-SKIP'
+$skipped = @($widgets | Where-Object { $_ -cmatch '^RAW-SKIP function \w+: variadic$' }).Count
 $pending = Count-Status 'PENDING'
 
-Note "functions   $functions  (generated $generated, manual $manual, excluded $excluded, variadic $skipped)"
+Note "functions   $functions non-variadic (generated $generated, manual $manual, excluded $excluded, pending $pending); $skipped variadic skipped"
 Note "options     $options ($optionsPending pending)"
 Note "records     $records"
 Note "wrappers    $wrappers generated"
 if ($pending -ne 0) { Problem "$pending PENDING entries: a sync is unfinished, see references/bindings.md" }
 if ($optionsPending -ne 0) { Problem "$optionsPending option structs are pending: see references/bindings.md" }
 
-# Generated wrappers include scope-end functions, so the four counts add up to the C total plus one
-# entry per `end` function in a begin/end pair.
-$total = $generated + $manual + $excluded + $skipped + $pending
-if ([int]$functions -gt 0) { Note "entries     $total for $functions C functions ($($total - [int]$functions) scope ends)" }
+# Scopes can wrap two C functions, but each function still has exactly one entry.
+$total = $generated + $manual + $excluded + $pending
+if (-not $functions -or $total -ne [int]$functions) {
+    Problem "coverage.txt has $total function statuses, expected $functions (excluding RAW-SKIP)"
+}
 
 # --- the numbers the docs quote ----------------------------------------------------------------
 
@@ -120,10 +130,13 @@ if ([int]$functions -gt 0) { Note "entries     $total for $functions C functions
 # numbers out of the sentence and compare them with coverage.txt: a stale sync is then a failed
 # command, not a claim someone notices a release later.
 $checks = @(
-    @{ File = 'README.md'; Pattern = '(\d+) CUI (?:[\d.]+ )?functions'; Value = $functions; What = 'C functions' },
+    @{ File = 'README.md'; Pattern = '(\d+)(?: non-variadic)? CUI (?:[\d.]+ )?functions'; Value = $functions; What = 'C functions' },
     @{ File = 'README.md'; Pattern = '(\d+) option'; Value = $options; What = 'options' },
     @{ File = 'README.md'; Pattern = '(\d+) records'; Value = $records; What = 'records' },
     @{ File = 'README.md'; Pattern = '(\d+) generated wrappers'; Value = $wrappers; What = 'generated wrappers' },
+    @{ File = 'README.md'; Pattern = '(\d+)\s+deliberate\s+hand-written'; Value = $manual; What = 'manual wrappers' },
+    @{ File = 'README.md'; Pattern = '(\d+)\s+excluded'; Value = $excluded; What = 'excluded' },
+    @{ File = 'README.md'; Pattern = '(\d+)\s+variadic skipped'; Value = $skipped; What = 'variadic skipped' },
     @{ File = 'README.md'; Pattern = '(\d+) pending'; Value = $pending; What = 'pending' },
     @{ File = 'bindings/README.md'; Pattern = '(\d+)\*\* option structs'; Value = $options; What = 'options' },
     @{ File = 'bindings/README.md'; Pattern = '(\d+)\*\* data records'; Value = $records; What = 'records' },
@@ -132,7 +145,7 @@ $checks = @(
     @{ File = 'bindings/README.md'; Pattern = '(\d+)\*\* excluded'; Value = $excluded; What = 'excluded' },
     @{ File = 'bindings/README.md'; Pattern = '(\d+)\*\*\s*variadic'; Value = $skipped; What = 'variadic skipped' },
     @{ File = 'bindings/README.md'; Pattern = '(\d+)\*\*\s*pending'; Value = $pending; What = 'pending' },
-    @{ File = 'bindings/README.md'; Pattern = '(\d+)\s*C\s*functions'; Value = $functions; What = 'C functions' }
+    @{ File = 'bindings/README.md'; Pattern = '(\d+)\s+(?:non-variadic\s+)?C\s+functions'; Value = $functions; What = 'C functions' }
 )
 
 Section 'numbers in the docs'
@@ -151,7 +164,6 @@ foreach ($check in $checks) {
 
 # The gallery's own count: `PageCount` is what the app draws, `PageNames` is what the shell shows, and
 # the two disagreeing means a page is unreachable rather than missing.
-$app = Get-Content (Join-Path $root 'samples/CuiSharp.Gallery/GalleryApp.cs') -Raw
 $pageCount = ([regex]::Match($app, 'PageCount = (\d+)')).Groups[1].Value
 $names = [regex]::Match($app, 'PageNames\s*=\s*\{(?<body>.*?)\}', 'Singleline').Groups['body'].Value
 $named = [regex]::Matches($names, '"[^"]+"').Count

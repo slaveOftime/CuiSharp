@@ -76,21 +76,30 @@ about 850 KB raw. An Emscripten link with `--print-gc-sections` reported 167 unu
 sections removed for this gallery. That confirms dead stripping works, but the counts are sections,
 not functions.
 
-The current `samples/CuiSharp.Gallery.Browser` candidate, published for `net10.0` with the matching
-.NET 10.0.403 / Emscripten 3.1.56 workload, `PublishTrimmed`, and `-Oz`, produced:
+The current `samples/CuiSharp.Gallery.Browser` candidate, published for `net11.0` with the matching
+.NET 11 SDK / Emscripten 6.0.2 workload, `PublishTrimmed`, and `-Oz`, produced:
 
 | Measure | Bytes |
 |---|---:|
-| raw `.wasm` assets, combined | 3,503,646 |
-| `.gz` assets, combined | 1,639,204 |
-| `.br` sidecars, combined | 1,360,793 |
-| largest gzip asset, `dotnet.native.wasm.gz` | 952,149 |
-| Pages tree after dropping sidecars (with `.nojekyll`) | 3,973,466 |
+| `_framework` raw `.wasm` assets, combined | 3,761,667 |
+| `_framework` `.gz` sidecars, combined | 1,756,486 |
+| `_framework` `.br` sidecars, combined | 1,454,392 |
+| largest framework gzip asset, `dotnet.native.<fingerprint>.wasm.gz` | 1,015,248 |
+| on-demand Simplified Chinese fallback `.otf` | 1,820,048 |
+| on-demand emoji text fallback `.ttf` | 777,164 |
+| Pages tree after dropping sidecars (with `.nojekyll`) | 6,862,768 |
+
+The fonts add to the deploy tree, not to the default startup payload. The Chinese font is
+fetched on Chinese text entry; the outline emoji font is fetched on emoji entry or when a
+picker renders. The earlier .NET 10 Pages tree without either fallback was 3,973,466 bytes.
 
 The checked-in Pages workflow builds this tree, strips the redundant compression sidecars, and runs
 `tools/test-browser-smoke.py` against the exact deploy tree before upload. The smoke verifies
 non-background canvas pixels and exercises pointer focus, Ctrl+A, and text insertion into the real
-Full name field. The site is live at <https://slaveoftime.github.io/CuiSharp/>, republished by
+Full name field. It checks that the browser's textarea follows CUI's caret, that composition commits
+once and paints Chinese glyphs, that typed emoji paint in a regular input, and that the picker
+shows color emoji.
+The site is live at <https://slaveoftime.github.io/CuiSharp/>, republished by
 `release.yml` once a release is published, and never by a merge to `main`; the served `index.html`,
 `main.js`, `site.css`, `favicon.ico` and fingerprinted `_framework/*.wasm` all answer 200.
 
@@ -173,14 +182,15 @@ report timings; the normal page emits no per-frame logs.
 - `samples/CuiSharp.Gallery.Browser`: real gallery sources, interpreter, `CuiSurface.Incremental`,
   one pinned RGBA framebuffer, one no-copy `ImageData` view, dirty-rectangle `putImageData`, rAF,
   and pointer/wheel/keyboard/text/paste/focus/resize input.
-- `tools/test-browser-smoke.py`: serves the actual deploy tree and verifies canvas pixels plus a
-  synthetic pointer → Ctrl+A → text-entry interaction. Verified locally in headless Chrome; the
-  Full name field changes to “Browser Input”.
-- The clean candidate is about 1.64 MB combined gzip / 1.36 MB Brotli for `_framework` WASM assets.
-  The deploy tree is about 3.97 MB raw after removing redundant `.gz`/`.br` sidecars.
+- The browser IME adapter in `browser_platform.c` keeps CUI's by-value `cui_rect` out of Mono
+  reverse P/Invoke (which trapped in both Debug and trimmed Release). It forwards just three scalar
+  coordinates. Emoji use browser fonts; CUI's layout and atlas still own ordinary text.
+- `tools/test-browser-smoke.py` runs on the dev server or the actual deploy tree. Both renderers
+  passed in headless Chrome on .NET 11. This verifies proxy geometry and browser composition
+  events, not the OS-native candidate panel itself.
 - End-to-end headless Chrome measurements include `BrowserHost.Frame` and the canvas update. The
   Overview and More charts pages stayed under 5.7 ms p95 after warm-up, with rAF p95 around 16.8 ms.
-- `.github/workflows/pages.yml` builds on Windows with the matching .NET 10 workload, strips
+- `.github/workflows/pages.yml` builds on Windows with the matching .NET 11 workload, strips
   sidecars, smoke-tests the deploy tree, uploads the Pages artifact, and deploys on a tag ref. The
   `pages` job in `release.yml` calls it after the packages reach nuget.org, so the site a visitor
   sees is the version that shipped.

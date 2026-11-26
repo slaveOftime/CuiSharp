@@ -37,7 +37,7 @@ public unsafe ref partial struct Ui
     /// <param name="id">The widget id, which is also the identity of its hover and keyboard state.</param>
     /// <param name="series">The series to stack, each in its own band.</param>
     /// <param name="count">Samples per series, spread evenly from <see cref="DotChartOpts.XMin"/> to <see cref="DotChartOpts.XMax"/>.</param>
-    /// <param name="o">Axis, readout and annotation options.</param>
+    /// <param name="o">Axis, optional label callbacks, readout and annotation options.</param>
     public DotChartResult DotChart(UiText id, scoped ReadOnlySpan<DotSeries> series, int count, DotChartOpts o = default)
     {
         // Native reads `count` values from every series, so each one is copied into a block of
@@ -64,8 +64,10 @@ public unsafe ref partial struct Ui
         }
 
         var opts = o.ToNative();
+        o.BindCallbacks(FrameState, ref opts);
         var result = Native.DotChart(Handle, Utf8.Get(id), (nint)native, series.Length, samples, in opts);
         WidgetRecorder.Note(Handle, "DotChart", id);
         return DotChartResult.FromNative(result);
     }
+
 }

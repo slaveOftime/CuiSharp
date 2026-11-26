@@ -114,4 +114,130 @@ public class InstrumentTests
         Assert.Equal(2, opts.ToNative().AnnotationCount);
         Assert.Null(typeof(DotChartOpts).GetField("AnnotationCount"));
     }
+
+    [Fact]
+    public void TheDotChartWritesItsXLabelsWithTheFrameCallbackBridge()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        // A label function that writes a constant glyph must change what the axis shows:
+        // if the pointer or the user data were misbound, native would fall back to the
+        // "%g" numbers and the two renders would come out identical.
+        byte[] plain = Render(ui => ui.DotChart("mg", [new DotSeries([10f, 40f, 90f])], 3,
+            new DotChartOpts { XMin = 1, XMax = 3 }));
+        byte[] labeled = Render(ui => ui.DotChart("mg", [new DotSeries([10f, 40f, 90f])], 3,
+            new DotChartOpts { XMin = 1, XMax = 3, XLabel = _ => "X" }));
+        Assert.NotEqual(plain, labeled);
+
+        // A label longer than CUI's buffer is truncated to fit, not a fault.
+        byte[] overlong = Render(ui => ui.DotChart("mg", [new DotSeries([10f, 40f, 90f])], 3,
+            new DotChartOpts { XMin = 1, XMax = 3, XLabel = _ => new string('x', 400) }));
+        Assert.NotEqual(plain, overlong);
+    }
+
+    [Fact]
+    public void TheDotChartWritesItsReadoutValueWithTheFrameCallbackBridge()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        // The readout exists only under the pointer, so park it over the plot first; the
+        // captured invocations prove native called the managed delegate through the bridge.
+        var calls = new List<double>();
+        using var surface = CuiSurface.Create(Width, Height);
+        var pixels = new byte[surface.PixelWidth * surface.PixelHeight * 4];
+        surface.Draw(ui => ui.DotChart("mg", [new DotSeries([10f, 40f, 90f])], 3,
+            new DotChartOpts { XMin = 1, XMax = 3 }), pixels);
+        byte[] plain, labeled;
+        surface.MouseMove(450, 60);
+        surface.Draw(ui => ui.DotChart("mg", [new DotSeries([10f, 40f, 90f])], 3,
+            new DotChartOpts { XMin = 1, XMax = 3 }), pixels);
+        plain = (byte[])pixels.Clone();
+        surface.Draw(ui => ui.DotChart("mg", [new DotSeries([10f, 40f, 90f])], 3,
+            new DotChartOpts { XMin = 1, XMax = 3, ValueLabel = v => { calls.Add(v); return "!?"; } }), pixels);
+        labeled = (byte[])pixels.Clone();
+
+        Assert.NotEmpty(calls);
+        Assert.NotEqual(plain, labeled);
+    }
+
+    [Fact]
+    public void TheEventTrackWritesItsAxisLabelsWithTheFrameCallbackBridge()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        var times = new[] { 8.0, 11.0, 12.25 };
+        int count = 3, selected = -1;
+        byte[] plain = null!, labeled = null!;
+        using (var surface = CuiSurface.Create(Width, Height))
+        {
+            plain = Frame(surface, ui =>
+            {
+                int c = count, s = selected;
+                ui.EventTrack("cups", times, ref c, 6, 30, ref s);
+            });
+        }
+        using (var surface = CuiSurface.Create(Width, Height))
+        {
+            labeled = Frame(surface, ui =>
+            {
+                int c = count, s = selected;
+                ui.EventTrack("cups", times, ref c, 6, 30, ref s, new EventTrackOpts { Label = _ => "T" });
+            });
+        }
+        Assert.NotEqual(plain, labeled);
+    }
+
+    [Fact]
+    public void AxisLabelTruncationKeepsTheLongestCompleteUtf8Prefix()
+    {
+        Span<byte> bytes = stackalloc byte[7];
+        bytes.Fill(0xCC);
+        FrameCallbacks.WriteAxisLabel("A😀éZ", bytes[..6]);
+        Assert.True("A😀\0"u8.SequenceEqual(bytes[..6]));
+        Assert.Equal(0xCC, bytes[6]);
+        FrameCallbacks.WriteAxisLabel("é", bytes[..2]);
+        Assert.Equal(0, bytes[0]);
+        FrameCallbacks.WriteAxisLabel("123456", bytes[..6]);
+        Assert.True("12345\0"u8.SequenceEqual(bytes[..6]));
+    }
+
+    [Fact]
+    public void AnAxisLabelExceptionIsReportedWithoutCrossingNativeCode()
+    {
+        using var surface = CuiSurface.Create(Width, Height);
+        var failure = new InvalidOperationException("axis label failed");
+        surface.BeginFrame();
+        surface.Ui.DotChart("chart", [new DotSeries([1f, 2f])], 2,
+            new DotChartOpts { XLabel = _ => throw failure });
+        surface.EndFrame();
+        Assert.Contains(failure, surface.Faults);
+    }
+
+    [Fact]
+    public void CachedAxisLabelsAllocateNothingAfterWarmup()
+    {
+        using var surface = CuiSurface.Create(Width, Height);
+        DotSeries[] series = [new([1f, 2f])];
+        double[] times = [0.5, 1.5];
+        int count = times.Length, selected = -1;
+        int calls = 0;
+        string Label(double _) { calls++; return "é"; }
+        var chart = new DotChartOpts { XLabel = Label };
+        var track = new EventTrackOpts { Label = Label };
+        void Draw()
+        {
+            surface.BeginFrame();
+            surface.Ui.DotChart("chart", series, 2, chart);
+            surface.Ui.EventTrack("track", times, ref count, 0, 2, ref selected, track);
+            surface.EndFrame();
+        }
+        for (int i = 0; i < 40; i++) Draw();
+        int beforeCalls = calls;
+        long beforeBytes = GC.GetAllocatedBytesForCurrentThread();
+        for (int i = 0; i < 10; i++) Draw();
+        long allocated = GC.GetAllocatedBytesForCurrentThread() - beforeBytes;
+        Assert.True(calls > beforeCalls);
+        Assert.Equal(0, allocated);
+        Assert.Empty(surface.Faults);
+    }
 }

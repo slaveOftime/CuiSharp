@@ -36,9 +36,9 @@ retained-pointer storage.
 | `src/CuiSharp/Ui/Records.g.cs` | Data records used as array items (`Choice`, `Command`, `TableColumn`, `TableSort`): friendly constructor, `ToNative()`, and `FromNative()` where write-back is meaningful. |
 | `src/CuiSharp.Tests/OptionMappings.g.cs` | One consolidated test covering every generated option's populated fields, sentinel and null/false defaults. A swapped field is a single generator bug, so it is one test, not one per option. |
 
-Current state: **194** option structs, **111** data records, **302** generated wrappers, **181**
-deliberate hand-written ones, **6** excluded, **4** variadic skipped, **0** pending — 532 C
-functions, every one with a status. `pwsh skills/cui-sync/scripts/sync-status.ps1` prints these
+Current state: **194** option structs, **112** data records, **305** generated wrappers, **183**
+deliberate hand-written ones, **41** excluded, **4** variadic skipped separately, **0** pending —
+573 non-variadic C functions, every one with a status. `pwsh skills/cui-sync/scripts/sync-status.ps1` prints these
 numbers from `coverage.txt` and fails when the prose here or in `README.md` disagrees. Pointer-heavy options are withheld rather than exposed with guessed
 ownership. Charts, texture handles, text-buffer inputs and reorder are hand-written on purpose, and
 `coverage.txt` names the member and the file for every one of them.
@@ -83,7 +83,8 @@ and missing reasons fail generation.
 | `optionArrayChecks` | `atLeast`, optional `prepare`, `why` | An option array whose length is a widget parameter; the wrapper rejects a short array before the call. |
 | `scopeResults` | `type`, `out`, `why` | A `begin` whose `end` reports a value: the wrapper emits the body overload and returns it. |
 | `stringResults` | `why` | A function that returns a C string; the wrapper copies it. |
-| `excludedFunctions` | `why` | One C function deliberately not wrapped: the pure helpers (diff computation, date maths, the log writer) belong in a static API, not on a frame-local `Ui`. |
+| `excludedFunctions` | `why` | One C function deliberately not wrapped. It cannot also appear in `manualWidgets`, even when the managed wrapper is a static helper. |
+| `axisLabels` | `user`, `why` | Pairs a `cui_axis_label_fn` option with its `void *` field. Emits an optional managed label delegate; the wrapper rents its lifetime through paint. |
 | `hiddenOptionFields` | `why` | An option field that never crosses the boundary: a callback (`cui_file_list_fn`, the tree table's label) or its `void *`. Left zero, so native uses its own default. |
 | `optionFieldCounts` | `count`, `why` | An option array whose count field is not `x`/`x_count`, e.g. `meter` ↔ `meter_channels`. |
 | `optionTextFields` | `capacity`, `why` | An option `char *` buffer the widget reads and writes: a `ref string` beside the options, backed by the pooled text buffers. |

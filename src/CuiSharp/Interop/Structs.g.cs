@@ -1070,7 +1070,7 @@ public unsafe struct NativeChartAnnotation
 {
     /// <summary>cui_annotation_kind (offset 0)</summary>
     public AnnotationKind Kind;
-    /// <summary>in the chart&apos;s x units: the point&apos;s index for line and bar charts, x_min to x_max for the dot chart (offset 8)</summary>
+    /// <summary>in the chart&apos;s x units: x_min to x_max, or the point&apos;s index in a line or bar chart that sets neither (offset 8)</summary>
     public double X;
     /// <summary>a value, in the chart&apos;s value units (offset 16)</summary>
     public double Y;
@@ -1080,9 +1080,11 @@ public unsafe struct NativeChartAnnotation
     public nint Detail;
     /// <summary>the line, dot and label in the accent color (offset 40)</summary>
     public byte Accent;
+    /// <summary>the line, dot and label in this color, e.g. CUI_COLOR_SUCCESS; default: `accent` decides (offset 41)</summary>
+    public NativeColor Color;
 }
 
-/// <summary>cui_chart_opts (72 bytes)</summary>
+/// <summary>cui_chart_opts (88 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeChartOpts
 {
@@ -1118,6 +1120,10 @@ public unsafe struct NativeChartOpts
     public int AnnotationCount;
     /// <summary>line chart: every series filled with dots that thin out from its line to the bottom of its band (implies `area`); with `stacked`, bands never mix colors (offset 68)</summary>
     public byte Dither;
+    /// <summary>line and bar charts: what the first and last point stand for, in annotation x units; equal: annotation x is the point&apos;s index (offset 72)</summary>
+    public double XMin;
+    /// <summary>line and bar charts: what the first and last point stand for, in annotation x units; equal: annotation x is the point&apos;s index (offset 80)</summary>
+    public double XMax;
 }
 
 /// <summary>Pattern meter: a stacked usage bar (storage, budgets, quotas) whose parts differ in color and in the density of their dots, so it still reads in grayscale, in print and without telling hues apart. One dot of space parts the parts, and the rest of `total` is free space in the track color. Hovering a part, or its legend entry, steps the others back and shows its name, value and share above the bar; the keyboard does the same with Left and Right. Returns the part shown, or -1. (24 bytes)</summary>
@@ -1536,7 +1542,7 @@ public unsafe struct NativeTreeNode
     public uint Flags;
 }
 
-/// <summary>cui_tree_table_opts (72 bytes)</summary>
+/// <summary>cui_tree_table_opts (88 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTreeTableOpts
 {
@@ -1558,11 +1564,15 @@ public unsafe struct NativeTreeTableOpts
     public byte Guides;
     /// <summary>names for type-ahead, optional (offset 56)</summary>
     public nint Label;
-    /// <summary>passed to `label` as its first argument (offset 64)</summary>
+    /// <summary>passed to `label` and `can_drop` as their first argument (offset 64)</summary>
     public nint User;
+    /// <summary>rows drag to move nodes; the drop arrives in cui_tree_table_events (offset 72)</summary>
+    public byte Draggable;
+    /// <summary>optional: false refuses a drop of the dragged (selected) nodes there (offset 80)</summary>
+    public nint CanDrop;
 }
 
-/// <summary>cui_tree_table_events (32 bytes)</summary>
+/// <summary>cui_tree_table_events (56 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTreeTableEvents
 {
@@ -1580,6 +1590,14 @@ public unsafe struct NativeTreeTableEvents
     public byte SelectionChanged;
     /// <summary>re-sort every sibling list by *sort (offset 29)</summary>
     public byte SortChanged;
+    /// <summary>nodes dropped this frame (.draggable), in tree order, none inside another; valid this frame (offset 32)</summary>
+    public nint Dropped;
+    /// <summary>number of nodes in `dropped`, 0 without a drop (offset 40)</summary>
+    public int DropCount;
+    /// <summary>they go CUI_TREE_DROP_BEFORE, _INSIDE (as the last children) or _AFTER this node, else -1 (offset 44)</summary>
+    public int DropTarget;
+    /// <summary>they go CUI_TREE_DROP_BEFORE, _INSIDE (as the last children) or _AFTER this node, else -1 (offset 48)</summary>
+    public int DropWhere;
 }
 
 /// <summary>Path bar: a breadcrumb for file and scene paths. Segments are clickable, the last one is the current place. Middle segments that do not fit collapse into a &quot;...&quot; menu. With .menus, the chevron after segment k opens a menu you fill with the children of segment k (cui_path_bar_menu_begin). Click the empty part (or the current segment), or press Ctrl+L, to type a path: Enter submits it, Esc or clicking away cancels. (48 bytes)</summary>
@@ -1616,7 +1634,7 @@ public unsafe struct NativePathBarResult
     public byte Editing;
 }
 
-/// <summary>File browser and file picker (an open or save dialog drawn by CUI, like the rest of the window; cui_app_file_dialog in cui_app.h opens the system&apos;s own). The browser lists a folder (name, date modified and size; folders first, any column sorts), with back, forward and up, a path bar you can type into, a filter field and a sidebar of places. Double-click or Enter opens a folder or picks a file; Backspace goes up, Alt+Left and Alt+Right go back and forward, F5 reloads, and typing a letter jumps to the next name that starts with it. A folder is read when you enter it (or reload), not every frame, and only the rows in view are built. (32 bytes)</summary>
+/// <summary>File browser and file picker (an open or save dialog drawn by CUI, like the rest of the window; cui_app_file_dialog in cui_app.h opens the system&apos;s own). The browser lists a folder (name, date modified and size; folders first, any column sorts), with back, forward and up, a path bar you can type into, a filter field and a scrollable sidebar of places and native drives/volumes; the default sidebar highlights only the most specific enclosing place or volume. Double-click or Enter opens a folder or picks a file; Backspace goes up, Alt+Left and Alt+Right go back and forward, F5 reloads the folder and native sidebar, and typing a letter jumps to the next name that starts with it. A folder is read when you enter it (or reload), not every frame, and only the rows in view are built. (32 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeFileEntry
 {
@@ -1648,9 +1666,9 @@ public unsafe struct NativeFileBrowserOpts
     public byte Hidden;
     /// <summary>the sidebar of places (offset 34)</summary>
     public byte NoPlaces;
-    /// <summary>full paths for the sidebar, each shown by its last part; at most 6 (offset 40)</summary>
+    /// <summary>full paths for the scrollable sidebar, each shown by its last part (offset 40)</summary>
     public nint Places;
-    /// <summary>entries in `places`; with `places` NULL the sidebar shows home, desktop, documents, downloads and the root (offset 48)</summary>
+    /// <summary>entries in `places`; when places is NULL: home, desktop, documents, downloads and native drives/mounts (offset 48)</summary>
     public int PlaceCount;
     /// <summary>function that lists a folder; set it to browse something other than the local disk (offset 56)</summary>
     public nint List;
@@ -4988,6 +5006,22 @@ public unsafe struct NativeTraceMarker
     public Tone Tone;
 }
 
+/// <summary>cui_trace_link (20 bytes)</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeTraceLink
+{
+    /// <summary>indices into the spans: from the end of `from` to the start of `to` (offset 0)</summary>
+    public int From;
+    /// <summary>indices into the spans: from the end of `from` to the start of `to` (offset 4)</summary>
+    public int To;
+    /// <summary>the curve&apos;s color; CUI_TONE_NEUTRAL (0): the emphasis color (offset 8)</summary>
+    public Tone Tone;
+    /// <summary>line width in points; 0: 1.25 (offset 12)</summary>
+    public float Width;
+    /// <summary>a weaker or inferred dependency (offset 16)</summary>
+    public byte Dashed;
+}
+
 /// <summary>cui_trace_view (40 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTraceView
@@ -5004,7 +5038,7 @@ public unsafe struct NativeTraceView
     public double MarkEnd;
 }
 
-/// <summary>cui_trace_opts (40 bytes)</summary>
+/// <summary>cui_trace_opts (56 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTraceOpts
 {
@@ -5020,9 +5054,13 @@ public unsafe struct NativeTraceOpts
     public nint Markers;
     /// <summary>number of `markers` (offset 32)</summary>
     public int MarkerCount;
+    /// <summary>dependencies drawn as curves between spans (offset 40)</summary>
+    public nint Links;
+    /// <summary>number of `links` (offset 48)</summary>
+    public int LinkCount;
 }
 
-/// <summary>cui_trace_result (8 bytes)</summary>
+/// <summary>cui_trace_result (12 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeTraceResult
 {
@@ -5032,6 +5070,8 @@ public unsafe struct NativeTraceResult
     public byte ViewChanged;
     /// <summary>span under the pointer, or -1 (offset 4)</summary>
     public int Hovered;
+    /// <summary>link under the pointer (when no span is), or -1 (offset 8)</summary>
+    public int HoveredLink;
 }
 
 /// <summary>[24] array of sbyte, for cui_regex_match.</summary>
@@ -5480,7 +5520,7 @@ public unsafe struct NativeDotSeries
     public byte Accent;
 }
 
-/// <summary>cui_dot_chart_opts (104 bytes)</summary>
+/// <summary>cui_dot_chart_opts (136 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeDotChartOpts
 {
@@ -5520,6 +5560,14 @@ public unsafe struct NativeDotChartOpts
     public nint Annotations;
     /// <summary>number of `annotations` (offset 96)</summary>
     public int AnnotationCount;
+    /// <summary>writes the x labels and the readout&apos;s x in place of x_units and x_format; x_units still picks the spacing (offset 104)</summary>
+    public nint XLabel;
+    /// <summary>passed to `x_label` as its first argument (offset 112)</summary>
+    public nint XLabelUser;
+    /// <summary>writes the readout&apos;s value in place of `format`; `unit` still follows it (offset 120)</summary>
+    public nint ValueLabel;
+    /// <summary>passed to `value_label` as its first argument (offset 128)</summary>
+    public nint ValueLabelUser;
 }
 
 /// <summary>cui_dot_chart_result (24 bytes)</summary>
@@ -5536,7 +5584,7 @@ public unsafe struct NativeDotChartResult
     public byte Clicked;
 }
 
-/// <summary>Event track: moments on a time axis, as dots you drag along it. A click on an empty spot adds an event there and a double-click on one removes it. You own the array: the track keeps it sorted, edits it in place and never grows it past `capacity`. (64 bytes)</summary>
+/// <summary>Event track: moments on a time axis, as dots you drag along it. A click on an empty spot adds an event there and a double-click on one removes it. You own the array: the track keeps it sorted, edits it in place and never grows it past `capacity`. (80 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeEventTrackOpts
 {
@@ -5560,6 +5608,10 @@ public unsafe struct NativeEventTrackOpts
     public byte NoRemove;
     /// <summary>hides the axis labels under the dots (offset 58)</summary>
     public byte NoAxis;
+    /// <summary>writes the axis labels and the selected event&apos;s time in place of units and format; units still picks the spacing (offset 64)</summary>
+    public nint Label;
+    /// <summary>passed to `label` as its first argument (offset 72)</summary>
+    public nint LabelUser;
 }
 
 /// <summary>cui_event_track_result (20 bytes)</summary>
@@ -5844,7 +5896,7 @@ public unsafe struct NativeCorners
     public float Bl;
 }
 
-/// <summary>cui_canvas_result (28 bytes)</summary>
+/// <summary>`rect` is where the canvas was laid out in the previous frame, in window points (zero in its first frame), and `mouse` is the pointer relative to that rectangle&apos;s top-left corner. The paint callback gets this frame&apos;s final rectangle, which differs when the canvas moved or resized; for hits kept in window coordinates, use cui_mouse_pos. (28 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeCanvasResult
 {
@@ -5938,7 +5990,7 @@ public unsafe struct NativeDrawData
     public nuint FontAtlas;
 }
 
-/// <summary>cui_app_desc (56 bytes)</summary>
+/// <summary>cui_app_desc (64 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeAppDesc
 {
@@ -5970,6 +6022,8 @@ public unsafe struct NativeAppDesc
     public byte FollowSystemTheme;
     /// <summary>Linux: the app&apos;s ID, which is the name of its .desktop file without &quot;.desktop&quot;, e.g. &quot;org.example.Notes&quot;. The desktop uses it to show the app&apos;s name and icon for the window (taskbar, dock, Alt+Tab) and to group its windows. Sets WM_CLASS on X11 and the app_id on Wayland (SDL2, and GLFW 3.4). Read when the window is created; ignored on Windows and macOS. Default: none (the X11 backend then sets WM_CLASS to the title and &quot;CUI&quot;). (offset 48)</summary>
     public nint AppId;
+    /// <summary>Where to open, for an app that reopens where it was closed: the size and place from cui_app_placement, and whether the window was maximized. Its size replaces width and height. A place that is on no screen is left to the system, and a fixed-size window is not maximized. Copied when the window is created. Default: none, the system picks the place. (offset 56)</summary>
+    public nint Placement;
 }
 
 /// <summary>cui_file_dialog_opts (40 bytes)</summary>
@@ -5984,6 +6038,6 @@ public unsafe struct NativeFileDialogOpts
     public nint FilterName;
     /// <summary>extensions separated by &apos;;&apos;, e.g. &quot;png;jpg&quot; (offset 24)</summary>
     public nint Filter;
-    /// <summary>save dialogs (offset 32)</summary>
+    /// <summary>save dialogs: suggested name, optionally with its directory on Windows (offset 32)</summary>
     public nint DefaultName;
 }

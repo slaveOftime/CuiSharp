@@ -293,7 +293,7 @@ public class ThemeStyleTests
         app.Frame(4);   // let the layout and the first frame's pools settle
 
         // The component reads and writes every kind of member each frame; none of it may allocate.
-        Assert.Equal(0, app.Surface.LastFrame.AllocatedBytes);
+        app.AssertSteadyStateAllocatesNothing();
     }
 
     /// <summary>Runs one refused mutation, returning what it threw, or null when it did not.</summary>

@@ -28,5 +28,13 @@ public static unsafe class TraceViewerUiExtensions
             return TraceResult.FromNative(__result);
         }
 
+        /// <summary>Where a span is drawn, in points (zero size when out of view or in a folded lane below its top row): its time extent and row, as cui_flame_span_rect gives one; the bar inside is a point narrower, the gap between neighbours, and a selected sliver is widened to 3 points. trace is the view&apos;s id: cui_last_id(ui) right after the call. Asked right after the call, it answers at this frame&apos;s view in the rectangle of the previous frame, as this frame is not laid out yet; after cui_end_frame, where this frame drew it, until the next frame begins.</summary>
+        public RectF TraceSpanRect(uint trace, in TraceSpan span)
+        {
+            var __span = span.ToNative();
+            var __result = Native.TraceSpanRect(ui.Handle, trace, in __span);
+            return UiMarshal.FromNative(__result);
+        }
+
     }
 }

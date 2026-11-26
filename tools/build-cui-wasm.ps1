@@ -24,13 +24,15 @@
     Only the software renderer is compiled. The GL renderer, the window backends
     (`src/platform/*`) and the app layer are left out: a browser host owns its canvas
     and its event loop, so `CuiSurface` — the windowless `cui_ctx` plus renderer
-    interface — is the whole surface CUI needs here.
+    interface — is the whole surface CUI needs here. The archive also contains the
+    browser host's C adapter for the IME caret callback.
 
     The submodule is compiled in place; only object files and the archive are written,
     and only under artifacts/. `native/CUI` is never modified.
 
 .PARAMETER TargetFramework
-    The framework band whose workload supplies Emscripten. Defaults to net10.0.
+    The framework band whose workload supplies Emscripten. Defaults to net11.0, the band
+    samples/CuiSharp.Gallery.Browser targets; pass net10.0 for a net10.0 app.
 
 .PARAMETER EmscriptenSdkPath
     An explicit Emscripten SDK pack directory (the one containing tools/). Defaults to
@@ -44,11 +46,11 @@
 
 .EXAMPLE
     pwsh tools/build-cui-wasm.ps1
-    pwsh tools/build-cui-wasm.ps1 -TargetFramework net11.0 -Output artifacts/wasm-net11/cui.a
+    pwsh tools/build-cui-wasm.ps1 -TargetFramework net10.0 -Output artifacts/wasm-net10/cui.a
 #>
 [CmdletBinding()]
 param(
-    [string] $TargetFramework = 'net10.0',
+    [string] $TargetFramework = 'net11.0',
     [string] $EmscriptenSdkPath = '',
     [string] $Optimization = '-Oz',
     [string] $Output = ''
@@ -76,8 +78,8 @@ function Get-DotnetRoot {
 }
 
 function Resolve-EmscriptenPack {
-    # The band is the TFM's major.minor: the workload a net10.0 app resolves is the
-    # 10.0.* one, and its Emscripten is what the runtime pack was compiled with.
+    # The band is the TFM's major.minor: the workload a net11.0 app resolves is the
+    # 11.0.* one, and its Emscripten is what the runtime pack was compiled with.
     $band = $TargetFramework -replace '^net', ''
     $packs = Join-Path (Get-DotnetRoot) 'packs'
     if (-not (Test-Path $packs)) { throw "No workload packs at '$packs'. Install the wasm-tools workload." }
@@ -162,6 +164,7 @@ $sources = @(
         Where-Object { $_.Name -ne 'cui_app.c' } |
         ForEach-Object { $_.FullName }
     (Join-Path $cui 'src/render/cui_render_sw.c')
+    (Join-Path $repoRoot 'samples/CuiSharp.Gallery.Browser/browser_platform.c')
 )
 
 Remove-Item -Recurse -Force $objectDir -ErrorAction SilentlyContinue

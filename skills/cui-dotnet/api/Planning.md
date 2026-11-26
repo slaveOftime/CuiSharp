@@ -20,7 +20,7 @@ protected override void Draw(Ui ui)
 public int Gantt(UiText id, Span<GanttTask> tasks, Date origin, int days, GanttOpts o = default)
 ```
 
-Returns the activated task index or -1. Read-only tasks still activate.
+Returns the activated task index or -1. Read-only tasks still activate. A drag ends when the task list shrinks, the chart is disabled or `read_only` changes; moving the bar again takes a new press.
 
 ## `Kanban`
 
@@ -60,4 +60,4 @@ Month calendar: a month grid with events. All-day and multi-day events are bars 
 public int WeekCalendar(UiText id, Date weekStart, Span<CalendarEvent> events, WeekOpts o = default)
 ```
 
-Returns the activated event index or -1. Read-only events still activate.
+Returns the activated event index or -1. Read-only events still activate. Pointer activation requires staying within the drag threshold through release. A drag ends when the event list shrinks, the calendar is disabled or `read_only` changes; moving the event again takes a new press.

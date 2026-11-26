@@ -53,7 +53,13 @@
     "CUI_VOICE_SESSION_MUTE"
   ],
   "skipFunctions": [],
-  "skipStructs": [],
+  "skipStructs": [
+    "cui_canvas_opts",
+    "cui_gpu_renderer",
+    "cui_input_event",
+    "cui_window_placement",
+    "cui_x11_window"
+  ],
   "suppressGcTransition": [],
   "anonymousEnumNames": {
     "CUI_FONT_BODY": "Font",
@@ -65,7 +71,8 @@
     "CUI_WELL_CHANGED": "WellEvents",
     "CUI_FORMAT_CHANGED": "FormatEvents",
     "CUI_CANVAS_ZOOMED": "CanvasEvents",
-    "CUI_VOICE_SESSION_MUTE": "VoiceSessionEvents"
+    "CUI_VOICE_SESSION_MUTE": "VoiceSessionEvents",
+    "CUI_TREE_DROP_BEFORE": "TreeDrop"
   },
   "typeAliases": {
     "cui_font": {
@@ -288,6 +295,10 @@
     "cui_voice_note_ex.note": {
       "storage": "value",
       "why": "cui_voice_note is playback state: convert to VoiceNoteState, write back position, speed and playing, and preserve the caller-owned const levels array."
+    },
+    "cui_trace_span_rect.span": {
+      "storage": "value",
+      "why": "The span is input only: convert to the friendly TraceSpan for the call; an in value has nothing to copy back."
     }
   },
   "capacityParams": {
@@ -897,6 +908,15 @@
     },
     "cui_get_clipboard_text": {
       "why": "`Ui.GetClipboard()` (Ui/Ui.cs): copies the returned text out of CUI's frame memory before the frame ends."
+    },
+    "cui_image_update": {
+      "why": "ui.UpdateImage(tex, x, y, w, h, rgba, stride) (Ui/Ui.Images.cs): validates the rectangle and the stride against the pixel span, pins it and hands it over."
+    },
+    "cui_tree_move": {
+      "why": "CuiTree.Move(nodes, root, move, target, where) (Ui/Ui.TreeTable.cs): relinks the caller's node array in place, like CuiTree.Sort."
+    },
+    "cui_set_platform": {
+      "why": "CuiSurface.SetPlatform (CuiSurface.cs) installs native host callbacks on a windowless context."
     }
   },
   "outParams": {
@@ -912,7 +932,7 @@
       "why": "Frame lifecycle belongs to CuiSurface/CuiApp, not to a draw-time Ui value."
     },
     "Input (called by the platform layer)": {
-      "why": "Platform input is delivered by the window backend and the test harness, not by draw code."
+      "why": "CuiApp and CuiSurface own input delivery. Raw hook routing, touch injection/query and cursor control have no managed API in this section."
     },
     "cui_app": {
       "why": "Window/app ownership belongs to CuiApp; CuiSurface exposes the supported subset."
@@ -927,16 +947,19 @@
       "why": "Draw data is consumed by external renderers; CuiSurface exposes it."
     },
     "Identity": {
-      "why": "ui.Id/Keyed id scopes are hand-written in Step 3 with the extension composition API; raw push/pop stay internal."
+      "why": "Ui.Id/Keyed own managed id scopes. Raw identity and Tab-focus scopes are not exposed by this section."
     },
     "Custom drawing": {
-      "why": "Drawing primitives keep ergonomic overloads (radius, RectF, Color) in the manual drawing partial."
+      "why": "Ui.Draw.cs owns the supported drawing and Canvas surface. Raw frame allocation and advanced canvas input routing are not exposed."
     },
     "Fonts": {
       "why": "Font loading and measuring belong to CuiSurface/CuiApp bootstrapping, not to per-frame draw code."
     },
     "Theme": {
       "why": "Theme control belongs to CuiApp (SetTheme/SetAccent); Ui keeps request-redraw only."
+    },
+    "Direct3D 12, Vulkan and Metal (built with CUI_D3D12, CUI_VULKAN, CUI_METAL)": {
+      "why": "CuiSharp's native build does not enable the optional Direct3D 12, Vulkan or Metal exports. Wrapping these requires a build and device-lifetime contract for each platform."
     }
   },
   "recordFieldCounts": {
@@ -1409,6 +1432,10 @@
     "cui_voice_note": {
       "name": "VoiceNoteState",
       "why": "A recorded message's playback state: the levels, the position, the length and the speed. The bubble writes position, speed and playing back; named after the state because the widget is Ui.VoiceNote."
+    },
+    "cui_trace_link": {
+      "name": "TraceLink",
+      "why": "One dependency between two spans: the indices, the tone, the width and the dash. Copied into the frame arena by the wrapper."
     }
   },
   "extraOptionFields": {
@@ -1426,119 +1453,14 @@
     ]
   },
   "excludedFunctions": {
-    "cui_diff_compute": {
-      "why": "C helper: computes a diff into caller memory. Not a frame call; the widgets that show a diff wrap it."
-    },
-    "cui_diff_words": {
-      "why": "C helper: word-level diff for the inline diff view. Internal to cui_diff_compute."
-    },
-    "cui_tree_sort": {
-      "why": "Sorts a caller-owned `cui_tree_node` model through a `int (*cmp)(void *, int, int)` comparator: a managed-delegate bridge with an owned GCHandle, for a model whose nodes the C# side does not wrap yet (the tree table draws from `Tree`)."
-    },
-    "cui_markdown_apply_task": {
-      "why": "C helper: applies a task-box toggle to markdown text. Model manipulation, not drawing."
-    },
-    "cui_date_to_days": {
-      "why": "C helper: date to day number. Belongs in a static utility class with the rest of the date maths."
-    },
-    "cui_date_from_days": {
-      "why": "C helper: day number to date. Belongs in a static utility class with the rest of the date maths."
-    },
-    "cui_key_name": {
-      "why": "C helper: key code to display name. A static utility, and the widgets that need it already print the name."
-    },
-    "cui_flame_sort": {
-      "why": "C helper: sorts flame spans by weight. Data preparation, not drawing."
-    },
-    "cui_curve_eval": {
-      "why": "C helper: evaluates a curve at x. Data preparation for custom drawing; the editor wraps what it needs."
-    },
-    "cui_gradient_eval": {
-      "why": "C helper: evaluates a gradient at t. Data preparation for custom drawing."
-    },
-    "cui_log_init": {
-      "why": "Log writer with process-wide state: belongs in a separate logging facade, not on a frame-local Ui."
-    },
     "cui_log_appendv": {
       "why": "Takes a C `va_list`, which a managed caller cannot supply. `LogBuffer.AppendLine` formats in C# and calls `cui_log_append_text`, the same entry point without the variadic wrapper."
-    },
-    "cui_log_append_text": {
-      "why": "Log writer with process-wide state: belongs in a separate logging facade, not on a frame-local Ui."
-    },
-    "cui_log_clear": {
-      "why": "Log writer with process-wide state: belongs in a separate logging facade, not on a frame-local Ui."
-    },
-    "cui_log_get": {
-      "why": "Log writer with process-wide state: belongs in a separate logging facade, not on a frame-local Ui."
-    },
-    "cui_path_has_extension": {
-      "why": "C helper: string test. Nothing to wrap on a Ui."
     },
     "cui_signature_points": {
       "why": "Takes a caller-built `const cui_vec2 **`, i.e. a jagged C array. Signature capture is not needed by any sample; wrapping it would need an ownership rule nothing uses yet."
     },
-    "cui_diff_view_rows": {
-      "why": "Fills a caller-owned array of diff rows for a custom renderer. The diff view already wraps the same layout; an array out-parameter needs a copy-back rule nothing uses yet."
-    },
-    "cui_log_view_ex": {
-      "why": "Renders a log buffer whose layout is a `cui_log_buffer` with internal ring pointers: it belongs with the log writer facade, not on a frame-local Ui."
-    },
     "cui_timeline_editor_ex": {
       "why": "A timeline track holds three nested arrays (keys, clips, selections), so the record would need array-of-record support one level deeper than the generator has. Available through the raw layer."
-    },
-    "cui_hex_view_ex": {
-      "why": "Its options point at writable bytes the view overwrites in place. That is a caller-owned buffer contract the wrapper cannot police; the hex viewer stays available through the raw layer, and `HexResult`/`HexSelection` are still exposed."
-    },
-    "cui_fs_list": {
-      "why": "The default directory reader. It fills a caller-owned entry array and name blob for `cui_file_browser_ex`; an app that browses the filesystem uses the browser, and one that does not gets it from the facade."
-    },
-    "cui_terminal_init": {
-      "why": "Fills a caller-owned terminal buffer (`char *text` plus a line array). CuiSharp's `Terminal` facade owns that storage; see Ui.Terminal.cs."
-    },
-    "cui_terminal_write": {
-      "why": "Appends to a caller-owned terminal buffer. Exposed through the `Terminal` facade, which owns the buffer and keeps it valid."
-    },
-    "cui_terminal_clear": {
-      "why": "Resets a caller-owned terminal buffer. Exposed through the `Terminal` facade."
-    },
-    "cui_state_on_free": {
-      "why": "Registers a `void (*)(cui_ctx *, void *)` disposer for per-id state: a managed-delegate bridge with an owned GCHandle, which the wrapper does not offer yet."
-    },
-    "cui_tree_table_begin_ex": {
-      "why": "Its `_end` returns a `cui_tree_table_events` struct holding a frame-memory `const int *load` plus its count: a record cannot carry a span, and copying it into an array every frame would allocate on the hot path. Rows, names and depths are wrapped; the lazy-load list stays raw."
-    },
-    "cui_regex_search": {
-      "why": "C helper: the regex engine. A static utility: the tester draws with it, and an app that searches its own data calls it without a frame."
-    },
-    "cui_cron_next": {
-      "why": "C helper: cron evaluation into a caller-owned int64. A static utility, not a frame call."
-    },
-    "cui_query_op_name": {
-      "why": "C helper: an operator's name by index. A static utility; the builder that shows the picker draws it."
-    },
-    "cui_query_text": {
-      "why": "C helper: renders a query into a caller buffer. Not a frame call; the builder wraps what it needs."
-    },
-    "cui_query_match": {
-      "why": "C helper: the filter test. Not a frame call; an app filtering its own list calls it directly."
-    },
-    "cui_trace_sort": {
-      "why": "C helper: orders spans in place. A static utility for a caller-owned array."
-    },
-    "cui_http_reason": {
-      "why": "C helper: a status code to its reason phrase. A static utility."
-    },
-    "cui_http_method_name": {
-      "why": "C helper: a method enum to its name. A static utility."
-    },
-    "cui_url_params": {
-      "why": "C helper: fills a caller-owned pair array. Not a frame call; the request bar wraps what it needs."
-    },
-    "cui_url_set_params": {
-      "why": "C helper: encodes pairs into a caller buffer. Not a frame call."
-    },
-    "cui_voice_resample": {
-      "why": "C helper: resamples a clip's levels into caller memory. A static utility with no frame and no cui_ctx."
     }
   },
   "arrayLengths": {
@@ -1844,6 +1766,9 @@
     }
   },
   "arrayParams": {
+    "move@cui_tree_move": {
+      "why": "The singular move parameter is the whole array of node indices; move_count is its length."
+    },
     "left@cui_swipe_item_begin": {
       "why": "A swipe row takes both action arrays by pointer, with left_count and right_count as their lengths; the singular name alone reads as one value."
     },
@@ -1957,8 +1882,7 @@
     },
     "cui_event_track_ex.times": {
       "count": "count",
-      "why": "The track keeps its events sorted, moves them with the keys and a drag, adds on a click and removes on a double-click: the wrapper copies the array and its count back on the frames it reports a change.",
-      "changedWhen": "__result.Changed != 0"
+      "why": "The track sorts and clamps its input even when Changed is false; always copy back the live prefix and count."
     }
   },
   "hiddenOptionFields": {
@@ -1994,6 +1918,23 @@
     },
     "cui_selection_bar_opts.item_count": {
       "why": "The length of `selected`, which the hand-written wrapper derives from the span it is given."
+    },
+    "cui_tree_table_opts.can_drop": {
+      "why": "A C function pointer called during the drag: ui.TreeTable(..., canDrop) passes it and the widget's user pointer through the frame-callback bridge (Ui/Ui.TreeTable.cs). Without one, every drop is allowed."
+    }
+  },
+  "axisLabels": {
+    "cui_dot_chart_opts.x_label": {
+      "user": "x_label_user",
+      "why": "The x-axis and readout call the same label function during paint."
+    },
+    "cui_dot_chart_opts.value_label": {
+      "user": "value_label_user",
+      "why": "The readout uses a separate callback and separately owned user pointer."
+    },
+    "cui_event_track_opts.label": {
+      "user": "label_user",
+      "why": "The axis and selected-event labels are drawn after the wrapper returns."
     }
   },
   "optionFieldCounts": {

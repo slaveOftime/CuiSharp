@@ -16,13 +16,43 @@ public unsafe ref partial struct Ui
     /// </summary>
     public ulong CreateImage(int width, int height, ReadOnlySpan<byte> rgba)
     {
-        if (width <= 0) throw new ArgumentOutOfRangeException(nameof(width));
+        if (width <= 0 || width > int.MaxValue / 4) throw new ArgumentOutOfRangeException(nameof(width));
         if (height <= 0) throw new ArgumentOutOfRangeException(nameof(height));
         if (rgba.Length < (long)width * height * 4)
             throw new ArgumentException("rgba must hold width * height RGBA8 pixels.", nameof(rgba));
 
         fixed (byte* pixels = rgba)
             return Native.ImageCreate(Handle, width, height, (nint)pixels);
+    }
+
+    /// <summary>
+    /// Updates a rectangle within an existing RGBA8 texture in place and requests a redraw, so
+    /// live video, a camera preview or a dynamic bitmap never reallocates the texture.
+    /// </summary>
+    /// <remarks>The caller must keep the destination rectangle inside the live texture.</remarks>
+    /// <param name="texture">The texture to update, from <see cref="CreateImage"/> or <see cref="LoadImage"/>.</param>
+    /// <param name="x">Left edge of the updated rectangle, in pixels.</param>
+    /// <param name="y">Top edge of the updated rectangle, in pixels.</param>
+    /// <param name="width">Width of the updated rectangle, in pixels.</param>
+    /// <param name="height">Height of the updated rectangle, in pixels.</param>
+    /// <param name="rgba">The new pixels, row by row from the rectangle's top left.</param>
+    /// <param name="stride">Byte distance between source rows; 0 means tightly packed width * 4.</param>
+    public void UpdateImage(ulong texture, int x, int y, int width, int height, ReadOnlySpan<byte> rgba, int stride = 0)
+    {
+        if (texture == 0) throw new ArgumentException("The texture must be a live handle.", nameof(texture));
+        if (width <= 0 || width > int.MaxValue / 4) throw new ArgumentOutOfRangeException(nameof(width));
+        if (height <= 0) throw new ArgumentOutOfRangeException(nameof(height));
+        if (x < 0 || x > int.MaxValue - width) throw new ArgumentOutOfRangeException(nameof(x));
+        if (y < 0 || y > int.MaxValue - height) throw new ArgumentOutOfRangeException(nameof(y));
+        int rowBytes = width * 4;
+        if (stride == 0) stride = rowBytes;
+        if (stride < rowBytes)
+            throw new ArgumentException("stride must be at least width * 4 bytes.", nameof(stride));
+        if (rgba.Length < (long)stride * (height - 1) + rowBytes)
+            throw new ArgumentException("rgba must hold stride * (height - 1) + width * 4 bytes.", nameof(rgba));
+
+        fixed (byte* pixels = rgba)
+            Native.ImageUpdate(Handle, (nuint)texture, x, y, width, height, (nint)pixels, stride);
     }
 
     /// <summary>

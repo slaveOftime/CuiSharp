@@ -4,8 +4,43 @@ Every user-visible change, newest first. Pre-1.0 the minor number carries new su
 carries fixes. The section for a tag is what the GitHub release publishes, so the two cannot say
 different things.
 
-## [Unreleased]
+## [0.5.0] — unreleased
 
+### Added
+
+- **CUI is now at v1.5.0 (`f9597a3`), 99 commits past `6e6b353`**: 41 new functions, five new
+  struct definitions plus an opaque GPU handle, and the Direct3D 12/Vulkan/Metal section.
+  [bindings/coverage.txt](bindings/coverage.txt) accounts for 573 non-variadic functions with 0 pending.
+- **Tree tables drag and drop** (`TreeTableOpts.Draggable`): rows drag to move nodes, with a drop
+  line or outline, edge scrolling and Esc to cancel; the table reports
+  `TreeTableEvents.Dropped`/`DropTarget`/`DropWhere` and `CuiTree.Move(nodes, root, move, target,
+  where)` relinks the model. `canDrop` refuses a place through the frame-callback bridge. A right
+  click opens `ui.TreeTableMenu(id, ref node)` for the row under the pointer.
+- **Chart annotations take a `Color` of their own**, and line and bar charts take `XMin`/`XMax`,
+  so an annotation's x is in the chart's own units instead of a sample index.
+- **Trace viewer links**: `TraceOpts.Links` draws dependencies between spans as curves with an
+  arrowhead; `TraceResult.HoveredLink` says which one is under the pointer, and `ui.TraceSpanRect`
+  says where a span was drawn, for overlays.
+- **Axis-label callbacks** in `DotChartOpts.XLabel` / `ValueLabel` and `EventTrackOpts.Label`:
+  a `Func<double, string?>` for month names, dates, or a decimal comma, held through paint and
+  written as bounded UTF-8. Without a callback the format strings still decide.
+- **`ui.ScrollReveal(scroll, row)`** keeps a row of a scroll area in view with the least movement.
+- **`ui.UpdateImage(tex, x, y, w, h, rgba, stride)`** updates a rectangle of an existing RGBA8
+  texture in place, for live video and dynamic bitmaps; the wrapper validates the stride and the
+  span before native sees either.
+- The public surface gains `TreeDrop` (before/inside/after), `InputEventKind` and `WindowState`.
+
+### Changed
+
+- **Existing chart, event-track and tree-table signatures remain available.** `ChartAnnotation`
+  and `TraceResult` have new fields; their previous constructor overloads still work.
+- **The excluded count grew from 6 to 41.** New touch, input-hook, cursor, focus-scope, window-state
+  and custom-canvas calls fall under existing section exclusions. The optional GPU renderer is
+  newly excluded; these exclusions do not mean CuiSharp ships managed support for those features.
+- **Release measurements:** gallery AOT 3 211 264 B under the existing 3.20 MiB ceiling; chart
+  harness 0.92 ms and 0 B/frame under the existing 1.00 ms ceiling. The CHART app shape measured
+  1 238 016 B and its ceiling moves from 1 235 000 to 1 240 000 B. The measurements do not isolate
+  the cost of individual upstream features.
 - **One frame owner per background operation.** Start `Mutation` or `Progressive<T>` during
   its window or surface's draw (a click or `OnInitialized`), not from a constructor. Other
   surfaces no longer consume its result or redraw demand. Cancellation and replacement detach

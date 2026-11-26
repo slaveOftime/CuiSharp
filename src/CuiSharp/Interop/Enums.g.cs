@@ -191,6 +191,20 @@ public enum Cursor
     Count = 7,
 }
 
+/// <summary>Optional application-owned input capture, before legacy aggregation. Runs synchronously on the UI thread. Event and text storage are borrowed only during the callback. true consumes the event; false preserves the existing widget behavior. No UI construction or input injection is allowed inside the callback. Copy retained text. Unregister before freeing user. To replay captured input, unregister, call the existing cui_input_* entry points, then register again. Legacy replay retains existing text-size limits. The caller owns queue limits and error policy. Key events preserve each call, including repeated down and modifier-only CUI_KEY_NONE events. Touch events (cui_input_touch and cui_input_touch_move) also pass through this interface as CUI_INPUT_TOUCH and CUI_INPUT_TOUCH_MOVE. File drops are not intercepted by this interface.</summary>
+public enum InputEventKind
+{
+    MouseMove = 0,
+    MouseButton = 1,
+    MouseLeave = 2,
+    Scroll = 3,
+    Key = 4,
+    Text = 5,
+    Focus = 6,
+    Touch = 7,
+    TouchMove = 8,
+}
+
 /// <summary>cui_size_kind</summary>
 public enum SizeKind
 {
@@ -596,9 +610,19 @@ public enum Renderer
     Auto = 0,
     OpenGL = 1,
     Software = 2,
+    /// <summary>the platform&apos;s GPU renderer, in builds that have it: Direct3D 12 on Windows (CUI_D3D12), Vulkan on Linux (CUI_VULKAN), Metal on macOS (CUI_METAL). Also CUI_RENDERER=gpu, or its name</summary>
+    Gpu = 3,
 }
 
-/// <summary>Native file dialogs. Blocking; returns true and writes the chosen path (UTF-8) to out when the user confirms. On Linux this uses zenity or kdialog when installed. Pass NULL as app to use the current app (handy in cui_app_run callbacks).</summary>
+/// <summary>How the window is shown.</summary>
+public enum WindowState
+{
+    Normal = 0,
+    Maximized = 1,
+    Minimized = 2,
+}
+
+/// <summary>Native file dialogs. Blocking; returns true and writes the chosen path (UTF-8) to out when the user confirms. On Linux this uses zenity or kdialog when installed. Pass NULL as app to use the current app (handy in cui_app_run callbacks). On Windows the folder chooser also works when the calling thread already uses a multithreaded COM apartment.</summary>
 public enum FileDialogKind
 {
     Open = 0,
@@ -638,6 +662,17 @@ public enum TourAction
     Back = 2,
     Done = 3,
     Skipped = 4,
+}
+
+/// <summary>CUI_TREE_DROP_BEFORE</summary>
+public enum TreeDrop
+{
+    /// <summary>where dropped nodes go, next to a target node</summary>
+    Before = 0,
+    /// <summary>where dropped nodes go, next to a target node</summary>
+    Inside = 1,
+    /// <summary>where dropped nodes go, next to a target node</summary>
+    After = 2,
 }
 
 /// <summary>Comment with replies. depth indents replies under a connector line. Returns CUI_COMMENT_LIKE or CUI_COMMENT_REPLY flags for what was clicked; *liked and *likes are updated for you.</summary>

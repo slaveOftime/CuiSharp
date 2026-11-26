@@ -53,7 +53,7 @@ silently — but they only see keys that exist, so delete keys whose declaration
 | `header section not migrated: ` (empty title) | the section parser read a title line as a bare rule | generator: `Module()` takes `/* ---- Title ---- */`, rule/title/rule, and an unterminated `/* ---- Title ----` |
 | `header section not migrated: <section>` | a real section nobody migrated | `WidgetModules` in `bindgen.cs` |
 | `Unknown module: <file>` | `excludedModules` names a section that no longer exists, because upstream retitled that file | rename the exclusion to the new titles |
-| `PENDING <opts>: <field>: <type> needs explicit ownership/length semantics` | a pointer field in an options struct | `optionPointers` (`type: int`, a `ref`), `hiddenOptionFields` (a callback or its `void *`) |
+| `PENDING <opts>: <field>: <type> needs explicit ownership/length semantics` | a pointer field in an options struct | `optionPointers` for `ref` values; `axisLabels` for `cui_axis_label_fn` plus its paired `user` field; `hiddenOptionFields` only if a manual wrapper binds it or the feature is deliberately unavailable |
 | `PENDING <opts>: <field>: array length depends on widget parameters` | an array field whose count lives in the call | `optionArrayChecks` (`atLeast`, optional `prepare` for native range normalization); if the count is a field, `optionFieldCounts`; a record element also needs `recordNames` |
 | `PENDING <opts>: <field>: const <struct> * needs explicit ownership/length semantics` | the element of a record array is not a record yet | `recordNames` for the element struct (`cui_chart_annotation` → `ChartAnnotation`) |
 | `PENDING <fn>: <param> is an in-place array of double *, which has no span type yet` | `inOutArrays` names a primitive whose kind has no span type | add the kind to `PrimitiveElement` (and a `Is*Array` helper if the whole type is new) |
@@ -65,9 +65,13 @@ silently — but they only see keys that exist, so delete keys whose declaration
 | `PENDING <fn>: return needs typed result/ownership semantics` | the widget returns a struct by value, or a `const char *` | `recordNames` (result struct), `stringResults` (C string) |
 | `PENDING <fn>: <param>: native record needs conversion/write-back` | an in/out record parameter | `parameterStorage` (`storage: value`) + `recordNames` |
 | `PENDING <fn>: <param>: const char *const * needs explicit pointer semantics` | a string array whose count is not adjacent | `arrayLengths` (`emit: false`) |
-| `PENDING <fn>: not a UI-context function` | no `cui_ctx`: a pure C helper | hand-write it as a static helper, then `manualWidgets` **and** `excludedFunctions`, both naming the member and the file |
+| `PENDING <fn>: not a UI-context function` | no `cui_ctx`: a pure C helper | hand-write it as a static helper and register it **only** in `manualWidgets`, naming the member and file |
 | `… needs a mapping` from `FixedArrayField` | a fixed array of a type the record mapper does not know | extend `FixedArrayField` |
 | `stale override rejected` / `reasonless override rejected` | an override names something upstream renamed or removed, or has no `why` | fix or delete it |
+
+`Unknown anonymous enum` means the key must be the first complete C enumerator, e.g.
+`CUI_TREE_DROP_BEFORE`. A `long`/`unsigned long` width diagnostic means the C layout differs
+between Windows and Unix; model and test it per platform, or skip only an unused platform-only record.
 
 ## The four decisions that are easy to get wrong
 

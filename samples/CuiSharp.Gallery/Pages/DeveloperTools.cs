@@ -67,6 +67,12 @@ internal sealed partial class GalleryApp
         new("deploy", 0.5, Tone.Info),
     ];
 
+    private static readonly TraceLink[] Links =
+    [
+        new(1, 3),                               // router -> query
+        new(5, 4, Tone.Violet, 1.5f, Dashed: true), // worker encode -> render
+    ];
+
     private static readonly NetRequest[] Requests =
     [
         new("/", "GET", 200, "document", 18_400, 0.00, Timing(0.004f, 0.012f, 0.020f, 0.041f, 0.086f, 0.020f)),
@@ -141,7 +147,7 @@ internal sealed partial class GalleryApp
         Section(ui, "Trace viewer", "Wheel zooms, drag pans, Shift+drag measures, a lane's name folds it.");
         using (ui.Card(new Card()))
         {
-            ui.TraceView("trace", Tracks, Spans, ref _traceView, ref _traceSelected, new TraceOpts { Height = 220, Markers = Markers });
+            ui.TraceView("trace", Tracks, Spans, ref _traceView, ref _traceSelected, new TraceOpts { Height = 220, Markers = Markers, Links = Links });
         }
 
         Section(ui, "Network waterfall", "Hover a bar for its timing; Up and Down move the selection.");

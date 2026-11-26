@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Serve the Pages artifact and use headless Chrome to verify rendered pixels and text input.
+"""Check rendering, text input and IME in headless Chrome, on a Pages artifact or dev server.
 
-Requires websocket-client (`python -m pip install websocket-client`). This is a CI-only test helper;
-it is not copied to the published site.
+Requires websocket-client (`python -m pip install websocket-client`). This test helper is not
+copied to the published site.
 """
 
 from __future__ import annotations
@@ -67,6 +67,10 @@ def evaluate(ws, expression: str, command_id: int, deadline: float, errors: list
             # is often just "Uncaught (in promise)".
             description = details.get("exception", {}).get("description")
             errors.append(description or details.get("text", "browser JavaScript exception"))
+        elif method == "Network.responseReceived":
+            response = message["params"]["response"]
+            if response["status"] >= 400:
+                errors.append(f"HTTP {response['status']} for {response['url']}")
         elif method == "Runtime.consoleAPICalled":
             params = message.get("params", {})
             if params.get("type") == "error":
@@ -82,34 +86,35 @@ def evaluate(ws, expression: str, command_id: int, deadline: float, errors: list
     return None, command_id
 
 
-def run(site: Path, timeout_seconds: float, expect_renderer: str) -> str:
-    site = site.resolve()
-    if not (site / "index.html").is_file():
-        raise FileNotFoundError(f"No index.html in published site: {site}")
-
-    server_port = free_port()
+def run(site: Path | None, timeout_seconds: float, expect_renderer: str, url: str | None = None) -> str:
+    server = None
+    if site is not None:
+        site = site.resolve()
+        if not (site / "index.html").is_file():
+            raise FileNotFoundError(f"No index.html in published site: {site}")
+        server_port = free_port()
+        url = f"http://127.0.0.1:{server_port}/"
+        server = subprocess.Popen(
+            [sys.executable, "-m", "http.server", str(server_port), "--bind", "127.0.0.1", "--directory", str(site)],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
     debug_port = free_port()
-    server = subprocess.Popen(
-        [sys.executable, "-m", "http.server", str(server_port), "--bind", "127.0.0.1", "--directory", str(site)],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
     browser = None
     ws = None
     profile = None
     errors: list[str] = []
     try:
-        base_url = f"http://127.0.0.1:{server_port}/"
         server_deadline = time.monotonic() + 15
         while time.monotonic() < server_deadline:
             try:
-                with urllib.request.urlopen(base_url, timeout=1) as response:
+                with urllib.request.urlopen(url, timeout=1) as response:
                     if response.status == 200:
                         break
             except OSError:
                 time.sleep(0.1)
         else:
-            raise RuntimeError("the local Pages server did not start")
+            raise RuntimeError(f"the site did not return HTTP 200: {url}")
 
         profile = tempfile.mkdtemp(prefix="cui-wasm-smoke-")
         browser = subprocess.Popen(
@@ -154,7 +159,8 @@ def run(site: Path, timeout_seconds: float, expect_renderer: str) -> str:
 
         send("Runtime.enable")
         send("Page.enable")
-        url = base_url + "?page=2&smoke=1"
+        send("Network.enable")
+        url += "?smoke=1"
         if expect_renderer == "2d":
             url += "&renderer=software"
         send("Page.navigate", {"url": url})
@@ -191,7 +197,7 @@ def run(site: Path, timeout_seconds: float, expect_renderer: str) -> str:
                 status = result.get("status", "")
                 if "BROWSER-SMOKE-FAIL" in status or "startup failed" in status:
                     raise RuntimeError(status)
-                if "BROWSER-SMOKE-OK" in status:
+                if "BROWSER-SMOKE-OK" in status and not errors:
                     if result.get("nonBackground", 0) < 1000:
                         raise RuntimeError(f"smoke marker reported but canvas was blank: {result}")
                     # The marker only proves a frame was drawn and input arrived; without this
@@ -230,18 +236,21 @@ def run(site: Path, timeout_seconds: float, expect_renderer: str) -> str:
                     browser.wait(timeout=5)
                 except subprocess.TimeoutExpired:
                     browser.kill()
-        server.terminate()
-        try:
-            server.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            server.kill()
+        if server is not None:
+            server.terminate()
+            try:
+                server.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                server.kill()
         if profile is not None:
             shutil.rmtree(profile, ignore_errors=True)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("site", type=Path, help="the published wwwroot directory")
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("site", nargs="?", type=Path, help="the published wwwroot directory")
+    source.add_argument("--url", help="an already running gallery, e.g. http://localhost:5000/")
     parser.add_argument("--timeout", type=float, default=45)
     parser.add_argument(
         "--renderer",
@@ -251,7 +260,7 @@ def main() -> int:
     )
     args = parser.parse_args()
     try:
-        run(args.site, args.timeout, args.renderer)
+        run(args.site, args.timeout, args.renderer, args.url)
         return 0
     except Exception as error:
         print(f"BROWSER-WASM-SMOKE FAIL: {error}", file=sys.stderr)

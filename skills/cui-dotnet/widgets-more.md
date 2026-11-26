@@ -691,6 +691,40 @@ Children can arrive later. A node with `CUI_TREE_HAS_CHILDREN` and no `first_chi
 
 With the table focused, Up and Down move and the selection follows. Right opens a node, or moves to its first child when it is already open. Left closes an open node, or moves to its parent. Home and End jump to the first and last row, Page Up and Page Down move a page, and Enter (or a double click) reports `ev.activated`. `*` opens every sibling of the current node. Typing a few letters jumps to the next name that starts with them, when you pass `.label`. Selection works as in the data grid, without a checkbox column: Shift+click or Shift+arrows select a range, Ctrl+click toggles a row, Ctrl+arrows move without selecting, Ctrl+A selects every row of the open tree and Esc clears. A plain click or arrow also drops any selected nodes inside closed folders.
 
+#### Dragging rows
+
+```c
+cui_tree_table_begin(ui, "files", cols, 4, nodes, count, .root = root, .label = name_of, .draggable = true, .can_drop = can_drop);
+/* ... rows as above ... */
+cui_tree_table_events ev = cui_tree_table_end(ui);
+if (ev.drop_count > 0) {
+    move_files(ev.dropped, ev.drop_count, ev.drop_target, ev.drop_where);   /* your data first */
+    root = cui_tree_move(nodes, count, root, ev.dropped, ev.drop_count, ev.drop_target, ev.drop_where);
+    if (ev.drop_where == CUI_TREE_DROP_INSIDE) nodes[ev.drop_target].flags |= CUI_TREE_OPEN;
+}
+```
+
+With `.draggable`, rows drag to move nodes. A drag starts once a pressed row moves 4 points, so a click still selects. It carries the selection, or only the row you grabbed when that row is not selected (it then becomes the selection). Nodes inside another dragged node go with it. The dragged rows dim, and a ghost beside the pointer shows the first node's icon and name (with `.label`) and how many nodes move.
+
+Where they land follows the pointer. Over a folder (a node with children or `CUI_TREE_HAS_CHILDREN`), the top quarter is before it, the bottom quarter after it, and the middle half into it, shown as an outline. Other rows split in half: before or after. A line from the row's indentation on marks before and after. The line under an open folder is before its first child, and below the last row is after the last top level node. A node cannot go into itself or into its own subtree, and `.can_drop(user, target, where)` can refuse more; with no place to land, the pointer shows that and the release does nothing. Hold the drag on a closed folder for 0.6 seconds and it opens (a lazy folder asks for its children as usual). Near the top or bottom edge the rows scroll, faster closer to the edge. Esc cancels.
+
+The table only reports the drop: `ev.dropped` lists the nodes in tree order, and they go `CUI_TREE_DROP_BEFORE`, `_INSIDE` (after the last child) or `_AFTER` `ev.drop_target`. `cui_tree_move` relinks your nodes to match, keeping their order, and returns the new first top level node. It refuses a target that is one of the nodes or inside one. Moving into a lazy folder whose children have not loaded yet links the nodes as its only children, so it will not ask for the rest: load the folder first, or leave the move to your data and reload it. There is no keyboard way to move nodes yet.
+
+#### Context menu
+
+```c
+cui_tree_table_events ev = cui_tree_table_end(ui);
+int node;
+cui_tree_table_menu(ui, "files", &node) {                 /* after the table, every frame */
+    if (cui_menu_item(ui, "Open", .icon = CUI_ICON_EXTERNAL_LINK)) open_file(node);
+    if (cui_menu_item(ui, "Rename", .icon = CUI_ICON_PENCIL)) start_rename(node);
+    cui_menu_separator(ui);
+    if (cui_menu_item(ui, "Delete", .icon = CUI_ICON_TRASH_2, .danger = true)) delete_selected();
+}
+```
+
+`cui_tree_table_menu` (or `cui_tree_table_menu_begin` and `_end`) with the table's id builds a menu for the node under the pointer. A right click on a row, its chevron included, opens it at the pointer, and Shift+F10 opens it for the cursor row, below the row at its name. The menu says which node it is for in `node`; fill it with `cui_menu_item`, `cui_menu_separator` and the other menu calls. As in a file manager, a right click on a row outside the selection selects that row alone first (`ev.selection_changed` reports it), and a right click inside a selection of several keeps it, so an item can act on `node` or on every `CUI_TREE_SELECTED` node. The cursor moves to the row either way. While the menu is open it has the keys: arrows, Enter and Esc work in the menu, not in the table. It closes when you choose an item, click elsewhere or press Esc, and also when its node is removed or hidden in a closed folder or the table is disabled. It does not open while a row is held to drag. A table whose menu you do not build ignores the right button, as before.
+
 When the table is narrower than its columns, columns with a `priority` hide, the highest number first, until the rest fit. Columns with priority 0 always stay, and so does the last column left. This is a data grid feature (`cui_grid_column.priority`), so plain grids can use it too. In the explorer above, Kind (3) goes first, then Modified (2), then Size (1); at phone width only Name is left.
 
 The path bar is a breadcrumb for file and scene paths, styled like `cui_breadcrumb`. Every segment except the last is a button that reports `clicked`; the last one is where you are. When the bar is too narrow, middle segments collapse into a "..." menu, starting after the first. If there is still not enough room, the first goes too, and the current segment is cut short last. With `.menus`, the chevron after a segment opens a menu that you fill between `cui_path_bar_menu_begin` and `cui_path_bar_menu_end` with that segment's children, which are the siblings of the next segment. To type a path, click the empty part of the bar or the current segment, or press Ctrl+L when no text field has the keyboard. The bar becomes a text field holding the whole path (`.text`, or the segments joined by "/"), all selected. Enter reports `submitted`; Esc or clicking away puts the segments back. `.no_edit` turns typing off.
@@ -712,11 +746,23 @@ if (cui_button(ui, "Save as...")) saving = true;
 if (cui_file_picker(ui, "save", &saving, path, sizeof path, .save = true, .name = "report.pdf")) write_report(path);
 ```
 
-A folder's contents with name, date modified and size, folders first and names in natural order (file2 before file10); click a column title to sort by it, again to reverse. Above the list are back, forward and up, a path bar (click a segment to go there, or click the bar and type a path), a filter field and reload; beside it a sidebar of places (home, desktop, documents, downloads and the root, or your own `places`). Double-click or Enter opens a folder or picks a file (`r.picked`, a full path), and `r.selected` tells you what is selected. With the list focused the arrows, Page Up, Page Down, Home and End move the selection, typing letters jumps to the next name that starts with them, Backspace goes up, Alt+Left and Alt+Right go back and forward and F5 reloads. `path` is yours and the browser writes it as you move around. `filter` takes patterns like `*.png;*.jpg` (folders always show), `folders_only` and `hidden` change what is listed. Narrow, the date and then the size columns step aside and the sidebar is left out. The local lister shows everything a folder holds, including devices and pipes in places like `/dev`: check that a picked path is a regular file before reading it, since reading a terminal or a pipe can block.
+A folder's contents with name, date modified and size, folders first and names in natural order (file2 before file10); click a column title to sort by it, again to reverse. Above the list are back, forward and up, a path bar (click a segment to go there, or click the bar and type a path), a filter field and reload; beside it a scrollable sidebar of places and native drives or volumes (or your own `places`). Double-click or Enter opens a folder or picks a file (`r.picked`, a full path), and `r.selected` tells you what is selected. With the list focused the arrows, Page Up, Page Down, Home and End move the selection, typing letters jumps to the next name that starts with them, Backspace goes up, Alt+Left and Alt+Right go back and forward and F5 reloads. `path` is yours and the browser writes it as you move around. `filter` takes patterns like `*.png;*.jpg` (folders always show), `folders_only` and `hidden` change what is listed. Narrow, the date and then the size columns step aside and the sidebar is left out. The local lister shows everything a folder holds, including devices and pipes in places like `/dev`: check that a picked path is a regular file before reading it, since reading a terminal or a pipe can block.
 
 `cui_file_picker` puts a browser in a dialog with a footer: Open, or with `save` a name field and Save (selecting a file fills in its name), or with `folders` Choose. It returns true once with the chosen path; `*open` turns false then or on Cancel and Esc. It is drawn by CUI like the rest of the window; `cui_app_file_dialog` in `cui_app.h` opens the system's own dialog instead.
 
 A folder is read when you enter it or reload, not every frame, and only the rows in view are built, so a folder of 20,000 files scrolls and filters without slowing down. Reading goes through `list`, which defaults to `cui_fs_list` (POSIX or Windows; nothing in a browser build), so the same browser can show a zip file, a remote bucket or an asset database.
+
+The default sidebar groups Home, Desktop, Documents and Downloads under Places.
+Windows adds Drives with volume labels and drive letters, including mapped network
+drives. Linux adds Devices with the file-system root and mounted data locations;
+kernel, runtime and container mounts are omitted. macOS adds Volumes with the
+file-system root and browsable mounted volumes. Mount-point names label Unix
+volumes. Network drives on Windows use a generic label to avoid probing an offline
+server. The sidebar scrolls independently. Only the most specific enclosing place
+or volume is highlighted: Home suppresses its drive, and Documents suppresses Home.
+The native list is cached until Refresh/F5 or reopening a picker.
+Custom `places` replace the native sidebar, have no six-entry limit and scroll too.
+Browser builds and `CUI_NO_FILESYSTEM` do not enumerate native volumes.
 
 ## Code
 
@@ -941,7 +987,7 @@ if (r.selection_changed && selected >= 0)
     show_details(&spans[selected]);       /* name, duration, children... */
 ```
 
-A time ruler along the top picks its unit from the zoom (s, ms, µs or ns) and thins its ticks on a narrow panel; faint lines carry the ticks down through the rows. Spans take their color from the series palette, hashed from the name (or from `color_key` when you set one) so a function keeps its color across frames; the selected span gets the accent outline. Labels show inside spans that have room and are cut with an ellipsis, staying in the visible part of a span that runs off the edge. Spans thinner than a point are merged with their neighbours into a quiet gray run, so a capture zoomed out never turns into noise.
+A time ruler along the top picks its unit from the zoom (ns, µs, ms or s; past 20 seconds it steps like a clock and labels ticks as "4 min 50 s" or "33 d 10 h") and thins its ticks on a narrow panel; faint lines carry the ticks down through the rows. Spans take their color from the series palette, hashed from the name (or from `color_key` when you set one) so a function keeps its color across frames; the selected span gets the accent outline. Labels show inside spans that have room and are cut with an ellipsis, staying in the visible part of a span that runs off the edge. Spans thinner than a point are merged with their neighbours into a quiet gray run, so a capture zoomed out never turns into noise.
 
 The wheel zooms around the pointer, Shift+wheel or a sideways scroll pans, and dragging pans sideways and, for stacks deeper than the panel, up and down. Click a span to select it (empty space clears the selection); double-click it to zoom until it fills the view, or double-click empty space to fit everything. Hovering a span shows its name, its duration and its share of its parent (or of the view, for the top row). With the graph focused, Left and Right move to the previous or next span in the row, Up to the parent and Down to the first child, and the view follows the selection; Shift+Left and Right pan, + and - zoom, Enter or Space zooms to the selection, Home or F fits everything, and Esc fits everything or, when everything is already in view, clears the selection. Zooming to a span and fitting animate, and snap with reduced motion.
 
@@ -1167,7 +1213,7 @@ static const cui_graph_edge edges[] = { { 0, 1 }, { 1, 2 } };
 cui_graph_view(ui, "deps", nodes, 3, edges, 2, .selected = &selected, .height = 340);
 ```
 
-Each edge points into a later layer. A cycle is broken for the layout but still drawn. An edge that skips layers is routed between the nodes, not through them, and the order within each layer is chosen to cross fewer edges. Hovering or selecting a node lights up what it depends on and what depends on it, and dims the rest. The wheel zooms around the pointer, dragging pans, a click selects, and a double click activates. With the graph focused, the arrows move along edges or to the neighbour in the same layer, + and - zoom, F fits, and Esc clears. `top_down` stacks the layers instead of placing them side by side. The layout runs once when the graph changes: 400 nodes with 900 edges take about 20 ms.
+Each edge points into a later layer. A cycle is broken for the layout but still drawn. An edge that skips layers is routed between the nodes, not through them, and the order within each layer is chosen to cross fewer edges. Hovering or selecting a node lights up what it depends on and what depends on it, and dims the rest. The wheel zooms around the pointer, including when the graph is inside a zoomed node editor card. Dragging pans, a click selects, and a double click activates. With the graph focused, the arrows move along edges or to the neighbour in the same layer, + and - zoom, F fits, and Esc clears. `top_down` stacks the layers instead of placing them side by side. The layout runs once when the graph changes: 400 nodes with 900 edges take about 20 ms.
 
 ### Network waterfall
 
@@ -1196,6 +1242,15 @@ cui_trace_view(ui, "trace", tracks, 3, spans, span_count, &view, &selected,
 Each thread, process or service has a lane of nested spans, drawn like the flame graph and sharing its colors and ruler. Markers (vsync, a GC pause, a deploy) run across every lane, with their names in a strip under the ruler. The wheel zooms around the pointer, Shift+wheel pans, and over the lane names the wheel scrolls the lanes. Dragging pans, a click selects, and a double click zooms to a span. Shift+drag measures a range, which `view.mark_start` and `mark_end` hold and the ruler labels with its length. A click on a lane's name folds it to its top row, and `collapsed` keeps that in your track array. With the viewer focused, Left and Right step along the row, Up goes to the parent and Down to the first child. + and - zoom, Enter zooms to the selection, F fits, and Esc clears the measurement and then the selection. Only the rows and spans in view are visited, and spans thinner than a point merge into runs, so 200,000 spans take under a millisecond a frame. Below 560 points the lane names get a narrower column.
 
 The trace result's `view_changed` flag also reports updates to the measurement, including when Esc clears it.
+
+Links draw dependencies between spans, such as a request and the work it caused or a message and the job it started. Each `cui_trace_link` names two spans by their index in the sorted array and is drawn as a curve from the end of `from` to the start of `to`, across lanes, with an arrowhead at `to`; a link that runs back in time bends into an S. `tone` picks the color (`CUI_TONE_NEUTRAL` is the emphasis color), `width` the line width and `dashed` marks a weaker or inferred dependency. A link is drawn when the time range it covers meets the view, and an end out of view runs to the edge. Links of a folded lane meet its top row. Links touching the selected or hovered span, and the link under the pointer, are drawn bright and the rest subdued; the result's `hovered_link` says which link the pointer is on when no span is under it, so you can show your own tooltip. `cui_trace_span_rect(ui, cui_last_id(ui), &spans[i])` right after the call says where a span was drawn, for overlays of your own.
+
+```c
+static const cui_trace_link links[] = { { 0, 5 }, { 2, 7, CUI_TONE_WARNING, 0, true } };
+cui_trace_result r = cui_trace_view(ui, "trace", tracks, 3, spans, span_count, &view, &selected,
+                                    .links = links, .link_count = 2);
+if (r.hovered_link >= 0) cui_tooltip(ui, "waits on the upload");
+```
 
 ### Regex tester
 
@@ -1499,6 +1554,8 @@ int clicked = cui_week_calendar(ui, "week", monday, events, 2, .start_hour = 8, 
 
 Drag an event to move it (it snaps to 15 minutes and keeps its length) or pull its bottom edge to resize it; the calendar writes the new times into your array. Overlapping events share the day side by side. Today is circled and a line marks the current time. With `read_only`, a click or Enter or Space on a focused event still returns its index. The editing keys do not move or resize it. With the keyboard, Up and Down move a focused event by 15 minutes, Left and Right by a day, and Shift with Up or Down changes its end.
 
+The calendar checks the drag threshold through the release frame in both modes. A drag ends when the event list shrinks, the calendar is disabled or `read_only` changes. Moving an event again takes a new press.
+
 ### Month calendar
 
 A month grid with the events of each day, for schedules and planners.
@@ -1536,7 +1593,7 @@ static cui_gantt_task tasks[] = {
 int clicked = cui_gantt(ui, "plan", tasks, 4, start_date, 28, .today = 10);
 ```
 
-Drag a bar to reschedule it, or drag either end to change its length. Bars are colored by `state`: done in green, active in the first series color, planned in a neutral tint with a dashed edge. `CUI_GANTT_AUTO`, the default, works the state out: a progress of 1 is done, any progress is active, and untouched work is planned when it starts after `today` and active once that day has come. A task's `tone`, when set, replaces the state's color. The filled part of a bar is its progress, with the percentage at the bar's end when the name leaves room for it. Dependencies are soft curves with small arrowheads, running behind the bars; when a task starts before the one it waits for ends, the curve leaves from that bar's edge. A milestone is an outlined diamond labelled with its name and date. `today` draws an accent line over the rows with a small "Today" chip in the header, and weekends are lightly shaded. A focused bar moves a day with the arrow keys and changes its length with Shift and the arrows.
+Drag a bar to reschedule it, or drag either end to change its length. Bars are colored by `state`: done in green, active in the first series color, planned in a neutral tint with a dashed edge. `CUI_GANTT_AUTO`, the default, works the state out: a progress of 1 is done, any progress is active, and untouched work is planned when it starts after `today` and active once that day has come. A task's `tone`, when set, replaces the state's color. The filled part of a bar is its progress, with the percentage at the bar's end when the name leaves room for it. Dependencies are soft curves with small arrowheads, running behind the bars; when a task starts before the one it waits for ends, the curve leaves from that bar's edge. A milestone is an outlined diamond labelled with its name and date. `today` draws an accent line over the rows with a small "Today" chip in the header, and weekends are lightly shaded. A focused bar moves a day with the arrow keys and changes its length with Shift and the arrows. A drag ends when the task list shrinks, the chart is disabled or `read_only` changes. Moving a bar again takes a new press.
 
 In read-only mode, clicking a bar or pressing Enter or Space on the focused task returns its index. Moving and resizing are disabled.
 
@@ -2076,6 +2133,27 @@ Series stack: each one fills its own band above the one before it, and negative,
 
 `x_units = CUI_AXIS_HOURS` labels x as times of day, so 13.5 reads 13:30 and 30 reads 06:00 the next morning; otherwise `x_format` prints the labels. The chart keeps a gutter on its right for value labels, the same width as the event track's, so the two stacked at one width share their x positions.
 
+For labels a format string cannot write, such as month names, dates or a decimal comma, pass a function of type `cui_axis_label_fn`: `x_label` writes the x labels and the readout's x, and `value_label` writes the readout's value, with `unit` still after it. Each gets its own user pointer (`x_label_user`, `value_label_user`), the value, and a buffer of at least 64 bytes to fill; longer text is cut. `x_units` still picks the spacing, so with `CUI_AXIS_HOURS` the labels fall on whole hours and quarters. The functions run while the frame ends, so what the user pointer points to must last until `cui_end_frame`.
+
+```c
+static void month_name(void *user, double x, char *out, size_t capacity) {
+    static const char *const names[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                                         "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+    long m = lround(x);                      /* x can carry rounding error from the label step */
+    (void)user;
+    snprintf(out, capacity, "%s", m >= 1 && m <= 12 ? names[m - 1] : "");
+}
+static void euros(void *user, double v, char *out, size_t capacity) {
+    long long c = llround(v * 100);          /* 2735.31 as 2.735,31, below a million */
+    (void)user;
+    if (c >= 100000) snprintf(out, capacity, "%lld.%03lld,%02lld", c / 100000, c / 100 % 1000, c % 100);
+    else snprintf(out, capacity, "%lld,%02lld", c / 100, c % 100);
+}
+
+cui_dot_chart(ui, "spent", series, 1, 12, .x_min = 1, .x_max = 12, .x_step = 1,
+              .x_label = month_name, .value_label = euros, .unit = "EUR");
+```
+
 The result reports the sample under the pointer or the keyboard cursor (`hovered`, its `x` and the stacked `value`, or -1), and `clicked` with the exact `x` of a click. The readout beside the cursor shows the time and the value with `unit`; `no_readout` hides it.
 
 In a right-to-left interface the chart keeps time running left to right, like the other time-based components, and Right still moves later. Its labels and readout are drawn with the library's text, so Persian and Arabic labels are shaped when CUI is built with `CUI_TEXT_SHAPING` and a font that covers them is loaded ([Text in other languages](integration.md#text-in-other-languages)).
@@ -2091,13 +2169,16 @@ const cui_chart_annotation notes[] = {
     { CUI_ANNOTATION_Y, 0, 300, "SLO", NULL, true },                   /* a dashed line at a value */
     { CUI_ANNOTATION_X, 14.65, 0, "DEPLOY 4.12", "14:39", false },      /* a line at an x, labelled at its top */
     { CUI_ANNOTATION_POINT, 14.7, 515, "PEAK 515 MS", NULL, false },   /* a dot at x, y */
+    { CUI_ANNOTATION_X, 14.77, 0, "ROLLBACK", "14:46", false, CUI_COLOR_DANGER },   /* in a color of its own */
 };
 cui_dot_chart(ui, "wait", series, 1, 61, .x_min = 14, .x_max = 15, .x_units = CUI_AXIS_HOURS,
-              .min = 0, .max = 600, .annotations = notes, .annotation_count = 3);
-cui_line_chart(ui, "sales", lines, 2, .annotations = notes, .annotation_count = 3);   /* x is the point's index */
+              .min = 0, .max = 600, .annotations = notes, .annotation_count = 4);
+cui_line_chart(ui, "sales", lines, 2, .annotations = notes, .annotation_count = 4);   /* x is the point's index */
+cui_line_chart(ui, "wait", lines, 1, .x_min = 14, .x_max = 15,                      /* 61 points, x in hours */
+               .annotations = notes, .annotation_count = 4);
 ```
 
-The dot chart, the line chart and the bar chart take the same `annotations`. In the dot chart, x is in the chart's x units; in line and bar charts it is the point's index. The `label` is drawn in the foreground color and the `detail` under it in a muted one, both in the monospaced font, and `accent` draws the line and its label in the accent color.
+The dot chart, the line chart and the bar chart take the same `annotations`. In the dot chart, x is in the chart's x units. In line and bar charts it is the point's index, unless the chart sets `x_min` and `x_max`: then the first point stands for `x_min`, the last for `x_max`, and x is in those units, so a mark at 13.5 hours goes at 13.5 whatever the sampling. The points are taken as evenly spaced; for data with gaps, such as trading days, keep x as the index. The `label` is drawn in the foreground color and the `detail` under it in a muted one, both in the monospaced font, and `accent` draws the line and its label in the accent color. `color` gives an annotation a color of its own, a theme token such as `CUI_COLOR_SUCCESS` or any `cui_color`, for its line, dot and label; the detail stays muted, and without it `accent` decides as before.
 
 A vertical line's label sits at its top, right of the line. When it would cover a label placed before it, it tries the left of its line, then moves down a line at a time, and a label that ends up over the data gets the page's color behind it. Annotations earlier in the array choose their place first, so put the one that matters most first. The dot chart keeps room above the plot for labels; a threshold's label goes in the gutter on the right when it fits there and above its line when it does not. Annotations outside the range are skipped.
 
@@ -2113,6 +2194,18 @@ static int count = 3, selected = -1;
 cui_event_track_result r = cui_event_track(ui, "doses", doses, &count, 8, 6, 30, .step = 0.25,
                                            .units = CUI_AXIS_HOURS, .label_step = 3, .selected = &selected);
 if (r.changed) recompute();
+```
+
+`units = CUI_AXIS_HOURS` labels the axis as times of day; otherwise `format` prints the labels. For labels a format cannot write, `label` takes a function, the same `cui_axis_label_fn` as the dot chart's `x_label`, with `label_user` passed to it: it writes the axis labels and the time shown under the selected event, while `units` still picks the spacing. Here the axis counts days back from today and shows them as German dates:
+
+```c
+static void day_label(void *user, double day, char *out, size_t capacity) {
+    time_t t = *(const time_t *)user + (time_t)lround(day) * 86400;   /* day 0 is today */
+    struct tm *tm = localtime(&t);
+    if (!tm || !strftime(out, capacity, "%d.%m.", tm)) out[0] = 0;
+}
+static time_t today;                         /* set once: today = time(NULL) */
+cui_event_track(ui, "visits", visits, &count, 16, -30, 0, .step = 1, .label = day_label, .label_user = &today);
 ```
 
 You own the array and its count. The track edits them in place, keeps the times sorted and within `min` and `max`, and never adds past `capacity`; an array that arrives unsorted is sorted, with the selection kept on its event. A press on a dot takes it and a drag moves it, snapping to multiples of `step` from `min`; it may pass its neighbours, and the selection follows it to its new place in the array. A click on an empty spot of the track adds an event there and starts dragging it, and a double-click on a dot removes it. `no_add` and `no_remove` turn those off.

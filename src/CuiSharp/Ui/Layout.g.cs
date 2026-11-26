@@ -86,6 +86,13 @@ public static unsafe class LayoutUiExtensions
             WidgetRecorder.Note(ui.Handle, "ScrollTo", scrollId);
         }
 
+        /// <summary>Scrolls the area the least that shows `row` (any id from cui_box_begin, cui_last_id or cui_make_id), comparing both rectangles from the latest layout: nothing when the row is wholly in view or either rectangle is not known yet, else just enough to show its clipped edge; a row taller than the view gets its top at the top. For keyboard selection in a list.</summary>
+        public void ScrollReveal(UiText scrollId, uint row)
+        {
+            Native.ScrollReveal(ui.Handle, Utf8.Get(scrollId), row);
+            WidgetRecorder.Note(ui.Handle, "ScrollReveal", scrollId);
+        }
+
         /// <summary>Open a split with pane minimums that can fit the available main axis.</summary>
         public LayoutScope Split(UiText id, ref float ratio, SplitOpts o = default)
         {

@@ -80,4 +80,76 @@ public class ImageApiTests
         }, pixels);
         Assert.Empty(surface.Faults);
     }
+
+    [Fact]
+    public void AnUpdatedRectangleReplacesThosePixelsOnTheSameTexture()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        using var surface = CuiSurface.Create(120, 120);
+        var pixels = new byte[surface.PixelWidth * surface.PixelHeight * 4];
+
+        var rgba = new byte[16 * 16 * 4];
+        for (int i = 0; i < rgba.Length; i += 4) { rgba[i] = 230; rgba[i + 3] = 255; } // red
+        ulong tex = 0;
+        surface.Draw(ui =>
+        {
+            tex = ui.CreateImage(16, 16, rgba);
+            ui.Image(tex, new ImageOpts { Width = Size.Px(64), Height = Size.Px(64) });
+        }, pixels);
+        Assert.NotEqual(0ul, tex);
+
+        // Turn the left half green in place, one strided row at a time, and draw again:
+        // the same texture handle must now show the update without a new texture.
+        for (int row = 0; row < 16; row++)
+            for (int col = 0; col < 8; col++)
+            {
+                int at = row * 64 + col * 4;
+                rgba[at] = 0; rgba[at + 1] = 220; rgba[at + 3] = 255;
+            }
+        surface.Draw(ui =>
+        {
+            ui.UpdateImage(tex, 0, 0, 8, 16, rgba, stride: 64);
+            ui.Image(tex, new ImageOpts { Width = Size.Px(64), Height = Size.Px(64) });
+        }, pixels);
+        Assert.Empty(surface.Faults);
+
+        bool green = false, red = false;
+        for (int i = 0; i + 2 < pixels.Length; i += 4)
+        {
+            // The green channel is the second byte whether the buffer reads RGBA or BGRA; red
+            // is the first in one and the third in the other.
+            green |= pixels[i + 1] > 180 && pixels[i] < 90 && pixels[i + 2] < 90;
+            red |= (pixels[i] > 180 && pixels[i + 1] < 90 && pixels[i + 2] < 90)
+                || (pixels[i + 2] > 180 && pixels[i] < 90 && pixels[i + 1] < 90);
+        }
+        Assert.True(green, "the updated rectangle never reached the framebuffer");
+        Assert.True(red, "the update replaced the whole texture instead of its rectangle");
+
+        surface.Draw(ui => ui.DestroyImage(tex), pixels);
+        Assert.Empty(surface.Faults);
+    }
+
+    [Fact]
+    public void AnUpdateShorterThanItsRowsIsRejectedBeforeTheCall()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        using var surface = CuiSurface.Create(64, 64);
+        var pixels = new byte[surface.PixelWidth * surface.PixelHeight * 4];
+
+        // Two rows of 8 pixels need 64 packed bytes. With padding, only the last row's
+        // actual pixels must fit; a stride below width * 4 cannot address the rows.
+        Assert.Throws<ArgumentException>(() => surface.Draw(
+            ui => ui.UpdateImage(7, 0, 0, 8, 2, new byte[63]), pixels));
+        Assert.Throws<ArgumentException>(() => surface.Draw(
+            ui => ui.UpdateImage(7, 0, 0, 8, 2, new byte[96], stride: 31), pixels));
+
+        Assert.Throws<ArgumentException>(() => surface.Draw(
+            ui => ui.UpdateImage(7, 0, 0, 8, 2, new byte[95], stride: 64), pixels));
+        Assert.Throws<ArgumentOutOfRangeException>(() => surface.Draw(
+            ui => ui.UpdateImage(7, 0, 0, 1 << 30, 1, []), pixels));
+        Assert.Throws<ArgumentOutOfRangeException>(() => surface.Draw(
+            ui => ui.UpdateImage(7, int.MaxValue, 0, 1, 1, new byte[4]), pixels));
+    }
 }

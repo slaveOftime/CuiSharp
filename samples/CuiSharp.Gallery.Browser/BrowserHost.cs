@@ -22,9 +22,15 @@ public static unsafe partial class BrowserHost
     private static string? _failure;
     private static bool _gpu;
 
+    // The caret CUI reported this frame, in points. Written by the platform hook during
+    // EndFrame's paint and handed to the page once the frame is done, so the hidden textarea
+    // the browser opens the IME candidate window at sits on the caret instead of a corner.
+    private static (float X, float Y, float Height)? _caret;
+    private static (float X, float Y, float Height)? _publishedCaret;
+
     /// <summary>Creates the surface for the renderer the page chose. Safe to call again to switch.</summary>
     [JSExport]
-    public static void Initialize(bool useGpu)
+    public static void Initialize(bool useGpu, bool recordWidgets)
     {
         _gallery?.Dispose();
         _surface?.Dispose();
@@ -40,6 +46,14 @@ public static unsafe partial class BrowserHost
         _surface = useGpu
             ? CuiSurface.CreateGpu(1, 1, GpuTextures(), theme: Theme.Light, accent: Accent.Violet)
             : CuiSurface.Create(1, 1, theme: Theme.Light, accent: Accent.Violet);
+        _surface.SetPlatform(new NativePlatformIface
+        {
+            User = (nint)(delegate* unmanaged[Cdecl]<float, float, float, void>)&TextInputRectThunk,
+            SetTextInputRect = GetCaretHook(),
+            DrawEmoji = (nint)(delegate* unmanaged[Cdecl]<void*, byte*, int, int, byte*, byte>)&DrawEmojiThunk,
+        });
+        _surface.RecordWidgets = recordWidgets;
+        _caret = _publishedCaret = null;
         if (!useGpu) _surface.Incremental = true;
         _gallery = new GalleryApp();
     }
@@ -78,6 +92,27 @@ public static unsafe partial class BrowserHost
         TextureDestroy((int)texture);
     }
 
+    // browser_platform.c receives CUI's by-value rect; only scalars cross into Mono.
+    [LibraryImport("cui", EntryPoint = "cui_browser_caret_hook")]
+    private static partial nint GetCaretHook();
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
+    private static void TextInputRectThunk(float x, float y, float height) => _caret = (x, y, height);
+
+    /// <summary>Renders one emoji with the browser's font; <paramref name="rgba"/> is px by px, straight alpha.</summary>
+    [UnmanagedCallersOnly(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
+    private static byte DrawEmojiThunk(void* user, byte* utf8, int length, int size, byte* rgba)
+    {
+        _ = user;
+        return (byte)(EmojiDraw((nint)utf8, length, size, (nint)rgba) ? 1 : 0);
+    }
+
+    [JSImport("emoji.draw", "main.js")]
+    private static partial bool EmojiDraw(nint utf8, int length, int size, nint rgba);
+
+    [JSImport("ime.place", "main.js")]
+    private static partial void TextInputRect(float x, float y, float height, bool focused);
+
     [JSImport("textures.create", "main.js")]
     private static partial int TextureCreate(int width, int height, int format, nint pixels);
 
@@ -102,9 +137,11 @@ public static unsafe partial class BrowserHost
                 : (float)Math.Clamp((timestampMilliseconds - _lastTimestamp) / 1000.0, 1.0 / 240.0, 0.1);
             _lastTimestamp = timestampMilliseconds;
 
+            _caret = null;
             surface.BeginFrame(delta);
             gallery.Frame(surface.Ui);
             surface.EndFrame();
+            PublishCaret();
 
             if (_gpu)
             {
@@ -149,6 +186,36 @@ public static unsafe partial class BrowserHost
         }
     }
 
+    /// <summary>Hands the page this frame's caret, once, and only when it moved or a field lost focus.</summary>
+    private static void PublishCaret()
+    {
+        if (_caret == _publishedCaret) return;
+        _publishedCaret = _caret;
+        if (_caret is { } caret) TextInputRect(caret.X, caret.Y, caret.Height, true);
+        else TextInputRect(0, 0, 0, false);
+    }
+
+    /// <summary>
+    /// Installs the browser gallery's asset as a fallback for the bundled Latin faces.
+    /// </summary>
+    /// <returns>The face handle, or 0 when the bytes are not a font CUI can read.</returns>
+    [JSExport]
+    public static int AddFont(byte[] data)
+    {
+        var surface = _surface;
+        if (surface is null || data.Length == 0) return 0;
+
+        Font face = surface.Ui.LoadFont(data);
+        if ((int)face <= (int)Font.Icons) return 0;
+
+        var ui = surface.Ui;
+        ui.AddFontFallback(Font.Body, face);
+        ui.AddFontFallback(Font.Medium, face);
+        ui.AddFontFallback(Font.Display, face);
+        ui.AddFontFallback(Font.Mono, face);
+        return (int)face;
+    }
+
     /// <summary>Updates the logical viewport and device-pixel scale when the canvas changes size.</summary>
     [JSExport]
     public static void Resize(int width, int height, float scale)
@@ -181,6 +248,28 @@ public static unsafe partial class BrowserHost
     {
         if (_gallery is not null && page is >= 0 and < GalleryApp.PageCount)
             _gallery.Page = page;
+    }
+
+    // Enabled only by ?smoke, so test geometry and values come from the real gallery.
+    [JSExport]
+    public static double[] SmokeBounds(string id)
+    {
+        var surface = _surface;
+        if (surface is not { RecordWidgets: true }) return [];
+        var rect = surface.Ui.RectOf(id);
+        return [rect.X, rect.Y, rect.W, rect.H];
+    }
+
+    [JSExport]
+    public static string? SmokeInputValue() => SmokeInput().Value;
+
+    private static SemanticWidget SmokeInput()
+    {
+        if (_surface is { RecordWidgets: true } surface)
+            foreach (var widget in surface.Widgets)
+                if (widget.Kind == "Input" && widget.Text == "name")
+                    return widget;
+        throw new InvalidOperationException("Smoke test could not find the Inputs page's name field.");
     }
 
     [JSExport]

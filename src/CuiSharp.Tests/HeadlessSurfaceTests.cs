@@ -1,3 +1,7 @@
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using CuiSharp.Interop;
+
 namespace CuiSharp.Tests;
 
 /// <summary>
@@ -39,6 +43,36 @@ public class HeadlessSurfaceTests
         // An empty frame still clears the surface: one command, no widgets.
         Assert.InRange(surface.CommandCount, 0, 1);
     }
+
+    [Fact]
+    public unsafe void AWindowlessHostCanReplaceAndClearItsPlatformCallbacks()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        byte first = 0, second = 0;
+        using var surface = CuiSurface.Create(100, 100);
+        var platform = new NativePlatformIface
+        {
+            User = (nint)(&first),
+            SetClipboard = (nint)(delegate* unmanaged[Cdecl]<byte*, byte*, void>)&CaptureClipboard,
+        };
+        surface.SetPlatform(in platform);
+        platform.User = (nint)(&second);
+        surface.Ui.SetClipboard("Alice");
+        Assert.Equal((byte)'A', first);  // CUI copied the table, it did not keep its address.
+        Assert.Equal(0, second);
+
+        surface.SetPlatform(in platform);
+        surface.Ui.SetClipboard("Bob");
+        Assert.Equal((byte)'B', second);
+
+        surface.SetPlatform(default);
+        surface.Ui.SetClipboard("Carol");
+        Assert.Equal((byte)'B', second);
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+    private static unsafe void CaptureClipboard(byte* user, byte* text) => *user = *text;
 
     [Fact]
     public void WidgetsCanBeDrawnAndMeasuredWithoutAHost()

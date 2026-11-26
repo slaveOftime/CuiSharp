@@ -15,7 +15,8 @@ public class ApiDiffTests
             string header = Path.Combine(root, "include", "cui", "cui.h");
             File.WriteAllText(header, """
                 /* ---- Voice ---- */
-                CUI_API void cui_kept(int value);
+                CUI_API void cui_kept(const char *text);
+                CUI_API void cui_changed(int value);
                 CUI_API void cui_removed(void);
                 CUI_API void cui_spinner(float size);
                 typedef struct cui_item { int value; } cui_item;
@@ -27,7 +28,10 @@ public class ApiDiffTests
             File.WriteAllText(header, """
                 /* ---- Voice ---- */
                 /* CUI_API void cui_example_only(void); */
+                #define EXAMPLE \
+                    CUI_API void cui_macro_only(void);
                 CUI_API void (cui_spinner)(float size);
+                CUI_API void cui_changed(long value);
                 typedef struct cui_item {
                     int value;
                 } cui_item;
@@ -37,7 +41,7 @@ public class ApiDiffTests
                 typedef struct cui_new { int value; } cui_new;
                 """);
             // A declaration moved into a different header, not a new export.
-            File.WriteAllText(Path.Combine(root, "include", "cui", "cui_app.h"), "CUI_API void cui_kept(int value);");
+            File.WriteAllText(Path.Combine(root, "include", "cui", "cui_app.h"), "CUI_API void cui_kept( const char* text );");
             Commit(root);
             string after = Run(root, "git", "rev-parse", "HEAD").Trim();
             string script = Path.Combine(TestPaths.RepositoryRoot, "skills", "cui-sync", "scripts", "cui-api-diff.ps1");
@@ -50,6 +54,11 @@ public class ApiDiffTests
             Assert.Contains("  cui_new", output, StringComparison.Ordinal);
             Assert.DoesNotContain("structs removed", output, StringComparison.Ordinal);
             Assert.DoesNotContain("cui_example_only", output, StringComparison.Ordinal);
+            Assert.DoesNotContain("cui_macro_only", output, StringComparison.Ordinal);
+            Assert.DoesNotContain("cui_spinner", output, StringComparison.Ordinal);
+            Assert.DoesNotContain("cui_kept", output, StringComparison.Ordinal);
+            Assert.Contains("function declarations changed (review signatures) (1)", output, StringComparison.Ordinal);
+            Assert.Contains("  cui_changed", output, StringComparison.Ordinal);
             Assert.Contains("new header sections (1)", output, StringComparison.Ordinal);
             Assert.Contains("  Creative controls", output, StringComparison.Ordinal);
         }

@@ -3,8 +3,8 @@ namespace CuiSharp.Tests;
 /// <summary>
 /// <c>bindings/coverage.txt</c> is the account of every C function CUI exports: wrapped, hand
 /// written, or excluded with a reason. <c>PENDING</c> is the generator saying it does not yet know
-/// what to do with something, which is unfinished work, not a known limitation — and a pending
-/// option struct quietly stops being emitted, so the next build fails somewhere else entirely.
+/// what to do with something. The generator refuses to replace the checked-in bindings while
+/// its plan has a pending entry.
 /// </summary>
 public class CoverageAccountTests
 {

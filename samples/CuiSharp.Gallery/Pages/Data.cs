@@ -216,6 +216,12 @@ internal sealed partial class GalleryApp
     private readonly bool[] _nodeLoaded = [true, true, true, true, false, false, false];
     private TableSort _treeSort;
     private int _treeCursor;
+    private int _menuNode = -1;
+    private int _treeRoot;
+    private TreeTableRow? _treeRow;
+    private Func<int, string?>? _treeLabel;
+    private Func<int, TreeDrop, bool>? _treeCanDrop;
+    private Comparison<int>? _treeCompare;
     private string _treeStatus = "Nothing selected";
     private bool _treeSeeded;
 
@@ -238,11 +244,17 @@ internal sealed partial class GalleryApp
             _treeSeeded = true;
         }
 
-        var events = ui.TreeTable("files", TreeColumns, _nodes, (ui, node, depth) =>
+        _treeLabel ??= node => _nodeNames[node];
+        // Do not link a moved node into a folder whose existing children have not been loaded.
+        _treeCanDrop ??= (target, where) => where != TreeDrop.Inside ||
+            (_nodeKinds[target] == "folder" && _nodes[target].FirstChild >= 0);
+        _treeRow ??= (draw, node, depth) =>
         {
-            ui.TreeTableName(_nodeNames[node], _nodeKinds[node] == "folder" ? Icons.Folder : Icons.File);
-            ui.DataGridCellText(_nodeKinds[node]);
-        }, ref _treeSort, ref _treeCursor, new TreeTableOpts { Height = 240, Guides = true }, node => _nodeNames[node]);
+            draw.TreeTableName(_nodeNames[node], _nodeKinds[node] == "folder" ? Icons.Folder : Icons.File);
+            draw.DataGridCellText(_nodeKinds[node]);
+        };
+        var events = ui.TreeTable("files", TreeColumns, _nodes, _treeRow, ref _treeSort, ref _treeCursor,
+            new TreeTableOpts { Height = 240, Guides = true, Draggable = true, Root = _treeRoot }, _treeLabel, _treeCanDrop);
 
         foreach (int node in events.Load)
         {
@@ -250,9 +262,30 @@ internal sealed partial class GalleryApp
             _treeStatus = $"Loaded {_nodeNames[node]}";
         }
 
-        if (events.SortChanged) _ = CuiTree.Sort(_nodes, 0, (a, b) => string.CompareOrdinal(_nodeNames[a], _nodeNames[b]), "gallery-tree");
-        if (events.Activated >= 0) _treeStatus = $"Activated {_nodeNames[events.Activated]}";
+        if (events.SortChanged)
+        {
+            _treeCompare ??= (a, b) => string.CompareOrdinal(_nodeNames[a], _nodeNames[b]);
+            _treeRoot = CuiTree.Sort(_nodes, _treeRoot, _treeCompare, "gallery-tree");
+        }
+        if (!events.Dropped.IsEmpty)
+        {
+            // The table reports the drop; the model moves here, subtree and all.
+            _treeRoot = CuiTree.Move(_nodes, _treeRoot, events.Dropped, events.DropTarget, events.DropWhere);
+            _treeStatus = events.Dropped.Length == 1
+                ? $"Moved {_nodeNames[events.Dropped[0]]}"
+                : $"Moved {events.Dropped.Length} nodes";
+        }
+        else if (events.Activated >= 0) _treeStatus = $"Activated {_nodeNames[events.Activated]}";
         else if (events.SelectionChanged) _treeStatus = DescribeSelection();
+
+        // The context menu for the row under the pointer: a right click opens it, Shift+F10
+        // opens it for the keyboard's row.
+        using (var menu = ui.TreeTableMenu("files", ref _menuNode))
+        {
+            if (menu && (uint)_menuNode < (uint)_nodeNames.Length &&
+                ui.MenuItem("Inspect", new MenuItemOpts { Icon = Icons.Search }))
+                _treeStatus = $"{_nodeNames[_menuNode]}: {_nodeKinds[_menuNode]}";
+        }
 
         ui.Muted(_treeStatus);
     }

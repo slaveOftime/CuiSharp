@@ -214,6 +214,7 @@
 - `ui.Gap(float size)` → `void` — fixed space  ([Layout](api/Layout.md))
 - `ui.Row(Box o = default)` → `LayoutScope`  ([Layout](api/Layout.md))
 - `ui.Scroll(ScrollOpts o = default)` → `LayoutScope` — Scroll area with smooth scrolling and overlay scrollbars.  ([Layout](api/Layout.md))
+- `ui.ScrollReveal(UiText scrollId, uint row)` → `void` — Scrolls the area the least that shows `row` (any id from cui_box_begin, cui_last_id or cui_make_id), comparing both rectangles from the latest layout: nothing when the row is wholly in view or either rectangle is not known yet, else just enough to show its clipped edge; a row taller than the view gets its top at the top. For keyboard selection in a list.  ([Layout](api/Layout.md))
 - `ui.ScrollTo(UiText scrollId, float y)` → `void`  ([Layout](api/Layout.md))
 - `ui.Separator()` → `void` — hairline, follows the parent direction  ([Layout](api/Layout.md))
 - `ui.Spacer()` → `void` — flexible space  ([Layout](api/Layout.md))
@@ -320,12 +321,12 @@
 - `ui.TimePicker(UiText id, ref int hour, ref int minute, TimeOpts o = default)` → `bool` — Time picker: a field that opens hour and minute columns. hour is 0..23.  ([Pickers](api/Pickers.md))
 - `ui.WheelPicker(UiText id, ReadOnlySpan<string> items, ref int index, WheelOpts o = default)` → `bool` — Build a wheel picker, apply input routed to its drum, and draw its focus ring with its rows.  ([Pickers](api/Pickers.md))
 - `ui.Pipeline(UiText id, ReadOnlySpan<string> stages, ReadOnlySpan<PipelineJob> jobs, ref int selected, PipelineOpts o = default)` → `PipelineResult`  ([Pipeline](api/Pipeline.md))
-- `ui.Gantt(UiText id, Span<GanttTask> tasks, Date origin, int days, GanttOpts o = default)` → `int` — Returns the activated task index or -1. Read-only tasks still activate.  ([Planning](api/Planning.md))
+- `ui.Gantt(UiText id, Span<GanttTask> tasks, Date origin, int days, GanttOpts o = default)` → `int` — Returns the activated task index or -1. Read-only tasks still activate. A drag ends when the task list shrinks, the chart is disabled or `read_only` changes; moving the bar again takes a new press.  ([Planning](api/Planning.md))
 - `ui.Kanban(UiText id)` → `bool`  ([Planning](api/Planning.md))
 - `ui.KanbanCard(int cardId)` → `LayoutScope` — true when clicked  ([Planning](api/Planning.md))
 - `ui.KanbanColumn(UiText title, int cardCount, KanbanColumnOpts o = default)` → `LayoutScope` — true: "+" clicked  ([Planning](api/Planning.md))
 - `ui.MonthCalendar(UiText id, ref Date month, ReadOnlySpan<MonthEvent> events, ref Date selected, MonthOpts o = default)` → `MonthResult` — Month calendar: a month grid with events. All-day and multi-day events are bars across the days they cover; timed events are a dot, a time and a title. A day with more than fits says "+N more" and opens a list of them. On a narrow screen the cells show colored dots and the selected day's events are listed under the grid.  ([Planning](api/Planning.md))
-- `ui.WeekCalendar(UiText id, Date weekStart, Span<CalendarEvent> events, WeekOpts o = default)` → `int` — Returns the activated event index or -1. Read-only events still activate.  ([Planning](api/Planning.md))
+- `ui.WeekCalendar(UiText id, Date weekStart, Span<CalendarEvent> events, WeekOpts o = default)` → `int` — Returns the activated event index or -1. Read-only events still activate. Pointer activation requires staying within the drag threshold through release. A drag ends when the event list shrinks, the calendar is disabled or `read_only` changes; moving the event again takes a new press.  ([Planning](api/Planning.md))
 - `ui.Problems(UiText id, ReadOnlySpan<ProblemItem> diags, ProblemsOpts o = default)` → `ProblemsResult`  ([Problems panel](api/ProblemsPanel.md))
 - `ui.QueryBuilder(UiText id, ReadOnlySpan<QueryField> fields, Span<QueryNode> nodes, ref int count, QueryOpts o = default)` → `bool` — Read-only and disabled builders preserve the input rules and count.  ([Query builder](api/QueryBuilder.md))
 - `ui.RegexTester(UiText id, ref string pattern, int patternCap, ref string text, int textCap, ref RegexFlags flags, RegexTesterOpts o = default)` → `RegexTesterResult` — A pattern field with flags over a test text: every match is highlighted in the text and its groups in their own colors, and the list below shows each match with its groups. Errors show under the pattern. Both buffers are yours and edited in place.  ([Regular expressions and the regex tester](api/RegularExpressionsAndTheRegexTester.md))
@@ -354,12 +355,14 @@
 - `ui.Secondary(UiText text)` → `void` — secondary color  ([Text](api/Text.md))
 - `ui.Text(UiText text, TextOpts o = default)` → `void`  ([Text](api/Text.md))
 - `ui.TimeHistogram(UiText id, double start, double bucketSeconds, int buckets, ReadOnlySpan<HistogramSeries> series, ref double selStart, ref double selEnd, TimeHistogramOpts o = default)` → `TimeHistogramResult` — Draw a time histogram and cancel a pending selection when it becomes disabled.  ([Time histogram](api/TimeHistogram.md))
+- `ui.TraceSpanRect(uint trace, in TraceSpan span)` → `RectF` — Where a span is drawn, in points (zero size when out of view or in a folded lane below its top row): its time extent and row, as cui_flame_span_rect gives one; the bar inside is a point narrower, the gap between neighbours, and a selected sliver is widened to 3 points. trace is the view's id: cui_last_id(ui) right after the call. Asked right after the call, it answers at this frame's view in the rectangle of the previous frame, as this frame is not laid out yet; after cui_end_frame, where this frame drew it, until the next frame begins.  ([Trace viewer](api/TraceViewer.md))
 - `ui.TraceView(UiText id, ReadOnlySpan<TraceTrack> tracks, ReadOnlySpan<TraceSpan> spans, ref TraceViewState view, ref int selected, TraceOpts o = default)` → `TraceResult` — Draw the trace and report changes to its range, scroll position, or measurement.  ([Trace viewer](api/TraceViewer.md))
 - `ui.FileBrowser(UiText id, ref string path, int pathCap = 1024, FileBrowserOpts o = default)` → `FileBrowserResult` — path: the folder shown, yours; the browser writes it as you move around.  ([Tree table and path bar](api/TreeTableAndPathBar.md))
 - `ui.FilePicker(UiText id, ref bool open, ref string @out, int outCap = 1024, FilePickerOpts o = default)` → `bool` — True once, with the chosen path in out, when the dialog is confirmed; *open turns false then, or on Cancel and Esc.  ([Tree table and path bar](api/TreeTableAndPathBar.md))
 - `ui.PathBar(UiText id, ReadOnlySpan<string> segments, PathBarOpts o = default)` → `PathBarResult` — Path bar: a breadcrumb for file and scene paths. Segments are clickable, the last one is the current place. Middle segments that do not fit collapse into a "..." menu. With .menus, the chevron after segment k opens a menu you fill with the children of segment k (cui_path_bar_menu_begin). Click the empty part (or the current segment), or press Ctrl+L, to type a path: Enter submits it, Esc or clicking away cancels.  ([Tree table and path bar](api/TreeTableAndPathBar.md))
 - `ui.PathBarMenu(UiText id, ref int segment)` → `OpenScope` — True while the menu of separator *segment is showing: build menu items for the children of that segment, then call cui_path_bar_menu_end.  ([Tree table and path bar](api/TreeTableAndPathBar.md))
 - `ui.TreeTableDepth()` → `int` — depth of the current row, 0 at the top  ([Tree table and path bar](api/TreeTableAndPathBar.md))
+- `ui.TreeTableMenu(UiText id, ref int node)` → `OpenScope` — The context menu of table `id` (after cui_tree_table_end): true while it is open, with the node it was opened for in *node; fill it with cui_menu_item and friends, then call cui_tree_table_menu_end.  ([Tree table and path bar](api/TreeTableAndPathBar.md))
 - `ui.TreeTableName(UiText label, UiText icon)` → `void` — The first cell: indentation, guides, the chevron, an icon and the name (cut short with a tooltip of the whole name when it does not fit).  ([Tree table and path bar](api/TreeTableAndPathBar.md))
 - `ui.TreeTableRow()` → `int` — The next row in view: returns its node, or -1 when done. Then build its cells: cui_tree_table_name first, then cui_data_grid_cell(_text).  ([Tree table and path bar](api/TreeTableAndPathBar.md))
 - `ui.Uptime(UiText id, ReadOnlySpan<UptimeService> services, UptimeOpts o = default)` → `UptimeResult` — A status page: each service with its current state, its uptime over the period, and one bar per day colored by availability (gray without data). Hover a bar for its day and uptime. On a narrow panel only the most recent days that fit are shown.  ([Uptime bars](api/UptimeBars.md))
@@ -425,6 +428,7 @@ Hand-written, because the wrapper needs state a C call cannot carry; they are pa
 - `ui.MeasureText(...)` — hand-written in `Ui/Ui.Frame.cs`
 - `ui.MouseClicked(...)` — hand-written in `Ui/Ui.Frame.cs`
 - `ui.MouseDown(...)` — hand-written in `Ui/Ui.Frame.cs`
+- `ui.Move(...)` — hand-written in `Ui/Ui.TreeTable.cs`
 - `ui.MoveNext(...)` — hand-written in `Ui/Ui.IdScopes.cs`
 - `ui.MultiSelect(...)` — hand-written in `Ui/Ui.BoolGroups.cs`
 - `ui.OtpInput(...)` — hand-written in `Ui/Ui.Overlays.cs`
@@ -453,6 +457,7 @@ Hand-written, because the wrapper needs state a C call cannot carry; they are pa
 - `ui.TokenColor(...)` — hand-written in `Ui/Ui.Frame.cs`
 - `ui.TreeTable(...)` — hand-written in `Ui/Ui.TreeTable.cs`
 - `ui.TreeTableRow(...)` — hand-written in `Ui/Ui.TreeTable.cs`
+- `ui.UpdateImage(...)` — hand-written in `Ui/Ui.Images.cs`
 - `ui.UseSystemFontFallback(...)` — hand-written in `Ui/Ui.Fonts.cs`
 - `ui.UseSystemFontFallbacks(...)` — hand-written in `Ui/Ui.Fonts.cs`
 - [Widgets](widgets.md) and [more widgets](widgets-more.md): what each component does, and what it does with the keyboard.

@@ -345,8 +345,10 @@ struct CuiSharp.CarouselOpts
   field Single Height
 struct CuiSharp.ChartAnnotation
   ctor(AnnotationKind, Double, Double, String, String, Boolean)
+  ctor(AnnotationKind, Double, Double, String, String, Boolean, Color)
   field AnnotationKind Kind
   field Boolean Accent
+  field Color Color
   field Double X
   field Double Y
   field String Detail
@@ -362,6 +364,8 @@ struct CuiSharp.ChartOpts
   field Boolean Smooth
   field Boolean Stacked
   field ChartAnnotation[] Annotations
+  field Double XMax
+  field Double XMin
   field Int32 MaxPoints
   field NormalizeMode Normalize
   field Single Height
@@ -761,6 +765,7 @@ class CuiSharp.CuiSurface
   Void Render(Byte[], PixelFormat)
   Void Resize(Int32, Int32, Nullable<Single>)
   Void Scroll(Single, Single)
+  Void SetPlatform(in NativePlatformIface)
   Void Type(UiText)
   property Boolean FileDragActive { get; }
   property Boolean Incremental { get; set; }
@@ -789,6 +794,7 @@ enum CuiSharp.CuiTaskStatus
   Running
   Skipped
 class CuiSharp.CuiTree
+  static Int32 Move(TreeNode[], Int32, ReadOnlySpan<Int32>, Int32, TreeDrop)
   static Int32 Sort(TreeNode[], Int32, Comparison<Int32>, String)
 class CuiSharp.CuiVoice
   field Single Silent
@@ -1146,6 +1152,8 @@ struct CuiSharp.DotChartOpts
   field Double XMax
   field Double XMin
   field Double XStep
+  field Func<Double, String> ValueLabel
+  field Func<Double, String> XLabel
   field Single Height
   field Single Max
   field Single Min
@@ -1230,6 +1238,7 @@ struct CuiSharp.EventTrackOpts
   field Boolean NoRemove
   field Double LabelStep
   field Double Step
+  field Func<Double, String> Label
   field Size Width
   field String Format
 struct CuiSharp.EventTrackResult
@@ -1979,6 +1988,16 @@ struct CuiSharp.InlineEditOpts
   field Single Size
   field Size Width
   field String Placeholder
+enum CuiSharp.InputEventKind
+  Focus
+  Key
+  MouseButton
+  MouseLeave
+  MouseMove
+  Scroll
+  Text
+  Touch
+  TouchMove
 struct CuiSharp.InputOpts
   field Boolean AutoFocus
   field Boolean Clearable
@@ -2033,6 +2052,7 @@ class CuiSharp.Interop.Native
   static Byte AppFrame(IntPtr)
   static Byte AppIsSoftware(IntPtr)
   static Byte AppOpenUrl(IntPtr)
+  static Byte AppPlacement(IntPtr, IntPtr)
   static Byte AppScreenshot(IntPtr, IntPtr, Int32, Int32)
   static Byte AspectPicker(IntPtr, IntPtr, ref Int32, in NativeAspectPickerOpts)
   static Byte Banner(IntPtr, IntPtr, IntPtr, in NativeBannerOpts)
@@ -2044,6 +2064,7 @@ class CuiSharp.Interop.Native
   static Byte Chip(IntPtr, IntPtr, IntPtr, in NativeChipOpts)
   static Byte Citation(IntPtr, Int32, in NativeSource)
   static Byte ColorPicker(IntPtr, IntPtr, ref NativeColor)
+  static Byte ComponentHasInput(IntPtr, UInt32)
   static Byte ConfirmButton(IntPtr, IntPtr, in NativeConfirmOpts)
   static Byte ConfirmPopover(IntPtr, IntPtr, in NativeConfirmPopoverOpts)
   static Byte ContextMenuBegin(IntPtr, IntPtr)
@@ -2073,13 +2094,16 @@ class CuiSharp.Interop.Native
   static Byte FileDragActive(IntPtr)
   static Byte FilePicker(IntPtr, IntPtr, IntPtr, IntPtr, UIntPtr, in NativeFilePickerOpts)
   static Byte FilterBar(IntPtr, IntPtr, IntPtr, Int32, ref UInt32, IntPtr, UIntPtr)
+  static Byte FocusVisible(IntPtr, UInt32)
   static Byte GlIsSoftware(IntPtr)
+  static Byte GpuRenderCapture(IntPtr, in NativeDrawData, IntPtr)
   static Byte HistogramSlider(IntPtr, IntPtr, IntPtr, Int32, ref Single, ref Single, Single, Single, in NativeHistogramOpts)
   static Byte HoldButton(IntPtr, IntPtr, in NativeHoldOpts)
   static Byte HoverCardBegin(IntPtr, IntPtr, in NativeHoverCardOpts)
   static Byte IconButton(IntPtr, IntPtr, in NativeButtonOpts)
   static Byte ImageCompare(IntPtr, IntPtr, UIntPtr, UIntPtr, ref Single, in NativeCompareOpts)
   static Byte ImageViewer(IntPtr, IntPtr, UIntPtr, Int32, Int32, ref NativeImageView, in NativeImageViewerOpts)
+  static Byte InputRepeated(IntPtr)
   static Byte InspectorBegin(IntPtr, IntPtr, in NativeInspectorOpts)
   static Byte InspectorGroup(IntPtr, IntPtr, IntPtr)
   static Byte IsDisabled(IntPtr)
@@ -2087,6 +2111,7 @@ class CuiSharp.Interop.Native
   static Byte KanbanCardBegin(IntPtr, Int32)
   static Byte KanbanColumnBegin(IntPtr, IntPtr, Int32, in NativeKanbanColumnOpts)
   static Byte KanbanEnd(IntPtr, ref NativeKanbanMove)
+  static Byte KeyActionDown(IntPtr, Key)
   static Byte KeyDown(IntPtr, Key)
   static Byte KeyPressed(IntPtr, Key)
   static Byte Knob(IntPtr, IntPtr, ref Single, Single, Single, in NativeKnobOpts)
@@ -2170,9 +2195,13 @@ class CuiSharp.Interop.Native
   static Byte ToolbarCycle(IntPtr, IntPtr, IntPtr, Int32, ref Int32, in NativeToolOpts)
   static Byte ToolbarPrimary(IntPtr, IntPtr, in NativeToolOpts)
   static Byte ToolbarRadio(IntPtr, IntPtr, IntPtr, Int32, ref Int32, in NativeToolbarRadioOpts)
+  static Byte TouchDown(IntPtr, Int32)
+  static Byte TouchPressed(IntPtr, Int32)
+  static Byte TouchReleased(IntPtr, Int32)
   static Byte TreeBegin(IntPtr, IntPtr, IntPtr, in NativeTreeOpts)
   static Byte TreeCell(IntPtr, IntPtr, Int32, Byte, IntPtr, IntPtr)
   static Byte TreeClicked(IntPtr)
+  static Byte TreeTableMenuBegin(IntPtr, IntPtr, ref Int32)
   static Byte Typewriter(IntPtr, IntPtr, IntPtr, in NativeTextFxOpts)
   static Byte UrlSetParams(IntPtr, UIntPtr, IntPtr, Int32)
   static Byte UserMenuBegin(IntPtr, IntPtr, in NativeUserMenuOpts)
@@ -2183,6 +2212,8 @@ class CuiSharp.Interop.Native
   static Byte WantsMouse(IntPtr)
   static Byte Waveform(IntPtr, IntPtr, IntPtr, Int32, ref Single, in NativeWaveformOpts)
   static Byte WheelPicker(IntPtr, IntPtr, IntPtr, Int32, ref Int32, in NativeWheelOpts)
+  static Byte WheelTake(IntPtr, UInt32, ref NativeVec2)
+  static Byte WindowFocused(IntPtr)
   static Byte WritePng(IntPtr, IntPtr, Int32, Int32, Int32)
   static Cursor GetCursor(IntPtr)
   static Double Time(IntPtr)
@@ -2241,7 +2272,9 @@ class CuiSharp.Interop.Native
   static Int32 Textarea(IntPtr, IntPtr, IntPtr, UIntPtr, in NativeInputOpts)
   static Int32 Toast(IntPtr, IntPtr, in NativeToastOpts)
   static Int32 Toc(IntPtr, IntPtr, IntPtr, Int32)
+  static Int32 TouchCount(IntPtr)
   static Int32 Tour(IntPtr, IntPtr, IntPtr, Int32, ref Int32, in NativeTourOpts)
+  static Int32 TreeMove(IntPtr, Int32, Int32, IntPtr, Int32, Int32, Int32)
   static Int32 TreeSort(IntPtr, Int32, Int32, IntPtr, IntPtr)
   static Int32 TreeTableDepth(IntPtr)
   static Int32 TreeTableRow(IntPtr)
@@ -2261,10 +2294,13 @@ class CuiSharp.Interop.Native
   static IntPtr CronDescribe(IntPtr, IntPtr)
   static IntPtr DroppedFile(IntPtr, Int32)
   static IntPtr EmojiPicker(IntPtr, IntPtr, in NativeEmojiPickerOpts)
+  static IntPtr FrameAlloc(IntPtr, UIntPtr)
+  static IntPtr FrameStrdup(IntPtr, IntPtr)
   static IntPtr GetClipboardText(IntPtr)
   static IntPtr GetDrawData(IntPtr)
   static IntPtr GetStrings(IntPtr)
   static IntPtr GlCreate(IntPtr)
+  static IntPtr GpuCreate(IntPtr, Byte)
   static IntPtr HttpMethodName(Int32)
   static IntPtr HttpReason(Int32)
   static IntPtr KeyName(Key)
@@ -2277,6 +2313,7 @@ class CuiSharp.Interop.Native
   static NativeApiExplorerResult ApiExplorer(IntPtr, IntPtr, IntPtr, Int32, in NativeApiExplorerOpts)
   static NativeBlameResult Blame(IntPtr, IntPtr, IntPtr, IntPtr, Int32, IntPtr, Int32, in NativeBlameOpts)
   static NativeCanvasResult Canvas(IntPtr, IntPtr, NativeSize, NativeSize, IntPtr, IntPtr, UIntPtr)
+  static NativeCanvasResult CanvasEx(IntPtr, IntPtr, NativeSize, NativeSize, IntPtr, IntPtr, UIntPtr, IntPtr)
   static NativeCodeEditorResult CodeEditor(IntPtr, IntPtr, IntPtr, UIntPtr, in NativeCodeEditorOpts)
   static NativeColor Alpha(NativeColor, Single)
   static NativeColor ColorOf(IntPtr, NativeColor)
@@ -2308,8 +2345,10 @@ class CuiSharp.Interop.Native
   static NativeRect FlameSpanRect(IntPtr, UInt32, in NativeFlameSpan)
   static NativeRect GetRect(IntPtr, UInt32)
   static NativeRect LastRect(IntPtr)
+  static NativeRect TraceSpanRect(IntPtr, UInt32, in NativeTraceSpan)
   static NativeRegexTesterResult RegexTester(IntPtr, IntPtr, IntPtr, UIntPtr, IntPtr, UIntPtr, in NativeRegexTesterOpts)
   static NativeRendererIface GlIface(IntPtr)
+  static NativeRendererIface GpuIface(IntPtr)
   static NativeRendererIface SwIface(IntPtr)
   static NativeRequestBarResult RequestBar(IntPtr, IntPtr, ref Int32, IntPtr, UIntPtr, in NativeRequestBarOpts)
   static NativeScheduleResult SchedulePicker(IntPtr, IntPtr, IntPtr, UIntPtr, in NativeScheduleOpts)
@@ -2324,6 +2363,7 @@ class CuiSharp.Interop.Native
   static NativeUptimeResult Uptime(IntPtr, IntPtr, IntPtr, Int32, in NativeUptimeOpts)
   static NativeVec2 AppSize(IntPtr)
   static NativeVec2 MousePos(IntPtr)
+  static NativeVec2 TouchPos(IntPtr, Int32)
   static NativeVec2 ViewportSize(IntPtr)
   static NativeWaterfallResult Waterfall(IntPtr, IntPtr, IntPtr, Int32, in NativeWaterfallOpts)
   static Single Animate(IntPtr, UInt32, Single)
@@ -2335,6 +2375,7 @@ class CuiSharp.Interop.Native
   static Theme GetThemeMode(IntPtr)
   static UInt32 BoxBegin(IntPtr, in NativeBox)
   static UInt32 ColumnBegin(IntPtr, in NativeBox)
+  static UInt32 FocusedId(IntPtr)
   static UInt32 LastId(IntPtr)
   static UInt32 MakeId(IntPtr, IntPtr)
   static UInt32 RowBegin(IntPtr, in NativeBox)
@@ -2348,7 +2389,10 @@ class CuiSharp.Interop.Native
   static Void AppDestroy(IntPtr)
   static Void AppFollowSystemTheme(IntPtr, Byte)
   static Void AppMaximize(IntPtr)
+  static Void AppMinimize(IntPtr)
   static Void AppQuit(IntPtr)
+  static Void AppRestore(IntPtr)
+  static Void AppSetPosition(IntPtr, Int32, Int32)
   static Void AppSetSize(IntPtr, Int32, Int32)
   static Void AppSetTitle(IntPtr, IntPtr)
   static Void Avatar(IntPtr, IntPtr, in NativeAvatarOpts)
@@ -2384,6 +2428,7 @@ class CuiSharp.Interop.Native
   static Void DialogEnd(IntPtr)
   static Void DialogFooterBegin(IntPtr)
   static Void DialogFooterEnd(IntPtr)
+  static Void DispatchInput(IntPtr, IntPtr, IntPtr, IntPtr)
   static Void DockBegin(IntPtr, IntPtr, in NativeDockOpts)
   static Void DockEnd(IntPtr)
   static Void DockPanelEnd(IntPtr)
@@ -2417,6 +2462,8 @@ class CuiSharp.Interop.Native
   static Void GlDestroy(IntPtr)
   static Void GlReadPixels(IntPtr, Int32, Int32, IntPtr)
   static Void GlRender(IntPtr, in NativeDrawData, Byte)
+  static Void GpuDestroy(IntPtr)
+  static Void GpuRender(IntPtr, in NativeDrawData)
   static Void GradientText(IntPtr, IntPtr, in NativeGradientTextOpts)
   static Void Heading(IntPtr, IntPtr, Int32)
   static Void HexViewGoto(IntPtr, IntPtr, UIntPtr)
@@ -2424,6 +2471,7 @@ class CuiSharp.Interop.Native
   static Void Icon(IntPtr, IntPtr, Single, NativeColor)
   static Void Image(IntPtr, UIntPtr, in NativeImageOpts)
   static Void ImageDestroy(IntPtr, UIntPtr)
+  static Void ImageUpdate(IntPtr, UIntPtr, Int32, Int32, Int32, Int32, IntPtr, Int32)
   static Void InputFileDrop(IntPtr, IntPtr, Int32, Single, Single)
   static Void InputFileHover(IntPtr, Byte, Single, Single)
   static Void InputFocus(IntPtr, Byte)
@@ -2433,6 +2481,9 @@ class CuiSharp.Interop.Native
   static Void InputMouseMove(IntPtr, Single, Single)
   static Void InputScroll(IntPtr, Single, Single)
   static Void InputText(IntPtr, IntPtr)
+  static Void InputTouch(IntPtr, Int32, Byte, Single, Single)
+  static Void InputTouchCancel(IntPtr, Int32)
+  static Void InputTouchMove(IntPtr, Int32, Single, Single)
   static Void InspectorEnd(IntPtr)
   static Void KanbanBegin(IntPtr, IntPtr)
   static Void KanbanCardEnd(IntPtr)
@@ -2465,6 +2516,7 @@ class CuiSharp.Interop.Native
   static Void PathBarMenuEnd(IntPtr)
   static Void PopClip(IntPtr)
   static Void PopDisabled(IntPtr)
+  static Void PopFocusScope(IntPtr)
   static Void PopId(IntPtr)
   static Void PopoverClose(IntPtr, IntPtr)
   static Void PopoverEnd(IntPtr)
@@ -2476,6 +2528,7 @@ class CuiSharp.Interop.Native
   static Void ProgressRing(IntPtr, IntPtr, Single, Single)
   static Void PushClip(IntPtr, NativeRect)
   static Void PushDisabled(IntPtr, Byte)
+  static Void PushFocusScope(IntPtr, UInt32, Byte)
   static Void PushId(IntPtr, IntPtr)
   static Void PushIdInt(IntPtr, Int32)
   static Void RadialGauge(IntPtr, IntPtr, Single, Single, Single, in NativeRadialGaugeOpts)
@@ -2484,17 +2537,21 @@ class CuiSharp.Interop.Native
   static Void ReorderBegin(IntPtr, IntPtr, ref Int32, Int32)
   static Void ReorderItemBegin(IntPtr, Int32)
   static Void ReorderItemEnd(IntPtr)
+  static Void RequestComponentFocus(IntPtr, UInt32)
   static Void RequestRedraw(IntPtr)
   static Void RequestWakeup(IntPtr, Single)
   static Void ResponseStatus(IntPtr, Int32, Double, Double)
   static Void ScrollBegin(IntPtr, in NativeScrollOpts)
   static Void ScrollEnd(IntPtr)
+  static Void ScrollReveal(IntPtr, IntPtr, UInt32)
   static Void ScrollTo(IntPtr, IntPtr, Single)
   static Void Secondary(IntPtr, IntPtr)
   static Void SelectionRing(IntPtr, NativeColor, in NativeSelectionRingOpts)
   static Void Separator(IntPtr)
   static Void SetAccent(IntPtr, Accent)
   static Void SetClipboardText(IntPtr, IntPtr)
+  static Void SetCursor(IntPtr, Cursor)
+  static Void SetInputHook(IntPtr, IntPtr, IntPtr)
   static Void SetPlatform(IntPtr, in NativePlatformIface)
   static Void SetReducedMotion(IntPtr, Byte)
   static Void SetRenderer(IntPtr, in NativeRendererIface)
@@ -2551,13 +2608,16 @@ class CuiSharp.Interop.Native
   static Void TraceSort(IntPtr, Int32)
   static Void TreeEnd(IntPtr)
   static Void TreeTableBegin(IntPtr, IntPtr, IntPtr, Int32, IntPtr, Int32, in NativeTreeTableOpts)
+  static Void TreeTableMenuEnd(IntPtr)
   static Void TreeTableName(IntPtr, IntPtr, IntPtr)
   static Void TypingIndicator(IntPtr, IntPtr)
   static Void UserMenuEnd(IntPtr)
   static Void VeilEnd(IntPtr)
   static Void VirtualListBegin(IntPtr, IntPtr, Int32, Single, NativeSize, ref Int32, ref Int32)
   static Void VirtualListEnd(IntPtr)
+  static Void WheelRegion(IntPtr, UInt32, NativeRect)
   static Void WordRotate(IntPtr, IntPtr, IntPtr, Int32, Single, in NativeTextFxOpts)
+  static WindowState AppWindowState(IntPtr)
 struct CuiSharp.Interop.NativeAgentPlanOpts
   field Int32 Sentinel
   field IntPtr Title
@@ -2611,6 +2671,7 @@ struct CuiSharp.Interop.NativeAppDesc
   field Int32 MinWidth
   field Int32 Width
   field IntPtr AppId
+  field IntPtr Placement
   field IntPtr Title
   field Renderer Renderer
   field Theme Theme
@@ -2806,6 +2867,7 @@ struct CuiSharp.Interop.NativeChartAnnotation
   field Double Y
   field IntPtr Detail
   field IntPtr Label
+  field NativeColor Color
 struct CuiSharp.Interop.NativeChartOpts
   field Byte Area
   field Byte Dither
@@ -2813,6 +2875,8 @@ struct CuiSharp.Interop.NativeChartOpts
   field Byte NoLegend
   field Byte Smooth
   field Byte Stacked
+  field Double XMax
+  field Double XMin
   field Int32 AnnotationCount
   field Int32 LabelCount
   field Int32 Sentinel
@@ -3183,7 +3247,11 @@ struct CuiSharp.Interop.NativeDotChartOpts
   field IntPtr Annotations
   field IntPtr Format
   field IntPtr Unit
+  field IntPtr ValueLabel
+  field IntPtr ValueLabelUser
   field IntPtr XFormat
+  field IntPtr XLabel
+  field IntPtr XLabelUser
   field NativeSize Width
   field Single Height
   field Single Max
@@ -3261,6 +3329,8 @@ struct CuiSharp.Interop.NativeEventTrackOpts
   field Double Step
   field Int32 Sentinel
   field IntPtr Format
+  field IntPtr Label
+  field IntPtr LabelUser
   field IntPtr Selected
   field NativeSize Width
 struct CuiSharp.Interop.NativeEventTrackResult
@@ -4680,13 +4750,21 @@ struct CuiSharp.Interop.NativeTourStep
   field IntPtr Title
   field Placement Placement
   field UInt32 Target
+struct CuiSharp.Interop.NativeTraceLink
+  field Byte Dashed
+  field Int32 From
+  field Int32 To
+  field Single Width
+  field Tone Tone
 struct CuiSharp.Interop.NativeTraceMarker
   field Double Time
   field IntPtr Name
   field Tone Tone
 struct CuiSharp.Interop.NativeTraceOpts
+  field Int32 LinkCount
   field Int32 MarkerCount
   field Int32 Sentinel
+  field IntPtr Links
   field IntPtr Markers
   field NativeSize Width
   field Single Height
@@ -4695,6 +4773,7 @@ struct CuiSharp.Interop.NativeTraceResult
   field Byte SelectionChanged
   field Byte ViewChanged
   field Int32 Hovered
+  field Int32 HoveredLink
 struct CuiSharp.Interop.NativeTraceSpan
   field Double End
   field Double Start
@@ -4726,13 +4805,19 @@ struct CuiSharp.Interop.NativeTreeTableEvents
   field Byte SortChanged
   field Int32 Activated
   field Int32 Collapsed
+  field Int32 DropCount
+  field Int32 DropTarget
+  field Int32 DropWhere
   field Int32 Expanded
   field Int32 LoadCount
+  field IntPtr Dropped
   field IntPtr Load
 struct CuiSharp.Interop.NativeTreeTableOpts
+  field Byte Draggable
   field Byte Guides
   field Int32 Root
   field Int32 Sentinel
+  field IntPtr CanDrop
   field IntPtr Cursor
   field IntPtr Label
   field IntPtr Sort
@@ -5044,6 +5129,7 @@ class CuiSharp.LayoutUiExtensions
   static LayoutScope Scroll(Ui, ScrollOpts)
   static LayoutScope Split(Ui, UiText, ref Single, SplitOpts)
   static Void Gap(Ui, Single)
+  static Void ScrollReveal(Ui, UiText, UInt32)
   static Void ScrollTo(Ui, UiText, Single)
   static Void Separator(Ui)
   static Void Spacer(Ui)
@@ -5057,6 +5143,7 @@ class CuiSharp.LayoutUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
   LayoutScope Scroll(ScrollOpts)
   LayoutScope Split(UiText, ref Single, SplitOpts)
   Void Gap(Single)
+  Void ScrollReveal(UiText, UInt32)
   Void ScrollTo(UiText, Single)
   Void Separator()
   Void Spacer()
@@ -5849,6 +5936,7 @@ class CuiSharp.RegularExpressionsAndTheRegexTesterUiExtensions+<G>$2E78AC6C4589E
 class CuiSharp.RegularExpressionsAndTheRegexTesterUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4+<M>$D152016828D0F2CB0A8B78500F4F70D3
 enum CuiSharp.Renderer
   Auto
+  Gpu
   OpenGL
   Software
 enum CuiSharp.RendererKind
@@ -6712,6 +6800,13 @@ struct CuiSharp.TourStep
   field String Body
   field String Title
   field UInt32 Target
+struct CuiSharp.TraceLink
+  ctor(Int32, Int32, Tone, Single, Boolean)
+  field Boolean Dashed
+  field Int32 From
+  field Int32 To
+  field Single Width
+  field Tone Tone
 struct CuiSharp.TraceMarker
   ctor(String, Double, Tone)
   field Double Time
@@ -6721,12 +6816,15 @@ struct CuiSharp.TraceOpts
   field Single Height
   field Single RowHeight
   field Size Width
+  field TraceLink[] Links
   field TraceMarker[] Markers
 struct CuiSharp.TraceResult
   ctor(Boolean, Boolean, Int32)
+  ctor(Boolean, Boolean, Int32, Int32)
   field Boolean SelectionChanged
   field Boolean ViewChanged
   field Int32 Hovered
+  field Int32 HoveredLink
 struct CuiSharp.TraceSpan
   ctor(String, Double, Double, Int32, Int32, UInt32)
   field Double End
@@ -6747,10 +6845,16 @@ struct CuiSharp.TraceViewState
   field Double Start
   field Single Scroll
 class CuiSharp.TraceViewerUiExtensions
+  static RectF TraceSpanRect(Ui, UInt32, in TraceSpan)
   static TraceResult TraceView(Ui, UiText, ReadOnlySpan<TraceTrack>, ReadOnlySpan<TraceSpan>, ref TraceViewState, ref Int32, TraceOpts)
 class CuiSharp.TraceViewerUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
+  RectF TraceSpanRect(UInt32, in TraceSpan)
   TraceResult TraceView(UiText, ReadOnlySpan<TraceTrack>, ReadOnlySpan<TraceSpan>, ref TraceViewState, ref Int32, TraceOpts)
 class CuiSharp.TraceViewerUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4+<M>$D152016828D0F2CB0A8B78500F4F70D3
+enum CuiSharp.TreeDrop
+  After
+  Before
+  Inside
 struct CuiSharp.TreeNode
   String ToString()
   field Int32 FirstChild
@@ -6776,8 +6880,10 @@ class CuiSharp.TreeTableAndPathBarUiExtensions
   static Int32 TreeTableDepth(Ui)
   static Int32 TreeTableRow(Ui)
   static OpenScope PathBarMenu(Ui, UiText, ref Int32)
+  static OpenScope TreeTableMenu(Ui, UiText, ref Int32)
   static PathBarResult PathBar(Ui, UiText, ReadOnlySpan<String>, PathBarOpts)
   static Void PathBarMenu(Ui, UiText, ref Int32, DrawFn)
+  static Void TreeTableMenu(Ui, UiText, ref Int32, DrawFn)
   static Void TreeTableName(Ui, UiText, UiText)
 class CuiSharp.TreeTableAndPathBarUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
   Boolean FilePicker(UiText, ref Boolean, ref String, Int32, FilePickerOpts)
@@ -6785,8 +6891,10 @@ class CuiSharp.TreeTableAndPathBarUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F93
   Int32 TreeTableDepth()
   Int32 TreeTableRow()
   OpenScope PathBarMenu(UiText, ref Int32)
+  OpenScope TreeTableMenu(UiText, ref Int32)
   PathBarResult PathBar(UiText, ReadOnlySpan<String>, PathBarOpts)
   Void PathBarMenu(UiText, ref Int32, DrawFn)
+  Void TreeTableMenu(UiText, ref Int32, DrawFn)
   Void TreeTableName(UiText, UiText)
 class CuiSharp.TreeTableAndPathBarUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4+<M>$D152016828D0F2CB0A8B78500F4F70D3
 struct CuiSharp.TreeTableEvents
@@ -6794,9 +6902,13 @@ struct CuiSharp.TreeTableEvents
   field Boolean SortChanged
   field Int32 Activated
   field Int32 Collapsed
+  field Int32 DropTarget
   field Int32 Expanded
+  field TreeDrop DropWhere
+  property ReadOnlySpan<Int32> Dropped { get; }
   property ReadOnlySpan<Int32> Load { get; }
 struct CuiSharp.TreeTableOpts
+  field Boolean Draggable
   field Boolean Guides
   field Int32 Root
   field Single RowHeight
@@ -6809,10 +6921,14 @@ class CuiSharp.TreeTableRow : MulticastDelegate
   ctor(Object, IntPtr)
 class CuiSharp.TreeTableUiExtensions
   static TreeTableEvents TreeTable(Ui, UiText, ReadOnlySpan<GridColumn>, TreeNode[], TreeTableRow, TreeTableOpts, Func<Int32, String>)
+  static TreeTableEvents TreeTable(Ui, UiText, ReadOnlySpan<GridColumn>, TreeNode[], TreeTableRow, TreeTableOpts, Func<Int32, String>, Func<Int32, TreeDrop, Boolean>)
   static TreeTableEvents TreeTable(Ui, UiText, ReadOnlySpan<GridColumn>, TreeNode[], TreeTableRow, ref TableSort, ref Int32, TreeTableOpts, Func<Int32, String>)
+  static TreeTableEvents TreeTable(Ui, UiText, ReadOnlySpan<GridColumn>, TreeNode[], TreeTableRow, ref TableSort, ref Int32, TreeTableOpts, Func<Int32, String>, Func<Int32, TreeDrop, Boolean>)
 class CuiSharp.TreeTableUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4
   TreeTableEvents TreeTable(UiText, ReadOnlySpan<GridColumn>, TreeNode[], TreeTableRow, TreeTableOpts, Func<Int32, String>)
+  TreeTableEvents TreeTable(UiText, ReadOnlySpan<GridColumn>, TreeNode[], TreeTableRow, TreeTableOpts, Func<Int32, String>, Func<Int32, TreeDrop, Boolean>)
   TreeTableEvents TreeTable(UiText, ReadOnlySpan<GridColumn>, TreeNode[], TreeTableRow, ref TableSort, ref Int32, TreeTableOpts, Func<Int32, String>)
+  TreeTableEvents TreeTable(UiText, ReadOnlySpan<GridColumn>, TreeNode[], TreeTableRow, ref TableSort, ref Int32, TreeTableOpts, Func<Int32, String>, Func<Int32, TreeDrop, Boolean>)
 class CuiSharp.TreeTableUiExtensions+<G>$2E78AC6C4589E2D26F56ACB2C0F932B4+<M>$D152016828D0F2CB0A8B78500F4F70D3
 struct CuiSharp.TreemapOpts
   field Single Height
@@ -6893,6 +7009,7 @@ struct CuiSharp.Ui
   Void SetLocalization(Localization)
   Void SetReducedMotion(Boolean)
   Void ToggleTheme()
+  Void UpdateImage(UInt64, Int32, Int32, Int32, Int32, ReadOnlySpan<Byte>, Int32)
   WellEvents PaletteStrip(UiText, Span<Color>, Span<Boolean>, PaletteStripOpts)
   WellEvents PaletteStrip(UiText, ref UInt32, Span<Color>, Span<Boolean>, PaletteStripOpts)
   property Accent Accent { get; set; }
@@ -7083,3 +7200,7 @@ class CuiSharp.WidgetRecorder
   static Void NoteValue(IntPtr, String, UiText, Boolean, SemanticState)
   static Void NoteValue(IntPtr, String, UiText, Double, SemanticState)
   static Void NoteValue(IntPtr, String, UiText, String, SemanticState)
+enum CuiSharp.WindowState
+  Maximized
+  Minimized
+  Normal

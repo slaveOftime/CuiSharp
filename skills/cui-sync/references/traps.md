@@ -13,9 +13,9 @@ when something is odd, or before debugging anything you are about to blame on th
   must hand the new length back; the generator once emitted `count = __count;` on a parameter it had
   passed by value, which did nothing and read like it did.
 - **A pointer plural that is one number.** `float *pos`, `float *progress` end in an `s` and are a
-  single scalar the widget moves. `Parameter()` narrows the plural heuristic to non-const pointers for
-  exactly this, so a new one needs nothing — but if it arrives as `ref float` and the C writes through
-  it, the wrapper is hiding a bug rather than causing one.
+  single scalar the widget moves. `Parameter()` uses the plural heuristic only on const pointers;
+  writable arrays need `inOutArrays`. A singular array such as `cui_tree_move`'s `move` needs
+  `arrayParams` in the raw signature, not `in` on the first element.
 
 ## C ergonomics that look like binding bugs
 
@@ -52,8 +52,14 @@ when something is odd, or before debugging anything you are about to blame on th
 - **A regenerated file that is "different" after a no-op sync** means the generator is not
   deterministic — `regen.ps1 -NoDiff` exists to catch it, and `BindgenChecks` has a determinism check
   that runs the whole plan twice.
-- **`api-surface.ps1` rewrites the baseline.** It is a review gate: read the diff before you commit
-  it, and use the set difference in `SKILL.md` step 4 rather than reading 1 000 lines.
+- **`api-surface.ps1` rewrites the baseline.** Use `-Against <base-ref>` to review removals by
+  owning type; stripping indentation and comparing unqualified signatures misses collisions.
+- **A test must observe the action on the right frame.** Draw before input so hit geometry exists,
+  read events on the release frame, and check whether the callback ran. A drag cannot land on its
+  own subtree. Use the native harness for comparison only after matching the model and inputs.
+- **A heading miss does not prove a crash.** Keep exit status and stderr; a recorded nav item can
+  be clipped and duplicate headings can be ambiguous. The snapshot tool launches the target page
+  directly and stages its PNG; test navigation separately.
 
 ## Things that are true by design, so do not "fix" them
 

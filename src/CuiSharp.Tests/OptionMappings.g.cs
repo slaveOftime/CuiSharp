@@ -937,6 +937,8 @@ public unsafe class GeneratedOptionMappingTests
             Max = 2.5f,
             Annotations = [new ChartAnnotation()],
             Dither = true,
+            XMin = 2.5,
+            XMax = 2.5,
         };
         var native = value.ToNative();
         Assert.Equal(SizeKind.Fixed, native.Width.Kind);
@@ -954,6 +956,8 @@ public unsafe class GeneratedOptionMappingTests
         Assert.Equal(value.Max, native.Max);
         Assert.NotEqual((nint)0, native.Annotations);
         Assert.Equal((byte)1, native.Dither);
+        Assert.Equal(value.XMin, native.XMin);
+        Assert.Equal(value.XMax, native.XMax);
         var zero = default(ChartOpts).ToNative();
         Assert.Equal((nint)0, zero.Labels);
         Assert.Equal((byte)0, zero.Area);
@@ -1323,6 +1327,7 @@ public unsafe class GeneratedOptionMappingTests
             RowHeight = 2.5f,
             Root = (int)1,
             Guides = true,
+            Draggable = true,
         };
         var native = value.ToNative((nint)123, (nint)123);
         Assert.Equal(SizeKind.Fixed, native.Width.Kind);
@@ -1334,10 +1339,13 @@ public unsafe class GeneratedOptionMappingTests
         Assert.Equal((nint)123, native.Sort);
         Assert.Equal((nint)123, native.Cursor);
         Assert.Equal((byte)1, native.Guides);
+        Assert.Equal((byte)1, native.Draggable);
         var zero = default(TreeTableOpts).ToNative((nint)123, (nint)123);
         Assert.Equal((byte)0, zero.Guides);
         Assert.Equal((nint)0, zero.Label);
         Assert.Equal((nint)0, zero.User);
+        Assert.Equal((byte)0, zero.Draggable);
+        Assert.Equal((nint)0, zero.CanDrop);
         }
 
         // cui_path_bar_opts
@@ -4084,6 +4092,7 @@ public unsafe class GeneratedOptionMappingTests
             Height = 2.5f,
             RowHeight = 2.5f,
             Markers = [new TraceMarker()],
+            Links = [new TraceLink()],
         };
         var native = value.ToNative();
         Assert.Equal(SizeKind.Fixed, native.Width.Kind);
@@ -4091,8 +4100,10 @@ public unsafe class GeneratedOptionMappingTests
         Assert.Equal(value.Height, native.Height);
         Assert.Equal(value.RowHeight, native.RowHeight);
         Assert.NotEqual((nint)0, native.Markers);
+        Assert.NotEqual((nint)0, native.Links);
         var zero = default(TraceOpts).ToNative();
         Assert.Equal((nint)0, zero.Markers);
+        Assert.Equal((nint)0, zero.Links);
         }
 
         // cui_regex_tester_opts
@@ -4309,6 +4320,10 @@ public unsafe class GeneratedOptionMappingTests
         Assert.Equal((byte)0, zero.NoAxis);
         Assert.Equal((byte)0, zero.NoReadout);
         Assert.Equal((nint)0, zero.Annotations);
+        Assert.Equal((nint)0, zero.XLabel);
+        Assert.Equal((nint)0, zero.XLabelUser);
+        Assert.Equal((nint)0, zero.ValueLabel);
+        Assert.Equal((nint)0, zero.ValueLabelUser);
         }
 
         // cui_event_track_opts
@@ -4340,6 +4355,8 @@ public unsafe class GeneratedOptionMappingTests
         Assert.Equal((byte)0, zero.NoAdd);
         Assert.Equal((byte)0, zero.NoRemove);
         Assert.Equal((byte)0, zero.NoAxis);
+        Assert.Equal((nint)0, zero.Label);
+        Assert.Equal((nint)0, zero.LabelUser);
         }
 
         // cui_readout_opts

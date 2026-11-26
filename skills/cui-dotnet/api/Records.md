@@ -69,6 +69,7 @@ Value types for the widgets that take an array of items.
 - `Label`: string?
 - `Detail`: string?
 - `Accent`: bool
+- `Color`: Color
 
 ## `CheckStep`
 
@@ -739,6 +740,14 @@ Value types for the widgets that take an array of items.
 - `Body`: string?
 - `Placement`: Placement
 
+## `TraceLink`
+
+- `From`: int
+- `To`: int
+- `Tone`: Tone
+- `Width`: float
+- `Dashed`: bool
+
 ## `TraceMarker`
 
 - `Name`: string?
@@ -750,6 +759,7 @@ Value types for the widgets that take an array of items.
 - `SelectionChanged`: bool
 - `ViewChanged`: bool
 - `Hovered`: int
+- `HoveredLink`: int
 
 ## `TraceSpan`
 
