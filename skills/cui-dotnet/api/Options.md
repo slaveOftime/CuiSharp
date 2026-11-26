@@ -183,6 +183,13 @@ C `cui_canvas_controls_opts`.
 - `NoFit`: bool (default `(byte)(NoFit ? 1 : 0)`)
 - `StartSide`: bool (default `(byte)(StartSide ? 1 : 0)`)
 
+## `CanvasOpts`
+
+C `cui_canvas_opts`.
+
+- `Focusable`: bool (default `(byte)(Focusable ? 1 : 0)`)
+- `ComponentInput`: bool (default `(byte)(ComponentInput ? 1 : 0)`)
+
 ## `Card`
 
 C `cui_card_opts`.

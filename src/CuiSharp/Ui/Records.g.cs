@@ -4503,6 +4503,54 @@ public unsafe partial struct Choice
     };
 }
 
+/// <summary>Where the window is when it is neither maximized nor minimized, and whether it is maximized: what an app saves when it closes (cui_app_placement) and hands back as cui_app_desc.placement to open where it was. x and y are the top-left corner of the window&apos;s content in desktop coordinates, y growing down: pixels on Windows and X11, points on macOS. Keep them only to pass back. width and height are logical points, the units of cui_app_size. state is CUI_WINDOW_NORMAL or CUI_WINDOW_MAXIMIZED; for a minimized window it is the state it comes back in, so a window closed from the taskbar reopens as it was. Elements are copied into the frame arena by the wrapper.</summary>
+public unsafe partial struct WindowPlacement
+{
+    /// <summary>int x</summary>
+    public int X;
+    /// <summary>int y</summary>
+    public int Y;
+    /// <summary>int width</summary>
+    public int Width;
+    /// <summary>int height</summary>
+    public int Height;
+    /// <summary>cui_window_state state</summary>
+    public WindowState State;
+    /// <summary>false: the system picks the place (Wayland tells a window nothing about it)</summary>
+    public bool HasPosition;
+
+    public WindowPlacement(int X, int Y = default, int Width = default, int Height = default, WindowState State = default, bool HasPosition = default) { this.X = X; this.Y = Y; this.Width = Width; this.Height = Height; this.State = State; this.HasPosition = HasPosition; }
+
+    internal readonly NativeWindowPlacement ToNative() => new()
+    {
+        X = X,
+        Y = Y,
+        Width = Width,
+        Height = Height,
+        State = State,
+        HasPosition = (byte)(HasPosition ? 1 : 0),
+    };
+
+    /// <summary>Copies an array of these into the frame arena; the wrapper hands the pointer to CUI.</summary>
+    internal static nint ToFrameArray(WindowPlacement[]? items)
+    {
+        if (items is null || items.Length is 0) return 0;
+        var block = Utf8.AllocFrame<NativeWindowPlacement>(items.Length);
+        for (int i = 0; i < items.Length; i++) block[i] = items[i].ToNative();
+        return (nint)block;
+    }
+
+    internal static WindowPlacement FromNative(NativeWindowPlacement n) => new()
+    {
+        X = n.X,
+        Y = n.Y,
+        Width = n.Width,
+        Height = n.Height,
+        State = n.State,
+        HasPosition = n.HasPosition != 0,
+    };
+}
+
 /// <summary>A keyboard with your shortcuts on it: each bound key shows its action and the color of its category, for the modifiers chosen above it. Keys bound twice are marked as conflicts. Hover a key for every binding on it; click it to get the key (to rebind it). The keyboard keeps its own layout in a right-to-left interface and scales to the width it gets. Elements are copied into the frame arena by the wrapper.</summary>
 public unsafe partial struct KeymapBinding
 {

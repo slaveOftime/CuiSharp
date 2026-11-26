@@ -2082,7 +2082,7 @@ public static unsafe partial class Native
 
     /// <summary>cui_canvas_ex</summary>
     [LibraryImport("cui", EntryPoint = "cui_canvas_ex")]
-    public static partial NativeCanvasResult CanvasEx(nint ui, nint id, NativeSize width, NativeSize height, nint paint, nint user, nuint userSize, nint opts);
+    public static partial NativeCanvasResult CanvasEx(nint ui, nint id, NativeSize width, NativeSize height, nint paint, nint user, nuint userSize, in NativeCanvasOpts opts);
 
     /// <summary>Request focus for a submitted canvas with component_input enabled. The last request wins at end_frame and expires there. An absent, disabled, or nonparticipating target leaves the current focus unchanged. Removal revokes participating focus; built-in forward-focus behavior is unchanged.</summary>
     [LibraryImport("cui", EntryPoint = "cui_request_component_focus")]
@@ -2198,7 +2198,7 @@ public static unsafe partial class Native
 
     /// <summary>Writes the window&apos;s normal size and place, and whether it is or comes back maximized, to out, also while it is maximized or minimized, so an app can save them when it closes. Returns false when there is no app.</summary>
     [LibraryImport("cui", EntryPoint = "cui_app_placement")]
-    public static partial byte AppPlacement(nint app, nint @out);
+    public static partial byte AppPlacement(nint app, ref NativeWindowPlacement @out);
 
     /// <summary>Starts or stops following the OS light/dark setting, as cui_app_desc.follow_system_theme does at creation, for a theme switcher with Light, Dark and System. Starting applies the OS setting at once, where the platform reports one. Stopping keeps the current theme, so a cui_set_theme after it lasts. Later OS changes are followed on Windows and macOS.</summary>
     [LibraryImport("cui", EntryPoint = "cui_app_follow_system_theme")]

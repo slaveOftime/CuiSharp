@@ -84,16 +84,134 @@ public unsafe ref partial struct Ui
     /// if (r.Hovered) ui.Tooltip($"x = {r.MouseX:0}");
     /// </code>
     /// </example>
-    public CanvasResult Canvas(UiText id, Size width, Size height, PaintFn paint)
+    public CanvasResult Canvas(UiText id, Size width, Size height, PaintFn paint) =>
+        Canvas(id, width, height, paint, default);
+
+    /// <summary>
+    /// Reserves a box of the given size and lets you paint it, with keyboard focus and component
+    /// input when requested in <paramref name="o"/>.
+    /// </summary>
+    public CanvasResult Canvas(UiText id, Size width, Size height, PaintFn paint, CanvasOpts o)
     {
         ArgumentNullException.ThrowIfNull(paint);
 
         int slot = _frame.Painters.Count;
         _frame.Painters.Add(paint);
 
-        var result = Native.Canvas(Handle, Utf8.Get(id), new NativeSize { Kind = width.Kind, Value = width.Value }, new NativeSize { Kind = height.Kind, Value = height.Value }, (nint)(delegate* unmanaged[Cdecl]<nint, NativeRect, void*, void>)&PaintThunk, (nint)slot, 0);
+        var nativeOpts = o.ToNative();
+        // CUI ignores component_input unless focusable is also set; make ComponentInput imply it.
+        if (nativeOpts.ComponentInput != 0) nativeOpts.Focusable = 1;
+
+        var result = Native.CanvasEx(Handle, Utf8.Get(id), new NativeSize { Kind = width.Kind, Value = width.Value }, new NativeSize { Kind = height.Kind, Value = height.Value }, (nint)(delegate* unmanaged[Cdecl]<nint, NativeRect, void*, void>)&PaintThunk, (nint)slot, 0, in nativeOpts);
         WidgetRecorder.Note(Handle, "Canvas", id);
         return new CanvasResult(result);
+    }
+
+    /// <summary>
+    /// Marks the part of a canvas that takes the wheel, so scrolling over <paramref name="rect"/>
+    /// stops at the canvas instead of scrolling an enclosing scroll area or the page. Call this
+    /// from the canvas's paint callback with an id of its own, then read the wheel on the next
+    /// frame with <see cref="TryTakeWheel(UiText, out ValueTuple{float, float})"/>.
+    /// </summary>
+    public void WheelRegion(uint id, RectF rect) => Native.WheelRegion(Handle, id, Nr(rect));
+
+    /// <summary>
+    /// Marks the part of a canvas that takes the wheel, keyed by a string id. Call from the paint
+    /// callback and read the wheel on the next frame with
+    /// <see cref="TryTakeWheel(UiText, out ValueTuple{float, float})"/>.
+    /// </summary>
+    public void WheelRegion(UiText id, RectF rect) => WheelRegion(MakeId(id), rect);
+
+    /// <summary>
+    /// Reads and consumes the wheel aimed at a <see cref="WheelRegion(uint, RectF)"/> id this
+    /// frame, in lines with <c>+Y</c> up. False when no wheel arrived or inside a disabled scope.
+    /// </summary>
+    public bool TryTakeWheel(uint id, out (float X, float Y) delta)
+    {
+        NativeVec2 raw = default;
+        if (Native.WheelTake(Handle, id, ref raw) != 0)
+        {
+            delta = (raw.X, raw.Y);
+            return true;
+        }
+
+        delta = default;
+        return false;
+    }
+
+    /// <summary>
+    /// Reads and consumes the wheel aimed at a <see cref="WheelRegion(UiText, RectF)"/> id this
+    /// frame, in lines with <c>+Y</c> up. False when no wheel arrived or inside a disabled scope.
+    /// </summary>
+    public bool TryTakeWheel(UiText id, out (float X, float Y) delta) => TryTakeWheel(MakeId(id), out delta);
+
+    /// <summary>
+    /// Asks for keyboard focus on a canvas built with <see cref="CanvasOpts.ComponentInput"/>.
+    /// The last request in the frame wins when the frame ends.
+    /// </summary>
+    public void RequestComponentFocus(uint id) => Native.RequestComponentFocus(Handle, id);
+
+    /// <summary>
+    /// Asks for keyboard focus on a canvas built with <see cref="CanvasOpts.ComponentInput"/>.
+    /// </summary>
+    public void RequestComponentFocus(UiText id) => RequestComponentFocus(MakeId(id));
+
+    /// <summary>
+    /// True when the component with <paramref name="id"/> owns component input right now (the
+    /// window is focused, the component is focused, and no modal or popup sits above its layer).
+    /// </summary>
+    public bool ComponentHasInput(uint id) => Native.ComponentHasInput(Handle, id) != 0;
+
+    /// <summary>
+    /// True when the component with <paramref name="id"/> owns component input right now.
+    /// </summary>
+    public bool ComponentHasInput(UiText id) => ComponentHasInput(MakeId(id));
+
+    /// <summary>
+    /// True when <paramref name="id"/> has keyboard focus with its focus ring visible; for a
+    /// canvas painter that draws its own focus ring.
+    /// </summary>
+    public bool IsFocusVisible(uint id) => Native.FocusVisible(Handle, id) != 0;
+
+    /// <summary>
+    /// True when <paramref name="id"/> has keyboard focus with its focus ring visible.
+    /// </summary>
+    public bool IsFocusVisible(UiText id) => IsFocusVisible(MakeId(id));
+
+    /// <summary>
+    /// Reads the strokes drawn on a <see cref="CaptureUiExtensions.SignaturePad"/>: copies up to
+    /// <paramref name="points"/>'s length of <c>(X, Y)</c> points and up to
+    /// <paramref name="strokeEnds"/>'s length of stroke ends (<c>strokeEnds[i]</c> is one past the
+    /// last point of stroke <c>i</c>), sets <paramref name="strokeCount"/> to the total number of
+    /// strokes on the pad, and returns the total number of points on the pad. Pass empty spans to
+    /// query the counts before copying.
+    /// </summary>
+    public int SignaturePoints(
+        UiText id,
+        out int strokeCount,
+        scoped Span<(float X, float Y)> points = default,
+        scoped Span<int> strokeEnds = default)
+    {
+        nint rawPoints = 0;
+        nint rawEnds = 0;
+        int strokes = 0;
+        int totalPoints = Native.SignaturePoints(Handle, Utf8.Get(id), (nint)(&rawPoints), (nint)(&rawEnds), ref strokes);
+        strokeCount = strokes;
+
+        if (rawPoints != 0 && !points.IsEmpty && totalPoints > 0)
+        {
+            var src = (NativeVec2*)rawPoints;
+            int copy = Math.Min(totalPoints, points.Length);
+            for (int i = 0; i < copy; i++) points[i] = (src[i].X, src[i].Y);
+        }
+
+        if (rawEnds != 0 && !strokeEnds.IsEmpty && strokes > 0)
+        {
+            int copy = Math.Min(strokes, strokeEnds.Length);
+            new ReadOnlySpan<int>((int*)rawEnds, copy).CopyTo(strokeEnds);
+        }
+
+        return totalPoints;
     }
 
     /// <summary>

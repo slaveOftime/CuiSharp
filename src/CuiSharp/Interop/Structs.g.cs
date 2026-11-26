@@ -5912,6 +5912,16 @@ public unsafe struct NativeCanvasResult
     public NativeVec2 Mouse;
 }
 
+/// <summary>A zeroed options struct gives the same behavior as cui_canvas. (2 bytes)</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeCanvasOpts
+{
+    /// <summary>Tab stop; with keyboard focus Enter or Space clicks it (offset 0)</summary>
+    public byte Focusable;
+    /// <summary>requires focusable; the host routes keys instead of button activation (offset 1)</summary>
+    public byte ComponentInput;
+}
+
 /// <summary>cui_vertex (64 bytes)</summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct NativeVertex
@@ -5988,6 +5998,24 @@ public unsafe struct NativeDrawData
     public NativeColor ClearColor;
     /// <summary>cui_texture (offset 56)</summary>
     public nuint FontAtlas;
+}
+
+/// <summary>Where the window is when it is neither maximized nor minimized, and whether it is maximized: what an app saves when it closes (cui_app_placement) and hands back as cui_app_desc.placement to open where it was. x and y are the top-left corner of the window&apos;s content in desktop coordinates, y growing down: pixels on Windows and X11, points on macOS. Keep them only to pass back. width and height are logical points, the units of cui_app_size. state is CUI_WINDOW_NORMAL or CUI_WINDOW_MAXIMIZED; for a minimized window it is the state it comes back in, so a window closed from the taskbar reopens as it was. (24 bytes)</summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct NativeWindowPlacement
+{
+    /// <summary>int (offset 0)</summary>
+    public int X;
+    /// <summary>int (offset 4)</summary>
+    public int Y;
+    /// <summary>int (offset 8)</summary>
+    public int Width;
+    /// <summary>int (offset 12)</summary>
+    public int Height;
+    /// <summary>cui_window_state (offset 16)</summary>
+    public WindowState State;
+    /// <summary>false: the system picks the place (Wayland tells a window nothing about it) (offset 20)</summary>
+    public byte HasPosition;
 }
 
 /// <summary>cui_app_desc (64 bytes)</summary>

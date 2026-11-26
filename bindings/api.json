@@ -28341,6 +28341,38 @@
       "Doc": "`rect` is where the canvas was laid out in the previous frame, in window points (zero in its first frame), and `mouse` is the pointer relative to that rectangle's top-left corner. The paint callback gets this frame's final rectangle, which differs when the canvas moved or resized; for hits kept in window coordinates, use cui_mouse_pos."
     },
     {
+      "CName": "cui_canvas_opts",
+      "CsName": "NativeCanvasOpts",
+      "Size": 2,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "focusable",
+          "CsName": "Focusable",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "Tab stop; with keyboard focus Enter or Space clicks it"
+        },
+        {
+          "CName": "component_input",
+          "CsName": "ComponentInput",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 1,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "requires focusable; the host routes keys instead of button activation"
+        }
+      ],
+      "Doc": "A zeroed options struct gives the same behavior as cui_canvas."
+    },
+    {
       "CName": "cui_vertex",
       "CsName": "NativeVertex",
       "Size": 64,
@@ -28738,6 +28770,86 @@
         }
       ],
       "Doc": ""
+    },
+    {
+      "CName": "cui_window_placement",
+      "CsName": "NativeWindowPlacement",
+      "Size": 24,
+      "Helpers": [],
+      "Fields": [
+        {
+          "CName": "x",
+          "CsName": "X",
+          "CsType": "int",
+          "CType": "int",
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "y",
+          "CsName": "Y",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 4,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "width",
+          "CsName": "Width",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 8,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "height",
+          "CsName": "Height",
+          "CsType": "int",
+          "CType": "int",
+          "Offset": 12,
+          "Type": {
+            "Spelling": "int",
+            "Kind": "Int"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "state",
+          "CsName": "State",
+          "CsType": "WindowState",
+          "CType": "cui_window_state",
+          "Offset": 16,
+          "Type": {
+            "Spelling": "cui_window_state",
+            "Kind": "Enum"
+          },
+          "Doc": ""
+        },
+        {
+          "CName": "has_position",
+          "CsName": "HasPosition",
+          "CsType": "byte",
+          "CType": "_Bool",
+          "Offset": 20,
+          "Type": {
+            "Spelling": "_Bool",
+            "Kind": "Bool"
+          },
+          "Doc": "false: the system picks the place (Wayland tells a window nothing about it)"
+        }
+      ],
+      "Doc": "Where the window is when it is neither maximized nor minimized, and whether it is maximized: what an app saves when it closes (cui_app_placement) and hands back as cui_app_desc.placement to open where it was. x and y are the top-left corner of the window's content in desktop coordinates, y growing down: pixels on Windows and X11, points on macOS. Keep them only to pass back. width and height are logical points, the units of cui_app_size. state is CUI_WINDOW_NORMAL or CUI_WINDOW_MAXIMIZED; for a minimized window it is the state it comes back in, so a window closed from the taskbar reopens as it was."
     },
     {
       "CName": "cui_app_desc",
@@ -60644,7 +60756,7 @@
         {
           "CName": "opts",
           "CsName": "opts",
-          "CsType": "nint",
+          "CsType": "in NativeCanvasOpts",
           "Type": {
             "Spelling": "const cui_canvas_opts *",
             "Kind": "Pointer",
@@ -61699,7 +61811,7 @@
         {
           "CName": "out",
           "CsName": "@out",
-          "CsType": "nint",
+          "CsType": "ref NativeWindowPlacement",
           "Type": {
             "Spelling": "cui_window_placement *",
             "Kind": "Pointer",

@@ -5040,6 +5040,21 @@ public partial struct SelectionBarOpts
     };
 }
 
+/// <summary>A zeroed options struct gives the same behavior as cui_canvas. All fields are optional; zero selects the native default.</summary>
+public partial struct CanvasOpts
+{
+    /// <summary>Tab stop; with keyboard focus Enter or Space clicks it</summary>
+    public bool Focusable;
+    /// <summary>requires focusable; the host routes keys instead of button activation</summary>
+    public bool ComponentInput;
+
+    internal readonly NativeCanvasOpts ToNative() => new()
+    {
+        Focusable = (byte)(Focusable ? 1 : 0),
+        ComponentInput = (byte)(ComponentInput ? 1 : 0),
+    };
+}
+
 /// <summary>cui_file_dialog_opts. All fields are optional; zero selects the native default.</summary>
 public partial struct FileDialogOpts
 {

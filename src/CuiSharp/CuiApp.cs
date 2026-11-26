@@ -48,6 +48,13 @@ public sealed record CuiAppOptions
     public bool FollowSystemTheme { get; set; }
 
     /// <summary>
+    /// Where to open, for an app that reopens where it was closed: the normal size and position from
+    /// <see cref="CuiWindow.TryGetPlacement"/>, and whether the window was maximized. Its size
+    /// replaces <see cref="Width"/> and <see cref="Height"/>.
+    /// </summary>
+    public WindowPlacement? Placement { get; set; }
+
+    /// <summary>
     /// What <see cref="CuiWindow.PickFile"/> uses. Null asks the OS through CUI; a test supplies one
     /// so a picker flow runs with no display.
     /// </summary>
@@ -129,12 +136,41 @@ public sealed unsafe class CuiApp : IDisposable
     /// <summary>Applies an accent now, or on the next frame if the window is not up yet.</summary>
     public void SetAccent(Accent accent) { _accent = accent; _themeDirty = true; }
 
+    /// <summary>
+    /// Starts or stops following the OS light/dark setting, for a theme switcher with Light, Dark
+    /// and System.
+    /// </summary>
+    public void SetFollowSystemTheme(bool follow)
+    {
+        if (follow) _themeDirty = false;
+        _window.SetFollowSystemTheme(follow);
+    }
+
+    /// <summary>
+    /// Resizes this window's content area in logical points (the same units as
+    /// <see cref="CuiAppOptions.Width"/> and <see cref="CuiAppOptions.Height"/>).
+    /// </summary>
+    public void SetSize(int width, int height) => _window.SetSize(width, height);
+
+    /// <summary>
+    /// Moves this window so the top-left corner of its content is at <paramref name="x"/>,
+    /// <paramref name="y"/> in the desktop coordinates of <see cref="WindowPlacement"/>.
+    /// </summary>
+    public void SetPosition(int x, int y) => _window.SetPosition(x, y);
+
+    /// <summary>
+    /// Reads this window's normal size and position, and whether it is (or comes back) maximized,
+    /// for <see cref="CuiAppOptions.Placement"/>. False after the window is disposed.
+    /// </summary>
+    public bool TryGetPlacement(out WindowPlacement placement) => _window.TryGetPlacement(out placement);
+
     /// <summary>Creates the window. Returns null when the platform backend fails.</summary>
     public static CuiApp? Create(CuiAppOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        var desc = Describe(options);
+        var desc = Describe(options, out var placement);
+        if (options.Placement.HasValue) desc.Placement = (nint)(&placement);
         nint handle;
         try
         {
@@ -337,7 +373,8 @@ public sealed unsafe class CuiApp : IDisposable
         GCHandle handle = GCHandle.Alloc(state);
         try
         {
-            var desc = Describe(options);
+            var desc = Describe(options, out var placement);
+            if (options.Placement.HasValue) desc.Placement = (nint)(&placement);
 
             // Deferred canvas painters run inside CUI's paint phase, which happens
             // on this same thread but outside the callback, so the painting state
@@ -464,22 +501,26 @@ public sealed unsafe class CuiApp : IDisposable
         if (Features.Live) state.Live?.FrameDrew();
     }
 
-    private static NativeAppDesc Describe(CuiAppOptions options) => new()
+    private static NativeAppDesc Describe(CuiAppOptions options, out NativeWindowPlacement placement)
     {
-        Title = Utf8.Get(options.Title),
-        Width = options.Width,
-        Height = options.Height,
-        MinWidth = options.MinWidth,
-        MinHeight = options.MinHeight,
-        FixedSize = (byte)(options.FixedSize ? 1 : 0),
-        Continuous = (byte)(options.Continuous ? 1 : 0),
-        NoVsync = (byte)(options.NoVsync ? 1 : 0),
-        Hidden = (byte)(options.Hidden ? 1 : 0),
-        Renderer = options.Renderer,
-        Theme = options.Theme,
-        Accent = options.Accent,
-        FollowSystemTheme = (byte)(options.FollowSystemTheme ? 1 : 0),
-    };
+        placement = options.Placement is { } saved ? saved.ToNative() : default;
+        return new NativeAppDesc
+        {
+            Title = Utf8.Get(options.Title),
+            Width = options.Width,
+            Height = options.Height,
+            MinWidth = options.MinWidth,
+            MinHeight = options.MinHeight,
+            FixedSize = (byte)(options.FixedSize ? 1 : 0),
+            Continuous = (byte)(options.Continuous ? 1 : 0),
+            NoVsync = (byte)(options.NoVsync ? 1 : 0),
+            Hidden = (byte)(options.Hidden ? 1 : 0),
+            Renderer = options.Renderer,
+            Theme = options.Theme,
+            Accent = options.Accent,
+            FollowSystemTheme = (byte)(options.FollowSystemTheme ? 1 : 0),
+        };
+    }
 
     /// <inheritdoc />
     public void Dispose()

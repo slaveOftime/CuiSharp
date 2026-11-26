@@ -137,6 +137,77 @@ public partial class WindowControlTests
         app.ToggleMaximize();
         app.RequestClose();
         Assert.False(app.Screenshot(new byte[320 * 240 * 4], 320, 240));
+        Assert.False(app.TryGetPlacement(out _));
+        Assert.False(window.TryGetPlacement(out _));
+    }
+
+    [Fact]
+    public void PlacementRoundTripsNormalBoundsAndMaximizedState()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        WindowPlacement saved;
+        using (var first = CuiApp.Create(new CuiAppOptions
+        {
+            Title = "PlacementFirst",
+            Width = 440,
+            Height = 320,
+            Hidden = true,
+            Renderer = Renderer.Software,
+        }))
+        {
+            Assert.NotNull(first);
+            first.SetPosition(140, 120);
+            first.SetSize(520, 380);
+            first.ToggleMaximize();
+
+            Assert.True(first.TryGetPlacement(out saved));
+            Assert.Equal(520, saved.Width);
+            Assert.Equal(380, saved.Height);
+            Assert.Equal(WindowState.Maximized, saved.State);
+            Assert.True(saved.HasPosition);
+            Assert.Equal(140, saved.X);
+            Assert.Equal(120, saved.Y);
+        }
+
+        using var reopened = CuiApp.Create(new CuiAppOptions
+        {
+            Title = "PlacementReopened",
+            Width = 360,
+            Height = 280,
+            Placement = saved,
+            Hidden = true,
+            Renderer = Renderer.Software,
+        });
+        Assert.NotNull(reopened);
+        Assert.True(reopened.TryGetPlacement(out var second));
+        Assert.Equal(520, second.Width);
+        Assert.Equal(380, second.Height);
+        Assert.Equal(140, second.X);
+        Assert.Equal(120, second.Y);
+    }
+
+    [Fact]
+    public void StoppingFollowSystemThemeLetsAnExplicitThemeStick()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        using var app = CuiApp.Create(new CuiAppOptions
+        {
+            Title = "WindowSystemTheme",
+            Width = 360,
+            Height = 280,
+            Hidden = true,
+            Renderer = Renderer.Software,
+        });
+        Assert.NotNull(app);
+
+        app.SetFollowSystemTheme(true);
+        app.SetFollowSystemTheme(false);
+        app.SetTheme(Theme.Dark);
+        app.RequestClose();
+        Assert.False(app.Frame());
+        Assert.Equal(Theme.Dark, app.Ui.Theme);
     }
 
     [Fact]

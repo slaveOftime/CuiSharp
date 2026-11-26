@@ -6,6 +6,24 @@ different things.
 
 ## [0.5.1] — unreleased
 
+### Added
+
+- **Interactive custom canvases, wheel capture and cursor control.** `ui.Canvas(id, width, height,
+  paint, opts)` takes `CanvasOpts` (`Focusable` for a Tab stop, `ComponentInput` when the canvas
+  routes keys itself); `ui.RequestComponentFocus`, `ui.ComponentHasInput`, `ui.IsFocusVisible`,
+  `ui.FocusedId` and `ui.IsWindowFocused` drive and query focus. Inside a painter,
+  `paint.WheelRegion(id, rect)` claims the wheel over a rectangle and `ui.TryTakeWheel(id, out
+  delta)` consumes it on the next frame without scrolling the page. `ui.Cursor` now has a setter
+  (`ui.Cursor = Cursor.Hand`).
+- **Window placement, positioning, resizing and runtime system-theme switching.** `CuiWindow` and
+  `CuiApp` add `TryGetPlacement(out WindowPlacement)`, `SetPosition(x, y)`, `SetSize(width, height)`
+  and `SetFollowSystemTheme(follow)`, and `CuiAppOptions.Placement` reopens a window at its saved
+  normal bounds and maximized state.
+- **Signature stroke export.** `ui.SignaturePoints(id, out strokeCount, points, strokeEnds)` copies
+  the points and stroke-end indices drawn on a `SignaturePad` into caller spans (or reports the
+  counts when passed empty spans), and the gallery's Capture page shows the stroke count and a Clear
+  button once signed.
+
 ### Fixed
 
 - **The window controls go through CUI instead of Win32.** `CuiWindow` and `CuiApp` expose
@@ -20,10 +38,9 @@ different things.
 
 ### Changed
 
-- **Four fewer exclusions.** `cui_app_maximize`, `cui_app_minimize`, `cui_app_restore` and
-  `cui_app_window_state` are hand-written wrappers on `CuiWindow` now instead of excluded with the
-  `cui_app` section: 36 excluded, 188 manual, 0 pending. Placement, positioning and the runtime
-  system-theme switch stay excluded until something asks for them.
+- **Seventeen fewer exclusions.** Every function in `cui_app.h`, the custom-canvas input and wheel
+  surface, `cui_set_cursor`, and `cui_signature_points` are bound now: 195 option structs, 113
+  records, 305 generated wrappers, 201 manual, 23 excluded, 0 pending.
 
 ## [0.5.0] — 2026-11-26
 

@@ -64,7 +64,7 @@ public static class HeadlessLoop
                 $"{ViewportEnvironmentVariable} must be a positive WxH size (at most {MaxViewportDimension}x{MaxViewportDimension}), not \"{text}\".");
         }
 
-        return window with { Width = width, Height = height };
+        return window with { Width = width, Height = height, Placement = null };
     }
 
     /// <summary>
@@ -113,10 +113,12 @@ public static class HeadlessLoop
         ArgumentNullException.ThrowIfNull(window);
         window = WithViewport(window);
         if (input is null && output is null) ClaimStandardOutput();
+        int width = window.Placement is { Width: > 0 and var pw } ? pw : window.Width;
+        int height = window.Placement is { Height: > 0 and var ph } ? ph : window.Height;
         using HeadlessApp app = HeadlessApp.Start(
             draw,
-            window.Width,
-            window.Height,
+            width,
+            height,
             theme: window.Theme,
             accent: window.Accent);
         return Run(app, input, output);

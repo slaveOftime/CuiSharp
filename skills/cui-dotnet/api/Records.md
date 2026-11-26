@@ -817,3 +817,12 @@ Value types for the widgets that take an array of items.
 - `Clicked`: int
 - `Activated`: int
 - `Hovered`: int
+
+## `WindowPlacement`
+
+- `X`: int
+- `Y`: int
+- `Width`: int
+- `Height`: int
+- `State`: WindowState
+- `HasPosition`: bool

@@ -73,8 +73,21 @@ public unsafe ref partial struct Ui
     /// <summary>True when the pointer is over this window and the UI wants it.</summary>
     public bool WantsMouse => Native.WantsMouse(Handle) != 0;
 
-    /// <summary>The cursor the UI asked for last frame, for a backend that draws its own.</summary>
-    public Cursor Cursor => Native.GetCursor(Handle);
+    /// <summary>True when the window (or surface) has OS focus.</summary>
+    public bool IsWindowFocused => Native.WindowFocused(Handle) != 0;
+
+    /// <summary>The <c>cui_id</c> of the focused component, or 0 when nothing is focused.</summary>
+    public uint FocusedId => Native.FocusedId(Handle);
+
+    /// <summary>
+    /// The cursor this frame asks for (<c>ui.Cursor = Cursor.Hand</c>), or the one the previous
+    /// frame asked for when a host reads it after the frame ends.
+    /// </summary>
+    public Cursor Cursor
+    {
+        readonly get => Native.GetCursor(Handle);
+        set => Native.SetCursor(Handle, value);
+    }
 
     /// <summary>The name of a key as the UI shows it: <c>A</c>, <c>Space</c>, <c>F5</c>.</summary>
     public static string KeyName(Key key) => Marshal.PtrToStringUTF8(Native.KeyName(key)) ?? "";

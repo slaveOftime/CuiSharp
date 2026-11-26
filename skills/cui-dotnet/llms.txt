@@ -40,7 +40,7 @@
 - `ui.LineChart(UiText id, ReadOnlySpan<float> values, ChartOpts o = default, Color color = default)` — one series, draws nothing when empty.
 - `ui.BarChart(...)` — the same for bars; `ui.LineChart(id, Series[] series, ...)` for several series.
 - `ui.DonutChart(UiText id, float[] values, string[]? labels = null, ChartOpts o = default)`.
-- `ui.Canvas(UiText id, Size width, Size height, PaintFn paint)` — custom drawing: `paint(ui, box)` with `ui.DrawLine`, `DrawRect`, `DrawCircle`, `DrawText`, `DrawPath`.
+- `ui.Canvas(UiText id, Size width, Size height, PaintFn paint, CanvasOpts o = default)` — custom drawing: `paint(ui, box)` with `ui.DrawLine`, `DrawRect`, `DrawCircle`, `DrawText`, `DrawPath`, `ui.WheelRegion`/`ui.TryTakeWheel` for wheel capture, and `ui.RequestComponentFocus`/`ui.ComponentHasInput`/`ui.IsFocusVisible` for keyboard focus; `ui.SignaturePoints` reads strokes from `SignaturePad`.
 - `ui.Id(int)`, `ui.Id(UiText)` -> `IdScope` — a scope that prefixes every native id and sets the automation id inside it; `ui.Keyed(items, key)` enumerates with ids; `ui.Automation(UiText)` -> `AutomationScope` sets only the automation id without changing native identity.
 - `ui.Shortcut(Mods mods, Key key)` -> `bool`, `ui.WantsKeyboard` — keyboard input, unmodified when a text field has focus.
 - `ui.RequestRedraw()`, `ui.NeedsRedraw` — rarely needed directly: the host does this from `WantsFrames` and pending work.
@@ -49,7 +49,7 @@
 - `ui.LastId` -> `uint` — the id of the widget just drawn; what `TourStep.Target` and the other point-at-this APIs take.
 - `ui.Terminal(UiText id, Terminal terminal, TerminalOpts o = default)` -> `TerminalResult` — the `Terminal` class owns the scrollback (`Write`, `WriteLine`, `Clear`, `LineCount`).
 - `ui.LogView(UiText id, LogBuffer log, LogViewOpts o = default)` — `LogBuffer` owns the ring (`Append`, `AppendLine`, `Text`, `Clear`), the view adds level filters, search, follow and copy.
-- `ui.MeasureText(text, size, font)` -> `TextMetrics`; `ui.Time`, `ui.DeltaTime`, `ui.FrameCount`, `ui.DpiScale`; `ui.MousePosition`, `ui.MouseDown`, `ui.MouseClicked`, `ui.KeyDown`, `ui.KeyPressed`, `ui.Modifiers`, `ui.WantsMouse`; `ui.RectOf(id)`; `ui.IsDisabled` and `using (ui.Disabled(flag)) { ... }`.
+- `ui.MeasureText(text, size, font)` -> `TextMetrics`; `ui.Time`, `ui.DeltaTime`, `ui.FrameCount`, `ui.DpiScale`; `ui.MousePosition`, `ui.MouseDown`, `ui.MouseClicked`, `ui.KeyDown`, `ui.KeyPressed`, `ui.Modifiers`, `ui.WantsMouse`, `ui.Cursor`, `ui.FocusedId`, `ui.IsWindowFocused`; `ui.RectOf(id)`; `ui.IsDisabled` and `using (ui.Disabled(flag)) { ... }`.
 - `ui.DrawRect`, `DrawRectGradient`, `DrawShadow`, `DrawLine`, `DrawPolyline`, `DrawPolygon`, `DrawCircle`, `DrawArc`, `DrawText`, `DrawIcon`, `DrawImage`, `using (ui.Clip(rect))` — the primitives a custom control paints with.
 - `ui.HexView(id, Span<byte>, ref HexSelection, HexViewOpts)` — the editable hex view; the span is pinned, so a typed byte lands in your array.
 - `ui.TreeTable(id, columns, TreeNode[], row, [ref TableSort, ref int], TreeTableOpts, label)` -> `TreeTableEvents` — a tree over a flat node array the table rewrites; `events.Load` names the nodes whose children it wants, and `CuiTree.Sort(nodes, root, compare)` relinks siblings.
@@ -389,6 +389,7 @@ Hand-written, because the wrapper needs state a C call cannot carry; they are pa
 - `ui.CanvasControls(...)` — hand-written in `Ui/Ui.CreativeControls.cs`
 - `ui.Clip(...)` — hand-written in `Ui/Ui.Draw.cs`
 - `ui.ColorOf(...)` — hand-written in `Ui/Ui.Frame.cs`
+- `ui.ComponentHasInput(...)` — hand-written in `Ui/Ui.Draw.cs`
 - `ui.CreateImage(...)` — hand-written in `Ui/Ui.Images.cs`
 - `ui.DataGrid(...)` — hand-written in `Ui/Ui.DataGrid.cs`
 - `ui.DateToday(...)` — hand-written in `Ui/Ui.Overlays.cs`
@@ -416,6 +417,7 @@ Hand-written, because the wrapper needs state a C call cannot carry; they are pa
 - `ui.HexView(...)` — hand-written in `Ui/Ui.Hex.cs`
 - `ui.Icon(...)` — hand-written in `Ui/Ui.Overlays.cs`
 - `ui.Id(...)` — hand-written in `Ui/Ui.Overlays.cs`
+- `ui.IsFocusVisible(...)` — hand-written in `Ui/Ui.Draw.cs`
 - `ui.KeyDown(...)` — hand-written in `Ui/Ui.Frame.cs`
 - `ui.KeyName(...)` — hand-written in `Ui/Ui.Frame.cs`
 - `ui.KeyPressed(...)` — hand-written in `Ui/Ui.Frame.cs`
@@ -439,6 +441,7 @@ Hand-written, because the wrapper needs state a C call cannot carry; they are pa
 - `ui.ReorderBegin(...)` — hand-written in `Ui/Ui.Overlays.cs`
 - `ui.ReorderEnd(...)` — hand-written in `Ui/Ui.Overlays.cs`
 - `ui.ReorderItem(...)` — hand-written in `Ui/Ui.Overlays.cs`
+- `ui.RequestComponentFocus(...)` — hand-written in `Ui/Ui.Draw.cs`
 - `ui.RequestWakeup(...)` — hand-written in `Ui/Ui.Terminal.cs`
 - `ui.Segmented(...)` — hand-written in `Ui/Ui.Segmented.cs`
 - `ui.SelectionBar(...)` — hand-written in `Ui/Ui.CreativeControls.cs`
@@ -448,6 +451,7 @@ Hand-written, because the wrapper needs state a C call cannot carry; they are pa
 - `ui.SetReducedMotion(...)` — hand-written in `Ui/Ui.Frame.cs`
 - `ui.SetShadow(...)` — hand-written in `Ui/Ui.Style.cs`
 - `ui.Shortcut(...)` — hand-written in `Ui/Ui.Overlays.cs`
+- `ui.SignaturePoints(...)` — hand-written in `Ui/Ui.Draw.cs`
 - `ui.Sort(...)` — hand-written in `Ui/Ui.TreeTable.cs`
 - `ui.TagInput(...)` — hand-written in `Ui/Ui.Overlays.cs`
 - `ui.Terminal(...)` — hand-written in `Ui/Ui.Terminal.cs`
@@ -457,9 +461,11 @@ Hand-written, because the wrapper needs state a C call cannot carry; they are pa
 - `ui.TokenColor(...)` — hand-written in `Ui/Ui.Frame.cs`
 - `ui.TreeTable(...)` — hand-written in `Ui/Ui.TreeTable.cs`
 - `ui.TreeTableRow(...)` — hand-written in `Ui/Ui.TreeTable.cs`
+- `ui.TryTakeWheel(...)` — hand-written in `Ui/Ui.Draw.cs`
 - `ui.UpdateImage(...)` — hand-written in `Ui/Ui.Images.cs`
 - `ui.UseSystemFontFallback(...)` — hand-written in `Ui/Ui.Fonts.cs`
 - `ui.UseSystemFontFallbacks(...)` — hand-written in `Ui/Ui.Fonts.cs`
+- `ui.WheelRegion(...)` — hand-written in `Ui/Ui.Draw.cs`
 - [Widgets](widgets.md) and [more widgets](widgets-more.md): what each component does, and what it does with the keyboard.
 - [Native ABI](native-abi.md): the RIDs the package carries, and the glibc floor.
 - [Guide](SKILL.md): the authoring rules, the pitfalls, the component list.

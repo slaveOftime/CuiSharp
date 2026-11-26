@@ -72,6 +72,56 @@ public sealed class CuiWindow
         if (_app != 0) Native.AppSetTitle(_app, Utf8.Get(title));
     }
 
+    /// <summary>
+    /// Resizes the window's content area in logical points (the same units as
+    /// <see cref="CuiAppOptions.Width"/> and <see cref="CuiAppOptions.Height"/>).
+    /// </summary>
+    public void SetSize(int width, int height)
+    {
+        if (_app != 0) Native.AppSetSize(_app, width, height);
+    }
+
+    /// <summary>
+    /// Moves the window so the top-left corner of its content is at <paramref name="x"/>,
+    /// <paramref name="y"/> in the desktop coordinates of <see cref="WindowPlacement"/>. Nothing
+    /// happens where windows cannot place themselves (Wayland).
+    /// </summary>
+    public void SetPosition(int x, int y)
+    {
+        if (_app != 0) Native.AppSetPosition(_app, x, y);
+    }
+
+    /// <summary>
+    /// Reads the window's normal size and position, and whether it is (or comes back) maximized,
+    /// even while it is maximized or minimized — what an app saves when it closes and hands back as
+    /// <see cref="CuiAppOptions.Placement"/>. False when the window is gone.
+    /// </summary>
+    public bool TryGetPlacement(out WindowPlacement placement)
+    {
+        if (_app != 0)
+        {
+            NativeWindowPlacement raw = default;
+            if (Native.AppPlacement(_app, ref raw) != 0)
+            {
+                placement = WindowPlacement.FromNative(raw);
+                return true;
+            }
+        }
+
+        placement = default;
+        return false;
+    }
+
+    /// <summary>
+    /// Starts or stops following the OS light/dark setting, for a theme switcher with Light, Dark
+    /// and System. Starting applies the OS setting at once where the platform reports one; stopping
+    /// keeps the current theme so a <see cref="Ui.Theme"/> change after it lasts.
+    /// </summary>
+    public void SetFollowSystemTheme(bool follow)
+    {
+        if (_app != 0) Native.AppFollowSystemTheme(_app, (byte)(follow ? 1 : 0));
+    }
+
     /// <summary>Minimizes the window, to the taskbar or the dock. Nothing happens where the window
     /// manager does not support it.</summary>
     public void Minimize()

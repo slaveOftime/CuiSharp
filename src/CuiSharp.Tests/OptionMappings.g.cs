@@ -4552,6 +4552,21 @@ public unsafe class GeneratedOptionMappingTests
         Assert.Equal((byte)0, zero.NoEscape);
         }
 
+        // cui_canvas_opts
+        {
+        var value = new CanvasOpts
+        {
+            Focusable = true,
+            ComponentInput = true,
+        };
+        var native = value.ToNative();
+        Assert.Equal((byte)1, native.Focusable);
+        Assert.Equal((byte)1, native.ComponentInput);
+        var zero = default(CanvasOpts).ToNative();
+        Assert.Equal((byte)0, zero.Focusable);
+        Assert.Equal((byte)0, zero.ComponentInput);
+        }
+
         // cui_file_dialog_opts
         {
         var value = new FileDialogOpts

@@ -15,14 +15,6 @@ in [ARCHITECTURE.md](ARCHITECTURE.md). Every item here passes the same gates as 
   post-1.4.0 builds measured 0.82–0.84 ms versus 0.94 ms at 1280x720, with 0 B/frame. The
   subsequent v1.5.0 measurement is not an isolated comparison; identify the cost before assigning
   it to upstream. Native fixes still belong upstream.
-- **Bind the custom canvas's input surface** — `cui_canvas_ex` (focusable canvases),
-  `cui_wheel_region`/`cui_wheel_take`, `cui_set_cursor` and `cui_request_component_focus` are
-  excluded with the Custom drawing section; a managed surface for keyboard focus, wheel takeover
-  and cursor shaping on a hand-drawn canvas is its own design.
-- **Window placement and the runtime theme switch** — `cui_app_placement`, `cui_app_set_position`
-  and `cui_app_follow_system_theme` stay excluded: `CuiWindow` asks CUI for minimize, maximize and
-  the state now, but saving and reopening where a window was is one workflow and should ship as
-  one, and a Light/Dark/System switch needs a decision on who owns the theme.
 - **A managed GPU renderer bridge** — `cui_gpu_*` are excluded: CUI builds them behind compile-time
   flags and hands over a native interface of function pointers and device handles. Worth a design
   only if an app needs to skip OpenGL.
