@@ -32,6 +32,20 @@ in initialization and drawing appear inline. There is no data binding or synchro
 `TestApp` and `HeadlessApp`) instead draws only when driven. `FrameStats` reports the cost of app
 drawing, not native layout and paint; a surface exposes its sample as `LastFrame`.
 
+## Window placement and theme
+
+Call `window.TryGetPlacement(out var placement)` while the window is still open, and pass the
+saved value as `CuiAppOptions.Placement` when reopening. It saves the normal bounds even when the
+window is maximized. `HasPosition` tells you whether the backend supplied a position. Headless
+runs use the saved normal size, not the desktop position or maximized state; `CUISHARP_VIEWPORT`
+overrides the size when set.
+
+Use `CuiApp.Create` for direct access to the window on supported desktop backends. The `WindowCreated`
+callback also supplies a `CuiWindow` under `CuiApp.Run` or `CuiApplication.Run` on Windows, but not
+on other platforms or in a headless run. On the frame thread, call `window.SetFollowSystemTheme(true)`
+for System. For Light or Dark, stop following first, then set the theme via `Ui.Theme` in a hosted
+frame or `app.SetTheme(...)` in a manual loop.
+
 ## Async work
 
 **Start on the frame thread. Work on the pool. Draw the result on the frame thread.**

@@ -175,8 +175,8 @@ public partial class WindowControlTests
             Title = "PlacementReopened",
             Width = 360,
             Height = 280,
+            // CUI applies the startup state when it shows the window.
             Placement = saved,
-            Hidden = true,
             Renderer = Renderer.Software,
         });
         Assert.NotNull(reopened);
@@ -185,6 +185,34 @@ public partial class WindowControlTests
         Assert.Equal(380, second.Height);
         Assert.Equal(140, second.X);
         Assert.Equal(120, second.Y);
+        Assert.True(second.HasPosition);
+        Assert.Equal(WindowState.Maximized, second.State);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void FollowingTheSystemKeepsAccentChangesWithoutReapplyingTheManualTheme(bool accentFirst)
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        using var app = CuiApp.Create(new CuiAppOptions { Hidden = true, Renderer = Renderer.Software });
+        Assert.NotNull(app);
+        app.SetFollowSystemTheme(true);
+        Theme systemTheme = app.Ui.Theme;
+        app.SetFollowSystemTheme(false);
+
+        // Queue a different theme so an accidental reapply is visible on either OS setting.
+        app.SetTheme(systemTheme == Theme.Dark ? Theme.Light : Theme.Dark);
+        Accent accent = app.Ui.Accent == Accent.Blue ? Accent.Green : Accent.Blue;
+        if (accentFirst) app.SetAccent(accent);
+        app.SetFollowSystemTheme(true);
+        if (!accentFirst) app.SetAccent(accent);
+
+        app.RequestClose();
+        Assert.False(app.Frame());
+        Assert.Equal(systemTheme, app.Ui.Theme);
+        Assert.Equal(accent, app.Ui.Accent);
     }
 
     [Fact]

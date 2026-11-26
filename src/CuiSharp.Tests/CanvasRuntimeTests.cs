@@ -59,41 +59,50 @@ public class CanvasRuntimeTests
     }
 
     [Fact]
-    public void ACanvasWheelRegionCapturesTheWheelAndSetsTheCursor()
+    public void ScopedCanvasesWithTheSameLocalIdsOnlyTakeTheirOwnWheel()
     {
         using var surface = CuiSurface.Create(320, 240);
-        (float X, float Y) taken = default;
-        bool firstTake = false, secondTake = true;
+        var boxes = new RectF[2];
+        var takes = new bool[2];
+        var deltas = new (float X, float Y)[2];
 
-        void Draw(Ui ui)
+        void DrawPlot(Ui ui, int key)
         {
-            var canvas = ui.Canvas("plot", Size.Px(200), Size.Px(120), (paint, box) =>
+            using var scope = ui.Id(key);
+            uint wheelId = ui.MakeId("plot-wheel");
+            var canvas = ui.Canvas("plot", Size.Px(200), Size.Px(80), (paint, box) =>
             {
-                paint.WheelRegion("plot-wheel", box);
+                boxes[key] = box;
+                paint.WheelRegion(wheelId, box);
                 paint.DrawRect(box, Color.Surface);
             });
             if (canvas.Hovered) ui.Cursor = Cursor.Move;
-            firstTake = ui.TryTakeWheel("plot-wheel", out taken);
-            secondTake = ui.TryTakeWheel("plot-wheel", out _);
+            takes[key] = ui.TryTakeWheel("plot-wheel", out deltas[key]);
+            Assert.False(ui.TryTakeWheel(wheelId, out _));
         }
 
-        // Frame 1 lays out the canvas and registers the wheel region during paint.
-        surface.BeginFrame();
-        Draw(surface.Ui);
-        surface.EndFrame();
-        Assert.False(firstTake);
+        void DrawFrame()
+        {
+            surface.BeginFrame();
+            DrawPlot(surface.Ui, 0);
+            DrawPlot(surface.Ui, 1);
+            surface.EndFrame();
+        }
 
-        // Frame 2 hovers the canvas and scrolls: the region takes the wheel once and the cursor changes.
-        surface.MouseMove(60, 40);
-        surface.Scroll(3f, -1f);
-        surface.BeginFrame();
-        Draw(surface.Ui);
-        surface.EndFrame();
+        DrawFrame();
+        Assert.Equal(new[] { false, false }, takes);
+        for (int target = 0; target < boxes.Length; target++)
+        {
+            var box = boxes[target];
+            surface.MouseMove(box.X + box.W / 2, box.Y + box.H / 2);
+            surface.Scroll(3f, -1f);
+            DrawFrame();
 
-        Assert.True(firstTake);
-        Assert.False(secondTake);
-        Assert.Equal((-1f, 3f), taken);
-        Assert.Equal(Cursor.Move, surface.Ui.Cursor);
+            Assert.True(takes[target]);
+            Assert.False(takes[1 - target]);
+            Assert.Equal((-1f, 3f), deltas[target]);
+            Assert.Equal(Cursor.Move, surface.Ui.Cursor);
+        }
     }
 
     [Fact]
@@ -102,13 +111,17 @@ public class CanvasRuntimeTests
         using var surface = CuiSurface.Create(320, 200);
         surface.Focus(true);
         bool focusRingVisible = false;
+        uint editorId = 0;
 
         void Draw(Ui ui, bool requestFocus)
         {
             ui.Button("Before");
+            using var scope = ui.Id(42);
+            editorId = ui.MakeId("editor");
+            uint paintId = editorId;
             ui.Canvas("editor", Size.Px(180), Size.Px(80), (paint, box) =>
             {
-                focusRingVisible = paint.IsFocusVisible("editor");
+                focusRingVisible = paint.IsFocusVisible(paintId);
                 paint.DrawRect(box, Color.Surface);
             }, new CanvasOpts { ComponentInput = true });
             if (requestFocus) ui.RequestComponentFocus("editor");
@@ -120,13 +133,14 @@ public class CanvasRuntimeTests
         surface.EndFrame();
 
         Assert.True(surface.Ui.IsWindowFocused);
-        Assert.Equal(surface.Ui.MakeId("editor"), surface.Ui.FocusedId);
-        Assert.True(surface.Ui.ComponentHasInput("editor"));
+        Assert.Equal(editorId, surface.Ui.FocusedId);
+        Assert.True(surface.Ui.ComponentHasInput(editorId));
 
         // Losing window focus revokes component-input eligibility even while FocusedId stays set.
         surface.Focus(false);
         Assert.False(surface.Ui.IsWindowFocused);
-        Assert.False(surface.Ui.ComponentHasInput("editor"));
+        Assert.Equal(editorId, surface.Ui.FocusedId);
+        Assert.False(surface.Ui.ComponentHasInput(editorId));
 
         // Tabbing into the canvas with window focus shows the keyboard focus ring to its painter.
         surface.Focus(true);

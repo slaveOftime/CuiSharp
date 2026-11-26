@@ -62,13 +62,6 @@ internal sealed partial class GalleryApp
         }
         int signaturePoints = ui.SignaturePoints("signature", out int signatureStrokes);
         if (signaturePoints > 0)
-        {
-            using (ui.Row(new Box { Gap = 8, Align = Align.Center }))
-            {
-                if (ui.Button("Clear", new ButtonOpts { Variant = ButtonVariant.Ghost, Size = ControlSize.Sm }))
-                    ui.SignatureClear("signature");
-                ui.Muted($"{signatureStrokes} stroke(s), {signaturePoints} points");
-            }
-        }
+            ui.Muted($"{signatureStrokes} stroke(s), {signaturePoints} points");
     }
 }

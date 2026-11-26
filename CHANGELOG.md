@@ -13,16 +13,16 @@ different things.
   routes keys itself); `ui.RequestComponentFocus`, `ui.ComponentHasInput`, `ui.IsFocusVisible`,
   `ui.FocusedId` and `ui.IsWindowFocused` drive and query focus. Inside a painter,
   `paint.WheelRegion(id, rect)` claims the wheel over a rectangle and `ui.TryTakeWheel(id, out
-  delta)` consumes it on the next frame without scrolling the page. `ui.Cursor` now has a setter
-  (`ui.Cursor = Cursor.Hand`).
+  delta)` consumes it on the next frame without scrolling the page. Resolve IDs with `ui.MakeId`
+  while building the canvas, before deferred paint. `ui.Cursor` now has a setter (`ui.Cursor = Cursor.Hand`).
 - **Window placement, positioning, resizing and runtime system-theme switching.** `CuiWindow` and
   `CuiApp` add `TryGetPlacement(out WindowPlacement)`, `SetPosition(x, y)`, `SetSize(width, height)`
   and `SetFollowSystemTheme(follow)`, and `CuiAppOptions.Placement` reopens a window at its saved
-  normal bounds and maximized state.
+  normal bounds and maximized state. Headless runs use the normal size unless `CUISHARP_VIEWPORT`
+  overrides it. Switching to System no longer discards a pending accent change.
 - **Signature stroke export.** `ui.SignaturePoints(id, out strokeCount, points, strokeEnds)` copies
   the points and stroke-end indices drawn on a `SignaturePad` into caller spans (or reports the
-  counts when passed empty spans), and the gallery's Capture page shows the stroke count and a Clear
-  button once signed.
+  counts when passed empty spans). The gallery's Capture page shows both counts once signed.
 
 ### Fixed
 

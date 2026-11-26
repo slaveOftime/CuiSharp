@@ -40,7 +40,7 @@
 - `ui.LineChart(UiText id, ReadOnlySpan<float> values, ChartOpts o = default, Color color = default)` — one series, draws nothing when empty.
 - `ui.BarChart(...)` — the same for bars; `ui.LineChart(id, Series[] series, ...)` for several series.
 - `ui.DonutChart(UiText id, float[] values, string[]? labels = null, ChartOpts o = default)`.
-- `ui.Canvas(UiText id, Size width, Size height, PaintFn paint, CanvasOpts o = default)` — custom drawing: `paint(ui, box)` with `ui.DrawLine`, `DrawRect`, `DrawCircle`, `DrawText`, `DrawPath`, `ui.WheelRegion`/`ui.TryTakeWheel` for wheel capture, and `ui.RequestComponentFocus`/`ui.ComponentHasInput`/`ui.IsFocusVisible` for keyboard focus; `ui.SignaturePoints` reads strokes from `SignaturePad`.
+- `ui.Canvas(UiText id, Size width, Size height, PaintFn paint)` (or pass `CanvasOpts` as the fifth argument) — custom drawing and input. Resolve IDs with `ui.MakeId(id)` while building; pass those numeric IDs to `ui.WheelRegion` and `ui.IsFocusVisible` in deferred paint. Use `ui.TryTakeWheel`, `ui.RequestComponentFocus`, and `ui.ComponentHasInput` while building. `ui.SignaturePoints` reads strokes from `SignaturePad`.
 - `ui.Id(int)`, `ui.Id(UiText)` -> `IdScope` — a scope that prefixes every native id and sets the automation id inside it; `ui.Keyed(items, key)` enumerates with ids; `ui.Automation(UiText)` -> `AutomationScope` sets only the automation id without changing native identity.
 - `ui.Shortcut(Mods mods, Key key)` -> `bool`, `ui.WantsKeyboard` — keyboard input, unmodified when a text field has focus.
 - `ui.RequestRedraw()`, `ui.NeedsRedraw` — rarely needed directly: the host does this from `WantsFrames` and pending work.

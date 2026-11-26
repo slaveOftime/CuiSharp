@@ -342,10 +342,15 @@ Primitives inside a canvas: `DrawRect` (fill, border, gradient), `DrawShadow`, `
 
 Interactive canvases: pass `new CanvasOpts { Focusable = true }` for a Tab stop (Enter/Space clicks
 it) or `new CanvasOpts { ComponentInput = true }` when the canvas handles keys itself; ask for focus
-with `ui.RequestComponentFocus(id)`, check eligibility with `ui.ComponentHasInput(id)` and the focus
-ring with `paint.IsFocusVisible(id)`. To stop the wheel from scrolling the page over a plot, call
-`paint.WheelRegion(wheelId, box)` in the painter and `ui.TryTakeWheel(wheelId, out var delta)` on
-the next frame; set `ui.Cursor = Cursor.Hand` when hovered.
+with `ui.RequestComponentFocus(id)` and check eligibility with `ui.ComponentHasInput(id)`.
+
+While building the canvas, resolve `canvasId = ui.MakeId(id)` for the focus ring and
+`wheelId = ui.MakeId("plot-wheel")` for the wheel region. Pass those numeric IDs to the painter:
+`paint.IsFocusVisible(canvasId)` and `paint.WheelRegion(wheelId, box)`. Paint runs after build-time
+ID scopes have closed, so hashing the same text in paint would lose the scope. Store the resolved
+IDs in the control's own state if you use a cached paint delegate to avoid per-frame closures.
+In the next build, `ui.TryTakeWheel(wheelId, out var delta)` consumes the wheel once (lines, +Y up)
+instead of letting it scroll the page. Set `ui.Cursor = Cursor.Hand` when hovered.
 
 ## Long series and live data
 

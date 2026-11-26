@@ -6963,7 +6963,6 @@ struct CuiSharp.Ui
   Boolean DateToday(out Date)
   Boolean FilterBar(UiText, ReadOnlySpan<FilterField>, Span<UInt32>, ref String, Int32)
   Boolean IsFocusVisible(UInt32)
-  Boolean IsFocusVisible(UiText)
   Boolean KeyDown(Key)
   Boolean KeyPressed(Key)
   Boolean LoadImage(UiText, out UInt64, out Int32, out Int32)
@@ -7043,7 +7042,6 @@ struct CuiSharp.Ui
   Void ToggleTheme()
   Void UpdateImage(UInt64, Int32, Int32, Int32, Int32, ReadOnlySpan<Byte>, Int32)
   Void WheelRegion(UInt32, RectF)
-  Void WheelRegion(UiText, RectF)
   WellEvents PaletteStrip(UiText, Span<Color>, Span<Boolean>, PaletteStripOpts)
   WellEvents PaletteStrip(UiText, ref UInt32, Span<Color>, Span<Boolean>, PaletteStripOpts)
   property Accent Accent { get; set; }

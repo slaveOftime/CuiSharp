@@ -109,18 +109,12 @@ public unsafe ref partial struct Ui
 
     /// <summary>
     /// Marks the part of a canvas that takes the wheel, so scrolling over <paramref name="rect"/>
-    /// stops at the canvas instead of scrolling an enclosing scroll area or the page. Call this
-    /// from the canvas's paint callback with an id of its own, then read the wheel on the next
-    /// frame with <see cref="TryTakeWheel(UiText, out ValueTuple{float, float})"/>.
+    /// stops at the canvas instead of scrolling an enclosing scroll area or the page. Resolve a
+    /// separate region id with <see cref="MakeId"/> while building the canvas, then pass that id to
+    /// the painter and to <see cref="TryTakeWheel(uint, out ValueTuple{float, float})"/>. Deferred
+    /// paint does not run inside the canvas's build-time ID scope.
     /// </summary>
     public void WheelRegion(uint id, RectF rect) => Native.WheelRegion(Handle, id, Nr(rect));
-
-    /// <summary>
-    /// Marks the part of a canvas that takes the wheel, keyed by a string id. Call from the paint
-    /// callback and read the wheel on the next frame with
-    /// <see cref="TryTakeWheel(UiText, out ValueTuple{float, float})"/>.
-    /// </summary>
-    public void WheelRegion(UiText id, RectF rect) => WheelRegion(MakeId(id), rect);
 
     /// <summary>
     /// Reads and consumes the wheel aimed at a <see cref="WheelRegion(uint, RectF)"/> id this
@@ -140,8 +134,9 @@ public unsafe ref partial struct Ui
     }
 
     /// <summary>
-    /// Reads and consumes the wheel aimed at a <see cref="WheelRegion(UiText, RectF)"/> id this
-    /// frame, in lines with <c>+Y</c> up. False when no wheel arrived or inside a disabled scope.
+    /// Reads and consumes the wheel from <see cref="WheelRegion"/> this frame, in lines with
+    /// <c>+Y</c> up. Call in the same build-time ID scope that resolved the region id. False when
+    /// no wheel arrived or inside a disabled scope.
     /// </summary>
     public bool TryTakeWheel(UiText id, out (float X, float Y) delta) => TryTakeWheel(MakeId(id), out delta);
 
@@ -169,14 +164,10 @@ public unsafe ref partial struct Ui
 
     /// <summary>
     /// True when <paramref name="id"/> has keyboard focus with its focus ring visible; for a
-    /// canvas painter that draws its own focus ring.
+    /// canvas painter that draws its own focus ring. Resolve the canvas id with <see cref="MakeId"/>
+    /// while building it, before the build-time ID scope closes.
     /// </summary>
     public bool IsFocusVisible(uint id) => Native.FocusVisible(Handle, id) != 0;
-
-    /// <summary>
-    /// True when <paramref name="id"/> has keyboard focus with its focus ring visible.
-    /// </summary>
-    public bool IsFocusVisible(UiText id) => IsFocusVisible(MakeId(id));
 
     /// <summary>
     /// Reads the strokes drawn on a <see cref="CaptureUiExtensions.SignaturePad"/>: copies up to

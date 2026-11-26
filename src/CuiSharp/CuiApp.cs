@@ -49,8 +49,8 @@ public sealed record CuiAppOptions
 
     /// <summary>
     /// Where to open, for an app that reopens where it was closed: the normal size and position from
-    /// <see cref="CuiWindow.TryGetPlacement"/>, and whether the window was maximized. Its size
-    /// replaces <see cref="Width"/> and <see cref="Height"/>.
+    /// <see cref="CuiWindow.TryGetPlacement"/>, and whether the window was maximized. Positive saved
+    /// dimensions replace <see cref="Width"/> and <see cref="Height"/>, subject to the minimum size.
     /// </summary>
     public WindowPlacement? Placement { get; set; }
 
@@ -61,10 +61,9 @@ public sealed record CuiAppOptions
     public IFileDialogProvider? FileDialog { get; set; }
 
     /// <summary>
-    /// Called once the window exists and before the first frame is drawn — the first moment there
-    /// is a handle to brand, log or query. <see cref="Hosting.Component.OnInitialized"/> is earlier
-    /// than this on purpose: it runs before there is a window, so anything that needs one belongs
-    /// here.
+    /// Called once the window exists and before the first frame is drawn. Available with
+    /// <see cref="CuiApp.Create"/> on desktop backends and with <see cref="CuiApp.Run(CuiAppOptions, DrawFn)"/>
+    /// on Windows. Not called for a headless run.
     /// </summary>
     public Action<CuiWindow>? WindowCreated { get; set; }
 
@@ -93,6 +92,7 @@ public sealed unsafe class CuiApp : IDisposable
     private Theme _theme;
     private Accent _accent;
     private bool _themeDirty;
+    private bool _accentDirty;
     private bool _inFrame;
     private readonly nint _ctx;
     private readonly UiFrameState _frame = new();
@@ -105,7 +105,6 @@ public sealed unsafe class CuiApp : IDisposable
         _ctx = Native.AppUi(handle);
         _theme = options.Theme;
         _accent = options.Accent;
-        _themeDirty = false;
     }
 
     /// <summary>A fresh stack-only drawing context for this window's current frame.</summary>
@@ -130,15 +129,16 @@ public sealed unsafe class CuiApp : IDisposable
     /// <summary>The same window, for code that takes one: branding, logging, OS queries.</summary>
     public CuiWindow Window => _window;
 
-    /// <summary>Applies a theme now, or on the next frame if the window is not up yet.</summary>
+    /// <summary>Queues a theme change for the next <see cref="Frame"/>.</summary>
     public void SetTheme(Theme theme) { _theme = theme; _themeDirty = true; }
 
-    /// <summary>Applies an accent now, or on the next frame if the window is not up yet.</summary>
-    public void SetAccent(Accent accent) { _accent = accent; _themeDirty = true; }
+    /// <summary>Queues an accent change for the next <see cref="Frame"/>.</summary>
+    public void SetAccent(Accent accent) { _accent = accent; _accentDirty = true; }
 
     /// <summary>
-    /// Starts or stops following the OS light/dark setting, for a theme switcher with Light, Dark
-    /// and System.
+    /// Starts or stops following the OS light/dark setting. Starting supersedes a pending
+    /// <see cref="SetTheme"/> call, without changing the accent. To select Light or Dark manually,
+    /// stop following the system before calling <see cref="SetTheme"/>.
     /// </summary>
     public void SetFollowSystemTheme(bool follow)
     {
@@ -211,8 +211,12 @@ public sealed unsafe class CuiApp : IDisposable
         if (_themeDirty)
         {
             Native.SetTheme(_ctx, _theme);
-            Native.SetAccent(_ctx, _accent);
             _themeDirty = false;
+        }
+        if (_accentDirty)
+        {
+            Native.SetAccent(_ctx, _accent);
+            _accentDirty = false;
         }
 
         // cui_app_frame presents the frame drawn last time, which runs the
@@ -351,7 +355,7 @@ public sealed unsafe class CuiApp : IDisposable
         // is the only place that decides it, and the draw callback is the whole app — for a
         // hosted one it is the host's frame, so a tool sees the same lifecycle a window does.
         if (Features.Headless && Hosting.HeadlessLoop.Requested(args))
-            return Hosting.HeadlessLoop.Run(draw, Hosting.HeadlessLoop.WithViewport(options));
+            return Hosting.HeadlessLoop.Run(draw, options);
 
         // CUI owns the loop here on purpose. `cui_app_run` registers a frame
         // callback, and that is the callback the OS-driven resize loop invokes:
