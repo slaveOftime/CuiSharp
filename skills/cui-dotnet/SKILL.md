@@ -66,8 +66,9 @@ return CuiApp.Run(new CuiAppOptions { Title = "Notes", Width = 900, Height = 600
 ```
 
 `CuiApp.Run` creates the window, owns the message loop and calls the lambda once per frame until
-the window closes. An idle window uses no CPU. For pages and dependency injection, use
-`CuiApplication`. Background operations also work without DI:
+the window closes. An idle window uses no CPU.
+
+For pages and dependency injection, use `CuiApplication`. Background operations also work without DI:
 
 ```csharp
 var builder = CuiApplication.CreateBuilder(args);
@@ -77,6 +78,21 @@ builder.Window.Title = "Todos";
 using var app = builder.Build();
 return app.Run<TodoPage>();
 ```
+
+### Custom title bar
+
+```csharp
+return CuiApp.Run(new CuiAppOptions { Title = "Notes", CustomTitleBar = true }, ui =>
+{
+    ui.TitleBar("Notes");
+    ui.Label("Your notes go here.");
+});
+```
+
+Draw the bar once at the top of every frame. On Windows, the option removes the system caption and
+`ui.TitleBar` supplies the drag area and window buttons. Pass `leading:` or `trailing:` to draw
+extra controls outside the drag area. In headless mode and on other platforms, the bar still
+draws, without desktop window buttons; the system caption is unchanged.
 
 ## Cheat sheet
 

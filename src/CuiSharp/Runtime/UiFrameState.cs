@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using CuiSharp.Hosting;
 using CuiSharp.Interop;
 
 namespace CuiSharp;
@@ -24,6 +25,7 @@ internal sealed class UiFrameState
     // dispatcher and its queues out of a plain window's AOT image.
     internal IFrameWork? Work;
     internal nint WakeWindow;
+    internal WindowTitleBar? TitleBar;
     internal bool WantsFrames;
     internal List<Exception>? Faults;
     internal bool IsLive => WantsFrames || Work is { NextFrameSeconds: >= 0f };
@@ -143,6 +145,7 @@ internal sealed class UiFrameState
     internal void Reset()
     {
         FrameReady = false;
+        if (TitleBar is { } titleBar) titleBar.CaptionId = titleBar.MaximizeId = 0;
         Painters.Clear();
         Callbacks?.Reset();
         ReorderOrder = null;

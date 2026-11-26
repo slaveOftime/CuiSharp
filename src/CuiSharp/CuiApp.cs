@@ -55,6 +55,13 @@ public sealed record CuiAppOptions
     public WindowPlacement? Placement { get; set; }
 
     /// <summary>
+    /// On Windows, replaces the system caption with <see cref="Ui.TitleBar"/>. Draw the bar once
+    /// per frame. Native resize borders and the shadow remain. Off by default; ignored on other
+    /// platforms and in headless mode.
+    /// </summary>
+    public bool CustomTitleBar { get; set; }
+
+    /// <summary>
     /// What <see cref="CuiWindow.PickFile"/> uses. Null asks the OS through CUI; a test supplies one
     /// so a picker flow runs with no display.
     /// </summary>
@@ -98,11 +105,12 @@ public sealed unsafe class CuiApp : IDisposable
     private readonly UiFrameState _frame = new();
     private UiFrameState.DrawScope _drawScope;
 
-    private CuiApp(nint handle, CuiAppOptions options)
+    private CuiApp(nint handle, CuiAppOptions options, bool customTitleBar)
     {
         _handle = handle;
         _window = new CuiWindow(handle);
         _ctx = Native.AppUi(handle);
+        if (customTitleBar) _frame.TitleBar = new WindowTitleBar(_window, _ctx, options.FixedSize);
         _theme = options.Theme;
         _accent = options.Accent;
     }
@@ -183,9 +191,9 @@ public sealed unsafe class CuiApp : IDisposable
 
         if (handle == 0) return null;
 
-        var app = new CuiApp(handle, options);
+        var app = new CuiApp(handle, options, desc.CustomTitleBar != 0);
         app.Window.FileDialog = options.FileDialog;
-        LiveResize.Install(handle == 0 ? 0 : app.NativeWindow, options.NoVsync);
+        LiveResize.Install(app.NativeWindow, options.NoVsync, app._frame.TitleBar);
         WindowIcon.Install(app.NativeWindow);
         HotReloadWake.Attach(app.NativeWindow);
         if (OperatingSystem.IsWindows()) app._frame.WakeWindow = app.NativeWindow;
@@ -379,6 +387,7 @@ public sealed unsafe class CuiApp : IDisposable
         {
             var desc = Describe(options, out var placement);
             if (options.Placement.HasValue) desc.Placement = (nint)(&placement);
+            state.CustomTitleBar = desc.CustomTitleBar != 0;
 
             // Deferred canvas painters run inside CUI's paint phase, which happens
             // on this same thread but outside the callback, so the painting state
@@ -426,6 +435,7 @@ public sealed unsafe class CuiApp : IDisposable
         internal readonly UiFrameState Frame = new();
         internal nint WindowHandle;
         internal CuiWindow? Window;
+        internal bool CustomTitleBar;
         internal Hosting.LiveSession? Live;
         private bool _hooked;
 
@@ -459,7 +469,8 @@ public sealed unsafe class CuiApp : IDisposable
             WindowHandle = Native.AppNativeWindow(app);
             Frame.WakeWindow = WindowHandle;
             Window = new CuiWindow(app) { FileDialog = Options.FileDialog };
-            LiveResize.Install(WindowHandle, Options.NoVsync);
+            if (CustomTitleBar) Frame.TitleBar = new WindowTitleBar(Window, ui, Options.FixedSize);
+            LiveResize.Install(WindowHandle, Options.NoVsync, Frame.TitleBar);
             WindowIcon.Install(WindowHandle);
             HotReloadWake.Attach(WindowHandle);
             Options.WindowCreated?.Invoke(Window);
@@ -516,6 +527,7 @@ public sealed unsafe class CuiApp : IDisposable
             MinWidth = options.MinWidth,
             MinHeight = options.MinHeight,
             FixedSize = (byte)(options.FixedSize ? 1 : 0),
+            CustomTitleBar = (byte)(OperatingSystem.IsWindows() && options.CustomTitleBar ? 1 : 0),
             Continuous = (byte)(options.Continuous ? 1 : 0),
             NoVsync = (byte)(options.NoVsync ? 1 : 0),
             Hidden = (byte)(options.Hidden ? 1 : 0),

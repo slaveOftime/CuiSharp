@@ -694,6 +694,7 @@ class CuiSharp.CuiAppOptions
   property Accent Accent { get; set; }
   property Action<CuiWindow> WindowCreated { get; set; }
   property Boolean Continuous { get; set; }
+  property Boolean CustomTitleBar { get; set; }
   property Boolean FixedSize { get; set; }
   property Boolean FollowSystemTheme { get; set; }
   property Boolean Hidden { get; set; }
@@ -7050,6 +7051,7 @@ struct CuiSharp.Ui
   Void SetClipboard(UiText)
   Void SetLocalization(Localization)
   Void SetReducedMotion(Boolean)
+  Void TitleBar(UiText, DrawFn, DrawFn)
   Void ToggleTheme()
   Void UpdateImage(UInt64, Int32, Int32, Int32, Int32, ReadOnlySpan<Byte>, Int32)
   Void WheelRegion(UInt32, RectF)

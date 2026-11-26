@@ -6,6 +6,41 @@ namespace CuiSharp.Tests;
 public class GalleryPageTests
 {
     [Theory]
+    [InlineData(420)]
+    [InlineData(1240)]
+    public void TheTitleBarOpensTheCommandPaletteAboveThePage(int width)
+    {
+        using var gallery = new GalleryApp { Page = 1 };
+        using var app = TestApp.Start(gallery.Frame, width, 820);
+        var palette = app.Find("IconButton", "Command palette");
+        Assert.False(app.TryFind("IconButton \"Close window\"", out _));
+        Assert.True(palette.Rect.Y + palette.Rect.H <= app.Find("Scroll", "main").Rect.Y);
+
+        palette.Click();
+        app.Key(Key.Enter);
+
+        Assert.Equal(0, gallery.Page); // The palette's first command is Go to Overview.
+        Assert.Empty(app.Faults);
+    }
+
+    [Fact]
+    public void TheNarrowTitleBarOpensTheComponentDrawer()
+    {
+        using var gallery = new GalleryApp();
+        using var app = TestApp.Start(gallery.Frame, 420, 820);
+        Assert.False(app.TryFind("NavItem \"Inputs\"", out _));
+
+        var menu = app.Find("IconButton", "Components");
+        Assert.True(menu.Rect.Y + menu.Rect.H <= app.Find("Scroll", "main").Rect.Y);
+        menu.Click();
+        app.Settle();
+        app.Find("NavItem", "Inputs").Click();
+
+        Assert.Equal(2, gallery.Page);
+        Assert.Empty(app.Faults);
+    }
+
+    [Theory]
     [InlineData(29, "Creative controls")]
     [InlineData(30, "Collaboration")]
     [InlineData(31, "Voice")]

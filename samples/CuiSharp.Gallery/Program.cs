@@ -30,6 +30,7 @@ internal static class Program
                 Height = 820,
                 MinWidth = 720,
                 MinHeight = 480,
+                CustomTitleBar = true,
                 Accent = Accent.Violet,
                 // The theme is the window's to start with and the app's to change: the sidebar
                 // switch and Ctrl+J assign `ui.Theme`, and CUI animates the change.

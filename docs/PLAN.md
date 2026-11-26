@@ -31,9 +31,10 @@ in [ARCHITECTURE.md](ARCHITECTURE.md). Every item here passes the same gates as 
   `window_frame` and `window_button` hooks, and `cui_title_bar_hit_test` says which part of the last
   frame's bar a point is on — but nothing draws the bar yet, so such a window has no caption to drag
   it by and no window buttons. Upstream's changelog says the component follows in its own change.
-  Until it does, CuiSharp exposes none of the three: not the option, not the hooks, and not the hit
-  test (`EXCLUDED` with that reason, not with its section's). Then bind all of it together, with
-  `CuiSurface.TitleBarHitTest` for a host that answers the platform's own hit testing.
+  The native hit test stays `EXCLUDED` from the higher-level surface. CuiSharp's `ui.TitleBar`
+  composes existing widgets and supplies their layout ids to the Windows hook, while CUI still owns
+  the frame and resize borders. Once upstream ships the widget, implement `ui.TitleBar` with it,
+  retire the managed hit testing, and add `CuiSurface.TitleBarHitTest` for platform hosts.
 
 - **A glyph-coverage query** (`cui_font_has_glyph`). `UseSystemFontFallback` currently decides by
   painting a sample and comparing pixels, because a missing glyph still reports a `.notdef` advance.

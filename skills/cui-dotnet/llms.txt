@@ -455,6 +455,7 @@ Hand-written, because the wrapper needs state a C call cannot carry; they are pa
 - `ui.Sort(...)` — hand-written in `Ui/Ui.TreeTable.cs`
 - `ui.TagInput(...)` — hand-written in `Ui/Ui.Overlays.cs`
 - `ui.Terminal(...)` — hand-written in `Ui/Ui.Terminal.cs`
+- `ui.TitleBar(...)` — hand-written in `Ui/Ui.TitleBar.cs`
 - `ui.ToString(...)` — hand-written in `Ui/Ui.Style.cs`
 - `ui.ToggleGroup(...)` — hand-written in `Ui/Ui.BoolGroups.cs`
 - `ui.ToggleTheme(...)` — hand-written in `Ui/Ui.Frame.cs`
