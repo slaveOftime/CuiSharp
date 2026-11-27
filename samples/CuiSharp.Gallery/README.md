@@ -4,10 +4,10 @@ Every component the binding wraps, in twenty-eight pages, one file per page. It 
 and the size/performance canary at the same time: it uses no hosting, no DI and no test project, so
 it measures the library a person gets.
 
-The gallery uses `CuiAppOptions.CustomTitleBar` and `ui.TitleBar` to replace the system caption on
-Windows. Drag the title or empty space, or use the built-in minimize, maximize/restore, and close
-buttons. The gallery adds its command palette and, on narrow layouts, its component drawer as
-ordinary title-bar controls. Other desktop platforms keep their system caption.
+The gallery opts into `CuiAppOptions.CustomTitleBar` on Windows. Its header is a regular row:
+`ui.TitleBarDragRegion` makes the title and its empty space draggable, and `ui.TitleBarButton`
+places the window controls alongside the command palette and responsive component drawer. Other
+platforms keep their system caption without duplicating the window buttons in the header.
 
 ![Overview](../../docs/images/gallery/01-overview.png)
 

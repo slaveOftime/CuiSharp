@@ -47,6 +47,7 @@ public partial class WindowControlTests
             FixedSize = fixedSize,
         });
         Assert.NotNull(app);
+        Assert.Equal(custom, app.Ui.HasCustomTitleBar);
         nint hwnd = app.NativeWindow;
         var origin = new Point();
         Assert.NotEqual(0, ClientToScreen(hwnd, ref origin));
@@ -58,13 +59,7 @@ public partial class WindowControlTests
         }
 
         Assert.Equal(outer.Top, origin.Y);
-        float scale = Win32.GetDpiForWindow(hwnd) / 96f;
-        nint Hit(int x, int y)
-        {
-            int screenX = origin.X + (int)(x * scale), screenY = origin.Y + (int)(y * scale);
-            nint coords = (ushort)screenX | ((nint)(ushort)screenY << 16);
-            return Win32.SendMessage(hwnd, Win32.WmNcHitTest, 0, coords);
-        }
+        nint Hit(int x, int y) => HitClient(hwnd, x, y);
 
         Assert.True(app.Frame());
         app.Ui.TitleBar("Window under test");
@@ -90,6 +85,127 @@ public partial class WindowControlTests
         Assert.Equal(Win32.HtClient, Hit(80, 24));
         Assert.Equal(Win32.HtClient, Hit(353, 24));
     }
+
+    [Fact]
+    public void AComposedCaptionKeepsItsControlsClickableAndDropsUnusedDragRegions()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        using var app = CuiApp.Create(new CuiAppOptions
+        {
+            Width = 500,
+            Height = 320,
+            Hidden = true,
+            Continuous = true,
+            Renderer = Renderer.Software,
+            CustomTitleBar = true,
+        });
+        Assert.NotNull(app);
+        nint hwnd = app.NativeWindow;
+        uint appButton = 0, maximize = 0;
+
+        void Draw(bool secondRegion, bool disableMaximize)
+        {
+            var ui = app.Ui;
+            using var row = ui.Row(new Box { Width = Size.Fill, Height = 40, PadX = 12 });
+            using (ui.TitleBarDragRegion(new Box { Width = 64, Height = Size.Fill })) { }
+            ui.IconButton(Icons.Square, new ButtonOpts { Tooltip = "App action" });
+            appButton = ui.LastId;
+            var space = new Box { Width = Size.Fill, Height = Size.Fill };
+            using (secondRegion ? ui.TitleBarDragRegion(space) : ui.Box(space)) { }
+            ui.TitleBarButton(WindowButton.Close);
+            ui.TitleBarButton(WindowButton.Maximize,
+                new ButtonOpts { Size = ControlSize.Lg, Disabled = disableMaximize }, icon: Icons.Square);
+            maximize = ui.LastId;
+        }
+
+        nint HitWidget(uint id)
+        {
+            var bounds = Native.GetRect(app.Ui.Handle, id);
+            Assert.True(bounds.W > 0 && bounds.H > 0);
+            return HitClient(hwnd, bounds.X + bounds.W / 2, bounds.Y + bounds.H / 2);
+        }
+
+        Assert.True(app.Frame());
+        Draw(secondRegion: true, disableMaximize: false);
+        Assert.True(app.Frame());
+        Draw(secondRegion: true, disableMaximize: false);
+        Assert.Equal(Win32.HtCaption, HitClient(hwnd, 32, 20));
+        Assert.Equal(Win32.HtCaption, HitClient(hwnd, 200, 20));
+        Assert.Equal(Win32.HtClient, HitWidget(appButton));
+        Assert.Equal(Win32.HtMaxButton, HitWidget(maximize));
+
+        Assert.True(app.Frame());
+        Draw(secondRegion: false, disableMaximize: true);
+        Assert.True(app.Frame());
+        Draw(secondRegion: false, disableMaximize: true);
+        Assert.Equal(Win32.HtCaption, HitClient(hwnd, 32, 20));
+        Assert.Equal(Win32.HtClient, HitClient(hwnd, 200, 20));
+        Assert.Equal(Win32.HtClient, HitWidget(maximize));
+    }
+
+    [Fact]
+    public void TheMaximizeHitTargetRoutesClicksAndReleasesCapture()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        using var app = CuiApp.Create(new CuiAppOptions
+        {
+            Width = 420,
+            Height = 320,
+            Hidden = true,
+            Continuous = true,
+            Renderer = Renderer.Software,
+            CustomTitleBar = true,
+        });
+        Assert.NotNull(app);
+        nint hwnd = app.NativeWindow;
+
+        uint Draw()
+        {
+            var ui = app.Ui;
+            ui.TitleBarButton(WindowButton.Maximize);
+            return ui.LastId;
+        }
+
+        Assert.True(app.Frame());
+        Draw();
+        Assert.True(app.Frame());
+        var bounds = Native.GetRect(app.Ui.Handle, Draw());
+        var (x, y) = (bounds.X + bounds.W / 2, bounds.Y + bounds.H / 2);
+        Assert.Equal(Win32.HtMaxButton, HitClient(hwnd, x, y));
+
+        var client = ClientPoint(hwnd, x, y);
+        var screen = client;
+        Assert.NotEqual(0, ClientToScreen(hwnd, ref screen));
+        // Post to the wait between frames so CUI does not clear the input with the old frame.
+        Assert.NotEqual(0, Win32.PostMessage(hwnd, 0x00A1 /* WM_NCLBUTTONDOWN */, Win32.HtMaxButton, Pack(screen)));
+        Assert.True(app.Frame());
+        Draw();
+        Assert.Equal(hwnd, Win32.GetCapture());
+        Assert.Equal(Win32.HtClient, HitClient(hwnd, x, y));
+
+        Assert.NotEqual(0, Win32.PostMessage(hwnd, 0x0202 /* WM_LBUTTONUP */, 0, Pack(client)));
+        Assert.True(app.Frame());
+        Draw();
+        Assert.Equal(0, Win32.GetCapture());
+        Assert.True(app.IsMaximized);
+    }
+
+    private static nint HitClient(nint hwnd, float x, float y)
+    {
+        var point = ClientPoint(hwnd, x, y);
+        Assert.NotEqual(0, ClientToScreen(hwnd, ref point));
+        return Win32.SendMessage(hwnd, Win32.WmNcHitTest, 0, Pack(point));
+    }
+
+    private static Point ClientPoint(nint hwnd, float x, float y)
+    {
+        float scale = Win32.GetDpiForWindow(hwnd) / 96f;
+        return new Point { X = (int)(x * scale), Y = (int)(y * scale) };
+    }
+
+    private static nint Pack(Point point) => (ushort)point.X | ((nint)(ushort)point.Y << 16);
 
     [Fact]
     public void MaximizeAndRestoreChangeTheWindowSize()

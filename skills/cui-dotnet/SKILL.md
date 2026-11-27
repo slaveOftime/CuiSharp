@@ -90,12 +90,36 @@ return CuiApp.Run(new CuiAppOptions { Title = "Notes", CustomTitleBar = true }, 
 });
 ```
 
-Draw the bar once at the top of every frame. On Windows, the option removes the system caption and
-`ui.TitleBar` supplies the drag area and window buttons. Pass `leading:` or `trailing:` to draw
-extra controls outside the drag area. On Windows, wrap the bar in `using (ui.Disabled(overlayOpen))`
-while a modal overlay should block dragging and window buttons; overlap alone does not disable the
-caption. In headless mode and on other platforms, the bar still draws without desktop window
-buttons and the system caption is unchanged.
+On Windows the option hides the system caption and keeps the native resize borders and shadow.
+Draw the bar at the top of every frame. If you already have a toolbar, compose it inline instead of
+adding a second row. Use any layout, make static content or empty space draggable, and place the
+window buttons wherever they fit:
+
+```csharp
+using (ui.Row(new Box { Width = Size.Fill, Height = 36, PadX = 8, Gap = 4 }))
+{
+    if (ui.Button("Back")) GoBack();
+
+    using (ui.TitleBarDragRegion(new Box { Dir = Dir.Row, Width = Size.Fill, Height = Size.Fill, Clip = true }))
+        ui.Text(documentName, new TextOpts { Width = Size.Fill, NoWrap = true });
+
+    if (ui.Button("Save")) Save();
+    ui.TitleBarButton(WindowButton.Minimize);
+    ui.TitleBarButton(WindowButton.Maximize);
+    ui.TitleBarButton(WindowButton.Close);
+}
+```
+
+Use as many drag regions as you need, but keep interactive controls outside them. Omit or reorder
+window buttons, or pass `ButtonOpts` and an `icon:` to style one. Maximize toggles to restore,
+supports Windows Snap Layouts, and is omitted on fixed-size windows. Wrap the chrome in
+`using (ui.Disabled(overlayOpen))` while a modal overlay should block it; overlap alone does not
+disable dragging.
+
+In headless mode and on other platforms the drag region is an ordinary box, the window buttons
+are omitted, and any system caption is unchanged. Branch on `ui.HasCustomTitleBar` only if you
+want a different layout in those cases. To migrate from the old `leading:` and `trailing:` callbacks,
+draw those controls directly in the row, on either side of the drag region.
 
 ## Cheat sheet
 

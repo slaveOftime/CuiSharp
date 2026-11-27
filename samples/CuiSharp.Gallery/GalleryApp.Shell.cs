@@ -6,8 +6,6 @@ namespace CuiSharp.Gallery;
 
 internal sealed partial class GalleryApp
 {
-    private DrawFn? _drawComponentMenu, _drawTitleBarActions;
-
     public void Frame(Ui ui)
     {
         if (!ui.WantsKeyboard)
@@ -23,9 +21,7 @@ internal sealed partial class GalleryApp
         {
             using (ui.Disabled(_drawer || _dialogOpen || _confirmOpen || _sheetOpen || _paletteOpen))
             {
-                ui.TitleBar("CuiSharp Gallery",
-                    leading: narrow ? _drawComponentMenu ??= DrawComponentMenu : DrawBrand,
-                    trailing: _drawTitleBarActions ??= DrawTitleBarActions);
+                DrawHeader(ui, narrow);
             }
             Workspace(ui, narrow);
         }
@@ -42,6 +38,29 @@ internal sealed partial class GalleryApp
         Dialogs(ui);
     }
 
+    private void DrawHeader(Ui ui, bool narrow)
+    {
+        using (ui.Row(new Box { Width = Size.Fill, Height = 48, Align = Align.Center, PadX = 12, Gap = 10, Bg = Color.SurfaceMuted }))
+        {
+            if (narrow)
+            {
+                if (ui.IconButton(Icons.Menu, new ButtonOpts { Size = ControlSize.Sm, Tooltip = "Components" })) _drawer = true;
+            }
+            else DrawBrand(ui);
+
+            using (ui.TitleBarDragRegion(new Box { Dir = Dir.Row, Width = Size.Fill, Height = Size.Fill, Clip = true }))
+                ui.Text("CuiSharp Gallery", new TextOpts { Font = Font.Medium, Size = 15, NoWrap = true });
+
+            if (!narrow) ui.Badge($"v{ReleaseVersion}", new BadgeOpts { Size = ControlSize.Sm });
+            if (ui.IconButton(Icons.Command, new ButtonOpts { Size = ControlSize.Sm, Tooltip = "Command palette" })) _paletteOpen = true;
+
+            ui.TitleBarButton(WindowButton.Minimize);
+            ui.TitleBarButton(WindowButton.Maximize);
+            ui.TitleBarButton(WindowButton.Close);
+        }
+        ui.Separator();
+    }
+
     private static void DrawBrand(Ui ui)
     {
         using (ui.Box(new Box
@@ -56,17 +75,6 @@ internal sealed partial class GalleryApp
         {
             ui.Text("C", new TextOpts { Font = Font.Display, Size = 16, Color = Color.Surface, LineHeight = 1f });
         }
-    }
-
-    private void DrawComponentMenu(Ui ui)
-    {
-        if (ui.IconButton(Icons.Menu, new ButtonOpts { Size = ControlSize.Sm, Tooltip = "Components" })) _drawer = true;
-    }
-
-    private void DrawTitleBarActions(Ui ui)
-    {
-        if (ui.ViewportSize().X >= 760f) ui.Badge($"v{ReleaseVersion}", new BadgeOpts { Size = ControlSize.Sm });
-        if (ui.IconButton(Icons.Command, new ButtonOpts { Size = ControlSize.Sm, Tooltip = "Command palette" })) _paletteOpen = true;
     }
 
     private void Workspace(Ui ui, bool narrow)

@@ -5,6 +5,30 @@ namespace CuiSharp.Tests;
 
 public class GalleryPageTests
 {
+    [Fact]
+    public void AHeadlessCaptionKeepsAppControlsButOmitsWindowControls()
+    {
+        using var app = TestApp.Start(ui =>
+        {
+            Assert.False(ui.HasCustomTitleBar);
+            using var row = ui.Row(new Box { Width = Size.Fill, Height = 38, Gap = 4 });
+            using (ui.TitleBarDragRegion(new Box { Id = "preview-heading", Width = Size.Fill }))
+                ui.Text("File preview");
+            ui.TitleBarButton(WindowButton.Minimize);
+            ui.TitleBarButton(WindowButton.Maximize);
+            ui.TitleBarButton(WindowButton.Restore);
+            ui.TitleBarButton(WindowButton.Close);
+            ui.Button("Next file");
+        }, 420, 320);
+
+        Assert.True(app.Find("Box", "preview-heading").Rect.W > 0);
+        Assert.True(app.Find("Button", "Next file").Rect.W > 0);
+        Assert.False(app.TryFind("IconButton \"Minimize window\"", out _));
+        Assert.False(app.TryFind("IconButton \"Maximize window\"", out _));
+        Assert.False(app.TryFind("IconButton \"Close window\"", out _));
+        Assert.Empty(app.Faults);
+    }
+
     [Theory]
     [InlineData(420)]
     [InlineData(1240)]

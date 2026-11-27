@@ -46,6 +46,7 @@
 - `ui.RequestRedraw()`, `ui.NeedsRedraw` — rarely needed directly: the host does this from `WantsFrames` and pending work.
 - `ui.RequestWakeup(float seconds)` — one more frame this many seconds from now: a timer, a toast timeout, a poll interval.
 - `ui.MarkReady()` — marks the current frame ready for `WaitReady` / `dotnet cui --wait ready`.
+- `ui.HasCustomTitleBar` — whether `CuiAppOptions.CustomTitleBar` is active on this window. Use `ui.TitleBar(title)` for the standard bar or compose drag regions and window buttons in your own layout.
 - `ui.LastId` -> `uint` — the id of the widget just drawn; what `TourStep.Target` and the other point-at-this APIs take.
 - `ui.Terminal(UiText id, Terminal terminal, TerminalOpts o = default)` -> `TerminalResult` — the `Terminal` class owns the scrollback (`Write`, `WriteLine`, `Clear`, `LineCount`).
 - `ui.LogView(UiText id, LogBuffer log, LogViewOpts o = default)` — `LogBuffer` owns the ring (`Append`, `AppendLine`, `Text`, `Clear`), the view adds level filters, search, follow and copy.
@@ -457,6 +458,8 @@ Hand-written, because the wrapper needs state a C call cannot carry; they are pa
 - `ui.TagInput(...)` — hand-written in `Ui/Ui.Overlays.cs`
 - `ui.Terminal(...)` — hand-written in `Ui/Ui.Terminal.cs`
 - `ui.TitleBar(...)` — hand-written in `Ui/Ui.TitleBar.cs`
+- `ui.TitleBarButton(...)` — hand-written in `Ui/Ui.TitleBar.cs`
+- `ui.TitleBarDragRegion(...)` — hand-written in `Ui/Ui.TitleBar.cs`
 - `ui.ToString(...)` — hand-written in `Ui/Ui.Style.cs`
 - `ui.ToggleGroup(...)` — hand-written in `Ui/Ui.BoolGroups.cs`
 - `ui.ToggleTheme(...)` — hand-written in `Ui/Ui.Frame.cs`

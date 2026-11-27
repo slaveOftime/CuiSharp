@@ -4,6 +4,15 @@ Every user-visible change, newest first. Pre-1.0 the minor number carries new su
 carries fixes. The section for a tag is what the GitHub release publishes, so the two cannot say
 different things.
 
+## [Unreleased]
+
+### Changed
+
+- **Custom title bars compose inline (breaking).** `ui.TitleBar(title)` still draws the standard
+  bar. Replace `leading:` and `trailing:` callbacks with ordinary controls in your own row, mark
+  static content or space with `ui.TitleBarDragRegion`, and place and style individual controls
+  with `ui.TitleBarButton`. The gallery and file preview sample both use the inline API.
+
 ## [0.5.1] — 2026-11-26
 
 ### Added

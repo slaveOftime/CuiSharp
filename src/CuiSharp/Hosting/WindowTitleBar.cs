@@ -9,13 +9,24 @@ internal sealed class WindowTitleBar(CuiWindow window, nint context, bool fixedS
 {
     internal CuiWindow Window { get; } = window;
     internal bool FixedSize { get; } = fixedSize;
-    internal uint CaptionId;
+    private readonly List<uint> _dragRegions = [];
     internal uint MaximizeId;
+    internal int DragRegionCount => _dragRegions.Count;
+
+    internal void AddDragRegion(uint id) => _dragRegions.Add(id);
+
+    internal void Reset()
+    {
+        _dragRegions.Clear();
+        MaximizeId = 0;
+    }
 
     internal TitleBarHit HitTest(float x, float y)
     {
         if (Contains(MaximizeId, x, y)) return TitleBarHit.Maximize;
-        return Contains(CaptionId, x, y) ? TitleBarHit.Caption : TitleBarHit.None;
+        foreach (uint id in _dragRegions)
+            if (Contains(id, x, y)) return TitleBarHit.Caption;
+        return TitleBarHit.None;
     }
 
     private bool Contains(uint id, float x, float y)

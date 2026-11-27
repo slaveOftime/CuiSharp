@@ -55,9 +55,10 @@ public sealed record CuiAppOptions
     public WindowPlacement? Placement { get; set; }
 
     /// <summary>
-    /// On Windows, replaces the system caption with <see cref="Ui.TitleBar"/>. Draw the bar once
-    /// per frame. Native resize borders and the shadow remain. Off by default; ignored on other
-    /// platforms and in headless mode.
+    /// On Windows, hides the system caption so the app can draw its own using <see cref="Ui.TitleBar"/>
+    /// or compose it from <see cref="Ui.TitleBarDragRegion"/> and <see cref="Ui.TitleBarButton"/>.
+    /// Native resize borders and the shadow remain. Off by default; ignored on other platforms
+    /// and in headless mode.
     /// </summary>
     public bool CustomTitleBar { get; set; }
 

@@ -1513,7 +1513,7 @@
       "why": "A timeline track holds three nested arrays (keys, clips, selections), so the record would need array-of-record support one level deeper than the generator has. Available through the raw layer."
     },
     "cui_title_bar_hit_test": {
-      "why": "Raw `Native.TitleBarHitTest` requires native title-bar state that the pinned CUI does not yet populate. `ui.TitleBar` composes ordinary widgets; its layout IDs are tracked by CuiSharp's Windows hook, so the native query returns None even over its caption and maximize button. Defer a higher-level wrapper until the upstream `cui_title_bar` widget can supply that state (PLAN.md)."
+      "why": "Raw `Native.TitleBarHitTest` requires native title-bar state that the pinned CUI does not yet populate. `ui.TitleBarDragRegion` and `ui.TitleBarButton` register layout IDs with CuiSharp's Windows hook, so the native query returns None even over the managed caption and maximize button. Defer a higher-level wrapper until the upstream `cui_title_bar` widget can supply that state (PLAN.md)."
     }
   },
   "arrayLengths": {

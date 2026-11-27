@@ -28,13 +28,14 @@ in [ARCHITECTURE.md](ARCHITECTURE.md). Every item here passes the same gates as 
 
 - **Use the native `cui_title_bar` widget when it ships.** At pin `6864776`, CUI can hide the system
   caption on Windows, but `cui_title_bar_hit_test` only reads native title-bar state and no public API
-  populates it. CuiSharp's `ui.TitleBar` composes ordinary widgets and supplies their layout IDs to
-  `Hosting/LiveResize`; CUI still owns the resize borders. The raw hit test returns `None` over that
+  populates it. `ui.TitleBarDragRegion` and `ui.TitleBarButton` supply layout IDs to
+  `Hosting/LiveResize`; CUI still owns the resize borders. The raw hit test returns `None` over the
   managed caption and maximize button, so it stays `EXCLUDED` from the higher-level surface. The
   managed hook honors Win32 mouse capture, but it does not check popup or dialog occlusion; use
   `ui.Disabled(overlayOpen)` around the bar while an overlay should block it. When upstream ships
   the widget, verify caption, maximize, resize edges, overlays and active drags through
-  `WM_NCHITTEST` before retiring the managed fallback or exposing a query for other hosts.
+  `WM_NCHITTEST` before retiring the managed fallback or exposing a query for other hosts. Keep
+  inline composition possible so apps can use their own layout and interleave ordinary controls.
 
 - **A glyph-coverage query** (`cui_font_has_glyph`). `UseSystemFontFallback` currently decides by
   painting a sample and comparing pixels, because a missing glyph still reports a `.notdef` advance.

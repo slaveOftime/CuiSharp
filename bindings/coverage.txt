@@ -162,7 +162,7 @@ MANUAL cui_dropped_file_count: `CuiSurface.DroppedFileCount` (CuiSurface.Input.c
 MANUAL cui_dropped_file: `CuiSurface.DroppedFile(index)` (CuiSurface.Input.cs) and `ui.DroppedFile(index)` (Ui/Ui.Overlays.cs): the path of the dropped file, decoded from the native buffer.
 MANUAL cui_file_drag_active: `CuiSurface.FileDragActive` (CuiSurface.Input.cs).
 MANUAL cui_set_platform: CuiSurface.SetPlatform (CuiSurface.cs) installs native host callbacks on a windowless context.
-EXCLUDED cui_title_bar_hit_test: Raw `Native.TitleBarHitTest` requires native title-bar state that the pinned CUI does not yet populate. `ui.TitleBar` composes ordinary widgets; its layout IDs are tracked by CuiSharp's Windows hook, so the native query returns None even over its caption and maximize button. Defer a higher-level wrapper until the upstream `cui_title_bar` widget can supply that state (PLAN.md).
+EXCLUDED cui_title_bar_hit_test: Raw `Native.TitleBarHitTest` requires native title-bar state that the pinned CUI does not yet populate. `ui.TitleBarDragRegion` and `ui.TitleBarButton` register layout IDs with CuiSharp's Windows hook, so the native query returns None even over the managed caption and maximize button. Defer a higher-level wrapper until the upstream `cui_title_bar` widget can supply that state (PLAN.md).
 MANUAL cui_set_cursor: `ui.Cursor` (Ui.Frame.cs): the setter.
 MANUAL cui_get_cursor: `ui.Cursor` (Ui.Frame.cs).
 MANUAL cui_set_clipboard_text: `Ui.SetClipboard(text)` (Ui/Ui.cs): the platform clipboard hook, for a menu or status bar item that copies.

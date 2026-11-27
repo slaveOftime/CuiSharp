@@ -145,7 +145,7 @@ internal sealed class UiFrameState
     internal void Reset()
     {
         FrameReady = false;
-        if (TitleBar is { } titleBar) titleBar.CaptionId = titleBar.MaximizeId = 0;
+        TitleBar?.Reset();
         Painters.Clear();
         Callbacks?.Reset();
         ReorderOrder = null;

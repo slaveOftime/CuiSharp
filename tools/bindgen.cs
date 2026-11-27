@@ -3447,6 +3447,7 @@ sealed class Idiomatic
         sb.AppendLine("- `ui.RequestRedraw()`, `ui.NeedsRedraw` — rarely needed directly: the host does this from `WantsFrames` and pending work.");
         sb.AppendLine("- `ui.RequestWakeup(float seconds)` — one more frame this many seconds from now: a timer, a toast timeout, a poll interval.");
         sb.AppendLine("- `ui.MarkReady()` — marks the current frame ready for `WaitReady` / `dotnet cui --wait ready`.");
+        sb.AppendLine("- `ui.HasCustomTitleBar` — whether `CuiAppOptions.CustomTitleBar` is active on this window. Use `ui.TitleBar(title)` for the standard bar or compose drag regions and window buttons in your own layout.");
         sb.AppendLine("- `ui.LastId` -> `uint` — the id of the widget just drawn; what `TourStep.Target` and the other point-at-this APIs take.");
         sb.AppendLine("- `ui.Terminal(UiText id, Terminal terminal, TerminalOpts o = default)` -> `TerminalResult` — the `Terminal` class owns the scrollback (`Write`, `WriteLine`, `Clear`, `LineCount`).");
         sb.AppendLine("- `ui.LogView(UiText id, LogBuffer log, LogViewOpts o = default)` — `LogBuffer` owns the ring (`Append`, `AppendLine`, `Text`, `Clear`), the view adds level filters, search, follow and copy.");

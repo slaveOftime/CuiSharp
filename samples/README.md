@@ -3,6 +3,8 @@
 Six self-contained CuiSharp apps, one `.cs` file each. They start with
 `#:package CuiSharp@*`, so each one builds against the latest published package, and they share the
 same run / publish / headless recipe. The icon beside each file is what the published window uses.
+On this development branch, `file.cs` uses the inline title-bar API after 0.5.1. Until that API is
+published, use a local package built from this checkout or run the sample from the 0.5.1 tag.
 
 | File | What it shows |
 |---|---|

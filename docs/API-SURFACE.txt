@@ -7009,6 +7009,7 @@ struct CuiSharp.Ui
   KeyedScope<T> Keyed(ReadOnlySpan<T>, Func<T, Int32>)
   KeyedScope<T> Keyed(T[], KeyFn<T>)
   LayoutScope ReorderItem(Int32)
+  LayoutScope TitleBarDragRegion(Box)
   RectF RectOf(UInt32)
   RectF RectOf(UiText)
   Single Animate(UiText, Single)
@@ -7051,7 +7052,8 @@ struct CuiSharp.Ui
   Void SetClipboard(UiText)
   Void SetLocalization(Localization)
   Void SetReducedMotion(Boolean)
-  Void TitleBar(UiText, DrawFn, DrawFn)
+  Void TitleBar(UiText)
+  Void TitleBarButton(WindowButton, Nullable<ButtonOpts>, UiText)
   Void ToggleTheme()
   Void UpdateImage(UInt64, Int32, Int32, Int32, Int32, ReadOnlySpan<Byte>, Int32)
   Void WheelRegion(UInt32, RectF)
@@ -7059,6 +7061,7 @@ struct CuiSharp.Ui
   WellEvents PaletteStrip(UiText, ref UInt32, Span<Color>, Span<Boolean>, PaletteStripOpts)
   property Accent Accent { get; set; }
   property Boolean FileDragActive { get; }
+  property Boolean HasCustomTitleBar { get; }
   property Boolean IsDisabled { get; }
   property Boolean IsWindowFocused { get; }
   property Boolean NeedsRedraw { get; }
